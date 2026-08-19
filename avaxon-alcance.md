@@ -34,7 +34,7 @@ Construimos e implementamos **agentes de IA conversacionales** personalizados pa
 | Componente | Plataforma | Detalle |
 |-----------|-----------|---------|
 | **Automatización / Workflows** | n8n Cloud | `avaxon2938409.app.n8n.cloud` |
-| **Canal de mensajería** | WhatsApp Cloud API (Meta oficial) | Sin intermediarios BSP |
+| **Canal de mensajería** | WhatsApp Cloud API (Meta) | Conectado vía n8n webhook |
 | **IA / LLM** | OpenAI GPT-4o | Motor del chatbot y análisis |
 | **Memoria de conversación** | n8n Simple Memory | Por número de teléfono |
 | **CRM / Leads** | Google Sheets | Captura estructurada por cliente |
@@ -149,7 +149,7 @@ Avaxon implementa agentes de forma progresiva según las necesidades del cliente
 
 | Integración | Uso |
 |------------|-----|
-| **Meta / WhatsApp Cloud API** | Canal principal de mensajería (API oficial, sin intermediarios) |
+| **Meta / WhatsApp Cloud API** | Canal principal de mensajería, recibido y enviado vía n8n |
 | **OpenAI GPT-4o** | Motor de IA del chatbot, calificación y análisis de mensajes |
 | **Google Sheets** | CRM de leads: captura, estatus y seguimiento |
 | **Google Calendar** | Agendamiento y sincronización de citas |
