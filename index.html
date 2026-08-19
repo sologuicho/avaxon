@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Avaxon — Automatiza tu negocio con IA</title>
+  <meta name="description" content="Agencia de automatización con IA para PyMEs mexicanas. Agentes de WhatsApp que venden, califican leads y dan seguimiento 24/7." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple-50:  #f5f3ff;
+      --purple-100: #ede9fe;
+      --purple-400: #a78bfa;
+      --purple-500: #8b5cf6;
+      --purple-600: #7c3aed;
+      --purple-700: #6d28d9;
+      --purple-900: #4c1d95;
+      --gray-50:  #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --white: #ffffff;
+      --green-500: #22c55e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--gray-800);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--purple-100);
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--purple-600);
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--purple-600); }
+    .nav-cta {
+      background: var(--purple-600);
+      color: var(--white) !important;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-weight: 600 !important;
+      transition: background .2s !important;
+    }
+    .nav-cta:hover { background: var(--purple-700) !important; color: var(--white) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #0f0524 0%, #1e0a4a 40%, #3b0f7a 70%, #6d28d9 100%);
+      position: relative;
+      overflow: hidden;
+      padding-top: 64px;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%);
+      top: -100px; right: -100px;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(167,139,250,0.15) 0%, transparent 70%);
+      bottom: -80px; left: 10%;
+    }
+    .hero-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 80px 24px;
+      position: relative;
+      z-index: 2;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(139,92,246,0.2);
+      border: 1px solid rgba(167,139,250,0.4);
+      color: var(--purple-400);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .hero-badge span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green-500); }
+    .hero h1 {
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      font-weight: 900;
+      color: var(--white);
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      margin-bottom: 12px;
+    }
+    .hero h1 .gradient-text {
+      background: linear-gradient(90deg, #a78bfa, #e879f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-tagline {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 48px;
+      max-width: 560px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--purple-500);
+      color: var(--white);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .btn-primary:hover { background: var(--purple-400); transform: translateY(-2px); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: var(--white);
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: background .2s;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+
+    .hero-stats {
+      margin-top: 72px;
+      display: flex;
+      gap: 48px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-number { font-size: 2rem; font-weight: 900; color: var(--white); }
+    .stat-label { font-size: 0.82rem; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+    /* ── SECTIONS ── */
+    section { padding: 96px 24px; }
+    .section-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--purple-600);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.9rem, 3.5vw, 2.6rem);
+      font-weight: 800;
+      color: var(--gray-900);
+      letter-spacing: -0.5px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 1.05rem;
+      color: var(--gray-500);
+      max-width: 540px;
+      line-height: 1.7;
+    }
+    .section-header { margin-bottom: 56px; }
+
+    /* ── SERVICIOS ── */
+    #servicios { background: var(--gray-50); }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .service-card {
+      background: var(--white);
+      border: 1px solid var(--gray-100);
+      border-radius: 16px;
+      padding: 32px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .service-card:hover {
+      box-shadow: 0 12px 40px rgba(109,40,217,0.1);
+      transform: translateY(-4px);
+    }
+    .service-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      background: var(--purple-50);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .service-card h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 10px;
+    }
+    .service-card p {
+      font-size: 0.9rem;
+      color: var(--gray-500);
+      line-height: 1.65;
+    }
+
+    /* ── CÓMO FUNCIONA ── */
+    #como-funciona { background: var(--white); }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 32px;
+    }
+    .step { text-align: center; }
+    .step-number {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple-500), var(--purple-700));
+      color: var(--white);
+      font-size: 1.2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; color: var(--gray-900); margin-bottom: 8px; }
+    .step p { font-size: 0.88rem; color: var(--gray-500); line-height: 1.6; }
+
+    /* ── PRECIOS ── */
+    #precios { background: var(--gray-50); }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+    .pricing-card {
+      background: var(--white);
+      border: 1.5px solid var(--gray-100);
+      border-radius: 20px;
+      padding: 36px 32px;
+      position: relative;
+      transition: box-shadow .2s;
+    }
+    .pricing-card:hover { box-shadow: 0 16px 48px rgba(109,40,217,0.12); }
+    .pricing-card.featured {
+      border-color: var(--purple-500);
+      background: linear-gradient(160deg, #faf5ff 0%, #fff 100%);
+      box-shadow: 0 8px 32px rgba(109,40,217,0.15);
+    }
+    .featured-badge {
+      position: absolute;
+      top: -14px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--purple-600);
+      color: var(--white);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 16px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .plan-name {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--purple-600);
+      margin-bottom: 8px;
+    }
+    .plan-ideal {
+      font-size: 0.82rem;
+      color: var(--gray-400);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .plan-price {
+      margin-bottom: 8px;
+    }
+    .plan-price .amount {
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: var(--gray-900);
+      letter-spacing: -1px;
+    }
+    .plan-price .currency { font-size: 1.1rem; font-weight: 700; color: var(--gray-500); vertical-align: top; margin-top: 8px; display: inline-block; }
+    .plan-price .period { font-size: 0.88rem; color: var(--gray-400); }
+    .plan-setup {
+      font-size: 0.82rem;
+      color: var(--gray-500);
+      margin-bottom: 28px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .plan-setup strong { color: var(--gray-700); }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+    .plan-features li::before {
+      content: '✓';
+      color: var(--purple-600);
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .plan-btn {
+      display: block;
+      text-align: center;
+      padding: 13px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .plan-btn-outline {
+      border: 1.5px solid var(--purple-500);
+      color: var(--purple-600);
+    }
+    .plan-btn-outline:hover { background: var(--purple-50); }
+    .plan-btn-filled {
+      background: var(--purple-600);
+      color: var(--white);
+    }
+    .plan-btn-filled:hover { background: var(--purple-700); transform: translateY(-1px); }
+
+    .pricing-note {
+      text-align: center;
+      margin-top: 36px;
+      font-size: 0.88rem;
+      color: var(--gray-400);
+    }
+
+    /* ── CONTACTO ── */
+    #contacto { background: linear-gradient(135deg, #1e0a4a 0%, #3b0f7a 100%); }
+    #contacto .section-label { color: var(--purple-400); }
+    #contacto .section-title { color: var(--white); }
+    #contacto .section-sub { color: rgba(255,255,255,0.6); }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .contact-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      text-decoration: none;
+      transition: background .2s, transform .2s;
+      display: block;
+    }
+    .contact-card:hover { background: rgba(255,255,255,0.12); transform: translateY(-4px); }
+    .contact-card-icon { font-size: 2.2rem; margin-bottom: 14px; }
+    .contact-card h3 { font-size: 1rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+    .contact-card p { font-size: 0.88rem; color: rgba(255,255,255,0.55); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #0a0118;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .footer-inner { max-width: 1100px; margin: 0 auto; }
+    .footer-logo { font-size: 1.3rem; font-weight: 900; color: var(--purple-400); margin-bottom: 8px; }
+    .footer-copy { font-size: 0.82rem; color: rgba(255,255,255,0.25); }
+
+    /* ── MOBILE ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      section { padding: 64px 20px; }
+      .hero-stats { gap: 28px; }
+      .stat-number { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">Avaxon</a>
+    <ul class="nav-links">
+      <li><a href="#servicios">Servicios</a></li>
+      <li><a href="#como-funciona">Cómo funciona</a></li>
+      <li><a href="#precios">Precios</a></li>
+      <li><a href="#contacto" class="nav-cta">Hablar con nosotros</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span></span>
+      Agencia de automatización IA · México
+    </div>
+    <h1>
+      Automatiza tu negocio<br />
+      con <span class="gradient-text">Inteligencia Artificial</span>
+    </h1>
+    <p class="hero-tagline">
+      Construimos agentes de IA para WhatsApp que atienden, califican y dan seguimiento a tus clientes — 24 horas al día, 7 días a la semana.
+    </p>
+    <div class="hero-actions">
+      <a href="#contacto" class="btn-primary">
+        💬 Quiero mi agente IA
+      </a>
+      <a href="#servicios" class="btn-secondary">
+        Ver servicios →
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Disponibilidad del agente</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">&lt;5 días</div>
+        <div class="stat-label">De idea a cliente atendido</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number">100%</div>
+        <div class="stat-label">Personalizado a tu negocio</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICIOS -->
+<section id="servicios">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Servicios</span>
+      <h2 class="section-title">Lo que hace tu agente IA</h2>
+      <p class="section-sub">Cada agente se entrena con el catálogo, precios y tono de tu negocio. No es un bot genérico — es tu vendedor digital.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon">🤖</div>
+        <h3>Chatbot WhatsApp 24/7</h3>
+        <p>Responde preguntas frecuentes, presenta productos y detecta intención de compra en cualquier momento — sin que tú estés presente.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🎯</div>
+        <h3>Calificación de Leads</h3>
+        <p>El agente identifica nombre, necesidad, presupuesto y timeline de cada prospecto y los registra automáticamente en Google Sheets.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📅</div>
+        <h3>Agendamiento de Citas</h3>
+        <p>Reserva citas desde WhatsApp, sincroniza con Google Calendar y envía recordatorios automáticos para reducir no-shows.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🔁</div>
+        <h3>Seguimiento Post-venta</h3>
+        <p>Secuencias automáticas de seguimiento para leads que no respondieron o clientes que ya compraron. Reactivación sin esfuerzo.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📊</div>
+        <h3>Reporte Diario al Dueño</h3>
+        <p>Cada mañana recibes un resumen por WhatsApp: leads capturados, citas agendadas y conversaciones activas del día anterior.</p>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🖼️</div>
+        <h3>Lectura de Imágenes y Audio</h3>
+        <p>El agente procesa fotos de productos, comprobantes y audios enviados por el cliente — ideal para catálogos y pedidos visuales.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como-funciona">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Proceso</span>
+      <h2 class="section-title">Tu agente listo en menos de una semana</h2>
+      <p class="section-sub">Sin que tengas que aprender nada técnico. Nosotros construimos, configuramos y entregamos.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Descubrimiento</h3>
+        <p>Nos cuentas cómo funciona tu negocio: productos, precios, preguntas frecuentes y el tono con el que atiendes.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Configuración</h3>
+        <p>Entrenamos al agente con tu información y lo conectamos a tu WhatsApp Business en 2–3 días.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Pruebas</h3>
+        <p>Hacemos pruebas internas contigo antes de activarlo con tus clientes reales.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">4</div>
+        <h3>Go-Live</h3>
+        <p>Activamos el agente, monitoreamos la primera semana y ajustamos lo que sea necesario.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRECIOS -->
+<section id="precios">
+  <div class="section-inner">
+    <div class="section-header">
+      <span class="section-label">Precios</span>
+      <h2 class="section-title">Planes simples y sin sorpresas</h2>
+      <p class="section-sub">Setup único + mensualidad de mantenimiento. Sin contratos largos ni letras chicas.</p>
+    </div>
+    <div class="pricing-grid">
+
+      <!-- BÁSICO -->
+      <div class="pricing-card">
+        <div class="plan-name">Básico</div>
+        <div class="plan-ideal">Para negocios que quieren empezar</div>
+        <div class="plan-price">
+          <span class="currency">$</span><span class="amount">1,500</span>
+          <span class="period">/mes</span>
+        </div>
+        <div class="plan-setup">Setup único: <strong>$3,000 MXN</strong></div>
+        <ul class="plan-features">
+          <li>Chatbot WhatsApp 24/7</li>
+          <li>Calificación automática de leads</li>
+          <li>Registro en Google Sheets</li>
+          <li>1 semana de prueba incluida</li>
+          <li>Ajustes post go-live</li>
+        </ul>
+        <a href="#contacto" class="plan-btn plan-btn-outline">Comenzar →</a>
+      </div>
+
+      <!-- ESTÁNDAR (FEATURED) -->
+      <div class="pricing-card featured">
+        <div class="featured-badge">Más popular</div>
+        <div class="plan-name">Estándar</div>
+        <div class="plan-ideal">Para negocios con citas o leads frecuentes</div>
+        <div class="plan-price">
+          <span class="currency">$</span><span class="amount">2,500</span>
+          <span class="period">/mes</span>
+        </div>
+        <div class="plan-setup">Setup único: <strong>$5,000 MXN</strong></div>
+        <ul class="plan-features">
+          <li>Todo lo del plan Básico</li>
+          <li>Seguimiento automático de leads fríos</li>
+          <li>Agendamiento con Google Calendar</li>
+          <li>Recordatorios automáticos de citas</li>
+          <li>Soporte por WhatsApp</li>
+        </ul>
+        <a href="#contacto" class="plan-btn plan-btn-filled">Comenzar →</a>
+      </div>
+
+      <!-- COMPLETO -->
+      <div class="pricing-card">
+        <div class="plan-name">Completo</div>
+        <div class="plan-ideal">Para negocios con mayor volumen y proceso complejo</div>
+        <div class="plan-price">
+          <span class="currency">$</span><span class="amount">3,500</span>
+          <span class="period">/mes</span>
+        </div>
+        <div class="plan-setup">Setup único: <strong>$8,000 MXN</strong></div>
+        <ul class="plan-features">
+          <li>Todo lo del plan Estándar</li>
+          <li>Reporte diario al dueño por WhatsApp</li>
+          <li>Lectura de imágenes y audios con IA</li>
+          <li>Personalización avanzada de flujos</li>
+          <li>Soporte prioritario</li>
+        </ul>
+        <a href="#contacto" class="plan-btn plan-btn-outline">Comenzar →</a>
+      </div>
+
+    </div>
+    <p class="pricing-note">Todos los precios en MXN · IVA no incluido · Sin contratos de permanencia</p>
+  </div>
+</section>
+
+<!-- CONTACTO -->
+<section id="contacto">
+  <div class="section-inner">
+    <span class="section-label">Contacto</span>
+    <h2 class="section-title">¿Listo para automatizar?</h2>
+    <p class="section-sub">Escríbenos hoy y te decimos en menos de 24 horas cómo puede funcionar un agente IA en tu negocio.</p>
+    <div class="contact-grid">
+      <a href="https://wa.me/521XXXXXXXXXX?text=Hola%2C%20me%20interesa%20saber%20m%C3%A1s%20sobre%20Avaxon" class="contact-card" target="_blank" rel="noopener">
+        <div class="contact-card-icon">💬</div>
+        <h3>WhatsApp</h3>
+        <p>Escríbenos directo y te respondemos al momento</p>
+      </a>
+      <a href="mailto:floresescobedoluisalberto@gmail.com" class="contact-card">
+        <div class="contact-card-icon">✉️</div>
+        <h3>Correo electrónico</h3>
+        <p>floresescobedoluisalberto@gmail.com</p>
+      </a>
+      <div class="contact-card" style="cursor:default;">
+        <div class="contact-card-icon">📍</div>
+        <h3>Ubicación</h3>
+        <p>México · Atendemos a PyMEs de todo el país</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">Avaxon</div>
+    <p class="footer-copy">© 2026 Avaxon. Agencia de automatización con IA · México</p>
+  </div>
+</footer>
+
+</body>
+</html>
