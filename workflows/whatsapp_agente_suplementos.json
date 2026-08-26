@@ -1,0 +1,324 @@
+{
+  "name": "Avaxon — Agente WhatsApp Suplementos",
+  "nodes": [
+    {
+      "id": "node-001",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "avaxon-whatsapp-001",
+      "parameters": {
+        "httpMethod": "ALL",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-002",
+      "name": "¿Verificacion Meta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [420, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-verify",
+              "leftValue": "={{ $json.query['hub.mode'] }}",
+              "rightValue": "subscribe",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-003",
+      "name": "Responder Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [640, 160],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $('WhatsApp Webhook').first().json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "node-004",
+      "name": "Extraer Mensaje",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 440],
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\nif (!body?.entry?.[0]) {\n  return [{ json: { skip: true } }];\n}\n\nconst value = body.entry[0].changes?.[0]?.value;\n\n// Ignorar si no hay mensajes de texto (ej: status updates)\nif (!value?.messages?.[0] || value.messages[0].type !== 'text') {\n  return [{ json: { skip: true } }];\n}\n\nconst message = value.messages[0];\nconst contact = value.contacts?.[0];\n\nreturn [{\n  json: {\n    skip: false,\n    phone: message.from,\n    name: contact?.profile?.name ?? 'Cliente',\n    message: message.text.body,\n    messageId: message.id,\n    phoneNumberId: value.metadata.phone_number_id,\n    timestamp: message.timestamp\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-005",
+      "name": "¿Hay Mensaje de Texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [860, 440],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-skip",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-006",
+      "name": "Agente IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [1100, 340],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Extraer Mensaje').item.json.message }}",
+        "options": {
+          "systemMessage": "Eres el asistente virtual de [NOMBRE DEL NEGOCIO], una tienda de suplementos deportivos en México.\n\nTus objetivos son:\n1. Dar la bienvenida al cliente y preguntar en qué puedes ayudarle\n2. Responder preguntas sobre productos, precios, disponibilidad y envíos\n3. Identificar el objetivo del cliente (bajar de peso, ganar músculo, rendimiento deportivo, energía) y recomendar el producto más adecuado\n4. Cuando el cliente muestre intención de compra real, obtener de forma natural: nombre completo, objetivo principal y si está listo para comprar\n5. Una vez que tengas esos datos, agrega al FINAL EXACTO de tu mensaje la etiqueta: ##LEAD##\n\nReglas importantes:\n- Responde siempre en español a menos que el cliente escriba en inglés\n- Sé amable, cercano y conciso (máximo 3 oraciones por respuesta)\n- NUNCA inventes productos, precios ni información que no conozcas\n- Si no sabes algo, di que un asesor se comunicará pronto\n- NO incluyas ##LEAD## hasta tener nombre + objetivo + intención de compra confirmada\n\nCatálogo de productos:\n[PEGAR AQUÍ: nombre del producto, precio, descripción breve]\n\nPolítica de envíos:\n[PEGAR AQUÍ: tiempos de entrega, costo de envío, zonas de cobertura]\n\nHorario de atención humana:\n[PEGAR AQUÍ: ej. Lunes a Viernes 9am - 6pm CST]",
+          "maxIterations": 5
+        }
+      }
+    },
+    {
+      "id": "node-007",
+      "name": "GPT-4o",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.1,
+      "position": [960, 540],
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 500
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "id": "node-008",
+      "name": "Memoria Conversacion",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1100, 540],
+      "parameters": {
+        "sessionKey": "={{ $('Extraer Mensaje').item.json.phone }}",
+        "contextWindowLength": 10
+      }
+    },
+    {
+      "id": "node-009",
+      "name": "Procesar Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 340],
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.output ?? '';\nconst isLead = rawOutput.includes('##LEAD##');\nconst respuesta = rawOutput.replace('##LEAD##', '').trim();\n\nreturn [{\n  json: {\n    respuesta,\n    isLead,\n    phone: $('Extraer Mensaje').item.json.phone,\n    name: $('Extraer Mensaje').item.json.name,\n    phoneNumberId: $('Extraer Mensaje').item.json.phoneNumberId\n  }\n}];"
+      }
+    },
+    {
+      "id": "node-010",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 340],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.phoneNumberId }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{ JSON.stringify($json.respuesta) }}\n  }\n}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "Meta WhatsApp Token"
+        }
+      }
+    },
+    {
+      "id": "node-011",
+      "name": "¿Es Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1760, 340],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-lead",
+              "leftValue": "={{ $('Procesar Output').item.json.isLead }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "node-012",
+      "name": "Guardar Lead en Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1980, 200],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REEMPLAZA_CON_TU_SPREADSHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "phone": "={{ $('Procesar Output').item.json.phone }}",
+            "name": "={{ $('Procesar Output').item.json.name }}",
+            "business_need": "suplementos",
+            "status": "qualified",
+            "timestamp": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "id": "node-013",
+      "name": "Responder 200 a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2200, 340],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"status\": \"ok\" }",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [{ "node": "¿Verificacion Meta?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Verificacion Meta?": {
+      "main": [
+        [{ "node": "Responder Challenge", "type": "main", "index": 0 }],
+        [{ "node": "Extraer Mensaje", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extraer Mensaje": {
+      "main": [
+        [{ "node": "¿Hay Mensaje de Texto?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Hay Mensaje de Texto?": {
+      "main": [
+        [{ "node": "Agente IA", "type": "main", "index": 0 }],
+        [{ "node": "Responder 200 a Meta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Agente IA": {
+      "main": [
+        [{ "node": "Procesar Output", "type": "main", "index": 0 }]
+      ]
+    },
+    "GPT-4o": {
+      "ai_languageModel": [
+        [{ "node": "Agente IA", "type": "ai_languageModel", "index": 0 }]
+      ]
+    },
+    "Memoria Conversacion": {
+      "ai_memory": [
+        [{ "node": "Agente IA", "type": "ai_memory", "index": 0 }]
+      ]
+    },
+    "Procesar Output": {
+      "main": [
+        [{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [{ "node": "¿Es Lead?", "type": "main", "index": 0 }]
+      ]
+    },
+    "¿Es Lead?": {
+      "main": [
+        [{ "node": "Guardar Lead en Sheets", "type": "main", "index": 0 }],
+        [{ "node": "Responder 200 a Meta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Guardar Lead en Sheets": {
+      "main": [
+        [{ "node": "Responder 200 a Meta", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
