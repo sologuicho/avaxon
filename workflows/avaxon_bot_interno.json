@@ -1,0 +1,245 @@
+{
+  "name": "Avaxon - Bot Interno WhatsApp (GPT-4o)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### Variables de entorno requeridas (n8n Cloud > Settings > Variables)\n- OPENAI_API_KEY\n- META_ACCESS_TOKEN\n- META_PHONE_NUMBER_ID\n- META_VERIFY_TOKEN (definido por ti, debe coincidir con el configurado en Meta Developers)",
+        "height": 220,
+        "width": 340
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [0, -40],
+      "id": "a1b2c3d4-0000-4a1a-9b1a-000000000000",
+      "name": "Notas de Configuración"
+    },
+    {
+      "parameters": {
+        "httpMethod": ["GET", "POST"],
+        "path": "avaxon-whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "id": "a1b2c3d4-0001-4a1a-9b1a-000000000001",
+      "name": "WhatsApp Webhook",
+      "webhookId": "avaxon-whatsapp-internal"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-verify-mode",
+              "leftValue": "={{ $json.query['hub.mode'] }}",
+              "rightValue": "subscribe",
+              "operator": { "type": "string", "operation": "equals" }
+            },
+            {
+              "id": "cond-verify-token",
+              "leftValue": "={{ $json.query['hub.verify_token'] }}",
+              "rightValue": "={{ $env.META_VERIFY_TOKEN }}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "id": "a1b2c3d4-0002-4a1a-9b1a-000000000002",
+      "name": "Is Verification Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": { "responseCode": 200 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 140],
+      "id": "a1b2c3d4-0003-4a1a-9b1a-000000000003",
+      "name": "Respond - Verification Challenge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-has-message",
+              "leftValue": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages ? $json.body.entry[0].changes[0].value.messages.length : 0 }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            },
+            {
+              "id": "cond-type-text",
+              "leftValue": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
+              "rightValue": "text",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 440],
+      "id": "a1b2c3d4-0004-4a1a-9b1a-000000000004",
+      "name": "Is Text Message"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'ignored', reason: 'non-text message or status update' } }}",
+        "options": { "responseCode": 200 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 560],
+      "id": "a1b2c3d4-0005-4a1a-9b1a-000000000005",
+      "name": "Respond - Ignore Non-Text"
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.sessions) staticData.sessions = {};\n\nconst body = $input.first().json.body;\nconst entry = body.entry?.[0];\nconst change = entry?.changes?.[0];\nconst value = change?.value;\nconst message = value?.messages?.[0];\n\nconst phone = message?.from;\nconst text = message?.text?.body;\nconst timestamp = message?.timestamp;\n\nif (!phone || !text) {\n  throw new Error('Build Conversation History: no se pudo extraer phone/text del payload de Meta. Payload: ' + JSON.stringify(body));\n}\n\nif (!staticData.sessions[phone]) {\n  staticData.sessions[phone] = [];\n}\n\nstaticData.sessions[phone].push({ role: 'user', content: text });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nconst systemPrompt = {\n  role: 'system',\n  content: 'Eres el asistente interno de Avaxon, una agencia de automatización IA para WhatsApp. Ayudas al equipo con información del negocio, respuestas rápidas y coordinación interna. Sé conciso, profesional y directo.'\n};\n\nreturn [\n  {\n    json: {\n      phone,\n      text,\n      timestamp,\n      messages: [systemPrompt, ...staticData.sessions[phone]]\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 320],
+      "id": "a1b2c3d4-0006-4a1a-9b1a-000000000006",
+      "name": "Build Conversation History"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'gpt-4o', temperature: 0.7, messages: $json.messages }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 320],
+      "id": "a1b2c3d4-0007-4a1a-9b1a-000000000007",
+      "name": "OpenAI Chat Completion",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst phone = $('Build Conversation History').item.json.phone;\n\nconst openaiResponse = $input.first().json;\nconst reply = openaiResponse.choices?.[0]?.message?.content;\n\nif (!reply) {\n  throw new Error('Extract Response: OpenAI no devolvió una respuesta válida. Respuesta cruda: ' + JSON.stringify(openaiResponse));\n}\n\nif (!staticData.sessions) staticData.sessions = {};\nif (!staticData.sessions[phone]) staticData.sessions[phone] = [];\nstaticData.sessions[phone].push({ role: 'assistant', content: reply });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nreturn [\n  {\n    json: {\n      phone,\n      reply\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 320],
+      "id": "a1b2c3d4-0008-4a1a-9b1a-000000000008",
+      "name": "Extract Response & Update History"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.META_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', to: $json.phone, type: 'text', text: { body: $json.reply } }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 320],
+      "id": "a1b2c3d4-0009-4a1a-9b1a-000000000009",
+      "name": "Send WhatsApp Reply",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'ok' } }}",
+        "options": { "responseCode": 200 }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1680, 320],
+      "id": "a1b2c3d4-0010-4a1a-9b1a-000000000010",
+      "name": "Respond - Success"
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [ { "node": "Is Verification Request", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Is Verification Request": {
+      "main": [
+        [ { "node": "Respond - Verification Challenge", "type": "main", "index": 0 } ],
+        [ { "node": "Is Text Message", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Is Text Message": {
+      "main": [
+        [ { "node": "Build Conversation History", "type": "main", "index": 0 } ],
+        [ { "node": "Respond - Ignore Non-Text", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Build Conversation History": {
+      "main": [
+        [ { "node": "OpenAI Chat Completion", "type": "main", "index": 0 } ]
+      ]
+    },
+    "OpenAI Chat Completion": {
+      "main": [
+        [ { "node": "Extract Response & Update History", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Extract Response & Update History": {
+      "main": [
+        [ { "node": "Send WhatsApp Reply", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Send WhatsApp Reply": {
+      "main": [
+        [ { "node": "Respond - Success", "type": "main", "index": 0 } ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
