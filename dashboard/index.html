@@ -5,128 +5,174 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avaxon — Dashboard</title>
   <link rel="icon" type="image/jpeg" href="../avaxon_favicon.jpeg" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ─── Design tokens ─────────────────────────── */
     :root {
-      --bg:          #04040f;
-      --bg-2:        #06061a;
-      --bg-card:     #0a0a20;
-      --bg-card-2:   #0d0d28;
-      --border:      rgba(255,255,255,0.06);
-      --border-hi:   rgba(0,200,255,0.22);
-      --cyan:        #00c8ff;
-      --cyan-dim:    rgba(0,200,255,0.10);
-      --cyan-glow:   rgba(0,200,255,0.05);
-      --indigo:      #4f46e5;
-      --indigo-dim:  rgba(79,70,229,0.15);
-      --white:       #ffffff;
-      --text:        #e2e8f0;
-      --text-muted:  #64748b;
-      --text-dim:    #94a3b8;
-      --green:       #10b981;
-      --green-dim:   rgba(16,185,129,0.10);
-      --red:         #ef4444;
-      --red-dim:     rgba(239,68,68,0.10);
-      --yellow:      #f59e0b;
-      --yellow-dim:  rgba(245,158,11,0.10);
-      --muted-dim:   rgba(100,116,139,0.10);
+      /* Page */
+      --page-bg:       #f4f5f6;
+      --card-bg:       #ffffff;
+      --border:        #e6e7e9;
+      --border-focus:  #b5d9fd;
+
+      /* Text */
+      --text:          #18191c;
+      --text-2:        #3a3b3e;
+      --text-muted:    #6b6c70;
+      --text-dim:      #9a9b9f;
+
+      /* Accent (steel blue) */
+      --accent-800:    #2c455d;
+      --accent:        #5980a6;
+      --accent-100:    #eef6ff;
+      --accent-200:    #d6ebff;
+      --accent-300:    #b5d9fd;
+
+      /* Semantic */
+      --green:         #10b981;
+      --green-bg:      rgba(16,185,129,0.10);
+      --amber:         #f59e0b;
+      --amber-bg:      rgba(245,158,11,0.10);
+      --red:           #ef4444;
+      --red-bg:        rgba(239,68,68,0.10);
+      --muted-bg:      rgba(107,108,112,0.10);
+
+      /* Login (dark) */
+      --login-bg:      #04040f;
+      --login-bg2:     #06061a;
+      --login-card:    #0a0a20;
+      --login-border:  rgba(0,200,255,0.22);
+      --login-border2: rgba(255,255,255,0.06);
+      --cyan:          #00c8ff;
+      --cyan-dim:      rgba(0,200,255,0.10);
+      --login-text:    #e2e8f0;
+      --login-muted:   #64748b;
+      --login-dim:     #94a3b8;
+
+      /* Layout */
+      --sidebar-w:     260px;
+      --sidebar-bg:    #ffffff;
+      --sidebar-border:#e6e7e9;
+
+      /* Radius */
+      --r-sm: 8px;
+      --r-md: 10px;
+      --r-lg: 14px;
     }
 
     html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
+      font-family: 'Barlow', sans-serif;
+      font-size: 14px;
       color: var(--text);
+      background: var(--page-bg);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ─── LOADING ─────────────────────────────── */
+    /* ─── Animations ─────────────────────────────── */
+    @keyframes spin      { to { transform: rotate(360deg); } }
+    @keyframes avx-fade  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes avx-pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+
+    /* ─── Loading screen ─────────────────────────── */
     #loading-screen {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      color: var(--text-muted);
+      background: var(--login-bg);
+      color: var(--login-muted);
       font-size: 14px;
       gap: 12px;
     }
     .spinner {
       width: 20px; height: 20px;
-      border: 2px solid var(--border);
+      border: 2px solid rgba(255,255,255,0.08);
       border-top-color: var(--cyan);
       border-radius: 50%;
       animation: spin 0.65s linear infinite;
       flex-shrink: 0;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner-light {
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
 
-    /* ─── LOGIN ───────────────────────────────── */
+    /* ─── LOGIN SCREEN ──────────────────────────── */
     #login-screen {
       display: none;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: var(--bg);
+      background: var(--login-bg);
       background-image:
         linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
       background-size: 48px 48px;
+      font-family: 'Space Grotesk', sans-serif;
     }
-
     .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-hi);
+      background: var(--login-card);
+      border: 1px solid var(--login-border);
       border-radius: 18px;
       padding: 48px 40px;
       width: 100%;
       max-width: 400px;
       box-shadow: 0 0 80px rgba(0,200,255,0.07), 0 32px 64px rgba(0,0,0,0.4);
     }
-
     .login-logo {
-      font-family: 'Space Grotesk', sans-serif;
       font-size: 26px;
       font-weight: 700;
       color: var(--cyan);
       letter-spacing: -0.5px;
       margin-bottom: 4px;
     }
-    .login-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 36px; }
-
+    .login-subtitle {
+      color: var(--login-muted);
+      font-size: 14px;
+      margin-bottom: 36px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
     .form-group { margin-bottom: 20px; }
-    label { display: block; font-size: 13px; font-weight: 500; color: var(--text-dim); margin-bottom: 8px; }
-
-    input[type="email"],
-    input[type="password"] {
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--login-dim);
+      margin-bottom: 8px;
+    }
+    .form-input {
       width: 100%;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
+      background: var(--login-bg2);
+      border: 1px solid var(--login-border2);
       border-radius: 8px;
       padding: 12px 16px;
-      color: var(--text);
+      color: var(--login-text);
       font-size: 14px;
-      font-family: inherit;
+      font-family: 'Space Grotesk', sans-serif;
       outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    input[type="email"]:focus,
-    input[type="password"]:focus {
+    .form-input:focus {
       border-color: var(--cyan);
       box-shadow: 0 0 0 3px var(--cyan-dim);
     }
-
-    .btn-primary {
+    .btn-login {
       width: 100%;
       background: var(--cyan);
       color: #000;
       font-weight: 700;
       font-size: 14px;
-      font-family: inherit;
+      font-family: 'Space Grotesk', sans-serif;
       border: none;
       border-radius: 8px;
       padding: 13px;
@@ -135,162 +181,496 @@
       margin-top: 8px;
       letter-spacing: 0.2px;
     }
-    .btn-primary:hover  { opacity: 0.88; }
-    .btn-primary:active { transform: scale(0.99); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .error-msg {
-      color: var(--red);
+    .btn-login:hover  { opacity: 0.88; }
+    .btn-login:active { transform: scale(0.99); }
+    .btn-login:disabled { opacity: 0.45; cursor: not-allowed; }
+    .login-error {
+      color: #ef4444;
       font-size: 13px;
       margin-top: 14px;
       display: none;
-      background: var(--red-dim);
+      background: rgba(239,68,68,0.10);
       border: 1px solid rgba(239,68,68,0.2);
       border-radius: 6px;
       padding: 10px 14px;
     }
 
-    /* ─── DASHBOARD ───────────────────────────── */
-    #dashboard-screen { display: none; }
+    /* ─── APP SHELL ──────────────────────────────── */
+    #app-shell {
+      display: none;
+      min-height: 100vh;
+    }
 
-    /* Header */
-    header {
-      background: rgba(4,4,15,0.92);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 62px;
+    /* ─── SIDEBAR ─────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transition: transform 0.25s ease;
+    }
+    .sidebar-top {
+      padding: 20px 20px 0;
+      flex-shrink: 0;
+    }
+    .sidebar-logo {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .header-logo {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 19px;
+    .sidebar-logo-icon {
+      width: 34px; height: 34px;
+      background: var(--accent-800);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
       font-weight: 700;
-      color: var(--cyan);
-      letter-spacing: -0.3px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
     }
-    .header-sep { color: var(--border); font-size: 18px; }
-    .header-title { font-size: 14px; color: var(--text-muted); font-weight: 400; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .user-email { font-size: 13px; color: var(--text-muted); margin-right: 4px; }
-    .refresh-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .sidebar-logo-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent-800);
+      letter-spacing: 0.3px;
+      line-height: 1;
+    }
+    .sidebar-logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 1px;
+    }
 
-    .btn-icon {
-      background: transparent;
+    /* Org switcher */
+    .org-switcher-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .org-switcher-btn {
+      width: 100%;
+      background: var(--accent-100);
+      border: 1px solid var(--accent-200);
+      border-radius: var(--r-md);
+      padding: 9px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-align: left;
+      font-family: 'Barlow', sans-serif;
+    }
+    .org-switcher-btn:hover {
+      background: var(--accent-200);
+      border-color: var(--accent-300);
+    }
+    .org-switcher-icon {
+      width: 26px; height: 26px;
+      background: var(--accent-800);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Barlow Condensed', sans-serif;
+      flex-shrink: 0;
+    }
+    .org-switcher-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-800);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .org-switcher-chevron {
+      color: var(--accent);
+      transition: transform 0.18s;
+      flex-shrink: 0;
+    }
+    .org-switcher-btn.open .org-switcher-chevron {
+      transform: rotate(180deg);
+    }
+    .org-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+      z-index: 50;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .org-dropdown.open { display: block; }
+    .org-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .org-dropdown-item:last-child { border-bottom: none; }
+    .org-dropdown-item:hover { background: var(--accent-100); }
+    .org-dropdown-item.active { background: var(--accent-100); }
+    .org-dropdown-item-icon {
+      width: 24px; height: 24px;
+      background: var(--accent-200);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent-800);
+      font-family: 'Barlow Condensed', sans-serif;
+      flex-shrink: 0;
+    }
+    .org-dropdown-item-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Sidebar nav */
+    .sidebar-nav {
+      flex: 1;
+      padding: 8px 12px;
+      overflow-y: auto;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 14px;
+      position: relative;
+      user-select: none;
+      margin-bottom: 2px;
+    }
+    .nav-item:hover {
+      background: var(--accent-100);
+      color: var(--accent-800);
+    }
+    .nav-item.active {
+      background: var(--accent-100);
+      color: var(--accent-800);
+      font-weight: 600;
+    }
+    .nav-item.active .nav-icon { opacity: 1; }
+    .nav-icon {
+      width: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+    .nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
+    .nav-lock {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px; height: 18px;
+      background: var(--amber-bg);
+      border-radius: 4px;
+      font-size: 9px;
+      margin-left: auto;
+    }
+
+    /* Sidebar bottom */
+    .sidebar-bottom {
+      padding: 14px 16px 20px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .agent-status-widget {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--accent-100);
+      border-radius: var(--r-md);
+      margin-bottom: 12px;
+      border: 1px solid var(--accent-200);
+    }
+    .agent-dot {
+      width: 8px; height: 8px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: avx-pulse 2s ease-in-out infinite;
+    }
+    .agent-dot.paused {
+      background: var(--amber);
+      animation: none;
+    }
+    .agent-status-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-800);
+      flex: 1;
+    }
+    .agent-toggle-btn {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: 'Barlow', sans-serif;
+    }
+    .agent-toggle-btn:hover { color: var(--accent-800); }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-user-email {
+      flex: 1;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .btn-signout {
+      background: none;
       border: 1px solid var(--border);
       color: var(--text-muted);
       font-size: 12px;
-      font-family: inherit;
-      padding: 6px 14px;
-      border-radius: 7px;
+      font-weight: 500;
+      font-family: 'Barlow', sans-serif;
+      padding: 5px 10px;
+      border-radius: 6px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.18s;
       white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-signout:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* Hamburger (mobile) */
+    .hamburger {
+      display: none;
+      position: fixed;
+      top: 14px; left: 14px;
+      z-index: 300;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      width: 38px; height: 38px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 190;
+    }
+
+    /* ─── MAIN CONTENT ───────────────────────────── */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top bar */
+    .topbar {
+      height: 58px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-800);
+      letter-spacing: 0.3px;
+    }
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .topbar-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .btn-refresh {
       display: flex;
       align-items: center;
       gap: 6px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'Barlow', sans-serif;
+      padding: 6px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
     }
-    .btn-icon:hover { border-color: var(--cyan); color: var(--cyan); }
-    .btn-icon.danger:hover { border-color: var(--red); color: var(--red); }
+    .btn-refresh:hover {
+      border-color: var(--accent-300);
+      color: var(--accent-800);
+    }
 
-    /* Main layout */
-    main { max-width: 1360px; margin: 0 auto; padding: 36px 32px 64px; }
+    /* Page area */
+    .page-area {
+      flex: 1;
+      padding: 28px 28px 56px;
+    }
 
-    .section-label {
-      font-family: 'Space Grotesk', sans-serif;
+    /* View animation */
+    .view {
+      display: none;
+    }
+    .view.active {
+      display: block;
+      animation: avx-fade 0.22s ease forwards;
+    }
+
+    /* Inner loading (replacing content) */
+    .inner-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 60px 0;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ─── KPI CARDS ───────────────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px 22px;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-300), var(--accent));
+      opacity: 0;
+      transition: opacity 0.18s;
+    }
+    .kpi-card:hover {
+      border-color: var(--accent-300);
+      box-shadow: 0 4px 16px rgba(89,128,166,0.12);
+      transform: translateY(-2px);
+    }
+    .kpi-card:hover::after { opacity: 1; }
+    .kpi-icon {
+      font-size: 20px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .kpi-label {
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 1.2px;
-      margin-bottom: 14px;
-      margin-top: 40px;
-    }
-    .section-label:first-child { margin-top: 0; }
-
-    /* KPI bar */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 14px;
-      margin-bottom: 36px;
-    }
-    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 640px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
-
-    .kpi-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 22px;
-      transition: border-color 0.2s, transform 0.15s;
-      position: relative;
-      overflow: hidden;
-    }
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .kpi-card:hover { border-color: var(--border-hi); transform: translateY(-1px); }
-    .kpi-card:hover::before { opacity: 1; }
-
-    .kpi-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      margin-bottom: 10px;
+      letter-spacing: 0.7px;
+      margin-bottom: 6px;
     }
     .kpi-value {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 34px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 36px;
       font-weight: 700;
-      color: var(--white);
+      color: var(--accent-800);
       line-height: 1;
     }
-    .kpi-value.accent { color: var(--cyan); }
+    .kpi-value.muted { color: var(--text); }
 
-    /* WhatsApp info bar */
-    .wa-bar {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--cyan);
-      border-radius: 12px;
-      padding: 18px 24px;
+    /* ─── SECTION HEADER ─────────────────────────── */
+    .section-header {
       display: flex;
-      flex-wrap: wrap;
       align-items: center;
-      gap: 24px;
-      margin-bottom: 36px;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      margin-top: 28px;
     }
-    .wa-bar-item { display: flex; flex-direction: column; gap: 4px; }
-    .wa-bar-item-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .wa-bar-item-value { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; color: var(--text); }
-    .wa-bar-sep { width: 1px; height: 32px; background: var(--border); flex-shrink: 0; }
-    @media (max-width: 640px) { .wa-bar-sep { display: none; } }
+    .section-header:first-child { margin-top: 0; }
+    .section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-800);
+      letter-spacing: 0.3px;
+    }
 
-    /* Cards */
+    /* ─── CARDS ──────────────────────────────────── */
     .card {
-      background: var(--bg-card);
+      background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--r-lg);
       overflow: hidden;
     }
     .card-header {
-      padding: 16px 24px;
+      padding: 14px 20px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
@@ -298,37 +678,63 @@
       gap: 12px;
     }
     .card-title {
-      font-family: 'Space Grotesk', sans-serif;
+      font-family: 'Barlow Condensed', sans-serif;
       font-size: 15px;
-      font-weight: 600;
-      color: var(--white);
+      font-weight: 700;
+      color: var(--accent-800);
+      letter-spacing: 0.2px;
     }
     .count-badge {
-      background: var(--cyan-dim);
-      color: var(--cyan);
+      background: var(--accent-100);
+      color: var(--accent);
       font-size: 11px;
       font-weight: 600;
-      padding: 3px 10px;
+      padding: 2px 9px;
       border-radius: 20px;
-      letter-spacing: 0.3px;
     }
 
-    /* Tables */
+    /* Search bar (Leads view) */
+    .search-bar-wrap {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .search-input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      padding: 8px 12px 8px 34px;
+      font-size: 13px;
+      font-family: 'Barlow', sans-serif;
+      color: var(--text);
+      background: var(--page-bg);
+      outline: none;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b6c70' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 10px center;
+    }
+    .search-input:focus {
+      border-color: var(--accent-300);
+      box-shadow: 0 0 0 3px rgba(89,128,166,0.10);
+    }
+
+    /* ─── TABLES ─────────────────────────────────── */
+    .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     th {
       font-size: 11px;
       font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.6px;
-      padding: 11px 24px;
+      letter-spacing: 0.7px;
+      padding: 10px 20px;
       text-align: left;
       border-bottom: 1px solid var(--border);
-      background: rgba(255,255,255,0.015);
+      background: #fafafa;
       white-space: nowrap;
     }
     td {
-      padding: 13px 24px;
+      padding: 12px 20px;
       font-size: 13.5px;
       border-bottom: 1px solid var(--border);
       color: var(--text);
@@ -336,20 +742,32 @@
     }
     tr:last-child td { border-bottom: none; }
     tbody tr { transition: background 0.12s; }
-    tbody tr:hover td { background: rgba(255,255,255,0.018); }
+    tbody tr:hover td { background: var(--accent-100); }
 
-    /* Layout grid */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 24px;
+    /* Initials avatar */
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--accent-200);
+      color: var(--accent-800);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'Barlow Condensed', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
     }
-    @media (max-width: 960px) { .two-col { grid-template-columns: 1fr; } }
+    .contact-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .contact-name { font-weight: 600; color: var(--text); line-height: 1.3; }
+    .contact-phone { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
-    .mb-24 { margin-bottom: 24px; }
-
-    /* Status pills */
+    /* ─── PILLS ──────────────────────────────────── */
     .pill {
       display: inline-flex;
       align-items: center;
@@ -368,36 +786,50 @@
       background: currentColor;
       flex-shrink: 0;
     }
-    .pill-green  { color: var(--green);      background: var(--green-dim); }
-    .pill-yellow { color: var(--yellow);     background: var(--yellow-dim); }
-    .pill-red    { color: var(--red);        background: var(--red-dim); }
-    .pill-muted  { color: var(--text-muted); background: var(--muted-dim); }
-    .pill-cyan   { color: var(--cyan);       background: var(--cyan-dim); }
-
-    /* No dot variant */
-    .pill-no-dot::before { display: none; }
+    .pill.no-dot::before { display: none; }
+    .pill-green  { color: var(--green); background: var(--green-bg); }
+    .pill-amber  { color: var(--amber); background: var(--amber-bg); }
+    .pill-red    { color: var(--red);   background: var(--red-bg); }
+    .pill-muted  { color: var(--text-muted); background: var(--muted-bg); }
+    .pill-accent { color: var(--accent); background: var(--accent-100); }
 
     /* Direction badges */
-    .dir-in {
+    .badge-in {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 4px;
-      background: var(--cyan-dim);
-      color: var(--cyan);
+      background: var(--accent-100);
+      color: var(--accent-800);
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
-    .dir-out {
+    .badge-out {
       display: inline-block;
       font-size: 10px;
       font-weight: 700;
       padding: 2px 8px;
       border-radius: 4px;
-      background: var(--indigo-dim);
-      color: #a5b4fc;
+      background: rgba(79,70,229,0.08);
+      color: #6366f1;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
+
+    /* Quality pill (solid) */
+    .quality-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      color: #fff;
+    }
+    .quality-green  { background: var(--green); }
+    .quality-amber  { background: var(--amber); }
+    .quality-red    { background: var(--red); }
 
     /* Media badge */
     .media-badge {
@@ -406,41 +838,36 @@
       font-weight: 600;
       padding: 2px 7px;
       border-radius: 4px;
-      background: rgba(245,158,11,0.12);
-      color: var(--yellow);
-      letter-spacing: 0.4px;
+      background: var(--amber-bg);
+      color: var(--amber);
+      letter-spacing: 0.3px;
       margin-left: 6px;
     }
 
     /* Tags / chips */
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
     .tag {
       display: inline-block;
       font-size: 10.5px;
       font-weight: 500;
       padding: 2px 8px;
       border-radius: 5px;
-      background: rgba(0,200,255,0.10);
-      color: var(--cyan);
-      margin: 1px 2px;
-      border: 1px solid rgba(0,200,255,0.15);
+      background: var(--accent-100);
+      color: var(--accent-800);
+      border: 1px solid var(--accent-200);
     }
-    .tags-wrap { display: flex; flex-wrap: wrap; gap: 2px; }
-
-    /* Contact cell */
-    .contact-name { font-weight: 500; color: var(--text); }
-    .contact-phone { font-size: 12px; color: var(--text-muted); font-family: 'Space Grotesk', monospace; margin-top: 2px; }
 
     /* Msg preview */
     .msg-preview {
-      max-width: 260px;
+      max-width: 240px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: var(--text-dim);
+      color: var(--text-muted);
       font-size: 13px;
     }
 
-    /* Empty state */
+    /* ─── EMPTY STATE ─────────────────────────────── */
     .empty-state {
       text-align: center;
       padding: 40px 24px;
@@ -449,247 +876,472 @@
     }
     .empty-icon { font-size: 26px; margin-bottom: 8px; }
 
-    /* Webhook badge */
-    .webhook-ok  { color: var(--green);  font-size: 12px; font-weight: 600; }
-    .webhook-no  { color: var(--red);    font-size: 12px; font-weight: 600; }
+    /* ─── TWO COLUMN ─────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
 
-    /* Responsive */
+    .mb-18 { margin-bottom: 18px; }
+    .mb-24 { margin-bottom: 24px; }
+
+    /* ─── LOCKED VIEW ─────────────────────────────── */
+    .locked-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 340px;
+      padding: 40px;
+    }
+    .locked-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 48px 56px;
+      text-align: center;
+      max-width: 380px;
+      width: 100%;
+    }
+    .locked-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .locked-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent-800);
+      margin-bottom: 8px;
+    }
+    .locked-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: var(--amber-bg);
+      color: var(--amber);
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .locked-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── CONEXIONES CARDS ───────────────────────── */
+    .conexiones-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .conexion-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 22px;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .conexion-card:hover {
+      border-color: var(--accent-300);
+      box-shadow: 0 4px 16px rgba(89,128,166,0.08);
+    }
+    .conexion-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .conexion-icon {
+      font-size: 28px;
+      line-height: 1;
+    }
+    .conexion-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent-800);
+      margin-bottom: 4px;
+      margin-top: 10px;
+    }
+    .conexion-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* WA info card in Inicio */
+    .wa-number-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--r-lg);
+      padding: 18px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 28px;
+    }
+    .wa-item { display: flex; flex-direction: column; gap: 4px; }
+    .wa-item-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .wa-item-value {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .wa-item-value.accent { color: var(--accent-800); }
+    .wa-sep { width: 1px; height: 34px; background: var(--border); flex-shrink: 0; }
+
+    /* ─── RESPONSIVE ─────────────────────────────── */
     @media (max-width: 768px) {
-      main { padding: 24px 16px 48px; }
-      header { padding: 0 16px; }
-      .user-email, .refresh-time { display: none; }
-      td, th { padding: 11px 16px; }
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .sidebar-overlay.mobile-open { display: block; }
+      .main-content { margin-left: 0; }
+      .hamburger { display: flex; }
+      .topbar { padding: 0 16px 0 60px; }
+      .page-area { padding: 20px 16px 48px; }
+      .two-col { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .topbar-time { display: none; }
+      .wa-sep { display: none; }
     }
   </style>
 </head>
 <body>
 
-<!-- Loading -->
+<!-- ── Loading ──────────────────────────────────── -->
 <div id="loading-screen">
   <div class="spinner"></div>
   Cargando…
 </div>
 
-<!-- Login -->
+<!-- ── Login ────────────────────────────────────── -->
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">Avaxon</div>
     <div class="login-subtitle">Panel de administración</div>
     <div class="form-group">
-      <label for="email">Correo electrónico</label>
-      <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" />
+      <label class="form-label" for="login-email">Correo electrónico</label>
+      <input class="form-input" type="email" id="login-email" placeholder="tu@correo.com" autocomplete="email" />
     </div>
     <div class="form-group">
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      <label class="form-label" for="login-password">Contraseña</label>
+      <input class="form-input" type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" />
     </div>
-    <button class="btn-primary" id="login-btn">Entrar</button>
-    <div class="error-msg" id="error-msg"></div>
+    <button class="btn-login" id="login-btn">Entrar</button>
+    <div class="login-error" id="login-error"></div>
   </div>
 </div>
 
-<!-- Dashboard -->
-<div id="dashboard-screen">
+<!-- ── App Shell ─────────────────────────────────── -->
+<div id="app-shell">
 
-  <header>
-    <div class="header-left">
-      <span class="header-logo">Avaxon</span>
-      <span class="header-sep">|</span>
-      <span class="header-title">Dashboard</span>
-    </div>
-    <div class="header-right">
-      <span class="refresh-time" id="refresh-time"></span>
-      <span class="user-email" id="user-email"></span>
-      <button class="btn-icon" id="refresh-btn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Actualizar
-      </button>
-      <button class="btn-icon danger" id="signout-btn">Salir</button>
-    </div>
-  </header>
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
-  <main>
+  <!-- Hamburger (mobile) -->
+  <button class="hamburger" id="hamburger-btn" aria-label="Menú">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
 
-    <!-- ── KPI Bar ──────────────────────────────── -->
-    <div class="section-label">Resumen general</div>
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-label">Organizaciones</div>
-        <div class="kpi-value accent" id="kpi-orgs">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Contactos totales</div>
-        <div class="kpi-value" id="kpi-contacts">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Conv. abiertas</div>
-        <div class="kpi-value accent" id="kpi-convs-open">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Conversaciones total</div>
-        <div class="kpi-value" id="kpi-convs">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Mensajes hoy</div>
-        <div class="kpi-value accent" id="kpi-msgs-today">—</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-label">Mensajes totales</div>
-        <div class="kpi-value" id="kpi-msgs">—</div>
-      </div>
-    </div>
-
-    <!-- ── WhatsApp conectado ──────────────────── -->
-    <div class="section-label">WhatsApp conectado</div>
-    <div id="wa-bar-wrap"></div>
-
-    <!-- ── Conversaciones recientes ────────────── -->
-    <div class="section-label">Conversaciones recientes</div>
-    <div class="card mb-24">
-      <div class="card-header">
-        <span class="card-title">Últimas conversaciones</span>
-        <span class="count-badge" id="badge-convs">0</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Contacto</th>
-              <th>Último mensaje</th>
-              <th>Estado</th>
-              <th>Organización</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-convs"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ── Contactos + Feed mensajes ──────────── -->
-    <div class="section-label">Contactos y mensajes</div>
-    <div class="two-col">
-
-      <!-- Contactos recientes -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Contactos recientes</span>
-          <span class="count-badge" id="badge-contacts">0</span>
-        </div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre / Teléfono</th>
-                <th>Estado</th>
-                <th>Tags</th>
-                <th>Último visto</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-contacts"></tbody>
-          </table>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">AX</div>
+        <div>
+          <div class="sidebar-logo-text">Avaxon</div>
+          <div class="sidebar-logo-sub">Automatización IA</div>
         </div>
       </div>
 
-      <!-- Feed de mensajes -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Feed de mensajes</span>
-          <span class="count-badge" id="badge-msgs">0</span>
-        </div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Dir</th>
-                <th>Contacto</th>
-                <th>Mensaje</th>
-                <th>Hora</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-msgs"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div><!-- end two-col -->
-
-    <!-- ── Organizaciones ─────────────────────── -->
-    <div class="section-label">Clientes / Organizaciones</div>
-    <div class="card mb-24">
-      <div class="card-header">
-        <span class="card-title">Organizaciones</span>
-        <span class="count-badge" id="badge-orgs">0</span>
-      </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Industria</th>
-              <th>Plan</th>
-              <th>Estado</th>
-              <th>Trial hasta</th>
-              <th>Creado</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-orgs"></tbody>
-        </table>
+      <!-- Org switcher (super_admin only) -->
+      <div class="org-switcher-wrap" id="org-switcher-wrap" style="display:none">
+        <button class="org-switcher-btn" id="org-switcher-btn">
+          <div class="org-switcher-icon" id="org-switcher-icon">★</div>
+          <span class="org-switcher-name" id="org-switcher-name">Todos los clientes</span>
+          <svg class="org-switcher-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="org-dropdown" id="org-dropdown"></div>
       </div>
     </div>
 
-    <!-- ── Números WhatsApp ───────────────────── -->
-    <div class="section-label">Números WhatsApp</div>
-    <div class="card mb-24">
-      <div class="card-header">
-        <span class="card-title">Números conectados</span>
-        <span class="count-badge" id="badge-phones">0</span>
+    <!-- Nav -->
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <div class="nav-item active" data-view="inicio">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </span>
+        Inicio
       </div>
-      <div style="overflow-x:auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Número</th>
-              <th>Nombre verificado</th>
-              <th>Calidad</th>
-              <th>Estado</th>
-              <th>Webhook</th>
-              <th>Cuenta (negocio)</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-phones"></tbody>
-        </table>
+      <div class="nav-item" data-view="conversaciones">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </span>
+        Conversaciones
+        <span class="nav-lock">🔒</span>
+      </div>
+      <div class="nav-item" data-view="leads">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </span>
+        Leads / Contactos
+      </div>
+      <div class="nav-item" data-view="calendario">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </span>
+        Calendario
+        <span class="nav-lock">🔒</span>
+      </div>
+      <div class="nav-item" id="nav-conexiones" data-view="conexiones">
+        <span class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </span>
+        Conexiones
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <!-- Agent status -->
+      <div class="agent-status-widget">
+        <div class="agent-dot" id="agent-dot"></div>
+        <span class="agent-status-label" id="agent-status-label">Agente activo</span>
+        <button class="agent-toggle-btn" id="agent-toggle-btn">Pausar</button>
+      </div>
+      <!-- User info -->
+      <div class="sidebar-user">
+        <span class="sidebar-user-email" id="sidebar-email">—</span>
+        <button class="btn-signout" id="signout-btn">Salir</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Inicio</span>
+      <div class="topbar-right">
+        <span class="topbar-time" id="topbar-time"></span>
+        <button class="btn-refresh" id="refresh-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Actualizar
+        </button>
       </div>
     </div>
 
-  </main>
-</div><!-- #dashboard-screen -->
+    <div class="page-area">
+
+      <!-- ── VIEW: Inicio ────────────────────────── -->
+      <div class="view active" id="view-inicio">
+        <div class="kpi-grid" id="kpi-grid">
+          <!-- rendered by JS -->
+        </div>
+
+        <div class="section-header">
+          <span class="section-title">WhatsApp conectado</span>
+        </div>
+        <div id="wa-number-wrap" class="mb-24"></div>
+
+        <div class="two-col mb-18">
+          <!-- Contactos recientes -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Contactos recientes</span>
+              <span class="count-badge" id="badge-contacts">0</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nombre / Teléfono</th>
+                    <th>Estado</th>
+                    <th>Tags</th>
+                    <th>Último visto</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-contacts-inicio"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mensajes recientes -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Mensajes recientes</span>
+              <span class="count-badge" id="badge-msgs">0</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Dir</th>
+                    <th>Contacto</th>
+                    <th>Mensaje</th>
+                    <th>Hora</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-msgs-inicio"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clientes table (super_admin aggregate only) -->
+        <div id="orgs-section" style="display:none">
+          <div class="section-header">
+            <span class="section-title">Clientes</span>
+            <span class="count-badge" id="badge-orgs">0</span>
+          </div>
+          <div class="card mb-24">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Organización</th>
+                    <th>Industria</th>
+                    <th>Plan</th>
+                    <th>Estado</th>
+                    <th>Trial hasta</th>
+                    <th>Creado</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-orgs"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div><!-- end view-inicio -->
+
+      <!-- ── VIEW: Conversaciones (locked) ──────── -->
+      <div class="view" id="view-conversaciones">
+        <div class="locked-view">
+          <div class="locked-card">
+            <span class="locked-icon">💬</span>
+            <div class="locked-title">Conversaciones</div>
+            <div class="locked-badge">Próximamente</div>
+            <p class="locked-desc">El módulo de conversaciones en tiempo real estará disponible próximamente.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Leads / Contactos ────────────── -->
+      <div class="view" id="view-leads">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Leads / Contactos</span>
+            <span class="count-badge" id="badge-leads">0</span>
+          </div>
+          <div class="search-bar-wrap">
+            <input class="search-input" type="text" id="leads-search" placeholder="Buscar por nombre o teléfono…" />
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Contacto</th>
+                  <th>Teléfono</th>
+                  <th>Estado</th>
+                  <th>Tags</th>
+                  <th>Último visto</th>
+                  <th>Creado</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-leads"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Calendario (locked) ────────────── -->
+      <div class="view" id="view-calendario">
+        <div class="locked-view">
+          <div class="locked-card">
+            <span class="locked-icon">📅</span>
+            <div class="locked-title">Calendario</div>
+            <div class="locked-badge">Próximamente</div>
+            <p class="locked-desc">El módulo de calendario y agendamiento estará disponible próximamente.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW: Conexiones ─────────────────────── -->
+      <div class="view" id="view-conexiones">
+        <div class="section-header" style="margin-top:0">
+          <span class="section-title">Servicios conectados</span>
+        </div>
+        <div class="conexiones-grid" id="conexiones-grid">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+
+    </div><!-- .page-area -->
+  </div><!-- .main-content -->
+
+</div><!-- #app-shell -->
 
 <script>
 (function () {
   'use strict';
 
+  history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
+  /* ── Constants ───────────────────────────────── */
   const SUPABASE_URL = 'https://wprvjhvtnyibiwpeiusc.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_w4HF23xO6Nq85926OrAOlg_Bvogo1HX';
+  const SUPER_ADMIN_EMAIL = 'floresescobedoluisalberto@gmail.com';
 
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
   const $ = id => document.getElementById(id);
 
-  // ── Screen management ─────────────────────────
-  const SCREENS = ['loading-screen', 'login-screen', 'dashboard-screen'];
+  /* ── State ────────────────────────────────────── */
+  let state = {
+    isSuperAdmin: false,
+    userEmail: '',
+    userRole: '',
+    userOrgId: null,
+    currentOrgId: null, // null = all (super admin aggregate)
+    allOrgs: [],
+    agentActive: true,
+    allContacts: [],   // for leads search
+  };
 
-  function show(id) {
-    SCREENS.forEach(s => {
-      const el = $(s);
-      if (s === id) {
-        el.style.display = s === 'dashboard-screen' ? 'block' : 'flex';
-      } else {
-        el.style.display = 'none';
-      }
-    });
+  /* ── Screen management ───────────────────────── */
+  function showScreen(name) {
+    $('loading-screen').style.display = 'none';
+    $('login-screen').style.display   = 'none';
+    $('app-shell').style.display      = 'none';
+
+    if (name === 'loading') {
+      $('loading-screen').style.display = 'flex';
+    } else if (name === 'login') {
+      $('login-screen').style.display = 'flex';
+    } else if (name === 'app') {
+      $('app-shell').style.display = 'block';
+    }
   }
 
-  // ── Helpers ───────────────────────────────────
+  /* ── Helpers ──────────────────────────────────── */
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -702,8 +1354,7 @@
 
   function fmtFull(iso) {
     if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   function truncate(str, n = 50) {
@@ -711,320 +1362,505 @@
     return str.length > n ? str.slice(0, n) + '…' : str;
   }
 
+  function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
   function statusPill(status) {
-    if (!status) return '<span class="pill pill-muted">—</span>';
-    const greenSet  = new Set(['active', 'open', 'bot', 'qualified', 'won', 'verified']);
-    const yellowSet = new Set(['new', 'contacted', 'pending', 'trial']);
+    if (!status) return '<span class="pill pill-muted no-dot">—</span>';
+    const greenSet  = new Set(['active', 'open', 'bot', 'qualified', 'won', 'verified', 'connected']);
+    const amberSet  = new Set(['new', 'contacted', 'pending', 'trial']);
     const redSet    = new Set(['closed', 'suspended', 'cancelled', 'lost', 'inactive', 'failed']);
 
     let cls = 'pill-muted';
     if (greenSet.has(status))  cls = 'pill-green';
-    if (yellowSet.has(status)) cls = 'pill-yellow';
+    if (amberSet.has(status))  cls = 'pill-amber';
     if (redSet.has(status))    cls = 'pill-red';
 
     const LABELS = {
-      active: 'Activo', open: 'Abierta', bot: 'Bot', closed: 'Cerrada',
-      suspended: 'Suspendido', cancelled: 'Cancelado', failed: 'Fallido',
-      new: 'Nuevo', contacted: 'Contactado', qualified: 'Calificado',
-      won: 'Ganado', lost: 'Perdido', inactive: 'Inactivo',
-      pending: 'Pendiente', trial: 'Trial', verified: 'Verificado',
+      active:'Activo', open:'Abierta', bot:'Bot', closed:'Cerrada',
+      suspended:'Suspendido', cancelled:'Cancelado', failed:'Fallido',
+      new:'Nuevo', contacted:'Contactado', qualified:'Calificado',
+      won:'Ganado', lost:'Perdido', inactive:'Inactivo',
+      pending:'Pendiente', trial:'Trial', verified:'Verificado',
+      connected:'Conectado',
     };
-    const label = LABELS[status] ?? status;
-    return `<span class="pill ${cls}">${label}</span>`;
+    return `<span class="pill ${cls}">${LABELS[status] ?? status}</span>`;
   }
 
-  function qualityBadge(rating) {
-    if (!rating) return '<span class="pill pill-muted pill-no-dot">—</span>';
-    const map = { GREEN: 'pill-green', YELLOW: 'pill-yellow', RED: 'pill-red' };
-    const labels = { GREEN: 'Alta', YELLOW: 'Media', RED: 'Baja' };
-    const cls = map[rating] ?? 'pill-muted';
-    const label = labels[rating] ?? rating;
-    return `<span class="pill ${cls}">${label}</span>`;
+  function qualityBadge(q) {
+    if (!q) return '<span class="pill pill-muted no-dot">—</span>';
+    const map = { GREEN:'quality-green', YELLOW:'quality-amber', RED:'quality-red' };
+    const labels = { GREEN:'Alta', YELLOW:'Media', RED:'Baja' };
+    return `<span class="quality-pill ${map[q] ?? ''}">${labels[q] ?? q}</span>`;
   }
 
   function mediaBadge(type) {
     if (!type || type === 'text') return '';
-    const ICONS = { image: '🖼', audio: '🎵', video: '🎬', document: '📄', sticker: '🎭' };
-    const icon = ICONS[type] ?? '📎';
-    return `<span class="media-badge">${icon} ${type}</span>`;
+    const ICONS = { image:'📷 Imagen', audio:'🎵 Audio', video:'📹 Video', document:'📄 Doc', sticker:'🎭 Sticker' };
+    return `<span class="media-badge">${ICONS[type] ?? '📎 ' + type}</span>`;
   }
 
   function renderTags(tags) {
-    if (!tags || !tags.length) return '<span style="color:var(--text-muted);font-size:12px">—</span>';
+    if (!tags || !tags.length) return '<span style="color:var(--text-dim);font-size:12px">—</span>';
     return `<div class="tags-wrap">${tags.slice(0, 4).map(t => `<span class="tag">${t}</span>`).join('')}</div>`;
   }
 
-  function empty(cols, msg) {
+  function emptyRow(cols, msg) {
     return `<tr><td colspan="${cols}">
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        ${msg}
-      </div>
+      <div class="empty-state"><div class="empty-icon">📭</div>${msg}</div>
     </td></tr>`;
   }
 
-  function webhookBadge(verified) {
-    return verified
-      ? '<span class="webhook-ok">✓ Verificado</span>'
-      : '<span class="webhook-no">✗ Pendiente</span>';
+  function webhookBadge(ok) {
+    return ok
+      ? '<span class="pill pill-green no-dot">✓ Verificado</span>'
+      : '<span class="pill pill-muted no-dot">✗ Pendiente</span>';
   }
 
-  // ── Load dashboard ────────────────────────────
-  async function loadDashboard() {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+  /* ── View switching ───────────────────────────── */
+  const VIEW_TITLES = {
+    inicio:'Inicio', conversaciones:'Conversaciones',
+    leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
+  };
+
+  function switchView(name) {
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.view === name);
+    });
+    document.querySelectorAll('.view').forEach(el => {
+      el.classList.toggle('active', el.id === 'view-' + name);
+    });
+    $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
+    closeSidebarMobile();
+  }
+
+  /* ── Sidebar nav clicks ──────────────────────── */
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => switchView(item.dataset.view));
+  });
+
+  /* ── Mobile sidebar ──────────────────────────── */
+  function closeSidebarMobile() {
+    $('sidebar').classList.remove('mobile-open');
+    $('sidebar-overlay').classList.remove('mobile-open');
+  }
+  $('hamburger-btn').addEventListener('click', () => {
+    $('sidebar').classList.toggle('mobile-open');
+    $('sidebar-overlay').classList.toggle('mobile-open');
+  });
+  $('sidebar-overlay').addEventListener('click', closeSidebarMobile);
+
+  /* ── Agent status toggle ─────────────────────── */
+  $('agent-toggle-btn').addEventListener('click', () => {
+    state.agentActive = !state.agentActive;
+    updateAgentWidget();
+  });
+  function updateAgentWidget() {
+    const dot   = $('agent-dot');
+    const label = $('agent-status-label');
+    const btn   = $('agent-toggle-btn');
+    if (state.agentActive) {
+      dot.classList.remove('paused');
+      label.textContent = 'Agente activo';
+      btn.textContent = 'Pausar';
+    } else {
+      dot.classList.add('paused');
+      label.textContent = 'Agente pausado';
+      btn.textContent = 'Activar';
+    }
+  }
+
+  /* ── Org switcher ────────────────────────────── */
+  $('org-switcher-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const btn = $('org-switcher-btn');
+    const dd  = $('org-dropdown');
+    const isOpen = dd.classList.contains('open');
+    btn.classList.toggle('open', !isOpen);
+    dd.classList.toggle('open', !isOpen);
+  });
+  document.addEventListener('click', () => {
+    $('org-switcher-btn').classList.remove('open');
+    $('org-dropdown').classList.remove('open');
+  });
+
+  function buildOrgDropdown() {
+    const dd = $('org-dropdown');
+    // "Todos" option
+    const allItem = buildDropdownItem(null, '★', 'Todos los clientes', state.currentOrgId === null);
+    dd.innerHTML = '';
+    dd.appendChild(allItem);
+
+    state.allOrgs.forEach(org => {
+      const item = buildDropdownItem(org.id, initials(org.name), org.name, state.currentOrgId === org.id, org.status);
+      dd.appendChild(item);
+    });
+  }
+
+  function buildDropdownItem(orgId, iconText, label, active, status) {
+    const el = document.createElement('div');
+    el.className = 'org-dropdown-item' + (active ? ' active' : '');
+    el.innerHTML = `
+      <div class="org-dropdown-item-icon">${iconText}</div>
+      <span class="org-dropdown-item-name">${label}</span>
+      ${status ? statusPill(status) : ''}
+    `;
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      selectOrg(orgId, label, iconText);
+      $('org-switcher-btn').classList.remove('open');
+      $('org-dropdown').classList.remove('open');
+    });
+    return el;
+  }
+
+  function selectOrg(orgId, name, iconText) {
+    state.currentOrgId = orgId;
+    $('org-switcher-name').textContent = name;
+    $('org-switcher-icon').textContent = iconText;
+    buildOrgDropdown();
+    loadDashboard(orgId);
+  }
+
+  /* ── KPI grid ────────────────────────────────── */
+  function buildKpiGrid(kpis) {
+    $('kpi-grid').innerHTML = kpis.map(k => `
+      <div class="kpi-card">
+        <span class="kpi-icon">${k.icon}</span>
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value${k.muted ? ' muted' : ''}">${k.value}</div>
+      </div>
+    `).join('');
+  }
+
+  /* ── WhatsApp number card ────────────────────── */
+  function renderWaNumberCard(phones) {
+    const wrap = $('wa-number-wrap');
+    if (!phones || phones.length === 0) {
+      wrap.innerHTML = `<div class="wa-number-card" style="color:var(--text-muted)">Sin números WhatsApp configurados.</div>`;
+      return;
+    }
+    const p  = phones[0];
+    const wa = p.whatsapp_accounts;
+    const extra = phones.length > 1
+      ? `<div class="wa-sep"></div><div class="wa-item"><div class="wa-item-label">Números</div><div class="wa-item-value">${phones.length} conectados</div></div>`
+      : '';
+
+    wrap.innerHTML = `
+      <div class="wa-number-card">
+        <div class="wa-item">
+          <div class="wa-item-label">Número</div>
+          <div class="wa-item-value accent">${p.display_phone_number || '—'}</div>
+        </div>
+        <div class="wa-sep"></div>
+        <div class="wa-item">
+          <div class="wa-item-label">Nombre verificado</div>
+          <div class="wa-item-value">${p.verified_name || '—'}</div>
+        </div>
+        <div class="wa-sep"></div>
+        <div class="wa-item">
+          <div class="wa-item-label">Calidad</div>
+          <div>${qualityBadge(p.quality_rating)}</div>
+        </div>
+        <div class="wa-sep"></div>
+        <div class="wa-item">
+          <div class="wa-item-label">Estado</div>
+          <div>${statusPill(p.status)}</div>
+        </div>
+        <div class="wa-sep"></div>
+        <div class="wa-item">
+          <div class="wa-item-label">Webhook</div>
+          <div>${webhookBadge(p.webhook_verified)}</div>
+        </div>
+        <div class="wa-sep"></div>
+        <div class="wa-item">
+          <div class="wa-item-label">Cuenta</div>
+          <div class="wa-item-value">${wa?.business_name || '—'}</div>
+        </div>
+        ${extra}
+      </div>
+    `;
+  }
+
+  /* ── Contactos recientes (Inicio) ────────────── */
+  function renderContactsInicio(data, total) {
+    $('badge-contacts').textContent = total ?? 0;
+    const tbody = $('tbody-contacts-inicio');
+    if (!data || !data.length) { tbody.innerHTML = emptyRow(4, 'Sin contactos todavía'); return; }
+    tbody.innerHTML = data.map(c => `<tr>
+      <td>
+        <div class="contact-cell">
+          <div class="avatar">${initials(c.name || c.phone)}</div>
+          <div>
+            <div class="contact-name">${c.name || '—'}</div>
+            <div class="contact-phone">${c.phone || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td>${statusPill(c.status)}</td>
+      <td>${renderTags(c.tags)}</td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.last_seen_at)}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Mensajes recientes (Inicio) ──────────────── */
+  function renderMsgsInicio(data, total) {
+    $('badge-msgs').textContent = total ?? 0;
+    const tbody = $('tbody-msgs-inicio');
+    if (!data || !data.length) { tbody.innerHTML = emptyRow(4, 'Sin mensajes todavía'); return; }
+    tbody.innerHTML = data.map(m => {
+      const contact = m.conversations?.contacts;
+      const name    = contact?.name || contact?.phone || '—';
+      const dir = m.direction === 'inbound'
+        ? '<span class="badge-in">ENTRADA</span>'
+        : '<span class="badge-out">SALIDA</span>';
+      return `<tr>
+        <td>${dir}</td>
+        <td style="white-space:nowrap;font-weight:600">${name}</td>
+        <td><div class="msg-preview">${truncate(m.content)}${mediaBadge(m.media_type)}</div></td>
+        <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(m.created_at)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── Orgs table (super_admin all) ─────────────── */
+  function renderOrgsTable(data, total) {
+    const section = $('orgs-section');
+    if (!data || !data.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    $('badge-orgs').textContent = total ?? data.length;
+    $('tbody-orgs').innerHTML = data.map(o => `<tr>
+      <td>
+        <div class="contact-cell">
+          <div class="avatar">${initials(o.name)}</div>
+          <strong>${o.name}</strong>
+        </div>
+      </td>
+      <td style="color:var(--text-muted)">${o.industry || '—'}</td>
+      <td>${o.plan_id ? `<span class="pill pill-accent no-dot">${o.plan_id}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+      <td>${statusPill(o.status)}</td>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${o.trial_ends_at ? fmtFull(o.trial_ends_at) : '—'}</td>
+      <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${fmtDate(o.created_at)}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Leads table ──────────────────────────────── */
+  function renderLeads(data) {
+    $('badge-leads').textContent = data?.length ?? 0;
+    const tbody = $('tbody-leads');
+    if (!data || !data.length) { tbody.innerHTML = emptyRow(6, 'Sin contactos todavía'); return; }
+    tbody.innerHTML = data.map(c => `<tr>
+      <td>
+        <div class="contact-cell">
+          <div class="avatar">${initials(c.name || c.phone)}</div>
+          <div>
+            <div class="contact-name">${c.name || '—'}</div>
+            <div class="contact-phone">${c.email || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:13px;color:var(--text-muted)">${c.phone || '—'}</td>
+      <td>${statusPill(c.status)}</td>
+      <td>${renderTags(c.tags)}</td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.last_seen_at)}</td>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.created_at)}</td>
+    </tr>`).join('');
+  }
+
+  /* ── Conexiones ───────────────────────────────── */
+  function renderConexiones(phoneData, waData) {
+    const phone = phoneData?.[0];
+    const wa    = waData?.[0];
+
+    const cards = [
+      {
+        icon: '📱',
+        name: 'WhatsApp Business',
+        desc: phone
+          ? `${phone.display_phone_number} — ${phone.verified_name || 'Sin nombre'}`
+          : 'Sin número configurado',
+        status: phone ? (phone.status || 'active') : null,
+        statusLabel: phone ? 'Conectado' : 'Sin configurar',
+        statusClass: phone ? 'pill-green' : 'pill-muted',
+      },
+      {
+        icon: '🤖',
+        name: 'Bot IA (GPT-4o)',
+        desc: 'Agente conversacional conectado vía n8n y WhatsApp Cloud API',
+        status: 'active',
+        statusLabel: 'Activo',
+        statusClass: 'pill-green',
+      },
+      {
+        icon: '⚙️',
+        name: 'n8n Workflows',
+        desc: 'Plataforma de automatización de flujos y lógica del bot',
+        status: 'active',
+        statusLabel: 'Conectado',
+        statusClass: 'pill-green',
+      },
+      {
+        icon: '📅',
+        name: 'Google Calendar',
+        desc: 'Integración de agendamiento automático con el bot',
+        status: null,
+        statusLabel: 'Próximamente',
+        statusClass: 'pill-amber',
+      },
+      {
+        icon: '📊',
+        name: 'CRM / Leads Export',
+        desc: 'Exportación de contactos y métricas a hojas de cálculo',
+        status: null,
+        statusLabel: 'Próximamente',
+        statusClass: 'pill-amber',
+      },
+    ];
+
+    $('conexiones-grid').innerHTML = cards.map(c => `
+      <div class="conexion-card">
+        <div class="conexion-header">
+          <span class="conexion-icon">${c.icon}</span>
+          <span class="pill ${c.statusClass} no-dot">${c.statusLabel}</span>
+        </div>
+        <div class="conexion-name">${c.name}</div>
+        <div class="conexion-desc">${c.desc}</div>
+      </div>
+    `).join('');
+  }
+
+  /* ── Leads search ─────────────────────────────── */
+  $('leads-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) {
+      renderLeads(state.allContacts);
+      return;
+    }
+    const filtered = state.allContacts.filter(c =>
+      (c.name || '').toLowerCase().includes(q) ||
+      (c.phone || '').toLowerCase().includes(q)
+    );
+    renderLeads(filtered);
+  });
+
+  /* ── Load dashboard ───────────────────────────── */
+  async function loadDashboard(orgId = null) {
+    // Show inner spinner in Inicio KPI area
+    $('kpi-grid').innerHTML = `<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div>Cargando datos…</div>`;
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const isAll = orgId === null;
+
+    // Build queries (filter by orgId when set)
+    function q(table) {
+      const base = sb.from(table);
+      return base;
+    }
+    function withOrg(query) {
+      return orgId ? query.eq('organization_id', orgId) : query;
+    }
 
     try {
       const [
-        orgsCountRes,
         contactsCountRes,
-        convsCountRes,
         convsOpenCountRes,
-        msgsCountRes,
         msgsTodayCountRes,
-        convsRes,
+        msgsCountRes,
+        orgsCountRes,
         contactsRes,
         msgsRes,
         orgsRes,
         phonesRes,
+        waAccountsRes,
+        leadsRes,
       ] = await Promise.all([
-        sb.from('organizations').select('*', { count: 'exact', head: true }),
-        sb.from('contacts').select('*', { count: 'exact', head: true }),
-        sb.from('conversations').select('*', { count: 'exact', head: true }),
-        sb.from('conversations').select('*', { count: 'exact', head: true }).eq('status', 'open'),
-        sb.from('messages').select('*', { count: 'exact', head: true }),
-        sb.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', todayStart.toISOString()),
+        withOrg(sb.from('contacts').select('*', { count:'exact', head:true })),
+        withOrg(sb.from('conversations').select('*', { count:'exact', head:true }).eq('status','open')),
+        withOrg(sb.from('messages').select('*', { count:'exact', head:true }).gte('created_at', today.toISOString())),
+        withOrg(sb.from('messages').select('*', { count:'exact', head:true })),
+        sb.from('organizations').select('*', { count:'exact', head:true }),
 
-        // Conversations recent (last 10) joined contacts + organizations
-        sb.from('conversations')
-          .select('id, status, last_message_at, contacts(name, phone), organizations(name)')
-          .order('last_message_at', { ascending: false, nullsFirst: false })
-          .limit(10),
+        // Contactos recientes (Inicio)
+        withOrg(sb.from('contacts').select('id,name,phone,status,tags,last_seen_at').order('created_at',{ascending:false}).limit(6)),
 
-        // Contacts recent (last 8)
-        sb.from('contacts')
-          .select('id, name, phone, status, tags, last_seen_at, created_at')
-          .order('created_at', { ascending: false })
-          .limit(8),
+        // Mensajes recientes (Inicio)
+        withOrg(sb.from('messages').select('id,direction,content,media_type,created_at,conversations(contacts(name,phone))').order('created_at',{ascending:false}).limit(10)),
 
-        // Messages feed (last 15) joined conversations->contacts
-        sb.from('messages')
-          .select('id, direction, content, media_type, created_at, conversations(contacts(name, phone))')
-          .order('created_at', { ascending: false })
-          .limit(15),
+        // Orgs (for super_admin all mode)
+        sb.from('organizations').select('id,name,industry,status,plan_id,trial_ends_at,created_at').order('created_at',{ascending:false}),
 
-        // All organizations joined plan_id
-        sb.from('organizations')
-          .select('id, name, industry, status, plan_id, trial_ends_at, created_at')
-          .order('created_at', { ascending: false }),
+        // Phone numbers
+        withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
 
-        // Phone numbers joined whatsapp_accounts
-        sb.from('phone_numbers')
-          .select('id, display_phone_number, verified_name, quality_rating, status, webhook_verified, whatsapp_accounts(business_name)')
-          .order('created_at', { ascending: false }),
+        // WhatsApp accounts
+        withOrg(sb.from('whatsapp_accounts').select('id,waba_id,business_name,status')),
+
+        // Leads (all 50)
+        withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at',{ascending:false}).limit(50)),
       ]);
 
-      // KPI values
-      $('kpi-orgs').textContent       = orgsCountRes.count ?? 0;
-      $('kpi-contacts').textContent   = contactsCountRes.count ?? 0;
-      $('kpi-convs-open').textContent = convsOpenCountRes.count ?? 0;
-      $('kpi-convs').textContent      = convsCountRes.count ?? 0;
-      $('kpi-msgs-today').textContent = msgsTodayCountRes.count ?? 0;
-      $('kpi-msgs').textContent       = msgsCountRes.count ?? 0;
+      // KPIs
+      const kpis = [];
+      if (isAll && state.isSuperAdmin) {
+        kpis.push({ icon:'🏢', label:'Organizaciones', value: orgsCountRes.count ?? 0, muted:false });
+      }
+      kpis.push(
+        { icon:'👥', label:'Contactos', value: contactsCountRes.count ?? 0, muted:false },
+        { icon:'💬', label:'Conv. abiertas', value: convsOpenCountRes.count ?? 0, muted:false },
+        { icon:'📨', label:'Mensajes hoy', value: msgsTodayCountRes.count ?? 0, muted:false },
+        { icon:'📦', label:'Mensajes totales', value: msgsCountRes.count ?? 0, muted:true },
+      );
+      buildKpiGrid(kpis);
 
       // Refresh time
-      const now = new Date();
-      $('refresh-time').textContent = `Actualizado ${now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`;
+      $('topbar-time').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
 
-      // WhatsApp bar
-      renderWaBar(phonesRes.data);
+      // WhatsApp card
+      renderWaNumberCard(phonesRes.data);
 
-      // Conversations
-      renderConvs(convsRes.data, convsCountRes.count);
+      // Contactos recientes
+      renderContactsInicio(contactsRes.data, contactsCountRes.count);
 
-      // Contacts
-      renderContacts(contactsRes.data, contactsCountRes.count);
+      // Mensajes recientes
+      renderMsgsInicio(msgsRes.data, msgsCountRes.count);
 
-      // Messages
-      renderMsgs(msgsRes.data, msgsCountRes.count);
+      // Orgs table (super_admin all)
+      if (isAll && state.isSuperAdmin) {
+        renderOrgsTable(orgsRes.data, orgsCountRes.count);
+      } else {
+        $('orgs-section').style.display = 'none';
+      }
 
-      // Orgs table
-      renderOrgs(orgsRes.data, orgsCountRes.count);
+      // Leads
+      state.allContacts = leadsRes.data || [];
+      renderLeads(state.allContacts);
+      $('leads-search').value = '';
 
-      // Phones table
-      renderPhones(phonesRes.data);
+      // Conexiones
+      renderConexiones(phonesRes.data, waAccountsRes.data);
 
     } catch (err) {
       console.error('Error cargando datos:', err);
+      $('kpi-grid').innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px">Error al cargar datos. Intenta actualizar.</div>`;
     }
   }
 
-  // ── Render: WhatsApp bar ──────────────────────
-  function renderWaBar(phones) {
-    const wrap = $('wa-bar-wrap');
-    if (!phones || phones.length === 0) {
-      wrap.innerHTML = `<div class="wa-bar" style="color:var(--text-muted);font-size:14px">
-        Sin números WhatsApp configurados.
-      </div>`;
-      return;
-    }
-    // Show first phone in bar + badges; if multiple show count
-    const p = phones[0];
-    const wa = p.whatsapp_accounts;
-    const extra = phones.length > 1 ? `<div class="wa-bar-item">
-      <span class="wa-bar-item-label">Números</span>
-      <span class="wa-bar-item-value">${phones.length} conectados</span>
-    </div><div class="wa-bar-sep"></div>` : '';
+  /* ── Refresh button ───────────────────────────── */
+  $('refresh-btn').addEventListener('click', () => loadDashboard(state.currentOrgId));
 
-    wrap.innerHTML = `<div class="wa-bar">
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Número</span>
-        <span class="wa-bar-item-value" style="color:var(--cyan)">${p.display_phone_number || '—'}</span>
-      </div>
-      <div class="wa-bar-sep"></div>
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Nombre verificado</span>
-        <span class="wa-bar-item-value">${p.verified_name || '—'}</span>
-      </div>
-      <div class="wa-bar-sep"></div>
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Calidad</span>
-        <span>${qualityBadge(p.quality_rating)}</span>
-      </div>
-      <div class="wa-bar-sep"></div>
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Estado</span>
-        <span>${statusPill(p.status)}</span>
-      </div>
-      <div class="wa-bar-sep"></div>
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Webhook</span>
-        <span>${webhookBadge(p.webhook_verified)}</span>
-      </div>
-      <div class="wa-bar-sep"></div>
-      <div class="wa-bar-item">
-        <span class="wa-bar-item-label">Cuenta</span>
-        <span class="wa-bar-item-value">${wa?.business_name || '—'}</span>
-      </div>
-      ${extra}
-    </div>`;
-  }
-
-  // ── Render: Conversations ─────────────────────
-  function renderConvs(data, total) {
-    $('badge-convs').textContent = total ?? 0;
-    const tbody = $('tbody-convs');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = empty(4, 'Sin conversaciones todavía');
-      return;
-    }
-    tbody.innerHTML = data.map(c => {
-      const contact = c.contacts;
-      const name = contact?.name || contact?.phone || '—';
-      const org = c.organizations?.name || '—';
-      return `<tr>
-        <td>
-          <div class="contact-name">${name}</div>
-          ${contact?.phone ? `<div class="contact-phone">${contact.phone}</div>` : ''}
-        </td>
-        <td style="color:var(--text-muted);white-space:nowrap">${fmtDate(c.last_message_at)}</td>
-        <td>${statusPill(c.status)}</td>
-        <td style="color:var(--text-dim)">${org}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  // ── Render: Contacts ──────────────────────────
-  function renderContacts(data, total) {
-    $('badge-contacts').textContent = total ?? 0;
-    const tbody = $('tbody-contacts');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = empty(4, 'Sin contactos todavía');
-      return;
-    }
-    tbody.innerHTML = data.map(c => `<tr>
-      <td>
-        <div class="contact-name">${c.name || '—'}</div>
-        <div class="contact-phone">${c.phone || ''}</div>
-      </td>
-      <td>${statusPill(c.status)}</td>
-      <td>${renderTags(c.tags)}</td>
-      <td style="color:var(--text-muted);white-space:nowrap;font-size:12px">${fmtDate(c.last_seen_at)}</td>
-    </tr>`).join('');
-  }
-
-  // ── Render: Messages feed ─────────────────────
-  function renderMsgs(data, total) {
-    $('badge-msgs').textContent = total ?? 0;
-    const tbody = $('tbody-msgs');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = empty(4, 'Sin mensajes todavía');
-      return;
-    }
-    tbody.innerHTML = data.map(m => {
-      const contact = m.conversations?.contacts;
-      const name = contact?.name || contact?.phone || '—';
-      const dir = m.direction === 'inbound'
-        ? '<span class="dir-in">ENTRADA</span>'
-        : '<span class="dir-out">SALIDA</span>';
-      const mb = mediaBadge(m.media_type);
-      return `<tr>
-        <td>${dir}</td>
-        <td style="white-space:nowrap;font-weight:500">${name}</td>
-        <td><div class="msg-preview">${truncate(m.content)}${mb}</div></td>
-        <td style="color:var(--text-muted);font-size:12px;white-space:nowrap">${fmtDate(m.created_at)}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  // ── Render: Organizations ─────────────────────
-  function renderOrgs(data, total) {
-    $('badge-orgs').textContent = total ?? 0;
-    const tbody = $('tbody-orgs');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = empty(6, 'Sin organizaciones todavía');
-      return;
-    }
-    tbody.innerHTML = data.map(o => `<tr>
-      <td><strong style="color:var(--white)">${o.name}</strong></td>
-      <td style="color:var(--text-dim)">${o.industry || '—'}</td>
-      <td>${o.plan_id ? `<span class="pill pill-cyan pill-no-dot">${o.plan_id}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
-      <td>${statusPill(o.status)}</td>
-      <td style="color:var(--text-muted);font-size:12px;white-space:nowrap">${o.trial_ends_at ? fmtFull(o.trial_ends_at) : '—'}</td>
-      <td style="color:var(--text-muted);font-size:12px;white-space:nowrap">${fmtDate(o.created_at)}</td>
-    </tr>`).join('');
-  }
-
-  // ── Render: Phone numbers ─────────────────────
-  function renderPhones(data) {
-    $('badge-phones').textContent = data?.length ?? 0;
-    const tbody = $('tbody-phones');
-    if (!data || data.length === 0) {
-      tbody.innerHTML = empty(6, 'Sin números configurados todavía');
-      return;
-    }
-    tbody.innerHTML = data.map(p => {
-      const wa = p.whatsapp_accounts;
-      return `<tr>
-        <td style="font-family:'Space Grotesk',monospace;font-weight:600;color:var(--cyan)">${p.display_phone_number || '—'}</td>
-        <td>${p.verified_name || '—'}</td>
-        <td>${qualityBadge(p.quality_rating)}</td>
-        <td>${statusPill(p.status)}</td>
-        <td>${webhookBadge(p.webhook_verified)}</td>
-        <td style="color:var(--text-dim)">${wa?.business_name || '—'}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  // ── Auth logic ────────────────────────────────
+  /* ── Auth: Login ──────────────────────────────── */
   async function handleLogin() {
-    const email    = $('email').value.trim();
-    const password = $('password').value;
+    const email    = $('login-email').value.trim();
+    const password = $('login-password').value;
     const btn      = $('login-btn');
-    const errEl    = $('error-msg');
+    const errEl    = $('login-error');
 
     errEl.style.display = 'none';
-
     if (!email || !password) {
       errEl.textContent = 'Por favor ingresa correo y contraseña.';
       errEl.style.display = 'block';
@@ -1040,44 +1876,91 @@
     btn.textContent = 'Entrar';
 
     if (error) {
-      const isCredentials = /Invalid login credentials/i.test(error.message);
-      errEl.textContent = isCredentials
+      const isCreds = /Invalid login credentials/i.test(error.message);
+      errEl.textContent = isCreds
         ? 'Correo o contraseña incorrectos. Intenta de nuevo.'
-        : `Error al iniciar sesión: ${error.message}`;
+        : `Error: ${error.message}`;
       errEl.style.display = 'block';
     }
   }
 
   $('login-btn').addEventListener('click', handleLogin);
-  $('email').addEventListener('keydown', e    => { if (e.key === 'Enter') $('password').focus(); });
-  $('password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  $('login-email').addEventListener('keydown',    e => { if (e.key === 'Enter') $('login-password').focus(); });
+  $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
-  $('refresh-btn').addEventListener('click', () => loadDashboard());
-
+  /* ── Auth: Sign out ───────────────────────────── */
   $('signout-btn').addEventListener('click', async () => {
     await sb.auth.signOut();
     window.location.href = '../index.html';
   });
 
-  // Auth state
+  /* ── Auth: Bootstrap ──────────────────────────── */
+  async function bootstrap(user) {
+    state.userEmail = user.email;
+    $('sidebar-email').textContent = user.email;
+
+    // Determine role
+    const isSuperByEmail = user.email === SUPER_ADMIN_EMAIL;
+    let profile = null;
+
+    const { data: profileData } = await sb
+      .from('profiles')
+      .select('role, organization_id, full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    profile = profileData;
+    const role = profile?.role ?? (isSuperByEmail ? 'super_admin' : 'agent');
+
+    state.isSuperAdmin = isSuperByEmail || role === 'super_admin';
+    state.userRole     = role;
+    state.userOrgId    = profile?.organization_id ?? null;
+
+    // Show/hide Conexiones nav for agents
+    if (role === 'agent') {
+      const navConex = $('nav-conexiones');
+      if (navConex) navConex.style.display = 'none';
+    }
+
+    // Super admin: load orgs for switcher
+    if (state.isSuperAdmin) {
+      $('org-switcher-wrap').style.display = 'block';
+      const { data: orgs } = await sb.from('organizations').select('id,name,status').order('name');
+      state.allOrgs = orgs || [];
+      state.currentOrgId = null; // default: all
+      buildOrgDropdown();
+      await loadDashboard(null);
+    } else {
+      // Admin or agent: load only their org
+      const orgId = state.userOrgId;
+      state.currentOrgId = orgId;
+      await loadDashboard(orgId);
+    }
+
+    showScreen('app');
+  }
+
+  /* ── Auth state listener ──────────────────────── */
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
       window.location.href = '../index.html';
       return;
     }
-    if (session?.user) {
-      $('user-email').textContent = session.user.email;
-      show('dashboard-screen');
-      await loadDashboard();
-    } else {
-      show('login-screen');
+    if (event === 'SIGNED_IN' && session?.user) {
+      await bootstrap(session.user);
     }
   });
 
-  // Initial session check
-  sb.auth.getSession().then(({ data: { session } }) => {
-    if (!session) show('login-screen');
-  });
+  /* ── Initial session check ────────────────────── */
+  (async () => {
+    showScreen('loading');
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      await bootstrap(session.user);
+    } else {
+      showScreen('login');
+    }
+  })();
 
 })();
 </script>
