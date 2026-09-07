@@ -2186,6 +2186,188 @@
     showScreen('app');
   }
 
+  /* ── Calendar ─────────────────────────────────── */
+  const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const calView = {
+    year:  new Date().getFullYear(),
+    month: new Date().getMonth(),
+    selectedDate: new Date(),
+    appointments: [],
+  };
+
+  function calDateKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function aptDateKey(iso) {
+    return calDateKey(new Date(iso));
+  }
+
+  async function loadCalendarMonth() {
+    const orgId = state.currentOrgId;
+    const { year, month } = calView;
+    const start = new Date(year, month, 1).toISOString();
+    const end   = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+    let query = sb.from('appointments')
+      .select('id,title,service,scheduled_at,notes,status')
+      .gte('scheduled_at', start)
+      .lte('scheduled_at', end)
+      .order('scheduled_at', { ascending: true });
+
+    if (orgId) query = query.eq('organization_id', orgId);
+
+    const { data } = await query;
+    calView.appointments = data || [];
+    renderCalGrid();
+    renderDayView(calView.selectedDate);
+  }
+
+  function renderCalGrid() {
+    const { year, month, selectedDate, appointments } = calView;
+    $('cal-month-label').textContent = MONTHS_ES[month] + ' ' + year;
+
+    const aptDays   = new Set(appointments.map(a => aptDateKey(a.scheduled_at)));
+    const today     = new Date();
+    const todayKey  = calDateKey(today);
+    const selKey    = selectedDate ? calDateKey(selectedDate) : '';
+
+    const firstDow  = new Date(year, month, 1).getDay();
+    const startOff  = (firstDow + 6) % 7;
+    const daysInMon = new Date(year, month + 1, 0).getDate();
+    const daysInPrev= new Date(year, month, 0).getDate();
+
+    const cells = [];
+    for (let i = startOff - 1; i >= 0; i--)
+      cells.push({ day: daysInPrev - i, m: month === 0 ? 11 : month - 1, y: month === 0 ? year - 1 : year, other: true });
+    for (let d = 1; d <= daysInMon; d++)
+      cells.push({ day: d, m: month, y: year, other: false });
+    const rem = 42 - cells.length;
+    for (let d = 1; d <= rem; d++)
+      cells.push({ day: d, m: month === 11 ? 0 : month + 1, y: month === 11 ? year + 1 : year, other: true });
+
+    const grid = $('cal-grid');
+    grid.innerHTML = cells.map(c => {
+      const dk   = c.y + '-' + String(c.m+1).padStart(2,'0') + '-' + String(c.day).padStart(2,'0');
+      const hasA = !c.other && aptDays.has(dk);
+      const isTd = !c.other && dk === todayKey;
+      const isSel= dk === selKey;
+      let cls = 'cal-day';
+      if (c.other) cls += ' other-month';
+      else if (isSel) cls += ' selected';
+      else if (isTd) cls += ' today';
+      if (hasA) cls += ' has-apts';
+      const attr = c.other ? '' : `data-y="${c.y}" data-m="${c.m}" data-d="${c.day}"`;
+      return `<div class="${cls}" ${attr}><span>${c.day}</span><span class="cal-dot"></span></div>`;
+    }).join('');
+
+    grid.querySelectorAll('.cal-day:not(.other-month)').forEach(el => {
+      el.addEventListener('click', () => {
+        const d = new Date(+el.dataset.y, +el.dataset.m, +el.dataset.d);
+        calView.selectedDate = d;
+        renderCalGrid();
+        renderDayView(d);
+      });
+    });
+  }
+
+  function renderDayView(date) {
+    if (!date) return;
+    const dk   = calDateKey(date);
+    const apts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dk);
+    const label = date.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+    $('cal-day-header').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+    const box = $('cal-appointments');
+    if (!apts.length) {
+      box.innerHTML = '<div class="apt-empty">Sin citas para este día</div>';
+      return;
+    }
+    box.innerHTML = apts.map(a => {
+      const t   = new Date(a.scheduled_at).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+      const svc = a.service ? `<span style="font-size:11px;color:var(--text-muted)"> · ${a.service}</span>` : '';
+      const cnt = a.notes   ? `<div class="apt-contact">${a.notes}</div>` : '';
+      return `<div class="apt-item">
+        <div class="apt-time">${t}</div>
+        <div class="apt-body"><div class="apt-title">${a.title}${svc}</div>${cnt}</div>
+        <button class="apt-del" data-id="${a.id}">✕</button>
+      </div>`;
+    }).join('');
+
+    box.querySelectorAll('.apt-del').forEach(btn => {
+      btn.addEventListener('click', () => deleteAppointment(btn.dataset.id));
+    });
+  }
+
+  async function addAppointment() {
+    const title   = $('cal-title').value.trim();
+    const service = $('cal-service').value.trim();
+    const contact = $('cal-contact').value.trim();
+    const time    = $('cal-time').value || '10:00';
+    const errEl   = $('cal-form-error');
+    const btn     = $('cal-add-btn');
+
+    errEl.style.display = 'none';
+    if (!title) {
+      errEl.textContent = 'El título es obligatorio.';
+      errEl.style.display = 'block'; return;
+    }
+    if (!calView.selectedDate) {
+      errEl.textContent = 'Selecciona un día primero.';
+      errEl.style.display = 'block'; return;
+    }
+
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) {
+      errEl.textContent = 'Selecciona una organización desde el menú superior.';
+      errEl.style.display = 'block'; return;
+    }
+
+    const [hh, mm] = time.split(':').map(Number);
+    const dt = new Date(calView.selectedDate);
+    dt.setHours(hh, mm, 0, 0);
+
+    btn.disabled = true; btn.textContent = 'Guardando…';
+
+    const { error } = await sb.from('appointments').insert({
+      organization_id: orgId,
+      title,
+      service: service || null,
+      scheduled_at: dt.toISOString(),
+      notes: contact || null,
+      created_by: state.userId,
+    });
+
+    btn.disabled = false; btn.textContent = '+ Agregar cita';
+
+    if (error) {
+      errEl.textContent = 'Error: ' + error.message;
+      errEl.style.display = 'block'; return;
+    }
+
+    $('cal-title').value = '';
+    $('cal-service').value = '';
+    $('cal-contact').value = '';
+    $('cal-time').value = '10:00';
+    await loadCalendarMonth();
+  }
+
+  async function deleteAppointment(id) {
+    await sb.from('appointments').delete().eq('id', id);
+    await loadCalendarMonth();
+  }
+
+  $('cal-prev').addEventListener('click', () => {
+    if (--calView.month < 0) { calView.month = 11; calView.year--; }
+    loadCalendarMonth();
+  });
+  $('cal-next').addEventListener('click', () => {
+    if (++calView.month > 11) { calView.month = 0; calView.year++; }
+    loadCalendarMonth();
+  });
+  $('cal-add-btn').addEventListener('click', addAppointment);
+
   /* ── Auth state listener ──────────────────────── */
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_OUT') {
