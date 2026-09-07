@@ -29,336 +29,96 @@
     }
 
     html { scroll-behavior: smooth; }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-    /* ── LOGIN ── */
+    /* LOGIN */
     #login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center; min-height: 100vh;
       background: var(--bg);
-      background-image:
-        linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);
       background-size: 48px 48px;
     }
-
-    .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-hi);
-      border-radius: 16px;
-      padding: 48px 40px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 0 60px rgba(0,200,255,0.08);
-    }
-
-    .login-logo {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--cyan);
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-    }
-
-    .login-subtitle {
-      color: var(--text-muted);
-      font-size: 14px;
-      margin-bottom: 36px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-
-    input[type="email"], input[type="password"] {
-      width: 100%;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    input[type="email"]:focus, input[type="password"]:focus {
-      border-color: var(--cyan);
-    }
-
-    .btn-primary {
-      width: 100%;
-      background: var(--cyan);
-      color: #000;
-      font-weight: 600;
-      font-size: 14px;
-      font-family: inherit;
-      border: none;
-      border-radius: 8px;
-      padding: 13px;
-      cursor: pointer;
-      transition: opacity 0.2s;
-      margin-top: 8px;
-    }
-
+    .login-card { background: var(--bg-card); border: 1px solid var(--border-hi); border-radius: 16px; padding: 48px 40px; width: 100%; max-width: 400px; box-shadow: 0 0 60px rgba(0,200,255,0.08); }
+    .login-logo { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; color: var(--cyan); margin-bottom: 8px; }
+    .login-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 36px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-size: 13px; font-weight: 500; color: var(--text-dim); margin-bottom: 8px; }
+    input[type="email"], input[type="password"] { width: 100%; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.2s; }
+    input[type="email"]:focus, input[type="password"]:focus { border-color: var(--cyan); }
+    .btn-primary { width: 100%; background: var(--cyan); color: #000; font-weight: 600; font-size: 14px; font-family: inherit; border: none; border-radius: 8px; padding: 13px; cursor: pointer; transition: opacity 0.2s; margin-top: 8px; }
     .btn-primary:hover { opacity: 0.88; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error-msg { color: var(--red); font-size: 13px; margin-top: 12px; display: none; }
 
-    .error-msg {
-      color: var(--red);
-      font-size: 13px;
-      margin-top: 12px;
-      display: none;
-    }
-
-    /* ── DASHBOARD ── */
+    /* DASHBOARD */
     #dashboard-screen { display: none; }
 
-    header {
-      background: rgba(4,4,15,0.9);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 32px;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-    }
+    header { background: rgba(4,4,15,0.9); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .header-logo { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: var(--cyan); }
+    .header-logo span { color: var(--text-muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .user-email { font-size: 13px; color: var(--text-muted); }
+    .btn-refresh { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-family: inherit; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .btn-refresh:hover { border-color: var(--cyan); color: var(--cyan); }
+    .btn-signout { background: transparent; border: 1px solid var(--border); color: var(--text-muted); font-size: 12px; font-family: inherit; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .btn-signout:hover { border-color: var(--red); color: var(--red); }
 
-    .header-logo {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--cyan);
-    }
+    main { max-width: 1280px; margin: 0 auto; padding: 40px 32px; }
 
-    .header-logo span {
-      color: var(--text-muted);
-      font-weight: 400;
-      font-size: 13px;
-      margin-left: 8px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .user-email {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .btn-signout {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 12px;
-      font-family: inherit;
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn-signout:hover {
-      border-color: var(--red);
-      color: var(--red);
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 32px;
-    }
-
-    .section-title {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 16px;
-    }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
 
     /* Stats */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 40px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      transition: border-color 0.2s;
-    }
-
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; transition: border-color 0.2s; }
     .stat-card:hover { border-color: var(--border-hi); }
-
-    .stat-label {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .stat-value {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--white);
-    }
-
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--white); }
     .stat-value.cyan { color: var(--cyan); }
 
-    /* Tables */
-    .table-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 32px;
-    }
+    /* Two-col layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
 
-    .table-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+    /* Cards */
+    .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 32px; }
+    .table-card.no-margin { margin-bottom: 0; }
+    .table-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .table-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; }
+    .badge { background: var(--cyan-dim); color: var(--cyan); font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
 
-    .table-header h2 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .badge {
-      background: var(--cyan-dim);
-      color: var(--cyan);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 12px 24px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    td {
-      padding: 14px 24px;
-      font-size: 14px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-    }
-
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 12px 24px; text-align: left; border-bottom: 1px solid var(--border); }
+    td { padding: 13px 24px; font-size: 14px; border-bottom: 1px solid var(--border); color: var(--text); }
     tr:last-child td { border-bottom: none; }
-
     tr:hover td { background: rgba(255,255,255,0.02); }
 
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      padding: 3px 10px;
-      border-radius: 20px;
-    }
+    /* Status pills */
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+    .status-pill::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .status-active   { color: var(--green);      background: rgba(16,185,129,0.1); }
+    .status-pending  { color: var(--yellow);     background: rgba(245,158,11,0.1); }
+    .status-inactive { color: var(--text-muted); background: rgba(100,116,139,0.1); }
 
-    .status-pill::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-    }
+    /* Direction badge */
+    .dir-in  { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(0,200,255,0.12); color: var(--cyan); letter-spacing: 0.5px; }
+    .dir-out { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: rgba(79,70,229,0.15); color: #a5b4fc; letter-spacing: 0.5px; }
 
-    .status-active  { color: var(--green); background: rgba(16,185,129,0.1); }
-    .status-pending { color: var(--yellow); background: rgba(245,158,11,0.1); }
-    .status-inactive{ color: var(--text-muted); background: rgba(100,116,139,0.1); }
+    /* Message preview */
+    .msg-preview { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); font-size: 13px; }
 
-    .empty-state {
-      text-align: center;
-      padding: 48px 24px;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
-    .empty-state-icon { font-size: 32px; margin-bottom: 12px; }
+    .empty-state { text-align: center; padding: 40px 24px; color: var(--text-muted); font-size: 14px; }
+    .empty-state-icon { font-size: 28px; margin-bottom: 10px; }
 
     /* Loading */
-    .loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      color: var(--text-muted);
-      font-size: 14px;
-    }
-
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--cyan);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-      margin-right: 12px;
-    }
-
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 100vh; color: var(--text-muted); font-size: 14px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    @media (max-width: 640px) {
-      main { padding: 24px 16px; }
-      header { padding: 0 16px; }
-      .user-email { display: none; }
-    }
+    @media (max-width: 640px) { main { padding: 24px 16px; } header { padding: 0 16px; } .user-email { display: none; } }
   </style>
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loading-screen" class="loading">
   <div class="spinner"></div> Cargando…
 </div>
@@ -387,6 +147,7 @@
     <div class="header-logo">Avaxon <span>/ Dashboard</span></div>
     <div class="header-right">
       <span class="user-email" id="user-email"></span>
+      <button class="btn-refresh" id="refresh-btn">↻ Actualizar</button>
       <button class="btn-signout" id="signout-btn">Salir</button>
     </div>
   </header>
@@ -408,49 +169,90 @@
         <div class="stat-value" id="stat-convs">—</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Mensajes</div>
+        <div class="stat-label">Mensajes totales</div>
         <div class="stat-value" id="stat-msgs">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Mensajes hoy</div>
+        <div class="stat-value cyan" id="stat-msgs-today">—</div>
       </div>
     </div>
 
-    <!-- Organizations -->
+    <!-- Conversaciones + Contactos -->
+    <div class="two-col">
+      <div class="table-card no-margin">
+        <div class="table-header">
+          <h2>Conversaciones activas</h2>
+          <span class="badge" id="convs-badge">0</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Contacto</th>
+              <th>Último mensaje</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="convs-body"></tbody>
+        </table>
+      </div>
+
+      <div class="table-card no-margin">
+        <div class="table-header">
+          <h2>Contactos recientes</h2>
+          <span class="badge" id="contacts-badge">0</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="contacts-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mensajes recientes -->
+    <div class="section-title">Feed de mensajes</div>
+    <div class="table-card">
+      <div class="table-header">
+        <h2>Últimos mensajes</h2>
+        <span class="badge" id="msgs-badge">0</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Dirección</th>
+            <th>Contacto</th>
+            <th>Mensaje</th>
+            <th>Estado</th>
+            <th>Hora</th>
+          </tr>
+        </thead>
+        <tbody id="msgs-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Organizaciones -->
     <div class="section-title">Organizaciones</div>
     <div class="table-card">
       <div class="table-header">
-        <h2>Clientes activos</h2>
+        <h2>Clientes</h2>
         <span class="badge" id="orgs-badge">0</span>
       </div>
       <table>
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Slug</th>
             <th>Plan</th>
             <th>Estado</th>
             <th>Creado</th>
           </tr>
         </thead>
         <tbody id="orgs-body"></tbody>
-      </table>
-    </div>
-
-    <!-- Recent Contacts -->
-    <div class="section-title">Contactos recientes</div>
-    <div class="table-card">
-      <div class="table-header">
-        <h2>Últimos contactos</h2>
-        <span class="badge" id="contacts-badge">0</span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Teléfono</th>
-            <th>Estado</th>
-            <th>Última vez</th>
-          </tr>
-        </thead>
-        <tbody id="contacts-body"></tbody>
       </table>
     </div>
   </main>
@@ -462,92 +264,163 @@
 
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-
   const $ = id => document.getElementById(id);
 
   function show(id) {
-    ['loading-screen', 'login-screen', 'dashboard-screen'].forEach(s => {
-      $(s).style.display = s === id ? (s === 'login-screen' ? 'flex' : s === 'dashboard-screen' ? 'block' : 'flex') : 'none';
+    ['loading-screen','login-screen','dashboard-screen'].forEach(s => {
+      $(s).style.display = s === id
+        ? (s === 'dashboard-screen' ? 'block' : 'flex')
+        : 'none';
     });
   }
 
   function statusPill(status) {
     const map = {
-      active: ['active', 'Activo'],
-      suspended: ['inactive', 'Suspendido'],
-      cancelled: ['inactive', 'Cancelado'],
-      new: ['pending', 'Nuevo'],
-      contacted: ['pending', 'Contactado'],
-      qualified: ['active', 'Calificado'],
-      won: ['active', 'Ganado'],
-      lost: ['inactive', 'Perdido'],
+      active:'active', open:'active', bot:'active',
+      suspended:'inactive', cancelled:'inactive', closed:'inactive',
+      new:'pending', contacted:'pending', qualified:'active',
+      won:'active', lost:'inactive',
     };
-    const [cls, label] = map[status] || ['pending', status];
+    const labels = {
+      active:'Activo', open:'Abierta', bot:'Bot', closed:'Cerrada',
+      suspended:'Suspendido', cancelled:'Cancelado',
+      new:'Nuevo', contacted:'Contactado', qualified:'Calificado',
+      won:'Ganado', lost:'Perdido',
+    };
+    const cls = map[status] || 'pending';
+    const label = labels[status] || status;
     return `<span class="status-pill status-${cls}">${label}</span>`;
   }
 
   function fmtDate(iso) {
     if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    const d = new Date(iso);
+    const today = new Date();
+    if (d.toDateString() === today.toDateString()) {
+      return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
   }
 
-  function emptyRow(cols, msg) {
+  function empty(cols, msg) {
     return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-state-icon">📭</div>${msg}</div></td></tr>`;
   }
 
-  async function loadDashboard(user) {
-    $('user-email').textContent = user.email;
+  function truncate(str, n = 60) {
+    if (!str) return '—';
+    return str.length > n ? str.slice(0, n) + '…' : str;
+  }
+
+  let currentUser = null;
+
+  async function loadDashboard() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const [
       { count: orgsCount },
       { count: contactsCount },
       { count: convsCount },
       { count: msgsCount },
+      { count: msgsTodayCount },
       { data: orgs },
       { data: contacts },
+      { data: convs },
+      { data: msgs },
     ] = await Promise.all([
       sb.from('organizations').select('*', { count: 'exact', head: true }),
       sb.from('contacts').select('*', { count: 'exact', head: true }),
       sb.from('conversations').select('*', { count: 'exact', head: true }),
       sb.from('messages').select('*', { count: 'exact', head: true }),
-      sb.from('organizations').select('id, name, slug, plan_id, status, created_at').order('created_at', { ascending: false }),
-      sb.from('contacts').select('id, name, phone, status, last_seen_at, created_at').order('created_at', { ascending: false }).limit(10),
+      sb.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', today.toISOString()),
+      sb.from('organizations').select('id, name, plan_id, status, created_at').order('created_at', { ascending: false }),
+      sb.from('contacts').select('id, name, phone, status, last_seen_at, created_at').order('created_at', { ascending: false }).limit(8),
+      sb.from('conversations')
+        .select('id, status, last_message_at, contact_id, contacts(name, phone)')
+        .order('last_message_at', { ascending: false, nullsFirst: false })
+        .limit(8),
+      sb.from('messages')
+        .select('id, direction, content, status, created_at, conversation_id, conversations(contact_id, contacts(name, phone))')
+        .order('created_at', { ascending: false })
+        .limit(20),
     ]);
 
-    $('stat-orgs').textContent = orgsCount ?? 0;
-    $('stat-contacts').textContent = contactsCount ?? 0;
-    $('stat-convs').textContent = convsCount ?? 0;
-    $('stat-msgs').textContent = msgsCount ?? 0;
-    $('orgs-badge').textContent = orgsCount ?? 0;
-    $('contacts-badge').textContent = contactsCount ?? 0;
+    // Stats
+    $('stat-orgs').textContent       = orgsCount ?? 0;
+    $('stat-contacts').textContent   = contactsCount ?? 0;
+    $('stat-convs').textContent      = convsCount ?? 0;
+    $('stat-msgs').textContent       = msgsCount ?? 0;
+    $('stat-msgs-today').textContent = msgsTodayCount ?? 0;
+    $('orgs-badge').textContent      = orgsCount ?? 0;
+    $('contacts-badge').textContent  = contactsCount ?? 0;
+    $('convs-badge').textContent     = convsCount ?? 0;
+    $('msgs-badge').textContent      = msgsCount ?? 0;
 
-    // Orgs table
-    const orgsBody = $('orgs-body');
-    if (!orgs || orgs.length === 0) {
-      orgsBody.innerHTML = emptyRow(5, 'Sin organizaciones todavía');
+    // Conversaciones
+    const convsBody = $('convs-body');
+    if (!convs || convs.length === 0) {
+      convsBody.innerHTML = empty(3, 'Sin conversaciones todavía');
     } else {
-      orgsBody.innerHTML = orgs.map(o => `
+      convsBody.innerHTML = convs.map(c => {
+        const contact = c.contacts;
+        const name = contact?.name || contact?.phone || '—';
+        return `<tr>
+          <td>
+            <div style="font-weight:500">${name}</div>
+            <div style="font-size:12px;color:var(--text-muted);font-family:monospace">${contact?.phone || ''}</div>
+          </td>
+          <td style="color:var(--text-muted);font-size:13px">${fmtDate(c.last_message_at)}</td>
+          <td>${statusPill(c.status)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Contactos
+    const contactsBody = $('contacts-body');
+    if (!contacts || contacts.length === 0) {
+      contactsBody.innerHTML = empty(3, 'Sin contactos todavía');
+    } else {
+      contactsBody.innerHTML = contacts.map(c => `
         <tr>
-          <td><strong>${o.name}</strong></td>
-          <td style="color:var(--text-muted);font-family:monospace;font-size:12px">${o.slug}</td>
-          <td>${o.plan_id ? `<span style="color:var(--cyan);font-size:12px">${o.plan_id}</span>` : '—'}</td>
-          <td>${statusPill(o.status)}</td>
-          <td style="color:var(--text-muted);font-size:13px">${fmtDate(o.created_at)}</td>
+          <td>${c.name || '<span style="color:var(--text-muted)">—</span>'}</td>
+          <td style="font-family:monospace;font-size:12px;color:var(--text-dim)">${c.phone}</td>
+          <td>${statusPill(c.status)}</td>
         </tr>
       `).join('');
     }
 
-    // Contacts table
-    const contactsBody = $('contacts-body');
-    if (!contacts || contacts.length === 0) {
-      contactsBody.innerHTML = emptyRow(4, 'Sin contactos todavía');
+    // Mensajes
+    const msgsBody = $('msgs-body');
+    if (!msgs || msgs.length === 0) {
+      msgsBody.innerHTML = empty(5, 'Sin mensajes todavía');
     } else {
-      contactsBody.innerHTML = contacts.map(c => `
+      msgsBody.innerHTML = msgs.map(m => {
+        const contact = m.conversations?.contacts;
+        const name = contact?.name || contact?.phone || '—';
+        const dirLabel = m.direction === 'inbound'
+          ? '<span class="dir-in">ENTRADA</span>'
+          : '<span class="dir-out">SALIDA</span>';
+        return `<tr>
+          <td>${dirLabel}</td>
+          <td style="font-weight:500;white-space:nowrap">${name}</td>
+          <td><div class="msg-preview">${truncate(m.content)}</div></td>
+          <td>${statusPill(m.status)}</td>
+          <td style="color:var(--text-muted);font-size:13px;white-space:nowrap">${fmtDate(m.created_at)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // Organizaciones
+    const orgsBody = $('orgs-body');
+    if (!orgs || orgs.length === 0) {
+      orgsBody.innerHTML = empty(4, 'Sin organizaciones todavía');
+    } else {
+      orgsBody.innerHTML = orgs.map(o => `
         <tr>
-          <td>${c.name || '<span style="color:var(--text-muted)">Sin nombre</span>'}</td>
-          <td style="font-family:monospace;font-size:13px">${c.phone}</td>
-          <td>${statusPill(c.status)}</td>
-          <td style="color:var(--text-muted);font-size:13px">${fmtDate(c.last_seen_at || c.created_at)}</td>
+          <td><strong>${o.name}</strong></td>
+          <td>${o.plan_id ? `<span style="color:var(--cyan);font-size:12px">${o.plan_id}</span>` : '—'}</td>
+          <td>${statusPill(o.status)}</td>
+          <td style="color:var(--text-muted);font-size:13px">${fmtDate(o.created_at)}</td>
         </tr>
       `).join('');
     }
@@ -559,41 +432,33 @@
     const password = $('password').value;
     const btn = $('login-btn');
     const errEl = $('error-msg');
-
     errEl.style.display = 'none';
     btn.disabled = true;
     btn.textContent = 'Entrando…';
-
     const { error } = await sb.auth.signInWithPassword({ email, password });
-
     btn.disabled = false;
     btn.textContent = 'Entrar';
-
     if (error) {
-      errEl.textContent = error.message === 'Invalid login credentials'
-        ? 'Correo o contraseña incorrectos.'
-        : error.message;
+      errEl.textContent = error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : error.message;
       errEl.style.display = 'block';
     }
   });
 
-  $('password').addEventListener('keydown', e => {
-    if (e.key === 'Enter') $('login-btn').click();
-  });
-
+  $('password').addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); });
   $('signout-btn').addEventListener('click', () => sb.auth.signOut());
+  $('refresh-btn').addEventListener('click', () => loadDashboard());
 
-  // Auth state listener
   sb.auth.onAuthStateChange(async (event, session) => {
     if (session?.user) {
+      currentUser = session.user;
+      $('user-email').textContent = session.user.email;
       show('dashboard-screen');
-      await loadDashboard(session.user);
+      await loadDashboard();
     } else {
       show('login-screen');
     }
   });
 
-  // Initial session check
   sb.auth.getSession().then(({ data: { session } }) => {
     if (!session) show('login-screen');
   });
