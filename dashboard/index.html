@@ -445,10 +445,17 @@
   });
 
   $('password').addEventListener('keydown', e => { if (e.key === 'Enter') $('login-btn').click(); });
-  $('signout-btn').addEventListener('click', () => sb.auth.signOut());
+  $('signout-btn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    window.location.href = '../index.html';
+  });
   $('refresh-btn').addEventListener('click', () => loadDashboard());
 
   sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_OUT') {
+      window.location.href = '../index.html';
+      return;
+    }
     if (session?.user) {
       currentUser = session.user;
       $('user-email').textContent = session.user.email;
