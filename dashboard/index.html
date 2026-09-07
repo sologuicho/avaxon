@@ -1898,6 +1898,7 @@
   /* ── Auth: Bootstrap ──────────────────────────── */
   async function bootstrap(user) {
     state.userEmail = user.email;
+    state.userId    = user.id;
     $('sidebar-email').textContent = user.email;
 
     // Determine role
