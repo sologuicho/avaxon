@@ -932,6 +932,224 @@
       line-height: 1.6;
     }
 
+    /* ─── CALENDARIO ─────────────────────────────── */
+    .cal-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+      align-items: start;
+    }
+    .cal-left {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px;
+    }
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .cal-month-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-800);
+      text-transform: capitalize;
+    }
+    .cal-nav-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 20px;
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      line-height: 1;
+      font-family: sans-serif;
+    }
+    .cal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      margin-bottom: 6px;
+    }
+    .cal-weekdays span {
+      text-align: center;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 4px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 3px;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      transition: background 0.12s, color 0.12s;
+      gap: 2px;
+      user-select: none;
+    }
+    .cal-day:hover:not(.other-month) { background: var(--accent-100); color: var(--accent-800); }
+    .cal-day.other-month { color: var(--text-dim); cursor: default; }
+    .cal-day.today { background: var(--accent-200); color: var(--accent-800); font-weight: 700; }
+    .cal-day.selected { background: var(--accent); color: #fff !important; font-weight: 700; }
+    .cal-day.selected:hover { background: var(--accent-800); }
+    .cal-dot {
+      display: none;
+      width: 5px; height: 5px;
+      background: var(--green);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cal-day.has-apts .cal-dot { display: block; }
+    .cal-day.selected .cal-dot { background: rgba(255,255,255,0.7); }
+    .cal-right {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .cal-day-header {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent-800);
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      text-transform: capitalize;
+    }
+    .cal-appointments {
+      padding: 10px 16px;
+      min-height: 100px;
+      max-height: 260px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .apt-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .apt-item:last-child { border-bottom: none; }
+    .apt-time {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 38px;
+      padding-top: 2px;
+      flex-shrink: 0;
+    }
+    .apt-body { flex: 1; min-width: 0; }
+    .apt-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .apt-contact {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .apt-del {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 12px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      line-height: 1;
+      transition: color 0.12s, background 0.12s;
+      flex-shrink: 0;
+    }
+    .apt-del:hover { color: var(--red); background: var(--red-bg); }
+    .apt-empty {
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 20px 0;
+      text-align: center;
+    }
+    .cal-form-wrap {
+      padding: 14px 16px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--page-bg);
+    }
+    .cal-form-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .form-grid {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-family: 'Barlow', sans-serif;
+      color: var(--text);
+      background: var(--card-bg);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: var(--border-focus); }
+    .btn-add-apt {
+      width: 100%;
+      padding: 8px 0;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Barlow', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-add-apt:hover { background: var(--accent-800); }
+    .btn-add-apt:disabled { opacity: 0.6; cursor: not-allowed; }
+    .cal-form-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 6px;
+      display: none;
+    }
+    @media (max-width: 900px) {
+      .cal-layout { grid-template-columns: 1fr; }
+    }
+
     /* ─── CONEXIONES CARDS ───────────────────────── */
     .conexiones-grid {
       display: grid;
