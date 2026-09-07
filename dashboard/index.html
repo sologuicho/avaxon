@@ -1768,6 +1768,8 @@
     $('org-switcher-icon').textContent = iconText;
     buildOrgDropdown();
     loadDashboard(orgId);
+    const activeView = document.querySelector('.nav-item.active');
+    if (activeView?.dataset.view === 'calendario') loadCalendarMonth();
   }
 
   /* ── KPI grid ────────────────────────────────── */
