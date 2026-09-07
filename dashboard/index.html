@@ -1679,6 +1679,7 @@
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
+    if (name === 'calendario') loadCalendarMonth();
   }
 
   /* ── Sidebar nav clicks ──────────────────────── */
