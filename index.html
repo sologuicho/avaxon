@@ -495,6 +495,10 @@
 </div>
 
 <script>
+  /* Siempre arrancar desde arriba, sin importar el hash en la URL */
+  history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
   /* ── Chat animation ── */
   const CHAT = [
     { from: "user", text: "Hola, ¿cuánto cuesta una limpieza dental?" },
