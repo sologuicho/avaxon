@@ -1270,14 +1270,38 @@
         </div>
       </div>
 
-      <!-- ── VIEW: Calendario (locked) ────────────── -->
+      <!-- ── VIEW: Calendario ────────────── -->
       <div class="view" id="view-calendario">
-        <div class="locked-view">
-          <div class="locked-card">
-            <span class="locked-icon">📅</span>
-            <div class="locked-title">Calendario</div>
-            <div class="locked-badge">Próximamente</div>
-            <p class="locked-desc">El módulo de calendario y agendamiento estará disponible próximamente.</p>
+        <div class="cal-layout">
+          <!-- Month grid -->
+          <div class="cal-left">
+            <div class="cal-header">
+              <button class="cal-nav-btn" id="cal-prev">&#8249;</button>
+              <span class="cal-month-label" id="cal-month-label">—</span>
+              <button class="cal-nav-btn" id="cal-next">&#8250;</button>
+            </div>
+            <div class="cal-weekdays">
+              <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+            </div>
+            <div class="cal-grid" id="cal-grid"></div>
+          </div>
+          <!-- Day panel -->
+          <div class="cal-right">
+            <div class="cal-day-header" id="cal-day-header">Selecciona un día</div>
+            <div class="cal-appointments" id="cal-appointments">
+              <div class="apt-empty">Selecciona un día para ver citas</div>
+            </div>
+            <div class="cal-form-wrap">
+              <div class="cal-form-title">Nueva cita</div>
+              <div class="form-grid">
+                <input class="form-input" type="text" id="cal-title" placeholder="Título de la cita" />
+                <input class="form-input" type="text" id="cal-service" placeholder="Servicio (opcional)" />
+                <input class="form-input" type="text" id="cal-contact" placeholder="Nombre del contacto" />
+                <input class="form-input" type="time" id="cal-time" value="10:00" />
+              </div>
+              <button class="btn-add-apt" id="cal-add-btn">+ Agregar cita</button>
+              <div class="cal-form-error" id="cal-form-error"></div>
+            </div>
           </div>
         </div>
       </div>
