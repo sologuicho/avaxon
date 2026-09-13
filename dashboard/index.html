@@ -2144,19 +2144,15 @@
     $('sidebar-email').textContent = user.email;
 
     // Determine role
-    const isSuperByEmail = user.email === SUPER_ADMIN_EMAIL;
-    let profile = null;
-
     const { data: profileData } = await sb
       .from('profiles')
       .select('role, organization_id, full_name')
       .eq('id', user.id)
       .maybeSingle();
 
-    profile = profileData;
-    const role = profile?.role ?? (isSuperByEmail ? 'super_admin' : 'agent');
+    const role = profileData?.role ?? 'agent';
 
-    state.isSuperAdmin = isSuperByEmail || role === 'super_admin';
+    state.isSuperAdmin = role === 'super_admin';
     state.userRole     = role;
     state.userOrgId    = profile?.organization_id ?? null;
 
