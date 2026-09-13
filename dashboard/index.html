@@ -1155,6 +1155,7 @@
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
     if (name === 'calendario') loadCalendarMonth();
+    if (name === 'conversaciones') loadConversaciones();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
