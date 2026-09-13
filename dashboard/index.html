@@ -1506,6 +1506,210 @@
     `).join('');
   }
 
+  // ── Conversaciones ─────────────────────────────────────────────
+  const convState = { all: [], filtered: [], activeId: null, realtimeSub: null };
+
+  async function loadConversaciones() {
+    const orgId = state.currentOrgId;
+    $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
+
+    let q = sb.from('conversations')
+      .select('id, status, created_at, updated_at, contacts(id, name, phone, email, status, tags)')
+      .order('updated_at', { ascending: false });
+    if (orgId) q = q.eq('organization_id', orgId);
+    const { data: convs } = await q;
+
+    if (!convs || !convs.length) {
+      convState.all = [];
+      $('conv-list').innerHTML = '<div style="padding:40px 20px;text-align:center;color:#a7adb5;font-size:13px">Sin conversaciones todavía</div>';
+      return;
+    }
+
+    // Get last message per conversation
+    let mqQ = sb.from('messages')
+      .select('conversation_id, direction, content, created_at')
+      .in('conversation_id', convs.map(c => c.id))
+      .order('created_at', { ascending: false });
+    const { data: msgs } = await mqQ;
+
+    const lastMsgMap = {};
+    (msgs || []).forEach(m => {
+      if (!lastMsgMap[m.conversation_id]) lastMsgMap[m.conversation_id] = m;
+    });
+
+    convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
+    filterConvs('all');
+
+    // Realtime: new messages update list
+    if (convState.realtimeSub) sb.removeChannel(convState.realtimeSub);
+    convState.realtimeSub = sb.channel('inbox-msgs')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const convId = payload.new.conversation_id;
+        const conv = convState.all.find(c => c.id === convId);
+        if (conv) {
+          conv.lastMsg = payload.new;
+          conv.updated_at = payload.new.created_at;
+          convState.all.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+          filterConvs(document.querySelector('[id^="conv-tab-"].active-tab')?.dataset?.tab ?? 'all', false);
+        }
+        if (convId === convState.activeId) appendMessage(payload.new);
+      })
+      .subscribe();
+  }
+
+  function filterConvs(tab, resetScroll = true) {
+    ['all','open','closed'].forEach(t => {
+      const btn = $('conv-tab-' + t);
+      if (!btn) return;
+      const isActive = t === tab;
+      btn.style.background = isActive ? '#fff' : 'transparent';
+      btn.style.color      = isActive ? '#1a2535' : '#8c939b';
+      btn.style.boxShadow  = isActive ? '0 1px 3px rgba(26,37,53,0.1)' : 'none';
+      btn.classList.toggle('active-tab', isActive);
+    });
+    const q = ($('conv-search')?.value ?? '').toLowerCase();
+    convState.filtered = convState.all
+      .filter(c => tab === 'all' || c.status === tab)
+      .filter(c => !q || (c.contacts?.name ?? '').toLowerCase().includes(q) || (c.contacts?.phone ?? '').includes(q));
+    renderConvList(convState.filtered);
+  }
+  window.filterConvs = filterConvs;
+
+  function renderConvList(convs) {
+    if (!convs.length) {
+      $('conv-list').innerHTML = '<div style="padding:40px 20px;text-align:center;color:#a7adb5;font-size:13px">Sin conversaciones</div>';
+      return;
+    }
+    $('conv-list').innerHTML = convs.map(c => {
+      const contact = c.contacts;
+      const name    = contact?.name || contact?.phone || '—';
+      const preview = c.lastMsg ? (c.lastMsg.direction === 'outbound' ? '→ ' : '') + (c.lastMsg.content || '[media]') : 'Sin mensajes';
+      const time    = c.lastMsg ? fmtRelTime(c.lastMsg.created_at) : '';
+      const ini     = initials(name);
+      const isActive = c.id === convState.activeId;
+      return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openConversacion('${c.id}')">
+        <div class="conv-item-avatar">${ini}</div>
+        <div class="conv-item-body">
+          <div class="conv-item-row">
+            <div class="conv-item-name">${name}</div>
+            <div class="conv-item-time">${time}</div>
+          </div>
+          <div class="conv-item-preview">${preview.slice(0, 60)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function openConversacion(convId) {
+    convState.activeId = convId;
+    renderConvList(convState.filtered); // re-render to mark active
+
+    const conv    = convState.all.find(c => c.id === convId);
+    const contact = conv?.contacts;
+
+    // Chat header
+    $('chat-header-name').textContent  = contact?.name || contact?.phone || '—';
+    $('chat-header-phone').textContent = contact?.phone || '';
+    $('chat-header-status').innerHTML  = statusPill(conv?.status);
+    $('chat-btn-toggle').textContent   = conv?.status === 'open' ? 'Cerrar' : 'Reabrir';
+    $('chat-btn-toggle').onclick       = () => toggleConvStatus(convId, conv?.status);
+    $('chat-empty-state').style.display = 'none';
+    $('chat-input-area').style.display  = 'flex';
+
+    // Load messages
+    $('chat-messages').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:8px;align-items:center;justify-content:center"><div class="spinner-light"></div></div>';
+    const { data: msgsData } = await sb.from('messages')
+      .select('id, direction, content, media_type, created_at')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true });
+    renderMessages(msgsData || []);
+
+    // Contact panel
+    $('cpanel-empty').style.display   = 'none';
+    $('cpanel-content').style.display = 'flex';
+    $('cpanel-name').textContent  = contact?.name || '—';
+    $('cpanel-phone').textContent = contact?.phone || '—';
+    $('cpanel-email').textContent = contact?.email || '—';
+    $('cpanel-status').innerHTML  = statusPill(contact?.status);
+    $('cpanel-tags').innerHTML    = renderTags(contact?.tags);
+
+    // Appointments for this contact
+    if (contact?.id) {
+      const { data: apts } = await sb.from('appointments')
+        .select('id, title, scheduled_at, status')
+        .eq('contact_id', contact.id)
+        .order('scheduled_at', { ascending: false })
+        .limit(3);
+      $('cpanel-apts').innerHTML = (apts && apts.length)
+        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid #f1f2f4">
+            <div style="font-size:13px;font-weight:600;color:#1a2535">${a.title || 'Cita'}</div>
+            <div style="font-size:11.5px;color:#8c939b">${fmtDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
+          </div>`).join('')
+        : '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
+    } else {
+      $('cpanel-apts').innerHTML = '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
+    }
+  }
+  window.openConversacion = openConversacion;
+
+  function renderMessages(msgs) {
+    if (!msgs.length) {
+      $('chat-messages').innerHTML = '<div style="text-align:center;color:#a7adb5;font-size:13px;padding:40px">Sin mensajes en esta conversación</div>';
+      return;
+    }
+    let lastDateKey = '';
+    $('chat-messages').innerHTML = msgs.map(m => {
+      const d = new Date(m.created_at);
+      const dk = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+      let sep = '';
+      if (dk !== lastDateKey) { sep = `<div class="msg-date-sep">${dk}</div>`; lastDateKey = dk; }
+      const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      const dir  = m.direction === 'outbound' ? 'outbound' : 'inbound';
+      const txt  = m.media_type && m.media_type !== 'text' ? `[${m.media_type}]` : (m.content || '');
+      return `${sep}<div class="msg-row ${dir}"><div class="msg-bubble ${dir}">${txt}<span class="msg-time">${time}</span></div></div>`;
+    }).join('');
+    $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+  }
+
+  function appendMessage(msg) {
+    const existing = $('chat-messages').querySelector('[style*="Sin mensajes"]');
+    if (existing) $('chat-messages').innerHTML = '';
+    const d   = new Date(msg.created_at);
+    const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const dir  = msg.direction === 'outbound' ? 'outbound' : 'inbound';
+    const txt  = msg.media_type && msg.media_type !== 'text' ? `[${msg.media_type}]` : (msg.content || '');
+    const el   = document.createElement('div');
+    el.className = `msg-row ${dir}`;
+    el.innerHTML = `<div class="msg-bubble ${dir}">${txt}<span class="msg-time">${time}</span></div>`;
+    $('chat-messages').appendChild(el);
+    $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+  }
+
+  async function toggleConvStatus(convId, currentStatus) {
+    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    await sb.from('conversations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', convId);
+    const conv = convState.all.find(c => c.id === convId);
+    if (conv) conv.status = newStatus;
+    openConversacion(convId); // refresh panel
+    filterConvs('all', false);
+  }
+  window.toggleConvStatus = toggleConvStatus;
+
+  function fmtRelTime(iso) {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    if (diff < 60000)   return 'ahora';
+    if (diff < 3600000)  return Math.floor(diff / 60000) + 'm';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
+    return Math.floor(diff / 86400000) + 'd';
+  }
+
+  // Search wire-up for conversation inbox
+  $('conv-search').addEventListener('input', () => {
+    const activeTab = document.querySelector('[id^="conv-tab-"].active-tab')?.dataset?.tab ?? 'all';
+    filterConvs(activeTab, false);
+  });
+
   $('leads-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
     if (!q) { renderLeads(state.allContacts); return; }
