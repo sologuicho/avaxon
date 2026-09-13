@@ -1447,6 +1447,47 @@
   }
 
   // ── Clientes ────────────────────────────────────────────────────────────────
+  function renderClientesTable(orgs, usersByOrg) {
+    $('badge-orgs').textContent = orgs.length;
+    $('tbody-clientes').innerHTML = orgs.length === 0
+      ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏢</div>Sin clientes todavía. Crea el primero.</div></td></tr>`
+      : orgs.map(o => `<tr>
+          <td>
+            <div class="contact-cell">
+              <div class="avatar">${initials(o.name)}</div>
+              <div><div class="contact-name">${o.name}</div></div>
+            </div>
+          </td>
+          <td style="color:var(--text-muted);font-size:13px">${o.industry || '—'}</td>
+          <td>${o.plan_id ? `<span class="pill pill-accent no-dot">${o.plan_id}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
+          <td>${statusPill(o.status)}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${o.trial_ends_at ? fmtDate(o.trial_ends_at) : '—'}</td>
+          <td style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;color:#2c455d">${usersByOrg[o.id] ?? 0}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${fmtDate(o.created_at)}</td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-ghost" onclick="openEditModal('${o.id}')">Editar</button>
+              <button class="btn-danger" onclick="toggleOrgStatus('${o.id}','${o.status}')">${o.status === 'paused' ? 'Activar' : 'Pausar'}</button>
+            </div>
+          </td>
+        </tr>`).join('');
+  }
+
+  function filterClientes(tab) {
+    ['all','active','trial','paused'].forEach(t => {
+      const btn = $('cl-tab-' + t);
+      if (!btn) return;
+      const active = t === tab;
+      btn.style.background = active ? '#fff' : 'transparent';
+      btn.style.color      = active ? '#1a2535' : '#8c939b';
+      btn.style.boxShadow  = active ? '0 1px 3px rgba(26,37,53,0.1)' : 'none';
+    });
+    const filtered = tab === 'all' ? state.orgsCache
+      : state.orgsCache.filter(o => o.status === tab);
+    renderClientesTable(filtered, state.usersByOrg);
+  }
+  window.filterClientes = filterClientes;
+
   async function loadClientes() {
     $('tbody-clientes').innerHTML = `<tr><td colspan="8"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
 
@@ -1462,30 +1503,33 @@
     (profileCountsRes.data ?? []).forEach(p => {
       usersByOrg[p.organization_id] = (usersByOrg[p.organization_id] ?? 0) + 1;
     });
+    state.usersByOrg = usersByOrg;
 
-    $('badge-orgs').textContent = orgs.length;
-    $('tbody-clientes').innerHTML = orgs.length === 0
-      ? `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🏢</div>Sin clientes todavía. Crea el primero.</div></td></tr>`
-      : orgs.map(o => `<tr>
-          <td>
-            <div class="contact-cell">
-              <div class="avatar">${initials(o.name)}</div>
-              <div><div class="contact-name">${o.name}</div></div>
-            </div>
-          </td>
-          <td style="color:var(--text-muted);font-size:13px">${o.industry || '—'}</td>
-          <td>${o.plan_id ? `<span class="pill pill-accent no-dot">${o.plan_id}</span>` : '<span style="color:var(--text-dim)">—</span>'}</td>
-          <td>${statusPill(o.status)}</td>
-          <td style="font-size:12px;color:var(--text-muted)">${o.trial_ends_at ? fmtDate(o.trial_ends_at) : '—'}</td>
-          <td style="font-size:13px;color:var(--text-muted)">${usersByOrg[o.id] ?? 0}</td>
-          <td style="font-size:12px;color:var(--text-muted)">${fmtDate(o.created_at)}</td>
-          <td>
-            <div class="actions-cell">
-              <button class="btn-ghost" onclick="openEditModal('${o.id}')">Editar</button>
-              <button class="btn-danger" onclick="toggleOrgStatus('${o.id}','${o.status}')">${o.status === 'paused' ? 'Activar' : 'Pausar'}</button>
-            </div>
-          </td>
-        </tr>`).join('');
+    // KPI cards
+    const KPI_COLORS = ['#5980a6','#10b981','#f59e0b','#ef4444'];
+    const activos  = orgs.filter(o => o.status === 'active').length;
+    const enTrial  = orgs.filter(o => o.status === 'trial').length;
+    const pausados = orgs.filter(o => o.status === 'paused').length;
+    $('clientes-kpis').innerHTML = [
+      { label: 'Total clientes', value: orgs.length,  color: KPI_COLORS[0], foot: 'Registrados' },
+      { label: 'Activos',        value: activos,       color: KPI_COLORS[1], foot: 'Suscripción vigente' },
+      { label: 'En trial',       value: enTrial,       color: KPI_COLORS[2], foot: 'Período de prueba' },
+      { label: 'Pausados',       value: pausados,      color: KPI_COLORS[3], foot: 'Sin acceso activo' },
+    ].map(k => `
+      <div class="kpi-card">
+        <div class="kpi-accent-bar" style="background:${k.color}"></div>
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-row"><div class="kpi-value">${k.value.toLocaleString('es-MX')}</div></div>
+        <div class="kpi-foot">${k.foot}</div>
+      </div>`).join('');
+
+    filterClientes('all');
+
+    $('clientes-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      const base = state.orgsCache;
+      renderClientesTable(q ? base.filter(o => o.name.toLowerCase().includes(q)) : base, state.usersByOrg);
+    });
   }
 
   function openEditModal(orgId) {
