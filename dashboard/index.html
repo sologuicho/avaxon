@@ -2168,9 +2168,10 @@
       if (navConex) navConex.style.display = 'none';
     }
 
-    // Super admin: load orgs for switcher
+    // Super admin: load orgs for switcher + mostrar link admin
     if (state.isSuperAdmin) {
       $('org-switcher-wrap').style.display = 'block';
+      $('nav-admin-link').style.display = 'flex';
       const { data: orgs } = await sb.from('organizations').select('id,name,status').order('name');
       state.allOrgs = orgs || [];
       state.currentOrgId = null; // default: all
