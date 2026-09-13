@@ -352,6 +352,84 @@
     .sidebar-overlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 190;
     }
+
+    /* ── Nuevo cliente overlay ── */
+    #page-nuevo-cliente { position:fixed; inset:0; z-index:400; background:var(--page-bg); overflow-y:auto; display:none; }
+    #page-nuevo-cliente.open { display:block; }
+    .nc-topbar { position:sticky; top:0; background:var(--card-bg); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; z-index:10; }
+    .nc-topbar-left { display:flex; align-items:center; gap:14px; }
+    .nc-back-btn { display:flex; align-items:center; gap:6px; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:13px; font-weight:500; font-family:'Barlow',sans-serif; padding:6px 12px; border-radius:7px; cursor:pointer; transition:all 0.18s; }
+    .nc-back-btn:hover { border-color:var(--accent-300); color:var(--accent-800); }
+    .nc-topbar-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--accent-800); }
+    .nc-badge { display:flex; align-items:center; gap:6px; padding:5px 12px; border:1px solid var(--border); border-radius:999px; font-size:12px; font-weight:600; color:var(--text-muted); }
+    .nc-badge-dot { width:7px; height:7px; border-radius:50%; background:var(--green); display:block; flex-shrink:0; }
+    .nc-body { max-width:1100px; margin:0 auto; padding:28px 28px 60px; }
+    .nc-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); background:var(--card-bg); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .nc-left { padding:28px 28px 28px 32px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:18px; }
+    .nc-right { padding:28px 32px 28px 28px; background:#f9fafb; display:flex; flex-direction:column; gap:16px; }
+    .nc-section-label { font-size:11px; font-weight:700; letter-spacing:1.2px; color:var(--text-dim); text-transform:uppercase; }
+    .nc-divider { height:1px; background:var(--border); }
+    .nc-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .nc-label { display:flex; flex-direction:column; gap:7px; }
+    .nc-label-text { font-size:11px; font-weight:700; letter-spacing:0.9px; color:var(--text-2); text-transform:uppercase; }
+    .nc-input { height:42px; padding:0 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:'Barlow',sans-serif; color:var(--text); background:#fff; width:100%; outline:none; transition:border-color 0.18s, box-shadow 0.18s; }
+    .nc-input:focus { border-color:var(--accent-300); box-shadow:0 0 0 3px rgba(89,128,166,0.10); }
+    .nc-textarea { padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:'Barlow',sans-serif; color:var(--text); background:#fff; width:100%; outline:none; resize:vertical; transition:border-color 0.18s; }
+    .nc-textarea:focus { border-color:var(--accent-300); box-shadow:0 0 0 3px rgba(89,128,166,0.10); }
+    .nc-pill-group { display:flex; gap:8px; flex-wrap:wrap; }
+    .nc-pill-btn { height:34px; padding:0 14px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:13px; font-weight:600; font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s; }
+    .nc-pill-btn.active { border-color:var(--accent); background:var(--accent-100); color:var(--accent-800); }
+    /* plan cards */
+    .nc-plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .nc-plan-card { display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left; padding:14px; border-radius:12px; cursor:pointer; background:#fff; border:1.5px solid var(--border); width:100%; font-family:'Barlow',sans-serif; transition:all 0.15s; }
+    .nc-plan-card.active { border-color:var(--accent); box-shadow:0 4px 16px rgba(89,128,166,0.15); }
+    .nc-plan-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; }
+    .nc-plan-name { font-size:14px; font-weight:700; color:var(--text); }
+    .nc-plan-radio { width:16px; height:16px; border-radius:50%; display:block; flex:none; border:1.5px solid var(--border); background:#fff; transition:all 0.15s; }
+    .nc-plan-card.active .nc-plan-radio { border:5px solid var(--accent); }
+    .nc-plan-price { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--accent-800); letter-spacing:-0.3px; }
+    .nc-plan-detail { font-size:11.5px; color:var(--text-muted); line-height:1.45; text-align:left; }
+    /* módulos */
+    .nc-modulo-row { display:flex; align-items:center; gap:11px; width:100%; padding:9px 12px; border-radius:10px; cursor:pointer; text-align:left; border:1px solid var(--border); background:#fff; font-family:'Barlow',sans-serif; transition:all 0.12s; }
+    .nc-modulo-row.active { border-color:var(--accent-300); background:var(--accent-100); }
+    .nc-modulo-check { width:19px; height:19px; flex:none; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; border:1.5px solid var(--border); transition:all 0.12s; }
+    .nc-modulo-row.active .nc-modulo-check { background:var(--accent-800); border-color:var(--accent-800); }
+    .nc-modulo-info { flex:1; }
+    .nc-modulo-nombre { font-size:13.5px; font-weight:600; color:var(--text); }
+    .nc-modulo-desc { font-size:11.5px; color:var(--text-muted); }
+    .nc-modulo-tag { flex:none; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; }
+    .nc-modulo-tag.incluido { color:var(--green); background:var(--green-bg); }
+    .nc-modulo-tag.extra-on { color:var(--accent-800); background:var(--accent-100); }
+    .nc-modulo-tag.extra-off { color:var(--text-dim); background:var(--muted-bg); }
+    /* resumen */
+    .nc-resumen { border:1px solid var(--border); background:#fff; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .nc-resumen-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+    .nc-resumen-label { font-size:12.5px; font-weight:600; color:var(--text-muted); }
+    .nc-resumen-val { font-size:13px; font-weight:600; color:var(--text); }
+    .nc-resumen-divider { height:1px; background:var(--border); }
+    .nc-total-label { font-size:13px; font-weight:700; color:var(--text); }
+    .nc-total-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:var(--accent-800); letter-spacing:-0.5px; }
+    .nc-nota { font-size:11.5px; color:var(--text-muted); line-height:1.5; }
+    .nc-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:4px; }
+    .nc-checkbox-label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); cursor:pointer; }
+    .nc-checkbox-label input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent-800); }
+    .nc-footer-btns { display:flex; align-items:center; gap:10px; }
+    .nc-error { background:var(--red-bg); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:10px 14px; color:var(--red); font-size:13px; display:none; margin-top:8px; }
+    .nc-success { background:var(--green-bg); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:10px 14px; color:var(--green); font-size:13px; display:none; margin-top:8px; }
+    /* ciclo toggle */
+    .nc-ciclo-group { display:flex; align-items:center; gap:4px; }
+    .nc-ciclo-btn { height:28px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:12px; font-weight:600; font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s; }
+    .nc-ciclo-btn.active { border-color:var(--accent); background:var(--accent-100); color:var(--accent-800); }
+    .nc-right-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .nc-modules-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .nc-reset-btn { font-size:11px; font-weight:600; color:var(--accent); background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; }
+    .nc-reset-btn:hover { color:var(--accent-800); }
+    .nc-modules-list { display:flex; flex-direction:column; gap:6px; }
+    @media (max-width:768px) {
+      .nc-grid { grid-template-columns:1fr; }
+      .nc-left { border-right:none; border-bottom:1px solid var(--border); }
+      .nc-plan-grid { grid-template-columns:1fr 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -517,6 +595,10 @@
       <div class="view" id="view-usuarios">
         <div class="section-header">
           <span class="section-title">Usuarios <span class="count-badge" id="badge-usuarios">0</span></span>
+          <button class="btn-primary" id="btn-nuevo-usuario">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo usuario
+          </button>
         </div>
         <div class="card">
           <div class="table-wrap">
@@ -543,58 +625,139 @@
   </main>
 </div><!-- /app-shell -->
 
-<!-- ── MODAL: NUEVO CLIENTE ── -->
-<div class="modal-backdrop" id="modal-nuevo">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Nuevo cliente</span>
-      <button class="modal-close" data-close="modal-nuevo">×</button>
+<!-- ── PAGE OVERLAY: NUEVO CLIENTE ── -->
+<div id="page-nuevo-cliente">
+  <div class="nc-shell">
+    <!-- Topbar sticky -->
+    <div class="nc-topbar">
+      <div class="nc-topbar-left">
+        <button class="nc-back-btn" id="nc-back-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+          Volver
+        </button>
+        <span class="nc-topbar-title">Nuevo cliente</span>
+      </div>
+      <div class="nc-badge">
+        <span class="nc-badge-dot"></span>
+        Alta en 1 paso
+      </div>
     </div>
-    <div class="modal-body">
-      <div class="modal-error" id="nuevo-error"></div>
-      <div class="modal-success" id="nuevo-success"></div>
 
-      <p class="modal-section-label">Organización</p>
-      <div class="field-group">
-        <label class="field-label" for="nuevo-org-name">Nombre del negocio *</label>
-        <input class="field-input" type="text" id="nuevo-org-name" placeholder="Ej: Suplementos XYZ" />
-      </div>
-      <div class="two-col-fields">
-        <div class="field-group">
-          <label class="field-label" for="nuevo-industry">Industria</label>
-          <input class="field-input" type="text" id="nuevo-industry" placeholder="Ej: Retail, Salud…" />
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="nuevo-plan">Plan</label>
-          <select class="field-select" id="nuevo-plan">
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
-        </div>
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="nuevo-trial">Fin del trial</label>
-        <input class="field-input" type="date" id="nuevo-trial" />
-      </div>
+    <!-- Body -->
+    <div class="nc-body">
+      <div class="nc-grid">
 
-      <p class="modal-section-label">Usuario administrador del cliente</p>
-      <div class="field-group">
-        <label class="field-label" for="nuevo-admin-name">Nombre completo *</label>
-        <input class="field-input" type="text" id="nuevo-admin-name" placeholder="Ej: Juan Pérez" />
-      </div>
-      <div class="field-group">
-        <label class="field-label" for="nuevo-admin-email">Correo electrónico *</label>
-        <input class="field-input" type="email" id="nuevo-admin-email" placeholder="juan@empresa.com" />
-        <p style="font-size:12px;color:var(--text-muted);margin-top:5px;">Se enviará una invitación para que el cliente establezca su contraseña.</p>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-ghost" data-close="modal-nuevo">Cancelar</button>
-      <button class="btn-primary" id="btn-crear-cliente">Crear y enviar invitación</button>
-    </div>
-  </div>
-</div>
+        <!-- Columna izquierda -->
+        <div class="nc-left">
+
+          <!-- 1 · DATOS DE LA CUENTA -->
+          <div class="nc-section-label">1 · Datos de la cuenta</div>
+          <div class="nc-field-grid">
+            <label class="nc-label">
+              <span class="nc-label-text">Empresa *</span>
+              <input class="nc-input" id="nc-empresa" placeholder="Suplementos del Norte" />
+            </label>
+            <label class="nc-label">
+              <span class="nc-label-text">Giro</span>
+              <input class="nc-input" id="nc-giro" placeholder="suplementos, clínica…" />
+            </label>
+            <label class="nc-label">
+              <span class="nc-label-text">Dueño *</span>
+              <input class="nc-input" id="nc-dueno" placeholder="Nombre y apellido" />
+            </label>
+            <label class="nc-label">
+              <span class="nc-label-text">Correo del dueño *</span>
+              <input class="nc-input" type="email" id="nc-email" placeholder="dueño@empresa.com" />
+            </label>
+          </div>
+
+          <div class="nc-divider"></div>
+
+          <!-- 2 · COBRO -->
+          <div class="nc-section-label">2 · Cobro</div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px;">Modo de cobro</div>
+            <div class="nc-pill-group" id="nc-modo-group">
+              <button class="nc-pill-btn active" data-modo="Trial">Trial</button>
+              <button class="nc-pill-btn" data-modo="Cobro inmediato">Cobro inmediato</button>
+              <button class="nc-pill-btn" data-modo="Tarifa fija">Tarifa fija</button>
+            </div>
+          </div>
+          <div class="nc-field-grid">
+            <label class="nc-label">
+              <span class="nc-label-text">Días de trial</span>
+              <input class="nc-input" type="number" id="nc-trial-dias" value="14" min="0" />
+            </label>
+            <label class="nc-label">
+              <span class="nc-label-text">Tarifa fija</span>
+              <input class="nc-input" id="nc-tarifa-fija" placeholder="—" />
+            </label>
+          </div>
+          <label class="nc-label">
+            <span class="nc-label-text">Notas</span>
+            <textarea class="nc-textarea" id="nc-notas" rows="2" placeholder="Observaciones internas…"></textarea>
+          </label>
+
+        </div><!-- /nc-left -->
+
+        <!-- Columna derecha -->
+        <div class="nc-right">
+
+          <!-- 3 · PLAN -->
+          <div class="nc-right-header">
+            <div class="nc-section-label">3 · Plan</div>
+            <div class="nc-ciclo-group">
+              <button class="nc-ciclo-btn active" data-ciclo="mensual">Mensual</button>
+              <button class="nc-ciclo-btn" data-ciclo="anual">Anual −15%</button>
+            </div>
+          </div>
+
+          <div class="nc-plan-grid" id="nc-plan-grid">
+            <!-- Renderizado por JS -->
+          </div>
+
+          <div class="nc-divider"></div>
+
+          <!-- 4 · MÓDULOS -->
+          <div class="nc-modules-header">
+            <div class="nc-section-label">4 · Módulos</div>
+            <button class="nc-reset-btn" id="nc-reset-modulos">Restablecer al plan</button>
+          </div>
+
+          <div class="nc-modules-list" id="nc-modules-list">
+            <!-- Renderizado por JS -->
+          </div>
+
+          <div class="nc-divider"></div>
+
+          <!-- Resumen de precio -->
+          <div class="nc-resumen" id="nc-resumen">
+            <!-- Renderizado por JS -->
+          </div>
+
+          <!-- Error / Success -->
+          <div class="nc-error" id="nc-error"></div>
+          <div class="nc-success" id="nc-success"></div>
+
+          <!-- Footer -->
+          <div class="nc-footer">
+            <label class="nc-checkbox-label">
+              <input type="checkbox" id="nc-send-email" checked />
+              Enviar correo de bienvenida al dueño
+            </label>
+            <div class="nc-footer-btns">
+              <button class="btn-ghost" id="nc-cancel-btn">Cancelar</button>
+              <button class="btn-primary" id="nc-crear-btn">
+                Crear cliente →
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /nc-right -->
+      </div><!-- /nc-grid -->
+    </div><!-- /nc-body -->
+  </div><!-- /nc-shell -->
+</div><!-- /page-nuevo-cliente -->
 
 <!-- ── MODAL: EDITAR CLIENTE ── -->
 <div class="modal-backdrop" id="modal-editar">
@@ -673,6 +836,50 @@
   </div>
 </div>
 
+<!-- ── MODAL: NUEVO USUARIO ── -->
+<div class="modal-backdrop" id="modal-nuevo-usuario">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo usuario</span>
+      <button class="modal-close" data-close="modal-nuevo-usuario">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="nu-error"></div>
+      <div class="modal-success" id="nu-success"></div>
+
+      <div class="field-group">
+        <label class="field-label">Nombre completo *</label>
+        <input class="field-input" id="nu-nombre" placeholder="Ej: Héctor García" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">Correo electrónico *</label>
+        <input class="field-input" type="email" id="nu-email" placeholder="hector@avaxon.mx" />
+        <p style="font-size:12px;color:var(--text-muted);margin-top:5px;">Recibirá una invitación para establecer su contraseña.</p>
+      </div>
+      <div class="two-col-fields">
+        <div class="field-group">
+          <label class="field-label">Rol *</label>
+          <select class="field-select" id="nu-rol">
+            <option value="super_admin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="agent">Agent</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Organización</label>
+          <select class="field-select" id="nu-org">
+            <option value="">— Sin organización —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="modal-nuevo-usuario">Cancelar</button>
+      <button class="btn-primary" id="btn-crear-usuario">Crear y enviar invitación</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -685,6 +892,25 @@
 
   const VIEW_TITLES = { overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios' };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [] };
+
+  // ── Nuevo cliente state ─────────────────────────────────────────────────────
+  const ncState = { plan: 'pro', ciclo: 'mensual', modo: 'Trial', extras: {} };
+
+  const PLANES_AV = [
+    { id:'starter',    nombre:'Starter',    precio:2999, detalle:'1 canal WA · 1 usuario · esencial',          incluye:['bot','wa','crm'] },
+    { id:'pro',        nombre:'Pro',        precio:4999, detalle:'1 canal WA · 5 usuarios · reportes',         incluye:['bot','wa','crm','agenda','reportes'] },
+    { id:'enterprise', nombre:'Enterprise', precio:8999, detalle:'Multicanal · sin límites · soporte',         incluye:['bot','wa','crm','agenda','reportes','multiagente','api'] },
+  ];
+
+  const MODULOS_AV = [
+    { id:'bot',         nombre:'Bot IA (GPT-4o)',     desc:'Agente conversacional 24/7',   precio:0    },
+    { id:'wa',          nombre:'WhatsApp Business',   desc:'Integración oficial Meta',     precio:0    },
+    { id:'agenda',      nombre:'Agendamiento',        desc:'Citas y calendario',           precio:500  },
+    { id:'crm',         nombre:'CRM / Leads',         desc:'Gestión de contactos',         precio:0    },
+    { id:'reportes',    nombre:'Reportes y métricas', desc:'Tablero de KPIs avanzado',     precio:800  },
+    { id:'multiagente', nombre:'Multi-agente',        desc:'Bandeja para equipo humano',   precio:1200 },
+    { id:'api',         nombre:'API & Webhooks',      desc:'Automatizaciones avanzadas',   precio:1500 },
+  ];
 
   // ── Utilidades ──────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
@@ -738,6 +964,17 @@
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
 
+  function openNuevoClientePage() {
+    renderNC();
+    $('page-nuevo-cliente').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNuevoClientePage() {
+    $('page-nuevo-cliente').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
   function switchView(name) {
     document.querySelectorAll('.nav-item[data-view]').forEach(el => {
       el.classList.toggle('active', el.dataset.view === name);
@@ -750,13 +987,194 @@
     if (name === 'usuarios') loadUsuarios();
   }
 
-  // ── Clock ──────────────────────────────────────────────────────────────────
-  function updateClock() {
-    const now = new Date();
-    $('topbar-time').textContent = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  // ── Render Nuevo Cliente ────────────────────────────────────────────────────
+  function renderNC() {
+    const planActual = PLANES_AV.find(p => p.id === ncState.plan) ?? PLANES_AV[1];
+    const factorCiclo = ncState.ciclo === 'anual' ? 0.85 : 1;
+
+    // Plan cards
+    $('nc-plan-grid').innerHTML = PLANES_AV.map(p => {
+      const precio = Math.round(p.precio * factorCiclo);
+      const isActive = p.id === ncState.plan;
+      return `
+        <button class="nc-plan-card${isActive ? ' active' : ''}" data-plan="${p.id}">
+          <div class="nc-plan-card-top">
+            <span class="nc-plan-name">${p.nombre}</span>
+            <span class="nc-plan-radio"></span>
+          </div>
+          <span class="nc-plan-price">$${precio.toLocaleString('es-MX')}<span style="font-size:13px;font-weight:500;color:var(--text-muted)">/mes</span></span>
+          <span class="nc-plan-detail">${p.detalle}</span>
+        </button>`;
+    }).join('');
+
+    // Módulos
+    $('nc-modules-list').innerHTML = MODULOS_AV.map(m => {
+      const incluidoEnPlan = planActual.incluye.includes(m.id);
+      // Si hay override en extras
+      const hasOverride = ncState.extras.hasOwnProperty(m.id);
+      const isActive = hasOverride ? ncState.extras[m.id] : incluidoEnPlan;
+
+      let tagHtml = '';
+      if (incluidoEnPlan) {
+        tagHtml = `<span class="nc-modulo-tag incluido">Incluido</span>`;
+      } else if (m.precio === 0) {
+        tagHtml = `<span class="nc-modulo-tag incluido">Incluido</span>`;
+      } else if (isActive) {
+        tagHtml = `<span class="nc-modulo-tag extra-on">+$${m.precio.toLocaleString('es-MX')}/mes</span>`;
+      } else {
+        tagHtml = `<span class="nc-modulo-tag extra-off">+$${m.precio.toLocaleString('es-MX')}/mes</span>`;
+      }
+
+      return `
+        <button class="nc-modulo-row${isActive ? ' active' : ''}" data-modulo="${m.id}">
+          <span class="nc-modulo-check">${isActive ? '✓' : ''}</span>
+          <span class="nc-modulo-info">
+            <span class="nc-modulo-nombre">${m.nombre}</span>
+            <span style="display:block" class="nc-modulo-desc">${m.desc}</span>
+          </span>
+          ${tagHtml}
+        </button>`;
+    }).join('');
+
+    // Calcular total
+    const precioBase = Math.round(planActual.precio * factorCiclo);
+    let extrasTotal = 0;
+    const extraLines = [];
+
+    MODULOS_AV.forEach(m => {
+      if (m.precio === 0) return;
+      const incluidoEnPlan = planActual.incluye.includes(m.id);
+      const hasOverride = ncState.extras.hasOwnProperty(m.id);
+      const isActive = hasOverride ? ncState.extras[m.id] : incluidoEnPlan;
+      if (isActive && !incluidoEnPlan) {
+        const precio = Math.round(m.precio * factorCiclo);
+        extrasTotal += precio;
+        extraLines.push({ nombre: m.nombre, precio });
+      }
+    });
+
+    const total = precioBase + extrasTotal;
+
+    $('nc-resumen').innerHTML = `
+      <div class="nc-resumen-row">
+        <span class="nc-resumen-label">Plan ${planActual.nombre} (${ncState.ciclo})</span>
+        <span class="nc-resumen-val">$${precioBase.toLocaleString('es-MX')}/mes</span>
+      </div>
+      ${extraLines.map(e => `
+        <div class="nc-resumen-row">
+          <span class="nc-resumen-label">${e.nombre}</span>
+          <span class="nc-resumen-val">+$${e.precio.toLocaleString('es-MX')}/mes</span>
+        </div>`).join('')}
+      <div class="nc-resumen-divider"></div>
+      <div class="nc-resumen-row">
+        <span class="nc-total-label">Total mensual</span>
+        <span class="nc-total-val">$${total.toLocaleString('es-MX')}<span style="font-size:14px;font-weight:500;color:var(--text-muted)">/mes</span></span>
+      </div>
+      ${ncState.ciclo === 'anual' ? `<p class="nc-nota">Precio anual con descuento del 15% ya aplicado.</p>` : ''}
+    `;
+
+    // Re-attach plan card listeners
+    document.querySelectorAll('.nc-plan-card').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ncState.plan = btn.dataset.plan;
+        ncState.extras = {};
+        renderNC();
+      });
+    });
+
+    // Re-attach modulo listeners
+    document.querySelectorAll('.nc-modulo-row').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const moduloId = btn.dataset.modulo;
+        const planActualInner = PLANES_AV.find(p => p.id === ncState.plan);
+        const incluidoEnPlan = planActualInner.incluye.includes(moduloId);
+        const hasOverride = ncState.extras.hasOwnProperty(moduloId);
+        const currentActive = hasOverride ? ncState.extras[moduloId] : incluidoEnPlan;
+        ncState.extras[moduloId] = !currentActive;
+        renderNC();
+      });
+    });
   }
-  setInterval(updateClock, 1000);
-  updateClock();
+
+  // ── Crear cliente ────────────────────────────────────────────────────────────
+  async function crearCliente() {
+    const btn     = $('nc-crear-btn');
+    const errEl   = $('nc-error');
+    const succEl  = $('nc-success');
+    errEl.style.display  = 'none';
+    succEl.style.display = 'none';
+
+    const org_name    = $('nc-empresa').value.trim();
+    const industry    = $('nc-giro').value.trim();
+    const admin_name  = $('nc-dueno').value.trim();
+    const admin_email = $('nc-email').value.trim();
+    const plan_id     = ncState.plan;
+    const trial_dias  = parseInt($('nc-trial-dias').value) || 14;
+
+    if (!org_name || !admin_name || !admin_email) {
+      errEl.textContent = 'Los campos marcados con * son requeridos.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const trial_ends_at = (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + trial_dias);
+      return d.toISOString().split('T')[0];
+    })();
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span> Creando…';
+
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+
+    try {
+      const res = await fetch(`${EDGE_BASE}/admin-create-client`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          org_name,
+          industry: industry || undefined,
+          plan_id,
+          trial_ends_at,
+          admin_name,
+          admin_email,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        errEl.textContent = data.error ?? 'Error desconocido';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      succEl.textContent = `Cliente "${org_name}" creado exitosamente. Invitación enviada a ${admin_email}.`;
+      succEl.style.display = 'block';
+
+      // Limpiar formulario
+      ['nc-empresa','nc-giro','nc-dueno','nc-email','nc-notas','nc-tarifa-fija'].forEach(id => { const el = $(id); if (el) el.value = ''; });
+      $('nc-trial-dias').value = '14';
+      ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
+      renderNC();
+
+      setTimeout(() => {
+        closeNuevoClientePage();
+        showToast(`Cliente "${org_name}" creado`, 'success');
+        if (document.getElementById('view-clientes').classList.contains('active')) loadClientes();
+        if (document.getElementById('view-overview').classList.contains('active')) loadOverview();
+      }, 1200);
+
+    } catch (e) {
+      errEl.textContent = `Error de red: ${e.message}`;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Crear cliente →';
+    }
+  }
 
   // ── Auth ────────────────────────────────────────────────────────────────────
   async function handleLogin() {
@@ -811,6 +1229,14 @@
     else showScreen('login');
   })();
 
+  // ── Clock ──────────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    $('topbar-time').textContent = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
   // ── Overview ────────────────────────────────────────────────────────────────
   async function loadOverview() {
     const today = new Date();
@@ -863,7 +1289,6 @@
     const orgs = orgsRes.data ?? [];
     state.orgsCache = orgs;
 
-    // Contar usuarios por org
     const usersByOrg = {};
     (profileCountsRes.data ?? []).forEach(p => {
       usersByOrg[p.organization_id] = (usersByOrg[p.organization_id] ?? 0) + 1;
@@ -944,72 +1369,6 @@
     loadClientes();
   }
 
-  // ── Crear cliente ────────────────────────────────────────────────────────────
-  async function crearCliente() {
-    const btn = $('btn-crear-cliente');
-    const errEl  = $('nuevo-error');
-    const succEl = $('nuevo-success');
-    errEl.style.display  = 'none';
-    succEl.style.display = 'none';
-
-    const org_name    = $('nuevo-org-name').value.trim();
-    const admin_name  = $('nuevo-admin-name').value.trim();
-    const admin_email = $('nuevo-admin-email').value.trim();
-
-    if (!org_name || !admin_name || !admin_email) {
-      errEl.textContent = 'Los campos con * son requeridos.';
-      errEl.style.display = 'block';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-sm"></span> Creando…';
-
-    const { data: { session } } = await sb.auth.getSession();
-    const token = session?.access_token;
-
-    try {
-      const res = await fetch(`${EDGE_BASE}/admin-create-client`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          org_name,
-          industry:      $('nuevo-industry').value.trim() || undefined,
-          plan_id:       $('nuevo-plan').value,
-          trial_ends_at: $('nuevo-trial').value || undefined,
-          admin_name,
-          admin_email,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        errEl.textContent = data.error ?? 'Error desconocido';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      succEl.textContent = `✓ Cliente "${org_name}" creado. Invitación enviada a ${admin_email}.`;
-      succEl.style.display = 'block';
-
-      // Limpiar formulario
-      ['nuevo-org-name','nuevo-industry','nuevo-trial','nuevo-admin-name','nuevo-admin-email'].forEach(id => $(id).value = '');
-      $('nuevo-plan').value = 'starter';
-
-      // Actualizar tabla si estamos en vista clientes
-      if (document.getElementById('view-clientes').classList.contains('active')) loadClientes();
-      if (document.getElementById('view-overview').classList.contains('active')) loadOverview();
-
-    } catch (e) {
-      errEl.textContent = `Error de red: ${e.message}`;
-      errEl.style.display = 'block';
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = 'Crear y enviar invitación';
-    }
-  }
-
   // ── Usuarios ────────────────────────────────────────────────────────────────
   async function loadUsuarios() {
     $('tbody-usuarios').innerHTML = `<tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
@@ -1024,7 +1383,6 @@
       return;
     }
 
-    // Obtener emails de auth.users via la tabla auth_users si está expuesta, o mostrar lo que tenemos
     state.usersCache = profiles ?? [];
     const users = profiles ?? [];
     $('badge-usuarios').textContent = users.length;
@@ -1075,6 +1433,93 @@
     loadUsuarios();
   }
 
+  // ── Nuevo usuario ────────────────────────────────────────────────────────────
+  async function openNuevoUsuarioModal() {
+    // Limpiar formulario
+    $('nu-nombre').value = '';
+    $('nu-email').value = '';
+    $('nu-rol').value = 'admin';
+    $('nu-error').style.display = 'none';
+    $('nu-success').style.display = 'none';
+
+    // Poblar select de orgs
+    const orgSelect = $('nu-org');
+    orgSelect.innerHTML = '<option value="">— Sin organización —</option>';
+
+    let orgs = state.orgsCache;
+    if (!orgs || orgs.length === 0) {
+      const { data } = await sb.from('organizations').select('id,name').order('name');
+      orgs = data ?? [];
+      state.orgsCache = orgs;
+    }
+
+    orgs.forEach(org => {
+      const opt = document.createElement('option');
+      opt.value = org.id;
+      opt.textContent = org.name;
+      orgSelect.appendChild(opt);
+    });
+
+    openModal('modal-nuevo-usuario');
+  }
+
+  async function crearUsuario() {
+    const btn    = $('btn-crear-usuario');
+    const errEl  = $('nu-error');
+    const succEl = $('nu-success');
+    errEl.style.display  = 'none';
+    succEl.style.display = 'none';
+
+    const full_name      = $('nu-nombre').value.trim();
+    const email          = $('nu-email').value.trim();
+    const role           = $('nu-rol').value;
+    const organization_id = $('nu-org').value || null;
+
+    if (!full_name || !email || !role) {
+      errEl.textContent = 'Los campos marcados con * son requeridos.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-sm"></span> Creando…';
+
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+
+    try {
+      const res = await fetch(`${EDGE_BASE}/admin-create-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ full_name, email, role, organization_id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        errEl.textContent = data.error ?? 'Error desconocido';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      succEl.textContent = `Usuario "${full_name}" creado. Invitación enviada a ${email}.`;
+      succEl.style.display = 'block';
+
+      setTimeout(() => {
+        closeModal('modal-nuevo-usuario');
+        showToast(`Usuario "${full_name}" creado`, 'success');
+        loadUsuarios();
+      }, 1200);
+
+    } catch (e) {
+      errEl.textContent = `Error de red: ${e.message}`;
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Crear y enviar invitación';
+    }
+  }
+
   // ── Event listeners ──────────────────────────────────────────────────────────
   $('login-btn').addEventListener('click', handleLogin);
   $('login-email').addEventListener('keydown',    e => { if (e.key === 'Enter') $('login-password').focus(); });
@@ -1091,15 +1536,62 @@
     el.addEventListener('click', () => switchView(el.dataset.view));
   });
 
+  // Nuevo cliente — overlay
   $('btn-nuevo-cliente').addEventListener('click', () => {
-    $('nuevo-error').style.display  = 'none';
-    $('nuevo-success').style.display = 'none';
-    openModal('modal-nuevo');
+    // Resetear estado
+    ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
+    $('nc-empresa').value = '';
+    $('nc-giro').value = '';
+    $('nc-dueno').value = '';
+    $('nc-email').value = '';
+    $('nc-notas').value = '';
+    $('nc-trial-dias').value = '14';
+    $('nc-tarifa-fija').value = '';
+    $('nc-error').style.display = 'none';
+    $('nc-success').style.display = 'none';
+    // Resetear ciclo pills
+    document.querySelectorAll('.nc-ciclo-btn').forEach(b => b.classList.toggle('active', b.dataset.ciclo === 'mensual'));
+    // Resetear modo pills
+    document.querySelectorAll('.nc-pill-btn[data-modo]').forEach(b => b.classList.toggle('active', b.dataset.modo === 'Trial'));
+    openNuevoClientePage();
   });
-  $('btn-crear-cliente').addEventListener('click', crearCliente);
+
+  $('nc-back-btn').addEventListener('click', closeNuevoClientePage);
+  $('nc-cancel-btn').addEventListener('click', closeNuevoClientePage);
+  $('nc-crear-btn').addEventListener('click', crearCliente);
+
+  // Ciclo toggle (mensual / anual)
+  document.querySelectorAll('.nc-ciclo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ncState.ciclo = btn.dataset.ciclo;
+      document.querySelectorAll('.nc-ciclo-btn').forEach(b => b.classList.toggle('active', b === btn));
+      renderNC();
+    });
+  });
+
+  // Modo de cobro pills
+  document.querySelectorAll('.nc-pill-btn[data-modo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ncState.modo = btn.dataset.modo;
+      document.querySelectorAll('.nc-pill-btn[data-modo]').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  // Restablecer módulos al plan
+  $('nc-reset-modulos').addEventListener('click', () => {
+    ncState.extras = {};
+    renderNC();
+  });
+
+  // Modal editar y rol
   $('btn-guardar-editar').addEventListener('click', saveEditOrg);
   $('btn-guardar-rol').addEventListener('click', saveRol);
 
+  // Modal nuevo usuario
+  $('btn-nuevo-usuario').addEventListener('click', openNuevoUsuarioModal);
+  $('btn-crear-usuario').addEventListener('click', crearUsuario);
+
+  // Cerrar modales con data-close
   document.querySelectorAll('[data-close]').forEach(el => {
     el.addEventListener('click', () => closeModal(el.dataset.close));
   });
