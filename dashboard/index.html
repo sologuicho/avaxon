@@ -1339,8 +1339,6 @@
   }
 
   function renderLeads(data) {
-    $('badge-leads').textContent = data?.length ?? 0;
-
     // Funnel KPIs
     const all       = data?.length ?? 0;
     const newLeads  = (data || []).filter(c => c.status === 'new').length;
