@@ -1698,9 +1698,12 @@
     renderNC();
   });
 
-  // Modal editar y rol
+  // Modal editar cliente y rol
   $('btn-guardar-editar').addEventListener('click', saveEditOrg);
   $('btn-guardar-rol').addEventListener('click', saveRol);
+
+  // Modal editar usuario
+  $('btn-guardar-eu').addEventListener('click', saveEditUsuario);
 
   // Modal nuevo usuario
   $('btn-nuevo-usuario').addEventListener('click', openNuevoUsuarioModal);
