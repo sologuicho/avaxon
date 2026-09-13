@@ -1509,7 +1509,9 @@
     loadUsuarios();
   }
 
-  async function eliminarUsuario(userId, nombre) {
+  async function eliminarUsuario(userId) {
+    const u = state.usersMap?.[userId];
+    const nombre = u?.full_name || u?.email || userId;
     if (!confirm(`¿Eliminar a "${nombre}"? Esta acción no se puede deshacer.`)) return;
     const { data: { session } } = await sb.auth.getSession();
     const token = session?.access_token;
