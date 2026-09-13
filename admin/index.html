@@ -697,14 +697,24 @@
 
       <!-- VISTA: USUARIOS -->
       <div class="view" id="view-usuarios">
-        <div class="section-header">
-          <span class="section-title">Usuarios <span class="count-badge" id="badge-usuarios">0</span></span>
-          <button class="btn-primary" id="btn-nuevo-usuario">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nuevo usuario
-          </button>
-        </div>
+        <!-- Funnel KPIs -->
+        <div id="usuarios-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px"></div>
+
         <div class="card">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e6e7e9">
+            <div style="display:flex;gap:2px;padding:3px;border-radius:9px;background:#f4f5f6">
+              <button id="usr-tab-all" onclick="filterUsuarios('all')" style="padding:6px 14px;border-radius:7px;border:0;background:#fff;font-size:13px;font-weight:600;color:#1a2535;cursor:pointer;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todos <span class="count-badge" id="badge-usuarios" style="margin-left:4px">0</span></button>
+              <button id="usr-tab-admin" onclick="filterUsuarios('admin')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Admins</button>
+              <button id="usr-tab-agent" onclick="filterUsuarios('agent')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Agentes</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input class="search-input" type="text" id="usuarios-search" placeholder="Buscar usuario…" style="width:220px" />
+              <button class="btn-primary" id="btn-nuevo-usuario">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo usuario
+              </button>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
