@@ -1091,11 +1091,46 @@
     $('kpi-grid').innerHTML = kpis.map((k, i) => `
       <div class="kpi-card">
         <div class="kpi-accent-bar" style="background:${KPI_COLORS[i % KPI_COLORS.length]}"></div>
-        <span class="kpi-icon">${k.icon}</span>
         <div class="kpi-label">${k.label}</div>
-        <div class="kpi-value${k.muted ? ' muted' : ''}">${typeof k.value === 'number' ? k.value.toLocaleString('es-MX') : k.value}</div>
+        <div class="kpi-row">
+          <div class="kpi-value">${typeof k.value === 'number' ? k.value.toLocaleString('es-MX') : k.value}</div>
+          ${k.trend ? `<div class="kpi-trend ${k.trend.startsWith('▲') ? 'up' : k.trend.startsWith('▼') ? 'down' : 'muted'}">${k.trend}</div>` : ''}
+        </div>
+        ${k.foot ? `<div class="kpi-foot">${k.foot}</div>` : ''}
       </div>
     `).join('');
+  }
+
+  function buildMsgChart(days) {
+    if (!days || !days.length) { $('msg-chart-wrap').style.display = 'none'; return; }
+    $('msg-chart-wrap').style.display = 'block';
+    const sent = days.map(d => d.sent);
+    const recv = days.map(d => d.recv);
+    const maxV = Math.max(...sent, ...recv, 1);
+    const W = 760, top = 20, bot = 210, span = bot - top;
+    const n = days.length;
+    const px = i => n === 1 ? 0 : (i / (n - 1)) * W;
+    const py = v => bot - (v / maxV) * span;
+    const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(' ');
+    const area = arr => line(arr) + ` L${px(n-1).toFixed(1)} ${bot} L0 ${bot} Z`;
+    const sentTotal = sent.reduce((a, b) => a + b, 0);
+    const recvTotal = recv.reduce((a, b) => a + b, 0);
+    $('chart-sent-total').textContent = sentTotal.toLocaleString('es-MX');
+    $('chart-recv-total').textContent = recvTotal.toLocaleString('es-MX');
+    const labels = days.map((d, i) => `<text x="${px(i).toFixed(1)}" y="228" fill="#a7adb5" font-size="11" font-family="Barlow Condensed" text-anchor="middle">${d.label}</text>`).join('');
+    $('msg-chart-svg').innerHTML = `
+      <defs>
+        <linearGradient id="avxFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5980a6" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#5980a6" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${[0.25,0.5,0.75,1].map(f => `<line x1="0" y1="${(bot - f*span).toFixed(1)}" x2="${W}" y2="${(bot - f*span).toFixed(1)}" stroke="#eef0f2" stroke-width="1"/>`).join('')}
+      <path d="${area(recv)}" fill="url(#avxFill)"/>
+      <path d="${line(recv)}" fill="none" stroke="#5980a6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${line(sent)}" fill="none" stroke="#2c455d" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${labels}
+    `;
   }
 
   function renderWaNumberCard(phones) {
