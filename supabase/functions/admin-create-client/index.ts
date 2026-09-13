@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
     admin_email.trim(),
     {
       data: { full_name: admin_name.trim() },
-      redirectTo: `${req.headers.get('origin') ?? 'https://sologuicho.github.io/avaxon'}/dashboard/`,
+      redirectTo: 'https://avaxon.lat/dashboard/',
     }
   )
 
