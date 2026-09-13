@@ -1374,39 +1374,114 @@
 
   // ── Usuarios ────────────────────────────────────────────────────────────────
   async function loadUsuarios() {
-    $('tbody-usuarios').innerHTML = `<tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
+    $('tbody-usuarios').innerHTML = `<tr><td colspan="9"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
 
-    const { data: profiles, error } = await sb
-      .from('profiles')
-      .select('id, role, full_name, organization_id, organizations(name)')
-      .order('role');
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
 
-    if (error) {
-      $('tbody-usuarios').innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:20px">${error.message}</td></tr>`;
+    let users = [];
+    try {
+      const res = await fetch(`${EDGE_BASE}/admin-list-users`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Error');
+      users = data.users ?? [];
+    } catch (e) {
+      $('tbody-usuarios').innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px">${e.message}</td></tr>`;
       return;
     }
 
-    state.usersCache = profiles ?? [];
-    const users = profiles ?? [];
+    state.usersCache = users;
     $('badge-usuarios').textContent = users.length;
 
+    const isSocio = u => u.role === 'super_admin';
+
     $('tbody-usuarios').innerHTML = users.length === 0
-      ? `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
-      : users.map(u => `<tr>
+      ? `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
+      : users.map(u => {
+          const uJson = encodeURIComponent(JSON.stringify(u));
+          return `<tr>
           <td>
             <div class="contact-cell">
-              <div class="avatar">${initials(u.full_name || '?')}</div>
+              <div class="avatar">${initials(u.full_name || u.email || '?')}</div>
               <div class="contact-name">${u.full_name || '—'}</div>
             </div>
           </td>
-          <td style="color:var(--text-muted);font-size:13px">—</td>
-          <td style="font-size:13px">${u.organizations?.name ?? '<span style="color:var(--text-dim)">—</span>'}</td>
-          <td>${rolePill(u.role)}</td>
-          <td style="font-size:12px;color:var(--text-muted)">—</td>
-          <td>
-            ${u.role !== 'super_admin' ? `<button class="btn-ghost" onclick="openRolModal('${u.id}','${u.full_name || ''}','${u.role}')">Cambiar rol</button>` : ''}
+          <td style="font-size:12.5px;color:var(--text-muted)">${u.email ?? '—'}</td>
+          <td>${isSocio(u) ? '<span class="pill pill-accent no-dot">Socio</span>' : '<span class="pill pill-muted no-dot">Cliente</span>'}</td>
+          <td style="text-align:center">
+            ${u.tenant_number != null
+              ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--accent-800)">#${u.tenant_number}</span>`
+              : '<span style="color:var(--text-dim)">—</span>'}
           </td>
-        </tr>`).join('');
+          <td style="font-size:13px">${u.org_name ?? '<span style="color:var(--text-dim)">—</span>'}</td>
+          <td>${u.org_status ? statusPill(u.org_status) : '<span style="color:var(--text-dim)">—</span>'}</td>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${fmtDate(u.created_at)}</td>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${u.last_sign_in ? fmtDate(u.last_sign_in) : '<span style="color:var(--text-dim)">Nunca</span>'}</td>
+          <td>
+            <div class="actions-cell">
+              ${!isSocio(u) ? `<button class="btn-ghost" onclick="openEditUsuarioModal(decodeURIComponent('${uJson}'))">Editar</button>` : ''}
+              ${!isSocio(u) ? `<button class="btn-danger" onclick="eliminarUsuario('${u.id}','${(u.full_name || u.email || '').replace(/'/g,"\\'").replace(/"/g,'\\"')}')">Eliminar</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+        }).join('');
+  }
+
+  function openEditUsuarioModal(jsonOrObj) {
+    const u = typeof jsonOrObj === 'string' ? JSON.parse(jsonOrObj) : jsonOrObj;
+    $('eu-user-id').value = u.id;
+    $('eu-nombre').value  = u.full_name ?? '';
+    $('eu-rol').value     = u.role ?? 'agent';
+    $('eu-error').style.display = 'none';
+
+    const orgSelect = $('eu-org');
+    orgSelect.innerHTML = '<option value="">— Sin organización —</option>';
+    const orgsToUse = state.orgsCache.length ? state.orgsCache : (u.org_name ? [{ id: u.organization_id, name: u.org_name }] : []);
+    orgsToUse.forEach(org => {
+      const opt = document.createElement('option');
+      opt.value = org.id;
+      opt.textContent = org.name;
+      if (org.id === u.organization_id) opt.selected = true;
+      orgSelect.appendChild(opt);
+    });
+    openModal('modal-editar-usuario');
+  }
+
+  async function saveEditUsuario() {
+    const btn   = $('btn-guardar-eu');
+    const errEl = $('eu-error');
+    errEl.style.display = 'none';
+    const userId          = $('eu-user-id').value;
+    const full_name       = $('eu-nombre').value.trim();
+    const role            = $('eu-rol').value;
+    const organization_id = $('eu-org').value || null;
+    if (!full_name) { errEl.textContent = 'El nombre es requerido.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { error } = await sb.from('profiles').update({ full_name, role, organization_id }).eq('id', userId);
+    btn.disabled = false; btn.textContent = 'Guardar cambios';
+    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+    closeModal('modal-editar-usuario');
+    showToast('Usuario actualizado', 'success');
+    loadUsuarios();
+  }
+
+  async function eliminarUsuario(userId, nombre) {
+    if (!confirm(`¿Eliminar a "${nombre}"? Esta acción no se puede deshacer.`)) return;
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+    try {
+      const res = await fetch(`${EDGE_BASE}/admin-delete-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error ?? 'Error al eliminar', 'error'); return; }
+      showToast('Usuario eliminado', 'success');
+      loadUsuarios();
+    } catch (e) { showToast(e.message, 'error'); }
   }
 
   function openRolModal(userId, userName, currentRole) {
