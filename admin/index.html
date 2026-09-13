@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Avaxon — Admin</title>
   <link rel="icon" type="image/jpeg" href="../avaxon_favicon.jpeg" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,7 +14,6 @@
       --page-bg:       #f4f5f6;
       --card-bg:       #ffffff;
       --border:        #e6e7e9;
-      --border-focus:  #b5d9fd;
       --text:          #18191c;
       --text-2:        #3a3b3e;
       --text-muted:    #6b6c70;
@@ -41,19 +40,15 @@
       --login-text:    #e2e8f0;
       --login-muted:   #64748b;
       --login-dim:     #94a3b8;
-      --sidebar-w:     240px;
-      --sidebar-bg:    #ffffff;
-      --sidebar-border:#e6e7e9;
-      --r-sm: 8px; --r-md: 10px; --r-lg: 14px;
+      --sidebar-w:     248px;
+      --r-sm: 8px; --r-md: 10px; --r-lg: 13px;
     }
 
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Barlow', sans-serif;
-      font-size: 14px;
-      color: var(--text);
-      background: var(--page-bg);
-      min-height: 100vh;
+      font-size: 14px; color: var(--text);
+      background: var(--page-bg); min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -67,18 +62,19 @@
       color: var(--login-muted); font-size: 14px; gap: 12px;
     }
     .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid rgba(255,255,255,0.08);
-      border-top-color: var(--cyan);
-      border-radius: 50%;
+      width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.08);
+      border-top-color: var(--cyan); border-radius: 50%;
       animation: spin 0.65s linear infinite; flex-shrink: 0;
     }
     .spinner-sm {
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.25);
-      border-top-color: #fff;
-      border-radius: 50%;
+      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.25);
+      border-top-color: #fff; border-radius: 50%;
       animation: spin 0.65s linear infinite; flex-shrink: 0; display: inline-block;
+    }
+    .spinner-light {
+      width: 18px; height: 18px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.65s linear infinite; flex-shrink: 0;
     }
 
     /* ── Login ── */
@@ -128,121 +124,152 @@
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
-      background: var(--sidebar-bg); border-right: 1px solid var(--sidebar-border);
+      background: #1a2535;
+      background-image: linear-gradient(180deg, #1f2c3f 0%, #16202d 100%);
       display: flex; flex-direction: column; z-index: 200;
+      transition: transform 0.25s ease;
     }
-    .sidebar-top { padding: 20px 20px 0; flex-shrink: 0; }
+    .sidebar-top { padding: 20px 16px 0; flex-shrink: 0; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
     .sidebar-logo-icon {
-      width: 34px; height: 34px; background: var(--accent-800); border-radius: 8px;
+      width: 30px; height: 30px; background: #5980a6; border-radius: 9px;
       display: flex; align-items: center; justify-content: center; color: #fff;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
-      flex-shrink: 0;
+      font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; flex-shrink: 0;
     }
     .sidebar-logo-text {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700;
-      color: var(--accent-800); letter-spacing: 0.3px; line-height: 1;
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #fff; line-height: 1;
     }
-    .sidebar-logo-sub { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-top: 1px; }
+    .sidebar-logo-sub {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: #5980a6;
+      font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+    }
     .sidebar-section-label {
-      font-size: 10px; font-weight: 700; color: var(--text-dim);
-      text-transform: uppercase; letter-spacing: 1px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+      color: #3b4d63; text-transform: uppercase; letter-spacing: 1.2px;
       padding: 0 10px; margin-bottom: 6px; margin-top: 16px;
     }
     .sidebar-nav { flex: 1; padding: 4px 12px; overflow-y: auto; }
     .nav-item {
-      display: flex; align-items: center; gap: 10px; padding: 9px 10px;
-      border-radius: var(--r-md); cursor: pointer;
-      transition: background 0.15s, color 0.15s; color: var(--text-muted);
-      font-weight: 500; font-size: 14px; user-select: none; margin-bottom: 2px;
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 9px; cursor: pointer;
+      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+      color: #93a4b8; font-weight: 500; font-size: 14px;
+      user-select: none; margin-bottom: 2px;
     }
-    .nav-item:hover { background: var(--accent-100); color: var(--accent-800); }
-    .nav-item.active { background: var(--accent-100); color: var(--accent-800); font-weight: 600; }
+    .nav-item:hover { background: rgba(44,69,93,0.5); color: #c8d6e3; }
+    .nav-item.active { background: #2c455d; color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 #5980a6; }
+    .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #3b4d63; flex-shrink: 0; margin-right: 2px; }
+    .nav-item.active .nav-dot { background: #5980a6; }
     .nav-icon { width: 20px; display: flex; align-items: center; justify-content: center; opacity: 0.7; flex-shrink: 0; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
-    .sidebar-bottom { padding: 14px 16px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .sidebar-bottom { padding: 14px 14px 20px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
     .sidebar-user { display: flex; align-items: center; gap: 8px; }
-    .sidebar-user-email { flex: 1; font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user-avatar {
+      width: 30px; height: 30px; border-radius: 50%; background: #5980a6;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+      color: #fff; flex-shrink: 0;
+    }
+    .sidebar-user-email { flex: 1; font-size: 11.5px; color: #6b7e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btn-signout {
-      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      background: none; border: 1px solid rgba(255,255,255,0.1); color: #6b7e93;
       font-size: 12px; font-weight: 500; font-family: 'Barlow', sans-serif;
       padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: all 0.18s;
       white-space: nowrap; flex-shrink: 0;
     }
-    .btn-signout:hover { border-color: var(--red); color: var(--red); }
-    .nav-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+    .btn-signout:hover { border-color: rgba(239,68,68,0.4); color: #ef4444; }
+    .nav-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 8px 0; }
     .nav-back {
-      display: flex; align-items: center; gap: 8px; padding: 8px 10px;
-      border-radius: var(--r-md); cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border-radius: 9px; cursor: pointer; color: #6b7e93;
       font-size: 13px; font-weight: 500; transition: all 0.15s; margin-bottom: 2px;
     }
-    .nav-back:hover { background: var(--accent-100); color: var(--accent-800); }
+    .nav-back:hover { background: rgba(44,69,93,0.5); color: #c8d6e3; }
 
     /* ── Main content ── */
     .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
     .topbar {
-      height: 58px; background: var(--card-bg); border-bottom: 1px solid var(--border);
+      background: #fff; border-bottom: 1px solid #e6e7e9;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 28px; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+      padding: 0 32px; height: 64px; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
-    .topbar-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent-800); letter-spacing: 0.3px; }
+    .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+    .topbar-eyebrow {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: #8c939b;
+    }
+    .topbar-h1 {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700;
+      color: #1a2535; line-height: 1; letter-spacing: -0.2px;
+    }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
     .topbar-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
     .btn-refresh {
-      display: flex; align-items: center; gap: 6px; background: none;
-      border: 1px solid var(--border); color: var(--text-muted); font-size: 12px;
-      font-weight: 500; font-family: 'Barlow', sans-serif; padding: 6px 12px;
-      border-radius: 7px; cursor: pointer; transition: all 0.18s; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px; background: #fff;
+      border: 1px solid #e6e7e9; color: var(--text-muted); font-size: 12px;
+      font-weight: 500; font-family: 'Barlow', sans-serif; padding: 6px 14px;
+      border-radius: 10px; cursor: pointer; transition: all 0.18s; white-space: nowrap;
     }
-    .btn-refresh:hover { border-color: var(--accent-300); color: var(--accent-800); }
-    .page-area { flex: 1; padding: 28px 28px 56px; }
+    .btn-refresh:hover { background: #eef6ff; border-color: #5980a6; color: #2c455d; }
+    .page-area { flex: 1; padding: 28px 32px 56px; }
     .view { display: none; }
     .view.active { display: block; animation: avx-fade 0.22s ease forwards; }
     .inner-loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 60px 0; color: var(--text-muted); font-size: 13px; }
-    .spinner-light { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.65s linear infinite; flex-shrink: 0; }
 
     /* ── KPIs ── */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
     .kpi-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--r-lg);
-      padding: 20px 22px; transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
-      position: relative; overflow: hidden;
+      background: #fff; border: 1px solid #e6e7e9; border-radius: 13px;
+      padding: 20px 22px; position: relative; overflow: hidden;
+      box-shadow: 0 1px 2px rgba(26,37,53,0.04); transition: box-shadow 0.18s, transform 0.15s;
     }
-    .kpi-card::after {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: linear-gradient(90deg, var(--accent-300), var(--accent)); opacity: 0; transition: opacity 0.18s;
-    }
-    .kpi-card:hover { border-color: var(--accent-300); box-shadow: 0 4px 16px rgba(89,128,166,0.12); transform: translateY(-2px); }
-    .kpi-card:hover::after { opacity: 1; }
+    .kpi-card:hover { box-shadow: 0 4px 16px rgba(89,128,166,0.12); transform: translateY(-2px); }
+    .kpi-accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
     .kpi-icon { font-size: 20px; margin-bottom: 12px; display: block; }
-    .kpi-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
-    .kpi-value { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 700; color: var(--accent-800); line-height: 1; }
+    .kpi-label {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11.5px; font-weight: 700;
+      color: #8c939b; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 52px; font-weight: 700;
+      color: #1a2535; line-height: 1; letter-spacing: -0.015em;
+    }
 
     /* ── Section header ── */
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 28px; }
     .section-header:first-child { margin-top: 0; }
-    .section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--accent-800); letter-spacing: 0.3px; }
-    .count-badge { background: var(--accent-100); color: var(--accent); font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; }
+    .section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: #1a2535; letter-spacing: 0.2px; }
+    .count-badge { background: var(--accent-100); color: var(--accent); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
 
     /* ── Cards / Tables ── */
-    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
-    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--accent-800); letter-spacing: 0.2px; }
+    .card { background: #fff; border: 1px solid #e6e7e9; border-radius: 13px; overflow: hidden; box-shadow: 0 1px 2px rgba(26,37,53,0.04); }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid #e6e7e9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: #1a2535; letter-spacing: 0.2px; }
     .mb-24 { margin-bottom: 24px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
-    th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 20px; text-align: left; border-bottom: 1px solid var(--border); background: #fafafa; white-space: nowrap; }
-    td { padding: 12px 20px; font-size: 13.5px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    th {
+      background: #fafbfc; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11.5px; font-weight: 700; color: #8c939b;
+      text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 20px;
+      text-align: left; border-bottom: 1px solid #f1f2f4; white-space: nowrap;
+    }
+    td { padding: 12px 20px; font-size: 13.5px; border-bottom: 1px solid #f1f2f4; color: var(--text); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tbody tr { transition: background 0.12s; }
-    tbody tr:hover td { background: var(--accent-100); }
-    .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent-200); color: var(--accent-800); font-size: 11px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.5px; }
+    tbody tr:hover td { background: #fafbfc; }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent-200);
+      color: var(--accent-800); font-size: 11px; font-weight: 700;
+      font-family: 'Barlow Condensed', sans-serif; display: inline-flex;
+      align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.5px;
+    }
     .contact-cell { display: flex; align-items: center; gap: 10px; }
     .contact-name { font-weight: 600; color: var(--text); line-height: 1.3; }
     .contact-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
     /* ── Pills ── */
-    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; letter-spacing: 0.2px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 7px; white-space: nowrap; letter-spacing: 0.2px; }
     .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .pill.no-dot::before { display: none; }
     .pill-green  { color: var(--green); background: var(--green-bg); }
@@ -254,72 +281,77 @@
     /* ── Action buttons ── */
     .btn-primary {
       display: inline-flex; align-items: center; gap: 6px;
-      background: var(--accent-800); color: #fff; border: none;
+      background: #2c455d; color: #fff; border: none;
       font-size: 13px; font-weight: 600; font-family: 'Barlow', sans-serif;
-      padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.18s;
+      padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
       white-space: nowrap;
     }
-    .btn-primary:hover { background: var(--accent); }
+    .btn-primary:hover { background: #22384c; }
     .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn-ghost {
       display: inline-flex; align-items: center; gap: 5px;
-      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      background: #fff; border: 1px solid #e6e7e9; color: var(--text-muted);
       font-size: 12px; font-weight: 500; font-family: 'Barlow', sans-serif;
-      padding: 5px 11px; border-radius: 7px; cursor: pointer; transition: all 0.18s;
+      padding: 5px 11px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
     }
-    .btn-ghost:hover { border-color: var(--accent-300); color: var(--accent-800); }
+    .btn-ghost:hover { background: #eef6ff; border-color: #5980a6; color: #2c455d; }
     .btn-danger {
       display: inline-flex; align-items: center; gap: 5px;
-      background: none; border: 1px solid transparent; color: var(--text-muted);
-      font-size: 12px; font-weight: 500; font-family: 'Barlow', sans-serif;
-      padding: 5px 11px; border-radius: 7px; cursor: pointer; transition: all 0.18s;
+      background: #fef5f5; border: 1px solid #f4cccc; color: #b91c1c;
+      font-size: 12px; font-weight: 600; font-family: 'Barlow', sans-serif;
+      padding: 5px 11px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
     }
-    .btn-danger:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+    .btn-danger:hover { background: #fee2e2; border-color: #ef4444; }
     .actions-cell { display: flex; align-items: center; gap: 6px; }
 
     /* ── Modal ── */
     .modal-backdrop {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      display: none; position: fixed; inset: 0;
+      background: rgba(16,24,35,0.58); backdrop-filter: blur(3px);
       z-index: 500; align-items: center; justify-content: center; padding: 20px;
     }
     .modal-backdrop.open { display: flex; }
     .modal {
       background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
       width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.18); animation: avx-fade 0.18s ease forwards;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.22); animation: avx-fade 0.18s ease forwards;
     }
-    .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent-800); }
-    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color 0.15s; }
-    .modal-close:hover { color: var(--text); }
+    .modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      background: linear-gradient(135deg, #1a2535 0%, #1f2c3f 100%);
+      border-radius: 16px 16px 0 0;
+    }
+    .modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: #fff; }
+    .modal-close { background: none; border: none; color: rgba(255,255,255,0.5); font-size: 22px; cursor: pointer; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: color 0.15s; }
+    .modal-close:hover { color: #fff; }
     .modal-body { padding: 20px 24px; }
     .modal-footer { padding: 14px 24px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-    .modal-section-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .modal-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: #8c939b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
     .modal-section-label:first-child { margin-top: 0; padding-top: 0; border-top: none; }
     .field-group { margin-bottom: 16px; }
     .field-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; }
     .field-input {
-      width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px;
-      font-size: 14px; font-family: 'Barlow', sans-serif; color: var(--text); background: var(--card-bg);
+      width: 100%; border: 1px solid #dfe2e6; border-radius: 10px; padding: 9px 13px;
+      font-size: 14px; font-family: 'Barlow', sans-serif; color: var(--text); background: #fafbfc;
       outline: none; transition: border-color 0.18s, box-shadow 0.18s;
     }
-    .field-input:focus { border-color: var(--accent-300); box-shadow: 0 0 0 3px rgba(89,128,166,0.10); }
+    .field-input:focus { border-color: #5980a6; box-shadow: 0 0 0 3px rgba(89,128,166,0.16); }
     .field-select {
-      width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px;
-      font-size: 14px; font-family: 'Barlow', sans-serif; color: var(--text); background: var(--card-bg);
+      width: 100%; border: 1px solid #dfe2e6; border-radius: 10px; padding: 9px 13px;
+      font-size: 14px; font-family: 'Barlow', sans-serif; color: var(--text); background: #fafbfc;
       outline: none; transition: border-color 0.18s; cursor: pointer; appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6c70' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 12px center;
-      padding-right: 36px;
+      background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px;
     }
-    .field-select:focus { border-color: var(--accent-300); box-shadow: 0 0 0 3px rgba(89,128,166,0.10); }
+    .field-select:focus { border-color: #5980a6; box-shadow: 0 0 0 3px rgba(89,128,166,0.16); }
     .modal-error { background: var(--red-bg); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px 14px; color: var(--red); font-size: 13px; margin-bottom: 16px; display: none; }
     .modal-success { background: var(--green-bg); border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 10px 14px; color: var(--green); font-size: 13px; margin-bottom: 16px; display: none; }
 
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-      background: var(--accent-800); color: #fff; font-size: 13px; font-weight: 500;
+      background: #2c455d; color: #fff; font-size: 13px; font-weight: 500;
       padding: 11px 18px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
       display: none; max-width: 320px;
     }
@@ -334,6 +366,132 @@
     /* ── Two col form ── */
     .two-col-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
+    /* ── Nuevo usuario modal: two-column layout ── */
+    .nu-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .nu-org-panel {
+      background: #f4f5f6; border: 1px solid #e6e7e9; border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .nu-org-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 7px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .nu-org-name { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; color: #1a2535; }
+
+    /* ── Hamburger ── */
+    .hamburger {
+      display: none; position: fixed; top: 14px; left: 14px; z-index: 300;
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+      width: 38px; height: 38px; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 190; }
+
+    /* ── Nuevo cliente overlay ── */
+    #page-nuevo-cliente { position:fixed; inset:0; z-index:400; background:var(--page-bg); overflow-y:auto; display:none; }
+    #page-nuevo-cliente.open { display:block; }
+    .nc-topbar {
+      position:sticky; top:0; background:#fff; border-bottom:1px solid #e6e7e9;
+      height:64px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 32px; z-index:10;
+    }
+    .nc-topbar-left { display:flex; align-items:center; gap:14px; }
+    .nc-back-btn {
+      display:flex; align-items:center; gap:6px; background:#fff;
+      border:1px solid #e6e7e9; color:var(--text-muted); font-size:13px; font-weight:500;
+      font-family:'Barlow',sans-serif; padding:6px 12px; border-radius:10px;
+      cursor:pointer; transition:all 0.18s;
+    }
+    .nc-back-btn:hover { background:#eef6ff; border-color:#5980a6; color:#2c455d; }
+    .nc-topbar-title { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:#1a2535; }
+    .nc-badge { display:flex; align-items:center; gap:6px; padding:5px 12px; border:1px solid #e6e7e9; border-radius:999px; font-size:12px; font-weight:600; color:var(--text-muted); }
+    .nc-badge-dot { width:7px; height:7px; border-radius:50%; background:var(--green); display:block; flex-shrink:0; }
+    .nc-body { max-width:1100px; margin:0 auto; padding:28px 32px 60px; }
+    .nc-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); background:#fff; border:1px solid #e6e7e9; border-radius:16px; overflow:hidden; box-shadow:0 1px 2px rgba(26,37,53,0.04); }
+    .nc-left { padding:28px 28px 28px 32px; border-right:1px solid #e6e7e9; display:flex; flex-direction:column; gap:18px; }
+    .nc-right { padding:28px 32px 28px 28px; background:#f9fafb; display:flex; flex-direction:column; gap:16px; }
+    .nc-section-label { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; letter-spacing:1.2px; color:#8c939b; text-transform:uppercase; }
+    .nc-divider { height:1px; background:#e6e7e9; }
+    .nc-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .nc-label { display:flex; flex-direction:column; gap:7px; }
+    .nc-label-text { font-size:11px; font-weight:700; letter-spacing:0.9px; color:var(--text-2); text-transform:uppercase; }
+    .nc-input {
+      height:42px; padding:0 12px; border:1px solid #dfe2e6; border-radius:10px;
+      font-size:14px; font-family:'Barlow',sans-serif; color:var(--text);
+      background:#fafbfc; width:100%; outline:none;
+      transition:border-color 0.18s, box-shadow 0.18s;
+    }
+    .nc-input:focus { border-color:#5980a6; box-shadow:0 0 0 3px rgba(89,128,166,0.16); }
+    .nc-textarea {
+      padding:10px 12px; border:1px solid #dfe2e6; border-radius:10px;
+      font-size:14px; font-family:'Barlow',sans-serif; color:var(--text);
+      background:#fafbfc; width:100%; outline:none; resize:vertical;
+      transition:border-color 0.18s;
+    }
+    .nc-textarea:focus { border-color:#5980a6; box-shadow:0 0 0 3px rgba(89,128,166,0.16); }
+    .nc-pill-group { display:flex; gap:8px; flex-wrap:wrap; }
+    .nc-pill-btn {
+      height:34px; padding:0 14px; border-radius:999px; border:1px solid #e6e7e9;
+      background:#fff; color:var(--text-muted); font-size:13px; font-weight:600;
+      font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s;
+    }
+    .nc-pill-btn.active { border-color:#5980a6; background:#eef6ff; color:#2c455d; }
+    .nc-plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .nc-plan-card {
+      display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left;
+      padding:14px; border-radius:12px; cursor:pointer; background:#fff;
+      border:1.5px solid #e6e7e9; width:100%; font-family:'Barlow',sans-serif; transition:all 0.15s;
+    }
+    .nc-plan-card.active { border-color:#5980a6; box-shadow:0 4px 16px rgba(89,128,166,0.15); }
+    .nc-plan-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; }
+    .nc-plan-name { font-size:14px; font-weight:700; color:var(--text); }
+    .nc-plan-radio { width:16px; height:16px; border-radius:50%; display:block; flex:none; border:1.5px solid #e6e7e9; background:#fff; transition:all 0.15s; }
+    .nc-plan-card.active .nc-plan-radio { border:5px solid #5980a6; }
+    .nc-plan-price { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:#1a2535; letter-spacing:-0.3px; }
+    .nc-plan-detail { font-size:11.5px; color:var(--text-muted); line-height:1.45; text-align:left; }
+    .nc-modulo-row {
+      display:flex; align-items:center; gap:11px; width:100%; padding:9px 12px;
+      border-radius:10px; cursor:pointer; text-align:left; border:1px solid #e6e7e9;
+      background:#fff; font-family:'Barlow',sans-serif; transition:all 0.12s;
+    }
+    .nc-modulo-row.active { border-color:#b5d9fd; background:#eef6ff; }
+    .nc-modulo-check {
+      width:19px; height:19px; flex:none; border-radius:6px; display:flex;
+      align-items:center; justify-content:center; font-size:11px; font-weight:800;
+      color:#fff; border:1.5px solid #e6e7e9; transition:all 0.12s;
+    }
+    .nc-modulo-row.active .nc-modulo-check { background:#2c455d; border-color:#2c455d; }
+    .nc-modulo-info { flex:1; }
+    .nc-modulo-nombre { font-size:13.5px; font-weight:600; color:var(--text); }
+    .nc-modulo-desc { font-size:11.5px; color:var(--text-muted); }
+    .nc-modulo-tag { flex:none; font-size:11px; font-weight:700; padding:3px 8px; border-radius:7px; }
+    .nc-modulo-tag.incluido { color:var(--green); background:var(--green-bg); }
+    .nc-modulo-tag.extra-on { color:#2c455d; background:#eef6ff; }
+    .nc-modulo-tag.extra-off { color:var(--text-dim); background:var(--muted-bg); }
+    .nc-resumen { border:1px solid #e6e7e9; background:#fff; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+    .nc-resumen-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+    .nc-resumen-label { font-size:12.5px; font-weight:600; color:var(--text-muted); }
+    .nc-resumen-val { font-size:13px; font-weight:600; color:var(--text); }
+    .nc-resumen-divider { height:1px; background:#e6e7e9; }
+    .nc-total-label { font-size:13px; font-weight:700; color:var(--text); }
+    .nc-total-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:#1a2535; letter-spacing:-0.5px; }
+    .nc-nota { font-size:11.5px; color:var(--text-muted); line-height:1.5; }
+    .nc-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:4px; }
+    .nc-checkbox-label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); cursor:pointer; }
+    .nc-checkbox-label input[type=checkbox] { width:16px; height:16px; accent-color:#2c455d; }
+    .nc-footer-btns { display:flex; align-items:center; gap:10px; }
+    .nc-error { background:var(--red-bg); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:10px 14px; color:var(--red); font-size:13px; display:none; margin-top:8px; }
+    .nc-success { background:var(--green-bg); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:10px 14px; color:var(--green); font-size:13px; display:none; margin-top:8px; }
+    .nc-ciclo-group { display:flex; align-items:center; gap:4px; background:#f4f5f6; border-radius:10px; padding:3px; }
+    .nc-ciclo-btn { height:28px; padding:0 12px; border-radius:8px; border:none; background:transparent; color:var(--text-muted); font-size:12px; font-weight:600; font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s; }
+    .nc-ciclo-btn.active { background:#fff; color:#1a2535; box-shadow:0 1px 3px rgba(26,37,53,0.1); }
+    .nc-right-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .nc-modules-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .nc-reset-btn { font-size:11px; font-weight:600; color:#5980a6; background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; }
+    .nc-reset-btn:hover { color:#2c455d; }
+    .nc-modules-list { display:flex; flex-direction:column; gap:6px; }
+
     /* ── Responsive ── */
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
@@ -342,93 +500,10 @@
       .hamburger { display: flex; }
       .page-area { padding: 20px 16px 40px; }
       .two-col-fields { grid-template-columns: 1fr; }
-    }
-    .hamburger {
-      display: none; position: fixed; top: 14px; left: 14px; z-index: 300;
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
-      width: 38px; height: 38px; align-items: center; justify-content: center;
-      cursor: pointer; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .sidebar-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 190;
-    }
-
-    /* ── Nuevo cliente overlay ── */
-    #page-nuevo-cliente { position:fixed; inset:0; z-index:400; background:var(--page-bg); overflow-y:auto; display:none; }
-    #page-nuevo-cliente.open { display:block; }
-    .nc-topbar { position:sticky; top:0; background:var(--card-bg); border-bottom:1px solid var(--border); height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; z-index:10; }
-    .nc-topbar-left { display:flex; align-items:center; gap:14px; }
-    .nc-back-btn { display:flex; align-items:center; gap:6px; background:none; border:1px solid var(--border); color:var(--text-muted); font-size:13px; font-weight:500; font-family:'Barlow',sans-serif; padding:6px 12px; border-radius:7px; cursor:pointer; transition:all 0.18s; }
-    .nc-back-btn:hover { border-color:var(--accent-300); color:var(--accent-800); }
-    .nc-topbar-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--accent-800); }
-    .nc-badge { display:flex; align-items:center; gap:6px; padding:5px 12px; border:1px solid var(--border); border-radius:999px; font-size:12px; font-weight:600; color:var(--text-muted); }
-    .nc-badge-dot { width:7px; height:7px; border-radius:50%; background:var(--green); display:block; flex-shrink:0; }
-    .nc-body { max-width:1100px; margin:0 auto; padding:28px 28px 60px; }
-    .nc-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); background:var(--card-bg); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-    .nc-left { padding:28px 28px 28px 32px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:18px; }
-    .nc-right { padding:28px 32px 28px 28px; background:#f9fafb; display:flex; flex-direction:column; gap:16px; }
-    .nc-section-label { font-size:11px; font-weight:700; letter-spacing:1.2px; color:var(--text-dim); text-transform:uppercase; }
-    .nc-divider { height:1px; background:var(--border); }
-    .nc-field-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-    .nc-label { display:flex; flex-direction:column; gap:7px; }
-    .nc-label-text { font-size:11px; font-weight:700; letter-spacing:0.9px; color:var(--text-2); text-transform:uppercase; }
-    .nc-input { height:42px; padding:0 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:'Barlow',sans-serif; color:var(--text); background:#fff; width:100%; outline:none; transition:border-color 0.18s, box-shadow 0.18s; }
-    .nc-input:focus { border-color:var(--accent-300); box-shadow:0 0 0 3px rgba(89,128,166,0.10); }
-    .nc-textarea { padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; font-family:'Barlow',sans-serif; color:var(--text); background:#fff; width:100%; outline:none; resize:vertical; transition:border-color 0.18s; }
-    .nc-textarea:focus { border-color:var(--accent-300); box-shadow:0 0 0 3px rgba(89,128,166,0.10); }
-    .nc-pill-group { display:flex; gap:8px; flex-wrap:wrap; }
-    .nc-pill-btn { height:34px; padding:0 14px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:13px; font-weight:600; font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s; }
-    .nc-pill-btn.active { border-color:var(--accent); background:var(--accent-100); color:var(--accent-800); }
-    /* plan cards */
-    .nc-plan-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .nc-plan-card { display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left; padding:14px; border-radius:12px; cursor:pointer; background:#fff; border:1.5px solid var(--border); width:100%; font-family:'Barlow',sans-serif; transition:all 0.15s; }
-    .nc-plan-card.active { border-color:var(--accent); box-shadow:0 4px 16px rgba(89,128,166,0.15); }
-    .nc-plan-card-top { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; }
-    .nc-plan-name { font-size:14px; font-weight:700; color:var(--text); }
-    .nc-plan-radio { width:16px; height:16px; border-radius:50%; display:block; flex:none; border:1.5px solid var(--border); background:#fff; transition:all 0.15s; }
-    .nc-plan-card.active .nc-plan-radio { border:5px solid var(--accent); }
-    .nc-plan-price { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; color:var(--accent-800); letter-spacing:-0.3px; }
-    .nc-plan-detail { font-size:11.5px; color:var(--text-muted); line-height:1.45; text-align:left; }
-    /* módulos */
-    .nc-modulo-row { display:flex; align-items:center; gap:11px; width:100%; padding:9px 12px; border-radius:10px; cursor:pointer; text-align:left; border:1px solid var(--border); background:#fff; font-family:'Barlow',sans-serif; transition:all 0.12s; }
-    .nc-modulo-row.active { border-color:var(--accent-300); background:var(--accent-100); }
-    .nc-modulo-check { width:19px; height:19px; flex:none; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#fff; border:1.5px solid var(--border); transition:all 0.12s; }
-    .nc-modulo-row.active .nc-modulo-check { background:var(--accent-800); border-color:var(--accent-800); }
-    .nc-modulo-info { flex:1; }
-    .nc-modulo-nombre { font-size:13.5px; font-weight:600; color:var(--text); }
-    .nc-modulo-desc { font-size:11.5px; color:var(--text-muted); }
-    .nc-modulo-tag { flex:none; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; }
-    .nc-modulo-tag.incluido { color:var(--green); background:var(--green-bg); }
-    .nc-modulo-tag.extra-on { color:var(--accent-800); background:var(--accent-100); }
-    .nc-modulo-tag.extra-off { color:var(--text-dim); background:var(--muted-bg); }
-    /* resumen */
-    .nc-resumen { border:1px solid var(--border); background:#fff; border-radius:12px; padding:16px; display:flex; flex-direction:column; gap:10px; }
-    .nc-resumen-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-    .nc-resumen-label { font-size:12.5px; font-weight:600; color:var(--text-muted); }
-    .nc-resumen-val { font-size:13px; font-weight:600; color:var(--text); }
-    .nc-resumen-divider { height:1px; background:var(--border); }
-    .nc-total-label { font-size:13px; font-weight:700; color:var(--text); }
-    .nc-total-val { font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:700; color:var(--accent-800); letter-spacing:-0.5px; }
-    .nc-nota { font-size:11.5px; color:var(--text-muted); line-height:1.5; }
-    .nc-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:4px; }
-    .nc-checkbox-label { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-2); cursor:pointer; }
-    .nc-checkbox-label input[type=checkbox] { width:16px; height:16px; accent-color:var(--accent-800); }
-    .nc-footer-btns { display:flex; align-items:center; gap:10px; }
-    .nc-error { background:var(--red-bg); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:10px 14px; color:var(--red); font-size:13px; display:none; margin-top:8px; }
-    .nc-success { background:var(--green-bg); border:1px solid rgba(16,185,129,0.2); border-radius:8px; padding:10px 14px; color:var(--green); font-size:13px; display:none; margin-top:8px; }
-    /* ciclo toggle */
-    .nc-ciclo-group { display:flex; align-items:center; gap:4px; }
-    .nc-ciclo-btn { height:28px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--text-muted); font-size:12px; font-weight:600; font-family:'Barlow',sans-serif; cursor:pointer; transition:all 0.15s; }
-    .nc-ciclo-btn.active { border-color:var(--accent); background:var(--accent-100); color:var(--accent-800); }
-    .nc-right-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .nc-modules-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .nc-reset-btn { font-size:11px; font-weight:600; color:var(--accent); background:none; border:none; cursor:pointer; font-family:'Barlow',sans-serif; padding:0; }
-    .nc-reset-btn:hover { color:var(--accent-800); }
-    .nc-modules-list { display:flex; flex-direction:column; gap:6px; }
-    @media (max-width:768px) {
       .nc-grid { grid-template-columns:1fr; }
-      .nc-left { border-right:none; border-bottom:1px solid var(--border); }
+      .nc-left { border-right:none; border-bottom:1px solid #e6e7e9; }
       .nc-plan-grid { grid-template-columns:1fr 1fr; }
+      .nu-two-col { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -460,7 +535,6 @@
 
 <!-- APP SHELL -->
 <div id="app-shell">
-  <!-- Hamburger (mobile) -->
   <button class="hamburger" id="hamburger-btn" aria-label="Menú">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
@@ -470,9 +544,9 @@
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-top">
       <div class="sidebar-logo">
-        <div class="sidebar-logo-icon">AV</div>
+        <div class="sidebar-logo-icon">A</div>
         <div>
-          <div class="sidebar-logo-text">AVAXON</div>
+          <div class="sidebar-logo-text">Avaxon</div>
           <div class="sidebar-logo-sub">Panel Admin</div>
         </div>
       </div>
@@ -480,20 +554,23 @@
 
     <nav class="sidebar-nav">
       <div class="nav-item active" data-view="overview">
+        <span class="nav-dot"></span>
         <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         </span>
         Overview
       </div>
       <div class="nav-item" data-view="clientes">
+        <span class="nav-dot"></span>
         <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </span>
         Clientes
       </div>
       <div class="nav-item" data-view="usuarios">
+        <span class="nav-dot"></span>
         <span class="nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
         </span>
         Usuarios
       </div>
@@ -508,6 +585,7 @@
 
     <div class="sidebar-bottom">
       <div class="sidebar-user">
+        <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
         <span class="sidebar-user-email" id="sidebar-email">—</span>
         <button class="btn-signout" id="signout-btn">Salir</button>
       </div>
@@ -517,7 +595,10 @@
   <!-- MAIN -->
   <main class="main-content">
     <div class="topbar">
-      <span class="topbar-title" id="topbar-title">Overview</span>
+      <div class="topbar-left">
+        <div class="topbar-eyebrow">Avaxon Admin</div>
+        <div class="topbar-h1" id="topbar-title">Overview</div>
+      </div>
       <div class="topbar-right">
         <span class="topbar-time" id="topbar-time"></span>
         <button class="btn-refresh" id="refresh-btn">
@@ -529,10 +610,10 @@
 
     <div class="page-area">
 
-      <!-- ── VISTA: OVERVIEW ── -->
+      <!-- VISTA: OVERVIEW -->
       <div class="view active" id="view-overview">
         <div id="overview-kpis" class="kpi-grid">
-          <div class="inner-loading"><div class="spinner-light"></div></div>
+          <div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div></div>
         </div>
         <div class="section-header">
           <span class="section-title">Clientes recientes</span>
@@ -559,7 +640,7 @@
         </div>
       </div>
 
-      <!-- ── VISTA: CLIENTES ── -->
+      <!-- VISTA: CLIENTES -->
       <div class="view" id="view-clientes">
         <div class="section-header">
           <span class="section-title">Clientes <span class="count-badge" id="badge-orgs">0</span></span>
@@ -591,7 +672,7 @@
         </div>
       </div>
 
-      <!-- ── VISTA: USUARIOS ── -->
+      <!-- VISTA: USUARIOS -->
       <div class="view" id="view-usuarios">
         <div class="section-header">
           <span class="section-title">Usuarios <span class="count-badge" id="badge-usuarios">0</span></span>
@@ -606,32 +687,28 @@
               <thead>
                 <tr>
                   <th>Usuario</th>
-                  <th>Email</th>
-                  <th>Tipo</th>
-                  <th>Tenant #</th>
-                  <th>Organización</th>
-                  <th>Suscripción</th>
-                  <th>Creado</th>
+                  <th>Cliente / tenant</th>
+                  <th>Rol</th>
                   <th>Último acceso</th>
+                  <th>Estado</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody id="tbody-usuarios">
-                <tr><td colspan="9"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
+                <tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-    </div><!-- /page-area -->
+    </div>
   </main>
-</div><!-- /app-shell -->
+</div>
 
-<!-- ── PAGE OVERLAY: NUEVO CLIENTE ── -->
+<!-- PAGE OVERLAY: NUEVO CLIENTE -->
 <div id="page-nuevo-cliente">
   <div class="nc-shell">
-    <!-- Topbar sticky -->
     <div class="nc-topbar">
       <div class="nc-topbar-left">
         <button class="nc-back-btn" id="nc-back-btn">
@@ -646,14 +723,10 @@
       </div>
     </div>
 
-    <!-- Body -->
     <div class="nc-body">
       <div class="nc-grid">
-
         <!-- Columna izquierda -->
         <div class="nc-left">
-
-          <!-- 1 · DATOS DE LA CUENTA -->
           <div class="nc-section-label">1 · Datos de la cuenta</div>
           <div class="nc-field-grid">
             <label class="nc-label">
@@ -676,7 +749,6 @@
 
           <div class="nc-divider"></div>
 
-          <!-- 2 · COBRO -->
           <div class="nc-section-label">2 · Cobro</div>
           <div>
             <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px;">Modo de cobro</div>
@@ -700,13 +772,10 @@
             <span class="nc-label-text">Notas</span>
             <textarea class="nc-textarea" id="nc-notas" rows="2" placeholder="Observaciones internas…"></textarea>
           </label>
-
-        </div><!-- /nc-left -->
+        </div>
 
         <!-- Columna derecha -->
         <div class="nc-right">
-
-          <!-- 3 · PLAN -->
           <div class="nc-right-header">
             <div class="nc-section-label">3 · Plan</div>
             <div class="nc-ciclo-group">
@@ -715,34 +784,24 @@
             </div>
           </div>
 
-          <div class="nc-plan-grid" id="nc-plan-grid">
-            <!-- Renderizado por JS -->
-          </div>
+          <div class="nc-plan-grid" id="nc-plan-grid"></div>
 
           <div class="nc-divider"></div>
 
-          <!-- 4 · MÓDULOS -->
           <div class="nc-modules-header">
             <div class="nc-section-label">4 · Módulos</div>
             <button class="nc-reset-btn" id="nc-reset-modulos">Restablecer al plan</button>
           </div>
 
-          <div class="nc-modules-list" id="nc-modules-list">
-            <!-- Renderizado por JS -->
-          </div>
+          <div class="nc-modules-list" id="nc-modules-list"></div>
 
           <div class="nc-divider"></div>
 
-          <!-- Resumen de precio -->
-          <div class="nc-resumen" id="nc-resumen">
-            <!-- Renderizado por JS -->
-          </div>
+          <div class="nc-resumen" id="nc-resumen"></div>
 
-          <!-- Error / Success -->
           <div class="nc-error" id="nc-error"></div>
           <div class="nc-success" id="nc-success"></div>
 
-          <!-- Footer -->
           <div class="nc-footer">
             <label class="nc-checkbox-label">
               <input type="checkbox" id="nc-send-email" checked />
@@ -750,19 +809,16 @@
             </label>
             <div class="nc-footer-btns">
               <button class="btn-ghost" id="nc-cancel-btn">Cancelar</button>
-              <button class="btn-primary" id="nc-crear-btn">
-                Crear cliente →
-              </button>
+              <button class="btn-primary" id="nc-crear-btn">Crear cliente →</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        </div><!-- /nc-right -->
-      </div><!-- /nc-grid -->
-    </div><!-- /nc-body -->
-  </div><!-- /nc-shell -->
-</div><!-- /page-nuevo-cliente -->
-
-<!-- ── MODAL: EDITAR CLIENTE ── -->
+<!-- MODAL: EDITAR CLIENTE -->
 <div class="modal-backdrop" id="modal-editar">
   <div class="modal">
     <div class="modal-header">
@@ -813,7 +869,7 @@
   </div>
 </div>
 
-<!-- ── MODAL: CAMBIAR ROL ── -->
+<!-- MODAL: CAMBIAR ROL -->
 <div class="modal-backdrop" id="modal-rol">
   <div class="modal" style="max-width:380px">
     <div class="modal-header">
@@ -839,9 +895,9 @@
   </div>
 </div>
 
-<!-- ── MODAL: NUEVO USUARIO ── -->
+<!-- MODAL: NUEVO USUARIO -->
 <div class="modal-backdrop" id="modal-nuevo-usuario">
-  <div class="modal" style="max-width:460px">
+  <div class="modal" style="max-width:560px">
     <div class="modal-header">
       <span class="modal-title">Nuevo usuario</span>
       <button class="modal-close" data-close="modal-nuevo-usuario">×</button>
@@ -849,30 +905,36 @@
     <div class="modal-body">
       <div class="modal-error" id="nu-error"></div>
       <div class="modal-success" id="nu-success"></div>
-
-      <div class="field-group">
-        <label class="field-label">Nombre completo *</label>
-        <input class="field-input" id="nu-nombre" placeholder="Ej: Héctor García" />
-      </div>
-      <div class="field-group">
-        <label class="field-label">Correo electrónico *</label>
-        <input class="field-input" type="email" id="nu-email" placeholder="hector@avaxon.mx" />
-        <p style="font-size:12px;color:var(--text-muted);margin-top:5px;">Recibirá una invitación para establecer su contraseña.</p>
-      </div>
-      <div class="two-col-fields">
-        <div class="field-group">
-          <label class="field-label">Rol *</label>
-          <select class="field-select" id="nu-rol">
-            <option value="super_admin">Super Admin</option>
-            <option value="admin">Admin</option>
-            <option value="agent">Agent</option>
-          </select>
+      <div class="nu-two-col">
+        <div>
+          <div class="field-group">
+            <label class="field-label">Nombre completo *</label>
+            <input class="field-input" id="nu-nombre" placeholder="Ej: Héctor García" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Correo electrónico *</label>
+            <input class="field-input" type="email" id="nu-email" placeholder="hector@empresa.com" />
+            <p style="font-size:12px;color:var(--text-muted);margin-top:5px;">Recibirá una invitación para establecer su contraseña.</p>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Rol *</label>
+            <select class="field-select" id="nu-rol">
+              <option value="super_admin">Super Admin</option>
+              <option value="admin">Admin</option>
+              <option value="agent">Agent</option>
+            </select>
+          </div>
         </div>
-        <div class="field-group">
-          <label class="field-label">Organización</label>
-          <select class="field-select" id="nu-org">
-            <option value="">— Sin organización —</option>
-          </select>
+        <div>
+          <div class="nu-org-panel">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#8c939b;">Organización</div>
+            <div class="field-group" style="margin-bottom:0">
+              <select class="field-select" id="nu-org" style="background-color:#fff">
+                <option value="">— Sin organización —</option>
+              </select>
+            </div>
+            <p style="font-size:12px;color:var(--text-muted);line-height:1.5;">El usuario tendrá acceso únicamente a los datos de la organización seleccionada. Los super admins tienen acceso global.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -883,7 +945,7 @@
   </div>
 </div>
 
-<!-- ── MODAL: EDITAR USUARIO ── -->
+<!-- MODAL: EDITAR USUARIO -->
 <div class="modal-backdrop" id="modal-editar-usuario">
   <div class="modal" style="max-width:460px">
     <div class="modal-header">
@@ -931,9 +993,9 @@
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const VIEW_TITLES = { overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios' };
-  let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [] };
+  let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
-  // ── Nuevo cliente state ─────────────────────────────────────────────────────
+  // ── Nuevo cliente state ──────────────────────────────────────────────────────
   const ncState = { plan: 'pro', ciclo: 'mensual', modo: 'Trial', extras: {} };
 
   const PLANES_AV = [
@@ -952,7 +1014,7 @@
     { id:'api',         nombre:'API & Webhooks',      desc:'Automatizaciones avanzadas',   precio:1500 },
   ];
 
-  // ── Utilidades ──────────────────────────────────────────────────────────────
+  // ── Utilities ──────────────────────────────────────────────────────────────
   const $ = id => document.getElementById(id);
 
   function showScreen(name) {
@@ -1032,7 +1094,6 @@
     const planActual = PLANES_AV.find(p => p.id === ncState.plan) ?? PLANES_AV[1];
     const factorCiclo = ncState.ciclo === 'anual' ? 0.85 : 1;
 
-    // Plan cards
     $('nc-plan-grid').innerHTML = PLANES_AV.map(p => {
       const precio = Math.round(p.precio * factorCiclo);
       const isActive = p.id === ncState.plan;
@@ -1047,10 +1108,8 @@
         </button>`;
     }).join('');
 
-    // Módulos
     $('nc-modules-list').innerHTML = MODULOS_AV.map(m => {
       const incluidoEnPlan = planActual.incluye.includes(m.id);
-      // Si hay override en extras
       const hasOverride = ncState.extras.hasOwnProperty(m.id);
       const isActive = hasOverride ? ncState.extras[m.id] : incluidoEnPlan;
 
@@ -1076,7 +1135,6 @@
         </button>`;
     }).join('');
 
-    // Calcular total
     const precioBase = Math.round(planActual.precio * factorCiclo);
     let extrasTotal = 0;
     const extraLines = [];
@@ -1113,7 +1171,6 @@
       ${ncState.ciclo === 'anual' ? `<p class="nc-nota">Precio anual con descuento del 15% ya aplicado.</p>` : ''}
     `;
 
-    // Re-attach plan card listeners
     document.querySelectorAll('.nc-plan-card').forEach(btn => {
       btn.addEventListener('click', () => {
         ncState.plan = btn.dataset.plan;
@@ -1122,7 +1179,6 @@
       });
     });
 
-    // Re-attach modulo listeners
     document.querySelectorAll('.nc-modulo-row').forEach(btn => {
       btn.addEventListener('click', () => {
         const moduloId = btn.dataset.modulo;
@@ -1173,14 +1229,7 @@
       const res = await fetch(`${EDGE_BASE}/admin-create-client`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          org_name,
-          industry: industry || undefined,
-          plan_id,
-          trial_ends_at,
-          admin_name,
-          admin_email,
-        }),
+        body: JSON.stringify({ org_name, industry: industry || undefined, plan_id, trial_ends_at, admin_name, admin_email }),
       });
 
       const data = await res.json();
@@ -1194,7 +1243,6 @@
       succEl.textContent = `Cliente "${org_name}" creado exitosamente. Invitación enviada a ${admin_email}.`;
       succEl.style.display = 'block';
 
-      // Limpiar formulario
       ['nc-empresa','nc-giro','nc-dueno','nc-email','nc-notas','nc-tarifa-fija'].forEach(id => { const el = $(id); if (el) el.value = ''; });
       $('nc-trial-dias').value = '14';
       ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
@@ -1253,6 +1301,7 @@
     }
 
     $('sidebar-email').textContent = user.email;
+    $('sidebar-user-avatar').textContent = initials(user.email || '?');
     showScreen('app');
     loadOverview();
   }
@@ -1290,14 +1339,16 @@
       sb.from('organizations').select('id,name,industry,plan_id,status,trial_ends_at,created_at').order('created_at', { ascending: false }).limit(5),
     ]);
 
+    const KPI_COLORS = ['#5980a6', '#10b981', '#f59e0b', '#6366f1'];
     const kpis = [
       { icon: '🏢', label: 'Clientes activos',   value: activeRes.count   ?? 0 },
       { icon: '⏳', label: 'En trial',            value: trialRes.count    ?? 0 },
       { icon: '💬', label: 'Mensajes este mes',   value: msgsRes.count     ?? 0 },
       { icon: '👥', label: 'Contactos totales',   value: contactsRes.count ?? 0 },
     ];
-    $('overview-kpis').innerHTML = kpis.map(k => `
+    $('overview-kpis').innerHTML = kpis.map((k, i) => `
       <div class="kpi-card">
+        <div class="kpi-accent-bar" style="background:${KPI_COLORS[i]}"></div>
         <span class="kpi-icon">${k.icon}</span>
         <div class="kpi-label">${k.label}</div>
         <div class="kpi-value">${k.value.toLocaleString('es-MX')}</div>
@@ -1411,7 +1462,7 @@
 
   // ── Usuarios ────────────────────────────────────────────────────────────────
   async function loadUsuarios() {
-    $('tbody-usuarios').innerHTML = `<tr><td colspan="9"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
+    $('tbody-usuarios').innerHTML = `<tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
 
     const { data: { session } } = await sb.auth.getSession();
     const token = session?.access_token;
@@ -1425,7 +1476,7 @@
       if (!res.ok) throw new Error(data.error ?? 'Error');
       users = data.users ?? [];
     } catch (e) {
-      $('tbody-usuarios').innerHTML = `<tr><td colspan="9" style="color:var(--red);padding:20px">${e.message}</td></tr>`;
+      $('tbody-usuarios').innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:20px">${e.message}</td></tr>`;
       return;
     }
 
@@ -1434,30 +1485,32 @@
 
     const isSocio = u => u.role === 'super_admin';
 
-    // Guardar en un Map para acceso por ID sin pasar JSON al onclick
     state.usersMap = {};
     users.forEach(u => { state.usersMap[u.id] = u; });
 
     $('tbody-usuarios').innerHTML = users.length === 0
-      ? `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
+      ? `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
       : users.map(u => `<tr>
           <td>
             <div class="contact-cell">
               <div class="avatar">${initials(u.full_name || u.email || '?')}</div>
-              <div class="contact-name">${u.full_name || '—'}</div>
+              <div>
+                <div class="contact-name">${u.full_name || '—'}</div>
+                <div class="contact-sub">${u.email ?? ''}</div>
+              </div>
             </div>
           </td>
-          <td style="font-size:12.5px;color:var(--text-muted)">${u.email ?? '—'}</td>
-          <td>${isSocio(u) ? '<span class="pill pill-accent no-dot">Socio</span>' : '<span class="pill pill-muted no-dot">Cliente</span>'}</td>
-          <td style="text-align:center">
-            ${u.tenant_number != null
-              ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:var(--accent-800)">#${u.tenant_number}</span>`
-              : '<span style="color:var(--text-dim)">—</span>'}
+          <td>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${u.org_name ?? '<span style="color:var(--text-dim)">—</span>'}</div>
+              ${u.tenant_number != null
+                ? `<div style="font-size:11.5px;color:var(--text-muted)">Tenant <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;color:#2c455d">#${u.tenant_number}</span></div>`
+                : ''}
+            </div>
           </td>
-          <td style="font-size:13px">${u.org_name ?? '<span style="color:var(--text-dim)">—</span>'}</td>
-          <td>${u.org_status ? statusPill(u.org_status) : '<span style="color:var(--text-dim)">—</span>'}</td>
-          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${fmtDate(u.created_at)}</td>
+          <td>${isSocio(u) ? '<span class="pill pill-accent no-dot">Socio</span>' : rolePill(u.role)}</td>
           <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${u.last_sign_in ? fmtDate(u.last_sign_in) : '<span style="color:var(--text-dim)">Nunca</span>'}</td>
+          <td>${u.org_status ? statusPill(u.org_status) : '<span style="color:var(--text-dim)">—</span>'}</td>
           <td>
             <div class="actions-cell">
               ${!isSocio(u) ? `<button class="btn-ghost" onclick="openEditUsuarioModal('${u.id}')">Editar</button>` : ''}
@@ -1557,14 +1610,12 @@
 
   // ── Nuevo usuario ────────────────────────────────────────────────────────────
   async function openNuevoUsuarioModal() {
-    // Limpiar formulario
     $('nu-nombre').value = '';
     $('nu-email').value = '';
     $('nu-rol').value = 'admin';
     $('nu-error').style.display = 'none';
     $('nu-success').style.display = 'none';
 
-    // Poblar select de orgs
     const orgSelect = $('nu-org');
     orgSelect.innerHTML = '<option value="">— Sin organización —</option>';
 
@@ -1660,7 +1711,6 @@
 
   // Nuevo cliente — overlay
   $('btn-nuevo-cliente').addEventListener('click', () => {
-    // Resetear estado
     ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
     $('nc-empresa').value = '';
     $('nc-giro').value = '';
@@ -1671,9 +1721,7 @@
     $('nc-tarifa-fija').value = '';
     $('nc-error').style.display = 'none';
     $('nc-success').style.display = 'none';
-    // Resetear ciclo pills
     document.querySelectorAll('.nc-ciclo-btn').forEach(b => b.classList.toggle('active', b.dataset.ciclo === 'mensual'));
-    // Resetear modo pills
     document.querySelectorAll('.nc-pill-btn[data-modo]').forEach(b => b.classList.toggle('active', b.dataset.modo === 'Trial'));
     openNuevoClientePage();
   });
@@ -1682,7 +1730,6 @@
   $('nc-cancel-btn').addEventListener('click', closeNuevoClientePage);
   $('nc-crear-btn').addEventListener('click', crearCliente);
 
-  // Ciclo toggle (mensual / anual)
   document.querySelectorAll('.nc-ciclo-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       ncState.ciclo = btn.dataset.ciclo;
@@ -1691,7 +1738,6 @@
     });
   });
 
-  // Modo de cobro pills
   document.querySelectorAll('.nc-pill-btn[data-modo]').forEach(btn => {
     btn.addEventListener('click', () => {
       ncState.modo = btn.dataset.modo;
@@ -1699,24 +1745,18 @@
     });
   });
 
-  // Restablecer módulos al plan
   $('nc-reset-modulos').addEventListener('click', () => {
     ncState.extras = {};
     renderNC();
   });
 
-  // Modal editar cliente y rol
   $('btn-guardar-editar').addEventListener('click', saveEditOrg);
   $('btn-guardar-rol').addEventListener('click', saveRol);
-
-  // Modal editar usuario
   $('btn-guardar-eu').addEventListener('click', saveEditUsuario);
 
-  // Modal nuevo usuario
   $('btn-nuevo-usuario').addEventListener('click', openNuevoUsuarioModal);
   $('btn-crear-usuario').addEventListener('click', crearUsuario);
 
-  // Cerrar modales con data-close
   document.querySelectorAll('[data-close]').forEach(el => {
     el.addEventListener('click', () => closeModal(el.dataset.close));
   });
@@ -1724,7 +1764,6 @@
     backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
   });
 
-  // Mobile hamburger
   $('hamburger-btn').addEventListener('click', () => {
     $('sidebar').classList.toggle('open');
     $('sidebar-overlay').style.display = $('sidebar').classList.contains('open') ? 'block' : 'none';
