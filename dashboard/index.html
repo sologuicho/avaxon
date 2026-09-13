@@ -2154,7 +2154,7 @@
 
     state.isSuperAdmin = role === 'super_admin';
     state.userRole     = role;
-    state.userOrgId    = profile?.organization_id ?? null;
+    state.userOrgId    = profileData?.organization_id ?? null;
 
     // Show/hide Conexiones nav for agents
     if (role === 'agent') {
