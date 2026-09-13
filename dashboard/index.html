@@ -1295,6 +1295,7 @@
     $('kpi-grid').innerHTML = `<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div>Cargando datos…</div>`;
 
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    const week7 = new Date(today); week7.setDate(week7.getDate() - 6);
     const isAll = orgId === null;
 
     function withOrg(query) {
@@ -1314,6 +1315,7 @@
         phonesRes,
         waAccountsRes,
         leadsRes,
+        msgs7dRes,
       ] = await Promise.all([
         withOrg(sb.from('contacts').select('*', { count:'exact', head:true })),
         withOrg(sb.from('conversations').select('*', { count:'exact', head:true }).eq('status','open')),
@@ -1326,17 +1328,38 @@
         withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
         withOrg(sb.from('whatsapp_accounts').select('id,waba_id,business_name,status')),
         withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at',{ascending:false}).limit(50)),
+        withOrg(sb.from('messages').select('direction,created_at').gte('created_at', week7.toISOString())),
       ]);
 
+      // Build 7-day chart data
+      const dayMap = {};
+      const dayKeys = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const k = d.toISOString().slice(0, 10);
+        const label = d.toLocaleDateString('es-MX', { weekday: 'short' }).slice(0, 3);
+        dayMap[k] = { sent: 0, recv: 0, label };
+        dayKeys.push(k);
+      }
+      (msgs7dRes.data || []).forEach(m => {
+        const k = m.created_at?.slice(0, 10);
+        if (dayMap[k]) {
+          if (m.direction === 'outbound') dayMap[k].sent++;
+          else dayMap[k].recv++;
+        }
+      });
+      buildMsgChart(dayKeys.map(k => dayMap[k]));
+
+      const todayMsgs = msgsTodayCountRes.count ?? 0;
       const kpis = [];
       if (isAll && state.isSuperAdmin) {
-        kpis.push({ icon:'🏢', label:'Organizaciones', value: orgsCountRes.count ?? 0, muted:false });
+        kpis.push({ label:'Organizaciones', value: orgsCountRes.count ?? 0, foot: 'Clientes registrados' });
       }
       kpis.push(
-        { icon:'👥', label:'Contactos', value: contactsCountRes.count ?? 0, muted:false },
-        { icon:'💬', label:'Conv. abiertas', value: convsOpenCountRes.count ?? 0, muted:false },
-        { icon:'📨', label:'Mensajes hoy', value: msgsTodayCountRes.count ?? 0, muted:false },
-        { icon:'📦', label:'Mensajes totales', value: msgsCountRes.count ?? 0, muted:true },
+        { label:'Contactos', value: contactsCountRes.count ?? 0, foot: 'Total en la base de datos' },
+        { label:'Conv. abiertas', value: convsOpenCountRes.count ?? 0, foot: 'En este momento' },
+        { label:'Mensajes hoy', value: todayMsgs, foot: new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'short' }) },
+        { label:'Mensajes totales', value: msgsCountRes.count ?? 0, foot: 'Acumulados' },
       );
       buildKpiGrid(kpis);
 
