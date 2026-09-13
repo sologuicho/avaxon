@@ -1434,11 +1434,13 @@
 
     const isSocio = u => u.role === 'super_admin';
 
+    // Guardar en un Map para acceso por ID sin pasar JSON al onclick
+    state.usersMap = {};
+    users.forEach(u => { state.usersMap[u.id] = u; });
+
     $('tbody-usuarios').innerHTML = users.length === 0
       ? `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
-      : users.map(u => {
-          const uJson = encodeURIComponent(JSON.stringify(u));
-          return `<tr>
+      : users.map(u => `<tr>
           <td>
             <div class="contact-cell">
               <div class="avatar">${initials(u.full_name || u.email || '?')}</div>
@@ -1458,16 +1460,17 @@
           <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${u.last_sign_in ? fmtDate(u.last_sign_in) : '<span style="color:var(--text-dim)">Nunca</span>'}</td>
           <td>
             <div class="actions-cell">
-              ${!isSocio(u) ? `<button class="btn-ghost" onclick="openEditUsuarioModal(decodeURIComponent('${uJson}'))">Editar</button>` : ''}
-              ${!isSocio(u) ? `<button class="btn-danger" onclick="eliminarUsuario('${u.id}','${(u.full_name || u.email || '').replace(/'/g,"\\'").replace(/"/g,'\\"')}')">Eliminar</button>` : ''}
+              ${!isSocio(u) ? `<button class="btn-ghost" onclick="openEditUsuarioModal('${u.id}')">Editar</button>` : ''}
+              ${!isSocio(u) ? `<button class="btn-danger" onclick="eliminarUsuario('${u.id}')">Eliminar</button>` : ''}
             </div>
           </td>
-        </tr>`;
-        }).join('');
+        </tr>`).join('');
   }
 
-  function openEditUsuarioModal(jsonOrObj) {
-    const u = typeof jsonOrObj === 'string' ? JSON.parse(jsonOrObj) : jsonOrObj;
+  function openEditUsuarioModal(userId) {
+    const u = state.usersMap?.[userId];
+    if (!u) { showToast('Usuario no encontrado', 'error'); return; }
+
     $('eu-user-id').value = u.id;
     $('eu-nombre').value  = u.full_name ?? '';
     $('eu-rol').value     = u.role ?? 'agent';
@@ -1475,7 +1478,9 @@
 
     const orgSelect = $('eu-org');
     orgSelect.innerHTML = '<option value="">— Sin organización —</option>';
-    const orgsToUse = state.orgsCache.length ? state.orgsCache : (u.org_name ? [{ id: u.organization_id, name: u.org_name }] : []);
+    const orgsToUse = state.orgsCache.length
+      ? state.orgsCache
+      : (u.org_name ? [{ id: u.organization_id, name: u.org_name }] : []);
     orgsToUse.forEach(org => {
       const opt = document.createElement('option');
       opt.value = org.id;
