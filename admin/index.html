@@ -615,27 +615,38 @@
         <div id="overview-kpis" class="kpi-grid">
           <div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div></div>
         </div>
-        <div class="section-header">
-          <span class="section-title">Clientes recientes</span>
-          <span class="count-badge" id="badge-recent-orgs">0</span>
-        </div>
-        <div class="card mb-24">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Organización</th>
-                  <th>Industria</th>
-                  <th>Plan</th>
-                  <th>Estado</th>
-                  <th>Trial hasta</th>
-                  <th>Creado</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-recent-orgs">
-                <tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
-              </tbody>
-            </table>
+
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start" class="overview-cols">
+          <!-- Clientes recientes -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Clientes por volumen</span>
+              <a href="#" onclick="event.preventDefault();switchView('clientes')" style="font-size:13px;font-weight:600;color:#5980a6">Ver todos</a>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Organización</th><th>Plan</th><th>Estado</th><th>Usuarios</th><th>Creado</th></tr></thead>
+                <tbody id="tbody-recent-orgs">
+                  <tr><td colspan="5"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right column -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <!-- Distribución por plan -->
+            <div class="card" style="padding:18px 20px">
+              <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;color:#1a2535;margin-bottom:14px">Distribución por plan</div>
+              <div id="plan-bar" style="display:flex;height:10px;border-radius:99px;overflow:hidden;gap:2px;margin-bottom:14px"></div>
+              <div id="plan-legend" style="display:flex;flex-direction:column;gap:10px"></div>
+            </div>
+
+            <!-- Actividad reciente -->
+            <div class="card" style="overflow:hidden">
+              <div class="card-header"><span class="card-title">Actividad reciente</span></div>
+              <div id="activity-feed"></div>
+            </div>
           </div>
         </div>
       </div>
