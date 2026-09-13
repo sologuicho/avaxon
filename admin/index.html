@@ -883,6 +883,43 @@
   </div>
 </div>
 
+<!-- ── MODAL: EDITAR USUARIO ── -->
+<div class="modal-backdrop" id="modal-editar-usuario">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">Editar usuario</span>
+      <button class="modal-close" data-close="modal-editar-usuario">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="eu-error"></div>
+      <input type="hidden" id="eu-user-id" />
+      <div class="field-group">
+        <label class="field-label">Nombre completo *</label>
+        <input class="field-input" id="eu-nombre" placeholder="Nombre y apellido" />
+      </div>
+      <div class="two-col-fields">
+        <div class="field-group">
+          <label class="field-label">Rol</label>
+          <select class="field-select" id="eu-rol">
+            <option value="admin">Admin</option>
+            <option value="agent">Agent</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Organización</label>
+          <select class="field-select" id="eu-org">
+            <option value="">— Sin organización —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="modal-editar-usuario">Cancelar</button>
+      <button class="btn-primary" id="btn-guardar-eu">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
