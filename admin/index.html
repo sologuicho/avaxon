@@ -654,14 +654,25 @@
 
       <!-- VISTA: CLIENTES -->
       <div class="view" id="view-clientes">
-        <div class="section-header">
-          <span class="section-title">Clientes <span class="count-badge" id="badge-orgs">0</span></span>
-          <button class="btn-primary" id="btn-nuevo-cliente">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Nuevo cliente
-          </button>
-        </div>
+        <!-- Funnel KPIs -->
+        <div id="clientes-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px"></div>
+
         <div class="card">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e6e7e9">
+            <div style="display:flex;gap:2px;padding:3px;border-radius:9px;background:#f4f5f6">
+              <button id="cl-tab-all" onclick="filterClientes('all')" style="padding:6px 14px;border-radius:7px;border:0;background:#fff;font-size:13px;font-weight:600;color:#1a2535;cursor:pointer;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todos <span class="count-badge" id="badge-orgs" style="margin-left:4px">0</span></button>
+              <button id="cl-tab-active" onclick="filterClientes('active')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Activos</button>
+              <button id="cl-tab-trial" onclick="filterClientes('trial')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Trial</button>
+              <button id="cl-tab-paused" onclick="filterClientes('paused')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Pausados</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input class="search-input" type="text" id="clientes-search" placeholder="Buscar organización…" style="width:220px" />
+              <button class="btn-primary" id="btn-nuevo-cliente">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Nuevo cliente
+              </button>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
