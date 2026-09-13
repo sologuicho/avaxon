@@ -1665,6 +1665,15 @@
 
     const { data } = await query;
     calView.appointments = data || [];
+
+    // Cal KPI cards
+    const apts    = calView.appointments;
+    const todayKey = calDateKey(new Date());
+    $('cal-kpi-total').textContent     = apts.length;
+    $('cal-kpi-confirmed').textContent = apts.filter(a => a.status === 'confirmed').length;
+    $('cal-kpi-pending').textContent   = apts.filter(a => !a.status || a.status === 'pending').length;
+    $('cal-kpi-today').textContent     = apts.filter(a => aptDateKey(a.scheduled_at) === todayKey).length;
+
     renderCalGrid();
     renderDayView(calView.selectedDate);
   }
