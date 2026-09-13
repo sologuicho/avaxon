@@ -1583,33 +1583,9 @@
   }
 
   // ── Usuarios ────────────────────────────────────────────────────────────────
-  async function loadUsuarios() {
-    $('tbody-usuarios').innerHTML = `<tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
-
-    const { data: { session } } = await sb.auth.getSession();
-    const token = session?.access_token;
-
-    let users = [];
-    try {
-      const res = await fetch(`${EDGE_BASE}/admin-list-users`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Error');
-      users = data.users ?? [];
-    } catch (e) {
-      $('tbody-usuarios').innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:20px">${e.message}</td></tr>`;
-      return;
-    }
-
-    state.usersCache = users;
-    $('badge-usuarios').textContent = users.length;
-
+  function renderUsuariosTable(users) {
     const isSocio = u => u.role === 'super_admin';
-
-    state.usersMap = {};
-    users.forEach(u => { state.usersMap[u.id] = u; });
-
+    $('badge-usuarios').textContent = users.length;
     $('tbody-usuarios').innerHTML = users.length === 0
       ? `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div>Sin usuarios todavía</div></td></tr>`
       : users.map(u => `<tr>
@@ -1640,6 +1616,73 @@
             </div>
           </td>
         </tr>`).join('');
+  }
+
+  function filterUsuarios(tab) {
+    ['all','admin','agent'].forEach(t => {
+      const btn = $('usr-tab-' + t);
+      if (!btn) return;
+      const active = t === tab;
+      btn.style.background = active ? '#fff' : 'transparent';
+      btn.style.color      = active ? '#1a2535' : '#8c939b';
+      btn.style.boxShadow  = active ? '0 1px 3px rgba(26,37,53,0.1)' : 'none';
+    });
+    const filtered = tab === 'all' ? state.usersCache
+      : state.usersCache.filter(u => u.role === tab);
+    renderUsuariosTable(filtered);
+  }
+  window.filterUsuarios = filterUsuarios;
+
+  async function loadUsuarios() {
+    $('tbody-usuarios').innerHTML = `<tr><td colspan="6"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
+
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token;
+
+    let users = [];
+    try {
+      const res = await fetch(`${EDGE_BASE}/admin-list-users`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Error');
+      users = data.users ?? [];
+    } catch (e) {
+      $('tbody-usuarios').innerHTML = `<tr><td colspan="6" style="color:var(--red);padding:20px">${e.message}</td></tr>`;
+      return;
+    }
+
+    state.usersCache = users;
+    state.usersMap = {};
+    users.forEach(u => { state.usersMap[u.id] = u; });
+
+    // KPI cards
+    const KPI_COLORS = ['#5980a6','#2c455d','#10b981','#f59e0b'];
+    const admins  = users.filter(u => u.role === 'admin').length;
+    const agentes = users.filter(u => u.role === 'agent').length;
+    const socios  = users.filter(u => u.role === 'super_admin').length;
+    $('usuarios-kpis').innerHTML = [
+      { label: 'Total usuarios', value: users.length, color: KPI_COLORS[0], foot: 'Todos los roles' },
+      { label: 'Socios',         value: socios,        color: KPI_COLORS[1], foot: 'super_admin' },
+      { label: 'Admins',         value: admins,        color: KPI_COLORS[2], foot: 'Por tenant' },
+      { label: 'Agentes',        value: agentes,       color: KPI_COLORS[3], foot: 'Usuarios operativos' },
+    ].map(k => `
+      <div class="kpi-card">
+        <div class="kpi-accent-bar" style="background:${k.color}"></div>
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-row"><div class="kpi-value">${k.value.toLocaleString('es-MX')}</div></div>
+        <div class="kpi-foot">${k.foot}</div>
+      </div>`).join('');
+
+    filterUsuarios('all');
+
+    $('usuarios-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      const base = state.usersCache;
+      renderUsuariosTable(q
+        ? base.filter(u => (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q))
+        : base);
+    });
   }
 
   function openEditUsuarioModal(userId) {
