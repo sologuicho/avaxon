@@ -705,15 +705,36 @@
 
       <!-- VIEW: Inicio -->
       <div class="view active" id="view-inicio">
-        <div class="kpi-grid" id="kpi-grid">
-          <!-- rendered by JS -->
+        <div class="kpi-grid" id="kpi-grid"></div>
+
+        <!-- Chart: mensajes enviados vs recibidos -->
+        <div id="msg-chart-wrap" style="display:none;margin-bottom:22px">
+          <div class="card" style="padding:20px 22px 14px">
+            <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px">
+              <div>
+                <div style="font-size:16px;font-weight:700;letter-spacing:-0.01em;color:#1a2535">Mensajes — últimos 7 días</div>
+              </div>
+              <div style="display:flex;gap:18px">
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="width:18px;height:3px;border-radius:2px;background:#2c455d;display:inline-block"></span>
+                  <span style="font-size:12.5px;color:#5b636c;font-weight:600">Enviados</span>
+                  <span style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700" id="chart-sent-total">0</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:7px">
+                  <span style="width:18px;height:3px;border-radius:2px;background:#5980a6;display:inline-block"></span>
+                  <span style="font-size:12.5px;color:#5b636c;font-weight:600">Recibidos</span>
+                  <span style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700" id="chart-recv-total">0</span>
+                </div>
+              </div>
+            </div>
+            <svg id="msg-chart-svg" viewBox="0 0 760 232" preserveAspectRatio="none" style="width:100%;height:200px;display:block"></svg>
+          </div>
         </div>
 
-        <div class="section-header">
-          <span class="section-title">WhatsApp conectado</span>
-        </div>
+        <!-- WA number -->
         <div id="wa-number-wrap" class="mb-24"></div>
 
+        <!-- Two tables -->
         <div class="two-col mb-18">
           <div class="card">
             <div class="card-header">
@@ -722,14 +743,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Nombre / Teléfono</th>
-                    <th>Estado</th>
-                    <th>Tags</th>
-                    <th>Último visto</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Nombre / Teléfono</th><th>Estado</th><th>Tags</th><th>Último visto</th></tr></thead>
                 <tbody id="tbody-contacts-inicio"></tbody>
               </table>
             </div>
@@ -742,14 +756,7 @@
             </div>
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Dir</th>
-                    <th>Contacto</th>
-                    <th>Mensaje</th>
-                    <th>Hora</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Dir</th><th>Contacto</th><th>Mensaje</th><th>Hora</th></tr></thead>
                 <tbody id="tbody-msgs-inicio"></tbody>
               </table>
             </div>
@@ -764,16 +771,7 @@
           <div class="card mb-24">
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>Organización</th>
-                    <th>Industria</th>
-                    <th>Plan</th>
-                    <th>Estado</th>
-                    <th>Trial hasta</th>
-                    <th>Creado</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Organización</th><th>Industria</th><th>Plan</th><th>Estado</th><th>Trial hasta</th><th>Creado</th></tr></thead>
                 <tbody id="tbody-orgs"></tbody>
               </table>
             </div>
