@@ -1710,6 +1710,47 @@
     filterConvs(activeTab, false);
   });
 
+  // Send message
+  const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
+
+  async function sendMessage() {
+    const input = $('chat-input');
+    const btn   = $('chat-send-btn');
+    const text  = input.value.trim();
+    if (!text || !convState.activeId) return;
+
+    btn.disabled = true;
+    btn.textContent = '…';
+    input.disabled = true;
+
+    const { data: { session } } = await sb.auth.getSession();
+    try {
+      const res = await fetch(`${EDGE_BASE}/send-message`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ conversation_id: convState.activeId, message: text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Error al enviar');
+      input.value = '';
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Enviar';
+      input.disabled = false;
+      input.focus();
+    }
+  }
+
+  $('chat-send-btn').addEventListener('click', sendMessage);
+  $('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
   $('leads-search').addEventListener('input', e => {
     const q = e.target.value.trim().toLowerCase();
     if (!q) { renderLeads(state.allContacts); return; }
