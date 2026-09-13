@@ -816,53 +816,77 @@
 
       <!-- VIEW: Conversaciones -->
       <div class="view" id="view-conversaciones">
-        <div style="display:flex;gap:14px;align-items:stretch;flex-wrap:wrap">
-          <!-- Lista -->
-          <div style="flex:0 0 320px;min-width:280px;background:#fff;border:1px solid #e6e7e9;border-radius:13px;display:flex;flex-direction:column;overflow:hidden">
-            <div style="padding:14px;border-bottom:1px solid #e6e7e9;display:flex;flex-direction:column;gap:10px">
-              <input placeholder="Buscar contacto…" style="padding:9px 12px;border-radius:9px;border:1px solid #e6e7e9;background:#fafbfc;font-size:13.5px;outline:none;font-family:'Barlow',sans-serif;width:100%" />
+        <div class="conv-panel">
+
+          <!-- Left sidebar: conversation list -->
+          <div class="conv-sidebar">
+            <div class="conv-sidebar-top">
+              <input id="conv-search" placeholder="Buscar contacto…" style="padding:9px 12px;border-radius:9px;border:1px solid #e6e7e9;background:#fafbfc;font-size:13.5px;outline:none;font-family:'Barlow',sans-serif;width:100%" />
               <div style="display:flex;gap:2px;padding:3px;border-radius:9px;background:#f4f5f6">
-                <button style="flex:1;padding:6px 0;border-radius:7px;border:0;background:#fff;font-size:13px;font-weight:600;color:#1a2535;cursor:pointer;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todas</button>
-                <button style="flex:1;padding:6px 0;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Bot</button>
-                <button style="flex:1;padding:6px 0;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Humano</button>
+                <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:#fff;color:#1a2535;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todas</button>
+                <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:#8c939b;box-shadow:none">Abiertas</button>
+                <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:#8c939b;box-shadow:none">Cerradas</button>
               </div>
             </div>
-            <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;text-align:center">
-              <div>
-                <div style="width:48px;height:48px;background:#eef6ff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5980a6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <div id="conv-list" class="conv-list">
+              <div style="padding:40px 20px;text-align:center;color:#a7adb5;font-size:13px">Selecciona "Conversaciones" para cargar</div>
+            </div>
+          </div>
+
+          <!-- Center: chat area -->
+          <div class="chat-area">
+            <!-- Empty state (shown when no conversation selected) -->
+            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#a7adb5;background:#fafbfc">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d0d4d9" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <span style="font-size:13.5px">Selecciona una conversación</span>
+            </div>
+            <!-- Active conversation (hidden until one is selected) -->
+            <div id="chat-input-area" style="display:none;flex-direction:column;flex:1;min-height:0">
+              <div class="chat-header">
+                <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span id="chat-header-name" style="font-size:14.5px;font-weight:700;color:#1a2535;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+                    <span id="chat-header-status"></span>
+                  </div>
+                  <span id="chat-header-phone" style="font-size:12px;color:#8c939b"></span>
                 </div>
-                <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#1a2535;margin-bottom:6px">Conversaciones</div>
-                <span style="display:inline-block;padding:3px 10px;border-radius:7px;background:#fff4e0;color:#a1660a;font-size:12px;font-weight:700;margin-bottom:12px">Próximamente</span>
-                <p style="font-size:13px;color:#8c939b;line-height:1.55">El módulo de conversaciones en tiempo real estará disponible en el siguiente bloque de desarrollo.</p>
+                <button id="chat-btn-toggle" class="btn-secondary" style="font-size:12.5px;padding:6px 14px;border-radius:9px;flex-shrink:0"></button>
+              </div>
+              <div id="chat-messages" class="chat-messages"></div>
+              <div class="chat-input-bar">
+                <textarea id="chat-input" rows="1" disabled placeholder="Configura el token de WhatsApp para enviar mensajes"></textarea>
+                <button id="chat-send-btn" class="btn-primary" disabled style="padding:9px 16px;border-radius:10px;font-size:13px;flex-shrink:0">Enviar</button>
               </div>
             </div>
           </div>
-          <!-- Chat area -->
-          <div style="flex:2 1 440px;min-width:320px;background:#fff;border:1px solid #e6e7e9;border-radius:13px;display:flex;flex-direction:column;overflow:hidden">
-            <div style="padding:16px 20px;border-bottom:1px solid #e6e7e9;display:flex;align-items:center;justify-content:space-between;gap:12px">
-              <div style="font-size:14px;color:#8c939b">Selecciona una conversación para continuar</div>
+
+          <!-- Right: contact panel -->
+          <div class="contact-panel">
+            <div id="cpanel-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#a7adb5;height:100%;text-align:center">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d0d4d9" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <span style="font-size:12.5px">Info del contacto</span>
             </div>
-            <div style="flex:1;background:#fafbfc;display:flex;align-items:center;justify-content:center">
-              <div style="text-align:center;color:#a7adb5;font-size:13px">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d0d4d9" stroke-width="1.5" style="margin:0 auto 10px;display:block"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                Sin conversación activa
+            <div id="cpanel-content" style="display:none;flex-direction:column;gap:14px">
+              <div>
+                <div class="cpanel-section-title">Contacto</div>
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <div style="font-size:15px;font-weight:700;color:#1a2535" id="cpanel-name"></div>
+                  <div style="font-size:13px;color:#5980a6" id="cpanel-phone"></div>
+                  <div style="font-size:12.5px;color:#8c939b" id="cpanel-email"></div>
+                  <div style="margin-top:4px" id="cpanel-status"></div>
+                </div>
+              </div>
+              <div>
+                <div class="cpanel-section-title">Etiquetas</div>
+                <div id="cpanel-tags"></div>
+              </div>
+              <div>
+                <div class="cpanel-section-title">Citas recientes</div>
+                <div id="cpanel-apts"></div>
               </div>
             </div>
           </div>
-          <!-- Right panel -->
-          <div style="flex:0 0 260px;min-width:240px;display:flex;flex-direction:column;gap:14px">
-            <div style="background:#fff;border:1px solid #e6e7e9;border-radius:13px;padding:18px">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8c939b;margin-bottom:10px">Calificación del lead</div>
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:700;color:#c8cdd3;line-height:0.9">—</div>
-              <div style="height:6px;border-radius:99px;background:#eef0f2;margin-top:14px"></div>
-              <div style="font-size:12.5px;color:#a7adb5;margin-top:8px">Selecciona un contacto para ver su score.</div>
-            </div>
-            <div style="background:#1a2535;border-radius:13px;padding:18px;color:#e7edf4">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#5980a6;margin-bottom:8px">Próximas funciones</div>
-              <div style="font-size:13.5px;font-weight:600;line-height:1.5;color:#c3cedb">Bandeja unificada, toma de conversación manual, y score de leads con GPT-4o.</div>
-            </div>
-          </div>
+
         </div>
       </div>
 
