@@ -124,9 +124,39 @@
     /* ── Chat bubble animation ── */
     .chat-msg { animation: avx-bubble .45s cubic-bezier(.2,.8,.2,1) both; }
 
+    /* ── Nav toggle (mobile) ── */
+    .nav-toggle {
+      display: none;
+      align-items: center; justify-content: center;
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: none; border: 1px solid var(--color-divider);
+      color: var(--color-text); cursor: pointer; padding: 0;
+    }
+    .nav-mobile-panel {
+      display: none;
+      flex-direction: column;
+      padding: 4px clamp(20px,5vw,56px) 12px;
+      border-top: 1px solid var(--color-divider);
+    }
+    .nav-mobile-panel.is-open { display: flex; }
+    .nav-mobile-panel a {
+      padding: 12px 0; font-size: 14px; letter-spacing: .07em; text-transform: uppercase;
+      color: var(--color-text); border-bottom: 1px solid var(--color-divider);
+    }
+    .nav-mobile-panel a:last-child { border-bottom: 0; }
+
+    /* ── Cards that stack on small/medium screens: swap side dividers for bottom dividers ── */
+    @media (max-width: 760px) {
+      .pricing-grid, .process-grid { grid-template-columns: 1fr !important; }
+      .pricing-card, .process-card { border-right: 0 !important; border-bottom: 1px solid var(--color-divider); }
+      .pricing-card:last-child, .process-card:last-child { border-bottom: 0; }
+    }
+
     /* ── Mobile ── */
     @media (max-width: 640px) {
-      .nav-links { display: none; }
+      .nav-links { display: none !important; }
+      .nav-toggle { display: inline-flex; }
+      .nav { flex-wrap: wrap; row-gap: 8px; }
     }
   </style>
 </head>
@@ -141,10 +171,20 @@
       <a href="#proceso">Proceso</a>
       <a href="#panel">Panel</a>
       <a href="#precios">Precios</a>
-      <a class="btn btn-primary" href="#contacto" style="font-size:13px;letter-spacing:.07em;text-transform:uppercase;padding:9px 16px">Agendar demo</a>
       <a href="dashboard/" class="nav-admin">Admin ›</a>
     </span>
+    <a class="btn btn-primary" href="#contacto" style="font-size:13px;letter-spacing:.07em;text-transform:uppercase;padding:9px 16px">Agendar demo</a>
+    <button class="nav-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="navMobilePanel">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
   </nav>
+  <div class="nav-mobile-panel" id="navMobilePanel">
+    <a href="#agente">El agente</a>
+    <a href="#proceso">Proceso</a>
+    <a href="#panel">Panel</a>
+    <a href="#precios">Precios</a>
+    <a href="dashboard/">Admin ›</a>
+  </div>
 </div>
 
 <div style="max-width:1200px;margin:0 auto;padding:0 clamp(20px,5vw,56px)">
@@ -293,23 +333,23 @@
   <section id="proceso" style="padding:clamp(24px,4vw,48px) 0 clamp(40px,6vw,88px)">
     <span style="display:block;font-size:13px;line-height:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-accent-700);margin:0 0 12px">03 · Cómo lo implementamos</span>
     <hr style="height:1px;border:0;margin:0 0 32px;background:var(--color-divider)">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border:1px solid var(--color-divider)">
-      <div data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
+    <div class="process-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0;border:1px solid var(--color-divider)">
+      <div class="process-card" data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
         <span style="font-family:var(--font-heading);font-size:40px;line-height:1;color:var(--color-accent-400);display:block">01</span>
         <h3 style="font-family:var(--font-heading);font-weight:600;font-size:19px;letter-spacing:.03em;text-transform:uppercase;margin:14px 0 0">Diagnóstico</h3>
         <p style="font-size:14.5px;line-height:22px;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 78%,transparent)">Una llamada de 30 min: cómo llegan tus clientes, qué preguntan y qué respondes hoy.</p>
       </div>
-      <div data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
+      <div class="process-card" data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
         <span style="font-family:var(--font-heading);font-size:40px;line-height:1;color:var(--color-accent-400);display:block">02</span>
         <h3 style="font-family:var(--font-heading);font-weight:600;font-size:19px;letter-spacing:.03em;text-transform:uppercase;margin:14px 0 0">Construcción</h3>
         <p style="font-size:14.5px;line-height:22px;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 78%,transparent)">Armamos el agente con tu catálogo, tus precios y tu tono, conectado a tu calendario y hoja de cálculo.</p>
       </div>
-      <div data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
+      <div class="process-card" data-reveal style="padding:24px;border-right:1px solid var(--color-divider)">
         <span style="font-family:var(--font-heading);font-size:40px;line-height:1;color:var(--color-accent-400);display:block">03</span>
         <h3 style="font-family:var(--font-heading);font-weight:600;font-size:19px;letter-spacing:.03em;text-transform:uppercase;margin:14px 0 0">Pruebas</h3>
         <p style="font-size:14.5px;line-height:22px;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 78%,transparent)">Lo ponemos a prueba con conversaciones reales tuyas y ajustamos respuestas hasta que suene a tu negocio.</p>
       </div>
-      <div data-reveal style="padding:24px">
+      <div class="process-card" data-reveal style="padding:24px">
         <span style="font-family:var(--font-heading);font-size:40px;line-height:1;color:var(--color-accent-400);display:block">04</span>
         <h3 style="font-family:var(--font-heading);font-weight:600;font-size:19px;letter-spacing:.03em;text-transform:uppercase;margin:14px 0 0">Operación</h3>
         <p style="font-size:14.5px;line-height:22px;margin:10px 0 0;color:color-mix(in srgb,var(--color-text) 78%,transparent)">Vive en tu número. Nosotros monitoreamos, mejoramos y reportamos mes con mes.</p>
@@ -393,18 +433,21 @@
   <section id="precios" style="padding:clamp(24px,4vw,48px) 0 clamp(40px,6vw,88px)">
     <span style="display:block;font-size:13px;line-height:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--color-accent-700);margin:0 0 12px">06 · Planes</span>
     <hr style="height:1px;border:0;margin:0 0 32px;background:var(--color-divider)">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:1px solid var(--color-divider)">
+    <div class="pricing-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:1px solid var(--color-divider)">
 
       <!-- Plan Básico -->
-      <div data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider)">
+      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider)">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Plan</span>
         <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Básico</h3>
         <div style="margin:20px 0 4px">
           <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700">$1,500</span>
           <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-left:4px">MXN / mes</span>
         </div>
+        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $15,000 MXN / año · 2 meses gratis</span>
         <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $3,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>1 usuario incluido</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 0 · Chatbot</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Agente WhatsApp 24/7 con GPT-4o</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Calificación automática de leads</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Dashboard con contactos y conversaciones</li>
@@ -415,15 +458,18 @@
       </div>
 
       <!-- Plan Estándar -->
-      <div data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider);background:var(--color-accent-100)">
+      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider);background:var(--color-accent-100)">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)">Plan · más popular</span>
         <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0;color:var(--color-accent-900)">Estándar</h3>
         <div style="margin:20px 0 4px">
           <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700;color:var(--color-accent-900)">$2,500</span>
           <span style="font-size:13px;color:var(--color-accent-700);margin-left:4px">MXN / mes</span>
         </div>
+        <span style="font-size:12.5px;color:var(--color-accent-700);margin-bottom:14px">o $25,000 MXN / año · 2 meses gratis</span>
         <span style="font-size:12px;color:var(--color-accent-700);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-accent-300)">Setup único: $5,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>2 usuarios incluidos</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 1 · Asistente</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Básico</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Agendamiento con Google Calendar</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Seguimiento automático de leads fríos</li>
@@ -435,15 +481,18 @@
       </div>
 
       <!-- Plan Completo -->
-      <div data-reveal style="padding:28px 24px;display:flex;flex-direction:column">
+      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Plan</span>
         <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Completo</h3>
         <div style="margin:20px 0 4px">
           <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700">$3,500</span>
           <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-left:4px">MXN / mes</span>
         </div>
+        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $35,000 MXN / año · 2 meses gratis</span>
         <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $8,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>3 usuarios incluidos</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 2 · Aprendiz</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Estándar</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Reporte diario al dueño por WhatsApp</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Lectura de fotos y audios con IA</li>
@@ -455,7 +504,7 @@
       </div>
 
     </div>
-    <p style="font-size:14px;line-height:22px;margin:20px 0 0;max-width:70ch;color:color-mix(in srgb,var(--color-text) 72%,transparent)">Todos los planes incluyen el dashboard de seguimiento y reportes. Precios en MXN · IVA no incluido · Sin permanencia mínima.</p>
+    <p style="font-size:14px;line-height:22px;margin:20px 0 0;max-width:70ch;color:color-mix(in srgb,var(--color-text) 72%,transparent)">Todos los planes incluyen el dashboard de seguimiento y reportes. Precios en MXN · IVA no incluido · Sin permanencia mínima. El nivel de IA define cuánta autonomía tiene el agente: de calificar y transferir (Nivel 0) a redactar respuestas para tu aprobación (Nivel 2). El Nivel 3 · Autónomo está disponible como upgrade sobre el plan Completo.</p>
   </section>
 
   <!-- FAQ -->
@@ -499,6 +548,20 @@
   /* Siempre arrancar desde arriba, sin importar el hash en la URL */
   history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
+
+  /* ── Menú móvil ── */
+  const navToggle = document.querySelector('.nav-toggle');
+  const navPanel = document.getElementById('navMobilePanel');
+  if (navToggle && navPanel) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = navPanel.classList.toggle('is-open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+    navPanel.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      navPanel.classList.remove('is-open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }));
+  }
 
   /* ── Chat animation ── */
   const CHAT = [
