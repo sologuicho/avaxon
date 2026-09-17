@@ -47,21 +47,22 @@ Construimos e implementamos **agentes de IA conversacionales** personalizados pa
 
 ### Planes disponibles
 
-| Plan | Setup | Mensualidad | Incluye | Ideal para |
-|------|-------|------------|---------|-----------|
-| **Básico** | $3,000 | $1,500 | Chatbot 24/7 + calificación de leads + Google Sheets | Negocios chicos que quieren empezar |
-| **Estándar** | $5,000 | $2,500 | Básico + seguimiento automático + agendamiento Google Calendar | Negocios con flujo de citas o leads constante |
-| **Completo** | $8,000 | $3,500 | Estándar + reporte diario al dueño + manejo de imágenes/audio con IA + personalización avanzada | Negocios con mayor volumen y proceso de venta más complejo |
+| Plan | Setup | Mensualidad | Anual | Usuarios | Conversaciones/mes | Ideal para |
+|------|-------|------------|-------|----------|---------------------|-----------|
+| **Mostrador** | $5,000 | $2,990 | $22,990 | 1 | 800 | Negocios chicos que quieren empezar |
+| **Sucursal** · más popular | $12,000 | $4,990 | $39,990 | 3 | 1,500 | Negocios con flujo de leads constante |
+| **Cadena** | $22,000 | $10,990 | $89,990 | 10 | 3,500 | Negocios con varias sucursales o mayor volumen |
+| **Enterprise** | $30,000 | $20,000 | $200,000 | Ilimitados | Ilimitadas | Operaciones grandes con soporte dedicado |
 
-> **Nota:** Todos los planes incluyen 1 semana de prueba + ajustes post go-live. La mensualidad cubre mantenimiento, mejoras al agente y soporte.
+> **Nota:** Todos los planes incluyen chatbot 24/7 con GPT-4o, calificación automática de leads y dashboard. Agendamiento con Google Calendar, seguimiento automático de leads fríos, reporte diario y lectura de fotos/audio están marcados como **próximamente** — no están construidos todavía, ver [BLOQUES.md](./BLOQUES.md). No prometer estas funciones como disponibles hoy a un cliente. La mensualidad cubre mantenimiento, mejoras al agente y soporte; el precio anual incluye 2 meses gratis.
 
-### Modelo de ingreso por cliente (Completo)
+### Modelo de ingreso por cliente (Sucursal)
 
 | Concepto | Monto |
 |----------|-------|
-| Setup único | $8,000 MXN |
-| Mensualidad × 12 meses | $42,000 MXN |
-| **Total anual por cliente** | **$50,000 MXN** |
+| Setup único | $12,000 MXN |
+| Mensualidad × 12 meses | $59,880 MXN |
+| **Total anual por cliente** | **$71,880 MXN** |
 
 ---
 
@@ -82,7 +83,7 @@ Secuencias de mensajes para leads que no respondieron o quedaron fríos. El agen
 ### 5. Reporte Diario al Dueño
 Resumen automático enviado cada mañana por WhatsApp: leads capturados, citas agendadas, conversaciones activas, métricas clave.
 
-### 6. Manejo de Media con IA (Plan Completo)
+### 6. Manejo de Media con IA (Plan Cadena) · Próximamente
 El agente procesa imágenes y audios enviados por el cliente. Útil para negocios que reciben fotos de productos, órdenes de trabajo o comprobantes.
 
 ---
@@ -106,13 +107,13 @@ Avaxon implementa agentes de forma progresiva según las necesidades del cliente
 
 | Módulo | Estado | Descripción |
 |--------|--------|-------------|
-| **Chatbot 24/7** | Incluido en todos los planes | Bot que atiende y califica leads automáticamente |
-| **Captura de leads (Google Sheets)** | Incluido en todos los planes | Registro estructurado de cada prospecto |
-| **Seguimiento de leads fríos** | Plan Estándar y Completo | Secuencias automáticas de reactivación |
-| **Agendamiento con Google Calendar** | Plan Estándar y Completo | Citas vía WhatsApp + recordatorios |
-| **Reporte diario al dueño** | Plan Completo | Resumen matutino por WhatsApp con métricas |
-| **Manejo de imágenes y audio** | Plan Completo | IA procesa media enviada por el cliente |
-| **Personalización avanzada** | Plan Completo | Tono, frases, flujos y reglas específicas del negocio |
+| **Chatbot 24/7** | ✅ Incluido en todos los planes | Bot que atiende y califica leads automáticamente |
+| **Captura de leads (CRM Avaxon)** | ✅ Incluido en todos los planes | Registro estructurado de cada prospecto en Supabase |
+| **Seguimiento de leads fríos** | ⏳ Próximamente — Sucursal y superiores | Secuencias automáticas de reactivación |
+| **Agendamiento con Google Calendar** | ⏳ Próximamente — Sucursal y superiores | Citas vía WhatsApp + recordatorios |
+| **Reporte diario al dueño** | ⏳ Próximamente — Cadena y superiores | Resumen matutino por WhatsApp con métricas |
+| **Manejo de imágenes y audio** | ⏳ Próximamente — Cadena y superiores | IA procesa media enviada por el cliente |
+| **Personalización avanzada** | ✅ Cadena y superiores | Tono, frases, flujos y reglas específicas del negocio |
 
 ---
 

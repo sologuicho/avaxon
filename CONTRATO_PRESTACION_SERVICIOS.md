@@ -42,9 +42,12 @@ El Prestador se obliga a diseñar, implementar y dar mantenimiento a un agente c
 
 Las partes acuerdan que el servicio contratado corresponde al siguiente plan:
 
-☐ **Básico** — Chatbot 24/7 + calificación de leads + registro en Google Sheets
-☐ **Estándar** — Básico + seguimiento automático de leads fríos + agendamiento vía Google Calendar
-☐ **Completo** — Estándar + reporte diario al dueño + manejo de imágenes/audio con IA + personalización avanzada
+☐ **Mostrador** — Chatbot 24/7 + calificación de leads + registro en el CRM de Avaxon
+☐ **Sucursal** — Mostrador + seguimiento automático de leads fríos* + agendamiento vía Google Calendar*
+☐ **Cadena** — Sucursal + reporte diario al dueño* + manejo de imágenes/audio con IA* + personalización avanzada
+☐ **Enterprise** — Cadena + usuarios y conversaciones ilimitadas + ejecutivo de cuenta dedicado
+
+*Funciones marcadas como "próximamente": no están disponibles al momento de la firma de este contrato. Se activarán sin costo adicional para el Cliente en cuanto Avaxon las libere; mientras tanto no forman parte del alcance exigible.
 
 El alcance específico, incluyendo el catálogo de productos/servicios, preguntas frecuentes, tono de comunicación y flujo de venta a automatizar, se define en el Anexo A (Ficha de Onboarding), el cual forma parte integral de este contrato.
 

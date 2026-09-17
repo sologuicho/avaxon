@@ -51,14 +51,14 @@ No cambias de número, no instalas ninguna app nueva, no le pides nada distinto 
 
 ## 4. Qué incluye el piloto (sin costo)
 
-Como primer cliente de Avaxon, te ofrecemos el **Plan Completo sin costo durante 4 semanas**, a cambio de tu retroalimentación honesta y un testimonio si te gustó el resultado.
+Como primer cliente de Avaxon, te ofrecemos el **Plan Enterprise sin costo durante 4 semanas**, a cambio de tu retroalimentación honesta y un testimonio si te gustó el resultado.
 
 | Incluye | Detalle |
 |---|---|
 | Chatbot de ventas 24/7 | Responde FAQs, catálogo y precios al instante |
 | Calificación automática de leads | Registro de nombre, producto de interés y contacto |
-| Seguimiento automático | Reactiva conversaciones frías sin que tengas que acordarte |
 | Reporte de resultados | Al final del piloto: leads capturados, tiempo de respuesta, conversaciones atendidas |
+| Seguimiento automático de leads fríos | Próximamente — no incluido en el piloto todavía |
 | Ajustes durante el piloto | Sin costo, basados en tu retroalimentación |
 
 **Lo único que te pedimos a cambio:** al terminar las 4 semanas, si el resultado te convenció, nos compartas un testimonio corto (texto o video) y nos permitas usar tu caso como ejemplo de éxito.
@@ -91,7 +91,7 @@ Como primer cliente de Avaxon, te ofrecemos el **Plan Completo sin costo durante
 
 Al terminar las 4 semanas, tú decides:
 
-- **Te gustó el resultado** → pasamos a un plan pagado (Básico, Estándar o Completo, desde $3,000 MXN de instalación + mensualidad desde $1,500 MXN) y seguimos optimizando tu Agente.
+- **Te gustó el resultado** → pasamos a un plan pagado (Mostrador, Sucursal, Cadena o Enterprise, desde $5,000 MXN de instalación + mensualidad desde $2,990 MXN) y seguimos optimizando tu Agente.
 - **No es para ti** → sin compromiso, sin costo, te entregamos el registro de leads capturados durante el piloto.
 
 ---

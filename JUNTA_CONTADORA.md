@@ -9,7 +9,7 @@
 - Tres socios: Luis Flores (Tech Lead), Hector García (operativo/ventas), Jose Luis (estrategia comercial)
 - Por ahora la facturación va bajo RFC personal de Luis Flores en régimen RESICO
 - Clientes objetivo: PyMEs mexicanas
-- Servicios: setup único ($3k–$8k MXN) + mensualidad ($1.5k–$3.5k MXN)
+- Servicios: setup único ($5k–$30k MXN) + mensualidad ($2,990–$20,000 MXN), 4 planes: Mostrador, Sucursal, Cadena, Enterprise
 - Pagos esperados vía transferencia bancaria (SPEI)
 - No tenemos empleados, solo socios activos
 - Aún no estamos constituidos como empresa formal

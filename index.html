@@ -145,6 +145,14 @@
     }
     .nav-mobile-panel a:last-child { border-bottom: 0; }
 
+    /* ── Pricing grid: 4 cards → 2×2 on medium screens, 1 column on small ── */
+    @media (max-width: 980px) {
+      .pricing-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .pricing-card:nth-child(2n) { border-right: 0 !important; }
+      .pricing-card:nth-child(-n+2) { border-bottom: 1px solid var(--color-divider); }
+      .pricing-card:nth-child(n+3) { border-bottom: 0; }
+    }
+
     /* ── Cards that stack on small/medium screens: swap side dividers for bottom dividers ── */
     @media (max-width: 760px) {
       .pricing-grid, .process-grid { grid-template-columns: 1fr !important; }
@@ -447,42 +455,40 @@
     <hr style="height:1px;border:0;margin:0 0 32px;background:var(--color-divider)">
     <div class="pricing-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:1px solid var(--color-divider)">
 
-      <!-- Plan Básico -->
+      <!-- Plan Mostrador -->
       <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider)">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Plan</span>
-        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Básico</h3>
+        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Mostrador</h3>
         <div style="margin:20px 0 4px">
-          <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700">$1,500</span>
+          <span style="font-family:var(--font-heading);font-size:38px;line-height:1;font-weight:700">$2,990</span>
           <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-left:4px">MXN / mes</span>
         </div>
-        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $15,000 MXN / año · 2 meses gratis</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $3,000 MXN</span>
+        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $22,990 MXN / año · 2 meses gratis</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $5,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>1 usuario incluido</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 0 · Chatbot</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Agente WhatsApp 24/7 con GPT-4o</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Calificación automática de leads</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Dashboard con contactos y conversaciones</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Hasta 500 conversaciones / mes</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Hasta 800 conversaciones / mes</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Soporte por email</li>
         </ul>
         <a class="btn" href="#contacto" style="margin-top:24px;padding:11px 20px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center">Comenzar</a>
       </div>
 
-      <!-- Plan Estándar -->
+      <!-- Plan Sucursal -->
       <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider);background:var(--color-accent-100)">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)">Plan · más popular</span>
-        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0;color:var(--color-accent-900)">Estándar</h3>
+        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0;color:var(--color-accent-900)">Sucursal</h3>
         <div style="margin:20px 0 4px">
-          <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700;color:var(--color-accent-900)">$2,500</span>
+          <span style="font-family:var(--font-heading);font-size:38px;line-height:1;font-weight:700;color:var(--color-accent-900)">$4,990</span>
           <span style="font-size:13px;color:var(--color-accent-700);margin-left:4px">MXN / mes</span>
         </div>
-        <span style="font-size:12.5px;color:var(--color-accent-700);margin-bottom:14px">o $25,000 MXN / año · 2 meses gratis</span>
-        <span style="font-size:12px;color:var(--color-accent-700);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-accent-300)">Setup único: $5,000 MXN</span>
+        <span style="font-size:12.5px;color:var(--color-accent-700);margin-bottom:14px">o $39,990 MXN / año · 2 meses gratis</span>
+        <span style="font-size:12px;color:var(--color-accent-700);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-accent-300)">Setup único: $12,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>2 usuarios incluidos</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 1 · Asistente</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Básico</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>3 usuarios incluidos</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Mostrador</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Agendamiento con Google Calendar <span style="font-size:11px;opacity:.65">· próximamente</span></li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Seguimiento automático de leads fríos <span style="font-size:11px;opacity:.65">· próximamente</span></li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45;color:var(--color-accent-900)"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Dashboard con estadísticas semanales</li>
@@ -492,31 +498,49 @@
         <a class="btn btn-primary" href="#contacto" style="margin-top:24px;padding:11px 20px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center;color:#fff">Comenzar</a>
       </div>
 
-      <!-- Plan Completo -->
-      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column">
+      <!-- Plan Cadena -->
+      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column;border-right:1px solid var(--color-divider)">
         <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Plan</span>
-        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:26px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Completo</h3>
+        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Cadena</h3>
         <div style="margin:20px 0 4px">
-          <span style="font-family:var(--font-heading);font-size:42px;line-height:1;font-weight:700">$3,500</span>
+          <span style="font-family:var(--font-heading);font-size:38px;line-height:1;font-weight:700">$10,990</span>
           <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-left:4px">MXN / mes</span>
         </div>
-        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $35,000 MXN / año · 2 meses gratis</span>
-        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $8,000 MXN</span>
+        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $89,990 MXN / año · 2 meses gratis</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $22,000 MXN</span>
         <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>3 usuarios incluidos</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>IA Nivel 2 · Aprendiz</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Estándar</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>10 usuarios incluidos</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Sucursal</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Reporte diario al dueño por WhatsApp <span style="font-size:11px;opacity:.65">· próximamente</span></li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Lectura de fotos y audios con IA <span style="font-size:11px;opacity:.65">· próximamente</span></li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Flujos de automatización personalizados</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Hasta 3,500 conversaciones / mes</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Soporte prioritario por WhatsApp</li>
+        </ul>
+        <a class="btn" href="#contacto" style="margin-top:24px;padding:11px 20px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center">Comenzar</a>
+      </div>
+
+      <!-- Plan Enterprise -->
+      <div class="pricing-card" data-reveal style="padding:28px 24px;display:flex;flex-direction:column">
+        <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Plan</span>
+        <h3 style="font-family:var(--font-heading);font-weight:700;font-size:24px;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 0">Enterprise</h3>
+        <div style="margin:20px 0 4px">
+          <span style="font-family:var(--font-heading);font-size:38px;line-height:1;font-weight:700">$20,000</span>
+          <span style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-left:4px">MXN / mes</span>
+        </div>
+        <span style="font-size:12.5px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:14px">o $200,000 MXN / año · 2 meses gratis</span>
+        <span style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--color-divider)">Setup único: $30,000 MXN</span>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;flex:1">
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Usuarios ilimitados</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Todo lo del plan Cadena</li>
           <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Conversaciones ilimitadas</li>
-          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Soporte prioritario</li>
+          <li style="display:flex;gap:10px;font-size:14px;line-height:1.45"><span style="color:var(--color-accent-700);font-weight:700;flex-shrink:0">+</span>Ejecutivo de cuenta dedicado</li>
         </ul>
         <a class="btn" href="#contacto" style="margin-top:24px;padding:11px 20px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center">Comenzar</a>
       </div>
 
     </div>
-    <p style="font-size:14px;line-height:22px;margin:20px 0 0;max-width:70ch;color:color-mix(in srgb,var(--color-text) 72%,transparent)">Todos los planes incluyen el dashboard de seguimiento y reportes. Precios en MXN · IVA no incluido · Sin permanencia mínima. El nivel de IA define cuánta autonomía tiene el agente: de calificar y transferir (Nivel 0) a redactar respuestas para tu aprobación (Nivel 2). El Nivel 3 · Autónomo está disponible como upgrade sobre el plan Completo.</p>
+    <p style="font-size:14px;line-height:22px;margin:20px 0 0;max-width:70ch;color:color-mix(in srgb,var(--color-text) 72%,transparent)">Todos los planes incluyen el dashboard de seguimiento y reportes. Precios en MXN · IVA no incluido · Sin permanencia mínima.</p>
   </section>
 
   <!-- FAQ -->

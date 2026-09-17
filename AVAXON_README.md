@@ -107,8 +107,8 @@ Always respond in the same language the user writes in. Be concise and professio
 ## Modelo de Negocio
 
 ### Estructura de precios (propuesta inicial)
-- **Setup:** $3,000 — $8,000 MXN (según complejidad del agente)
-- **Mensualidad:** $1,500 — $3,500 MXN (mantenimiento, ajustes, reportes)
+- **Setup:** $5,000 — $30,000 MXN (planes Mostrador → Enterprise, según complejidad del agente)
+- **Mensualidad:** $2,990 — $20,000 MXN (mantenimiento, ajustes, reportes) — ver detalle de planes en [avaxon-alcance.md](./avaxon-alcance.md)
 
 ### Proceso de onboarding por cliente
 1. Reunión de descubrimiento — entender el negocio, FAQs, flujo de ventas

@@ -37,7 +37,7 @@ El Prestador se obliga a diseñar, implementar y dar mantenimiento, durante el *
 
 El servicio piloto incluye las funcionalidades del plan:
 
-☐ Básico ☐ Estándar ☐ **Completo** (recomendado para el piloto, a fin de generar el caso de éxito más completo)
+☐ Mostrador ☐ Sucursal ☐ Cadena ☐ **Enterprise** (recomendado para el piloto, a fin de generar el caso de éxito más completo)
 
 El alcance específico (catálogo, precios, FAQs, tono, flujo de venta) se define en el **Anexo A — Ficha de Onboarding**, que forma parte integral de este convenio.
 
