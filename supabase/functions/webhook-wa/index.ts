@@ -1,9 +1,42 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook (Meta llama esto una vez al configurar)
 // POST → mensajes entrantes en formato nativo de Meta Cloud API
+// Soporta texto, imagen (Vision de GPT-4o) y audio (transcripción con Whisper).
+
+async function getMediaUrl(mediaId: string, token: string): Promise<{ url: string; mime: string } | null> {
+  const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  if (!data.url) return null
+  return { url: data.url, mime: data.mime_type ?? 'application/octet-stream' }
+}
+
+async function downloadMedia(url: string, token: string): Promise<ArrayBuffer | null> {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) return null
+  return await res.arrayBuffer()
+}
+
+async function transcribeAudio(bytes: ArrayBuffer, mime: string, apiKey: string): Promise<string | null> {
+  const ext = mime.includes('ogg') ? 'ogg' : mime.includes('mpeg') ? 'mp3' : mime.includes('mp4') ? 'm4a' : 'ogg'
+  const form = new FormData()
+  form.append('file', new Blob([bytes], { type: mime }), `audio.${ext}`)
+  form.append('model', 'whisper-1')
+  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  })
+  if (!res.ok) return null
+  const data = await res.json()
+  return data.text ?? null
+}
 
 Deno.serve(async (req: Request) => {
   const VERIFY_TOKEN   = Deno.env.get('WEBHOOK_VERIFY_TOKEN')!
@@ -42,14 +75,40 @@ Deno.serve(async (req: Request) => {
   const meta    = value.metadata
   const contact = value.contacts?.[0]
 
-  // Solo procesar mensajes de texto por ahora
-  if (msg.type !== 'text') return new Response('ok', { status: 200 })
+  // Tipos soportados: texto, imagen (Vision) y audio (transcripción). El resto
+  // (video, documento, ubicación, sticker...) se ignora por ahora.
+  if (!['text', 'image', 'audio'].includes(msg.type)) return new Response('ok', { status: 200 })
 
   const phoneNumberId  = meta?.phone_number_id   // ID Meta del número receptor
   const fromPhone      = msg.from                 // número del cliente (sin +)
-  const messageText    = msg.text?.body ?? ''
   const contactName    = contact?.profile?.name ?? null
   const waMessageId    = msg.id
+
+  // ── Construir el texto a guardar y, si aplica, el bloque de imagen para GPT-4o ──
+  let messageText = ''
+  let mediaType: 'text' | 'image' | 'audio' = 'text'
+  let imageDataUrl: string | null = null
+
+  if (msg.type === 'text') {
+    messageText = msg.text?.body ?? ''
+  } else if (msg.type === 'image') {
+    mediaType = 'image'
+    const caption = msg.image?.caption ?? ''
+    const media = msg.image?.id ? await getMediaUrl(msg.image.id, WA_TOKEN) : null
+    const bytes = media ? await downloadMedia(media.url, WA_TOKEN) : null
+    if (bytes && media) {
+      imageDataUrl = `data:${media.mime};base64,${encodeBase64(bytes)}`
+      messageText = caption ? `[Imagen] ${caption}` : '[Imagen]'
+    } else {
+      messageText = '[Imagen — no se pudo procesar]'
+    }
+  } else if (msg.type === 'audio') {
+    mediaType = 'audio'
+    const media = msg.audio?.id ? await getMediaUrl(msg.audio.id, WA_TOKEN) : null
+    const bytes = media ? await downloadMedia(media.url, WA_TOKEN) : null
+    const transcript = bytes && media ? await transcribeAudio(bytes, media.mime, OPENAI_KEY) : null
+    messageText = transcript ? `[Audio] ${transcript}` : '[Audio — no se pudo transcribir]'
+  }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY)
 
@@ -118,7 +177,7 @@ Deno.serve(async (req: Request) => {
     organization_id,
     direction:    'inbound',
     content:      messageText,
-    media_type:   'text',
+    media_type:   mediaType,
     wa_message_id: waMessageId,
   })
 
@@ -140,10 +199,20 @@ Deno.serve(async (req: Request) => {
     .order('created_at', { ascending: false })
     .limit(10)
 
-  const chatHistory = (history ?? []).reverse().map(m => ({
+  const chatHistory: any[] = (history ?? []).reverse().map(m => ({
     role:    m.direction === 'inbound' ? 'user' : 'assistant',
     content: m.content,
   }))
+
+  // Si el mensaje actual trae una imagen procesada, se reemplaza el último turno
+  // (el que se acaba de insertar arriba) por contenido multimodal para GPT-4o Vision.
+  if (imageDataUrl && chatHistory.length > 0) {
+    const last = chatHistory[chatHistory.length - 1]
+    last.content = [
+      { type: 'text', text: (msg.image?.caption ?? '').trim() || 'Describe brevemente esta imagen y ayuda al cliente con lo que necesita.' },
+      { type: 'image_url', image_url: { url: imageDataUrl } },
+    ]
+  }
 
   // Llamada a GPT-4o
   const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
