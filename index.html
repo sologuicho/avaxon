@@ -650,7 +650,7 @@
       const el = e.target;
       if (el.hasAttribute('data-bar')) {
         el.setAttribute('data-bar', 'in');
-      } else if (el.id === 'panel-section') {
+      } else if (el.id === 'panel') {
         startCountUp();
       } else {
         el.setAttribute('data-reveal', 'in');
@@ -670,11 +670,21 @@
   if (panelSection) io.observe(panelSection);
 
   /* ── Count-up ── */
+  const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
   let counting = false;
-  function startCountUp() {
+  async function startCountUp() {
     if (counting) return;
     counting = true;
-    const targets = { conv: 214, leads: 68, citas: 41 };
+
+    let targets = { conv: 214, leads: 68, citas: 41 }; // demo, por si la función aún no está desplegada
+    try {
+      const res = await fetch(EDGE_BASE + '/landing-stats');
+      if (res.ok) {
+        const data = await res.json();
+        targets = { conv: data.conv ?? 0, leads: data.leads ?? 0, citas: data.citas ?? 0 };
+      }
+    } catch (_) { /* mantiene los valores demo si la función no responde */ }
+
     const els = {
       conv: document.getElementById('stat-conv'),
       leads: document.getElementById('stat-leads'),
@@ -736,13 +746,22 @@
     faqList.appendChild(div);
   });
 
-  /* ── Contact form → WhatsApp ── */
+  /* ── Contact form → guarda el lead en Supabase y abre WhatsApp ── */
   document.getElementById('contact-btn').addEventListener('click', () => {
     const name  = document.getElementById('contact-name').value.trim();
     const phone = document.getElementById('contact-phone').value.trim();
     const msg   = name || phone
       ? `Hola, me interesa saber más sobre Avaxon. Soy ${name || 'un interesado'}${phone ? ', mi WhatsApp es ' + phone : ''}.`
       : 'Hola, me interesa saber más sobre Avaxon y agendar un diagnóstico gratis.';
+
+    if (phone) {
+      fetch(EDGE_BASE + '/landing-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone })
+      }).catch(() => { /* no bloquear el flujo si falla el registro */ });
+    }
+
     window.open('https://wa.me/528991709336?text=' + encodeURIComponent(msg), '_blank');
   });
 </script>
