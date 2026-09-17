@@ -412,11 +412,9 @@
             </div>
             <div style="background: #1f2c34; border-radius: 4px 14px 14px 14px; padding: 16px 16px 10px; font-size: 15px; line-height: 1.7; color: #e9edf2;">
               Resumen de hoy:<br>
-              · 38 conversaciones atendidas<br>
-              · 11 leads calificados<br>
-              · 4 citas agendadas<br>
-              · 2 casos pasados a tu equipo<br><br>
-              Pendiente mañana: confirmar cita de Laura R. (viernes 17:00).
+              · <span id="reportConv">0</span> conversaciones atendidas<br>
+              · <span id="reportLeads">0</span> leads calificados<br>
+              · <span id="reportCitas">0</span> citas agendadas
               <span style="display: block; text-align: right; font-size: 10px; color: #8696a0; margin-top: 8px;">22:00</span>
             </div>
             <p style="margin: 18px 0 0; font-size: 14.5px; line-height: 1.6; color: #9aa7bc;">Llega a tu WhatsApp todas las noches. Sin abrir el panel, sin pedirle nada a nadie.</p>
@@ -653,13 +651,26 @@
       leads: document.getElementById('statLeads'),
       citas: document.getElementById('statCitas')
     };
+    // El mockup del reporte nocturno muestra los MISMOS números reales que el
+    // panel de arriba, para que nunca queden desincronizados entre sí.
+    const reportEls = {
+      conv: document.getElementById('reportConv'),
+      leads: document.getElementById('reportLeads'),
+      citas: document.getElementById('reportCitas')
+    };
     const t0 = performance.now(), dur = 1400;
     function step(t) {
       const p = Math.min(1, (t - t0) / dur);
       const e = 1 - Math.pow(1 - p, 3);
-      els.conv.textContent  = nf.format(Math.round(targets.conv  * e));
-      els.leads.textContent = nf.format(Math.round(targets.leads * e));
-      els.citas.textContent = nf.format(Math.round(targets.citas * e));
+      const conv  = Math.round(targets.conv  * e);
+      const leads = Math.round(targets.leads * e);
+      const citas = Math.round(targets.citas * e);
+      els.conv.textContent  = nf.format(conv);
+      els.leads.textContent = nf.format(leads);
+      els.citas.textContent = nf.format(citas);
+      if (reportEls.conv)  reportEls.conv.textContent  = nf.format(conv);
+      if (reportEls.leads) reportEls.leads.textContent = nf.format(leads);
+      if (reportEls.citas) reportEls.citas.textContent = nf.format(citas);
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
