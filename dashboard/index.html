@@ -7,6 +7,7 @@
   <link rel="icon" type="image/jpeg" href="../avaxon_favicon.jpeg" />
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_LA/sdk.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -965,7 +966,9 @@
               <div id="wa-hero-sub" style="font-family:'Barlow Condensed',sans-serif;font-size:15px;color:#93a4b8;margin-top:3px">Sin número configurado</div>
             </div>
           </div>
-          <div style="display:flex;gap:22px;flex-wrap:wrap" id="wa-hero-stats"></div>
+          <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center" id="wa-hero-stats">
+            <button id="wa-connect-btn" onclick="connectWhatsApp()" style="display:none;padding:11px 20px;border-radius:10px;background:#25D366;color:#062513;border:0;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700">Conectar WhatsApp</button>
+          </div>
         </div>
 
         <!-- Cards grid -->
@@ -1465,6 +1468,8 @@
       ? `${phone.display_phone_number}${phone.verified_name ? ' · ' + phone.verified_name : ''}`
       : 'Sin número configurado';
 
+    $('wa-connect-btn').style.display = phone ? 'none' : 'inline-block';
+
     if (phone) {
       const qualityColor = phone.quality_rating === 'GREEN' ? '#10b981'
                          : phone.quality_rating === 'YELLOW' ? '#f59e0b' : '#8c939b';
@@ -1712,6 +1717,94 @@
 
   // Send message
   const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
+
+  // ── WhatsApp Embedded Signup (Meta) ───────────────────────────────────────
+  // Cada cliente conecta su propio número de WhatsApp Business desde aquí,
+  // vía el popup oficial de Meta — no requiere pasar por Meta for Developers.
+  //
+  // META_CONFIG_ID: pendiente. Se crea en developers.facebook.com → tu App →
+  // WhatsApp → Configuración → "WhatsApp Embedded Signup configuration".
+  // Sin este valor el botón "Conectar WhatsApp" no puede abrir el popup.
+  const META_APP_ID    = '2086225228635820'; // confirmar que sigue siendo el App ID actual
+  const META_CONFIG_ID = ''; // TODO: pegar aquí el config_id de Meta
+
+  window.fbAsyncInit = function () {
+    FB.init({ appId: META_APP_ID, autoLogAppEvents: true, xfbml: false, version: 'v20.0' });
+  };
+
+  let waSignupData = null; // { waba_id, phone_number_id } — llega por postMessage antes que el code
+
+  window.addEventListener('message', (event) => {
+    if (!event.origin.endsWith('facebook.com')) return;
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
+        waSignupData = {
+          waba_id: data.data?.waba_id,
+          phone_number_id: data.data?.phone_number_id,
+        };
+      }
+    } catch (_) { /* mensajes de Meta que no son JSON no nos interesan */ }
+  });
+
+  async function connectWhatsApp() {
+    if (!META_CONFIG_ID) {
+      alert('Falta configurar META_CONFIG_ID (ver comentario en el código). Pídeselo a quien administra la App de Meta.');
+      return;
+    }
+    if (typeof FB === 'undefined') {
+      alert('El SDK de Meta no cargó. Revisa tu conexión y vuelve a intentar.');
+      return;
+    }
+
+    const btn = $('wa-connect-btn');
+    btn.disabled = true;
+    btn.textContent = 'Conectando…';
+
+    FB.login(
+      async (response) => {
+        const code = response.authResponse?.code;
+        if (!code || !waSignupData?.waba_id || !waSignupData?.phone_number_id) {
+          alert('No se completó la conexión con WhatsApp. Intenta de nuevo.');
+          btn.disabled = false;
+          btn.textContent = 'Conectar WhatsApp';
+          return;
+        }
+
+        const { data: { session } } = await sb.auth.getSession();
+        try {
+          const res = await fetch(`${EDGE_BASE}/whatsapp-embedded-signup`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              code,
+              waba_id: waSignupData.waba_id,
+              phone_number_id: waSignupData.phone_number_id,
+            }),
+          });
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.error || 'Error desconocido');
+
+          alert('¡WhatsApp conectado! Recargando tu panel…');
+          location.reload();
+        } catch (err) {
+          alert('Error conectando WhatsApp: ' + err.message);
+          btn.disabled = false;
+          btn.textContent = 'Conectar WhatsApp';
+        }
+      },
+      {
+        config_id: META_CONFIG_ID,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: { featureType: 'whatsapp_business_signup', sessionInfoVersion: '3' },
+      }
+    );
+  }
+  window.connectWhatsApp = connectWhatsApp;
 
   async function sendMessage() {
     const input = $('chat-input');
