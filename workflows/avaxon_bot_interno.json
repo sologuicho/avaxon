@@ -9,20 +9,29 @@
       },
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
-      "position": [0, -40],
+      "position": [
+        0,
+        -40
+      ],
       "id": "a1b2c3d4-0000-4a1a-9b1a-000000000000",
       "name": "Notas de Configuración"
     },
     {
       "parameters": {
-        "httpMethod": ["GET", "POST"],
+        "httpMethod": [
+          "GET",
+          "POST"
+        ],
         "path": "avaxon-whatsapp",
         "responseMode": "responseNode",
         "options": {}
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 300],
+      "position": [
+        0,
+        300
+      ],
       "id": "a1b2c3d4-0001-4a1a-9b1a-000000000001",
       "name": "WhatsApp Webhook",
       "webhookId": "avaxon-whatsapp-internal"
@@ -40,13 +49,19 @@
               "id": "cond-verify-mode",
               "leftValue": "={{ $json.query['hub.mode'] }}",
               "rightValue": "subscribe",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             },
             {
               "id": "cond-verify-token",
               "leftValue": "={{ $json.query['hub.verify_token'] }}",
               "rightValue": "={{ $env.META_VERIFY_TOKEN }}",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -55,7 +70,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "id": "a1b2c3d4-0002-4a1a-9b1a-000000000002",
       "name": "Is Verification Request"
     },
@@ -63,11 +81,16 @@
       "parameters": {
         "respondWith": "text",
         "responseBody": "={{ $json.query['hub.challenge'] }}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [480, 140],
+      "position": [
+        480,
+        140
+      ],
       "id": "a1b2c3d4-0003-4a1a-9b1a-000000000003",
       "name": "Respond - Verification Challenge"
     },
@@ -84,13 +107,19 @@
               "id": "cond-has-message",
               "leftValue": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages ? $json.body.entry[0].changes[0].value.messages.length : 0 }}",
               "rightValue": 0,
-              "operator": { "type": "number", "operation": "gt" }
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
             },
             {
               "id": "cond-type-text",
               "leftValue": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
               "rightValue": "text",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ],
           "combinator": "and"
@@ -99,7 +128,10 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [480, 440],
+      "position": [
+        480,
+        440
+      ],
       "id": "a1b2c3d4-0004-4a1a-9b1a-000000000004",
       "name": "Is Text Message"
     },
@@ -107,21 +139,29 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { status: 'ignored', reason: 'non-text message or status update' } }}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [720, 560],
+      "position": [
+        720,
+        560
+      ],
       "id": "a1b2c3d4-0005-4a1a-9b1a-000000000005",
       "name": "Respond - Ignore Non-Text"
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.sessions) staticData.sessions = {};\n\nconst body = $input.first().json.body;\nconst entry = body.entry?.[0];\nconst change = entry?.changes?.[0];\nconst value = change?.value;\nconst message = value?.messages?.[0];\n\nconst phone = message?.from;\nconst text = message?.text?.body;\nconst timestamp = message?.timestamp;\n\nif (!phone || !text) {\n  throw new Error('Build Conversation History: no se pudo extraer phone/text del payload de Meta. Payload: ' + JSON.stringify(body));\n}\n\nif (!staticData.sessions[phone]) {\n  staticData.sessions[phone] = [];\n}\n\nstaticData.sessions[phone].push({ role: 'user', content: text });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nconst systemPrompt = {\n  role: 'system',\n  content: 'Eres el asistente interno de Avaxon, una agencia de automatización IA para WhatsApp. Ayudas al equipo con información del negocio, respuestas rápidas y coordinación interna. Sé conciso, profesional y directo.'\n};\n\nreturn [\n  {\n    json: {\n      phone,\n      text,\n      timestamp,\n      messages: [systemPrompt, ...staticData.sessions[phone]]\n    }\n  }\n];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.sessions) staticData.sessions = {};\n\nconst body = $input.first().json.body;\nconst entry = body.entry?.[0];\nconst change = entry?.changes?.[0];\nconst value = change?.value;\nconst message = value?.messages?.[0];\n\nconst phone = message?.from;\nconst text = message?.text?.body;\nconst timestamp = message?.timestamp;\n\nif (!phone || !text) {\n  throw new Error('Build Conversation History: no se pudo extraer phone/text del payload de Meta. Payload: ' + JSON.stringify(body));\n}\n\nif (!staticData.sessions[phone]) {\n  staticData.sessions[phone] = [];\n}\n\nstaticData.sessions[phone].push({ role: 'user', content: text });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nconst systemPrompt = {\n  role: 'system',\n  content: \"Eres el asistente de ventas de Avaxon Technologies en WhatsApp. Tu unico objetivo es lograr que el prospecto agende un diagnostico gratuito de 30 minutos con el equipo de Avaxon.\\n\\nSOBRE AVAXON: Automatizamos WhatsApp Business con IA. Ayudamos a negocios a atender leads 24/7, dar seguimiento automatico a clientes y gestionar conversaciones sin esfuerzo manual. Nos conectamos a la API oficial de WhatsApp Business.\\n\\nHORARIO DISPONIBLE PARA LLAMADAS: Lunes a viernes, de 8:00 AM a 5:00 PM (hora de Mexico).\\n\\nREGLAS OBLIGATORIAS (nunca las rompas):\\n- Mensajes cortos: maximo 3-4 lineas por respuesta.\\n- Una sola pregunta por mensaje. Nunca hagas dos preguntas al mismo tiempo.\\n- NUNCA pidas el numero de telefono. Ya lo tienes porque el prospecto esta hablando por WhatsApp.\\n- Si proponen un horario fuera del rango (fin de semana, antes de 8am, despues de 5pm), redirige amablemente al horario disponible y pide que elijan otra opcion.\\n- No inventes precios ni hagas compromisos especificos de precio.\\n- No presentes todos los servicios de golpe en el primer mensaje.\\n\\nFLUJO DE CONVERSACION - SIGUE ESTE ORDEN ESTRICTAMENTE:\\n\\nETAPA 1 - BIENVENIDA\\nSaluda de forma breve y calida. Pregunta solamente: quieres conocer mas sobre como funciona Avaxon, o prefieres agendar directamente tu diagnostico gratuito?\\nNO expliques los planes ni servicios todavia.\\n\\nETAPA 2 - CALIFICACION RAPIDA (solo si el prospecto pide mas informacion)\\nHaz UNA sola pregunta: a que se dedica tu negocio?\\nCon su respuesta, da UNA frase personalizada de como Avaxon les ayudaria en especifico.\\nLuego invitalos a agendar el diagnostico.\\n\\nETAPA 3 - AGENDAMIENTO\\nInforma el horario disponible: Tenemos disponibilidad de lunes a viernes, de 8:00 AM a 5:00 PM.\\nPregunta: que dia y hora te viene mejor?\\nSi proponen un horario fuera del rango disponible, explica el horario nuevamente y pide que elijan otra opcion dentro del mismo.\\n\\nETAPA 4 - CONFIRMACION\\nSolo pide el nombre completo del prospecto (ya tienes su telefono porque estan en WhatsApp).\\nUna vez que lo proporcionen, confirma el agendamiento: Listo, [Nombre]! Tu diagnostico gratuito queda agendado para el [dia] a las [hora]. Te contactaremos en este numero. Hasta pronto!\\n\\nRESPUESTAS A CASOS ESPECIALES:\\n- Si preguntan por precios: Los precios los vemos en detalle durante el diagnostico, ya que los adaptamos a cada negocio. Por eso es importante la llamada.\\n- Si el mensaje no tiene relacion con Avaxon: Estoy aqui para ayudarte a conocer Avaxon y agendar tu diagnostico gratuito. Continuamos con eso?\\n- Si el prospecto ya quiere agendar desde el inicio, salta directamente a la ETAPA 3.\"\n};\n\nreturn [\n  {\n    json: {\n      phone,\n      text,\n      timestamp,\n      messages: [systemPrompt, ...staticData.sessions[phone]]\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [720, 320],
+      "position": [
+        720,
+        320
+      ],
       "id": "a1b2c3d4-0006-4a1a-9b1a-000000000006",
       "name": "Build Conversation History"
     },
@@ -132,8 +172,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.OPENAI_API_KEY }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -143,7 +189,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 320],
+      "position": [
+        960,
+        320
+      ],
       "id": "a1b2c3d4-0007-4a1a-9b1a-000000000007",
       "name": "OpenAI Chat Completion",
       "retryOnFail": true,
@@ -152,11 +201,14 @@
     },
     {
       "parameters": {
-        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst phone = $('Build Conversation History').item.json.phone;\n\nconst openaiResponse = $input.first().json;\nconst reply = openaiResponse.choices?.[0]?.message?.content;\n\nif (!reply) {\n  throw new Error('Extract Response: OpenAI no devolvió una respuesta válida. Respuesta cruda: ' + JSON.stringify(openaiResponse));\n}\n\nif (!staticData.sessions) staticData.sessions = {};\nif (!staticData.sessions[phone]) staticData.sessions[phone] = [];\nstaticData.sessions[phone].push({ role: 'assistant', content: reply });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nreturn [\n  {\n    json: {\n      phone,\n      reply\n    }\n  }\n];"
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst phone = $('Build Conversation History').item.json.phone;\n\nconst openaiResponse = $input.first().json;\nconst reply = openaiResponse.choices?.[0]?.message?.content;\n\nif (!reply) {\n  throw new Error('Extract Response: OpenAI no devolvio una respuesta valida. Respuesta cruda: ' + JSON.stringify(openaiResponse));\n}\n\nif (!staticData.sessions) staticData.sessions = {};\nif (!staticData.sessions[phone]) staticData.sessions[phone] = [];\nstaticData.sessions[phone].push({ role: 'assistant', content: reply });\n\nconst MAX_HISTORY = 20;\nif (staticData.sessions[phone].length > MAX_HISTORY) {\n  staticData.sessions[phone] = staticData.sessions[phone].slice(-MAX_HISTORY);\n}\n\nreturn [\n  {\n    json: {\n      phone,\n      reply\n    }\n  }\n];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1200, 320],
+      "position": [
+        1200,
+        320
+      ],
       "id": "a1b2c3d4-0008-4a1a-9b1a-000000000008",
       "name": "Extract Response & Update History"
     },
@@ -167,8 +219,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.META_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -178,7 +236,10 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1440, 320],
+      "position": [
+        1440,
+        320
+      ],
       "id": "a1b2c3d4-0009-4a1a-9b1a-000000000009",
       "name": "Send WhatsApp Reply",
       "retryOnFail": true,
@@ -189,11 +250,16 @@
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ { status: 'ok' } }}",
-        "options": { "responseCode": 200 }
+        "options": {
+          "responseCode": 200
+        }
       },
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1680, 320],
+      "position": [
+        1680,
+        320
+      ],
       "id": "a1b2c3d4-0010-4a1a-9b1a-000000000010",
       "name": "Respond - Success"
     }
@@ -201,39 +267,93 @@
   "connections": {
     "WhatsApp Webhook": {
       "main": [
-        [ { "node": "Is Verification Request", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Is Verification Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Verification Request": {
       "main": [
-        [ { "node": "Respond - Verification Challenge", "type": "main", "index": 0 } ],
-        [ { "node": "Is Text Message", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Respond - Verification Challenge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Is Text Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Is Text Message": {
       "main": [
-        [ { "node": "Build Conversation History", "type": "main", "index": 0 } ],
-        [ { "node": "Respond - Ignore Non-Text", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Build Conversation History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond - Ignore Non-Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Build Conversation History": {
       "main": [
-        [ { "node": "OpenAI Chat Completion", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "OpenAI Chat Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "OpenAI Chat Completion": {
       "main": [
-        [ { "node": "Extract Response & Update History", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Extract Response & Update History",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Extract Response & Update History": {
       "main": [
-        [ { "node": "Send WhatsApp Reply", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Send WhatsApp Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Send WhatsApp Reply": {
       "main": [
-        [ { "node": "Respond - Success", "type": "main", "index": 0 } ]
+        [
+          {
+            "node": "Respond - Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
