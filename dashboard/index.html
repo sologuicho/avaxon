@@ -842,11 +842,11 @@
           <!-- Left sidebar: conversation list -->
           <div class="conv-sidebar">
             <div class="conv-sidebar-top">
-              <input id="conv-search" placeholder="Buscar contacto…" style="padding:9px 12px;border-radius:9px;border:1px solid #e6e7e9;background:#fafbfc;font-size:13.5px;outline:none;font-family:'Barlow',sans-serif;width:100%" />
-              <div style="display:flex;gap:2px;padding:3px;border-radius:9px;background:#f4f5f6">
-                <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:#fff;color:#1a2535;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todas</button>
-                <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:#8c939b;box-shadow:none">Abiertas</button>
-                <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" style="flex:1;padding:6px 0;border-radius:7px;border:0;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:#8c939b;box-shadow:none">Cerradas</button>
+              <input id="conv-search" placeholder="Buscar contacto…" class="search-input" style="padding-left:10px;background-image:none" />
+              <div class="period-group">
+                <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    class="period-pill active" style="flex:1;text-align:center">Todas</button>
+                <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   class="period-pill" style="flex:1;text-align:center">Abiertas</button>
+                <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" class="period-pill" style="flex:1;text-align:center">Cerradas</button>
               </div>
             </div>
             <div id="conv-list" class="conv-list">
