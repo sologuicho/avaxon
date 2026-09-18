@@ -1579,11 +1579,8 @@
     ['all','open','closed'].forEach(t => {
       const btn = $('conv-tab-' + t);
       if (!btn) return;
-      const isActive = t === tab;
-      btn.style.background = isActive ? '#fff' : 'transparent';
-      btn.style.color      = isActive ? '#1a2535' : '#8c939b';
-      btn.style.boxShadow  = isActive ? '0 1px 3px rgba(26,37,53,0.1)' : 'none';
-      btn.classList.toggle('active-tab', isActive);
+      btn.classList.toggle('active', t === tab);
+      btn.classList.toggle('active-tab', t === tab);
     });
     const q = ($('conv-search')?.value ?? '').toLowerCase();
     convState.filtered = convState.all
