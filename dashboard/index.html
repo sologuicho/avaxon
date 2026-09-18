@@ -1464,10 +1464,7 @@
     ['all','new','qualified'].forEach(t => {
       const btn = $('leads-tab-' + t);
       if (!btn) return;
-      const active = t === tab;
-      btn.style.background     = active ? '#fff' : 'transparent';
-      btn.style.color          = active ? '#1a2535' : '#8c939b';
-      btn.style.boxShadow      = active ? '0 1px 3px rgba(26,37,53,0.1)' : 'none';
+      btn.classList.toggle('active', t === tab);
     });
     const filtered = tab === 'all'       ? state.allContacts
                    : tab === 'new'       ? state.allContacts.filter(c => c.status === 'new')
