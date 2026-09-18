@@ -401,8 +401,10 @@
 
     /* ── Pills / Status badges ── */
     .pill {
-      display: inline-flex; align-items: center; gap: 5px; font-size: 12px;
-      font-weight: 700; padding: 3px 9px; border-radius: 7px; white-space: nowrap; letter-spacing: 0.2px;
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px;
+      font-weight: 700; padding: 2px 8px; white-space: nowrap; letter-spacing: .04em;
+      text-transform: uppercase;
     }
     .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .pill.no-dot::before { display: none; }
@@ -414,35 +416,43 @@
 
     /* Direction badges */
     .badge-in {
-      display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
-      border-radius: 4px; background: var(--accent-100); color: var(--accent-800);
-      letter-spacing: 0.5px; white-space: nowrap;
+      display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      background: var(--accent-100); color: var(--accent-800);
+      letter-spacing: .06em; white-space: nowrap; text-transform: uppercase;
     }
     .badge-out {
-      display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px;
-      border-radius: 4px; background: rgba(79,70,229,0.08); color: #6366f1;
-      letter-spacing: 0.5px; white-space: nowrap;
+      display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      background: rgba(79,70,229,0.08); color: #6366f1;
+      letter-spacing: .06em; white-space: nowrap; text-transform: uppercase;
     }
 
     /* Quality pill */
-    .quality-pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 7px; white-space: nowrap; color: #fff; }
+    .quality-pill {
+      display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px; font-weight: 700; padding: 2px 9px; white-space: nowrap;
+      color: #fff; letter-spacing: .04em; text-transform: uppercase;
+    }
     .quality-green  { background: var(--green); }
     .quality-amber  { background: var(--amber); }
     .quality-red    { background: var(--red); }
 
     /* Media badge */
     .media-badge {
-      display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px;
-      border-radius: 4px; background: var(--amber-bg); color: var(--amber);
-      letter-spacing: 0.3px; margin-left: 6px;
+      display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; padding: 2px 6px;
+      background: var(--amber-bg); color: var(--amber);
+      letter-spacing: .04em; margin-left: 5px; text-transform: uppercase;
     }
 
     /* Tags */
     .tags-wrap { display: flex; flex-wrap: wrap; gap: 3px; }
     .tag {
-      display: inline-block; font-size: 10.5px; font-weight: 500; padding: 2px 8px;
-      border-radius: 5px; background: var(--accent-100); color: var(--accent-800);
-      border: 1px solid var(--accent-200);
+      display: inline-block; font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      background: var(--accent-100); color: var(--accent-800);
+      border: 1px solid var(--accent-200); letter-spacing: .04em; text-transform: uppercase;
     }
 
     /* Msg preview */
