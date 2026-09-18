@@ -514,22 +514,23 @@
     .apt-del { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 12px; padding: 2px 4px; line-height: 1; transition: color 0.12s; flex-shrink: 0; }
     .apt-del:hover { color: var(--red); }
     .apt-empty { color: var(--text-muted); font-size: 13px; padding: 20px 0; text-align: center; }
-    .cal-form-wrap { padding: 14px 16px 16px; border-top: 1px solid #e6e7e9; background: #fafbfc; }
-    .cal-form-title { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-    .form-grid { display: grid; gap: 7px; margin-bottom: 10px; }
+    .cal-form-wrap { padding: 12px 14px 14px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--page-bg) 40%, transparent); }
+    .cal-form-title { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 9px; }
+    .form-grid { display: grid; gap: 6px; margin-bottom: 9px; }
     .form-input-cal {
-      width: 100%; padding: 7px 10px; border: 1px solid #dfe2e6; border-radius: 10px;
+      width: 100%; padding: 7px 9px; border: 1px solid var(--border);
       font-size: 13px; font-family: 'Barlow', sans-serif; color: var(--text);
-      background: #fafbfc; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      background: var(--card-bg); outline: none; transition: border-color 0.13s;
     }
-    .form-input-cal:focus { border-color: #5980a6; box-shadow: 0 0 0 3px rgba(89,128,166,0.16); }
+    .form-input-cal:focus { border-color: var(--accent); }
     .btn-add-apt {
-      width: 100%; padding: 8px 0; background: #2c455d; color: #fff;
-      border: none; border-radius: 10px; font-size: 13px; font-weight: 600;
-      font-family: 'Barlow', sans-serif; cursor: pointer; transition: background 0.15s;
+      width: 100%; padding: 8px 0; background: var(--accent-800); color: #fff;
+      border: 1px solid var(--accent-800); font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.13s;
     }
-    .btn-add-apt:hover { background: #22384c; }
-    .btn-add-apt:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-add-apt:hover { background: var(--accent-900); border-color: var(--accent-900); }
+    .btn-add-apt:disabled { opacity: 0.5; cursor: not-allowed; }
     .cal-form-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
     @media (max-width: 900px) { .cal-layout { grid-template-columns: 1fr; } }
 
