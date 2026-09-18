@@ -918,10 +918,10 @@
         <!-- Table -->
         <div class="card">
           <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e6e7e9">
-            <div style="display:flex;gap:2px;padding:3px;border-radius:9px;background:#f4f5f6">
-              <button id="leads-tab-all" onclick="filterLeads('all')" style="padding:6px 14px;border-radius:7px;border:0;background:#fff;font-size:13px;font-weight:600;color:#1a2535;cursor:pointer;box-shadow:0 1px 3px rgba(26,37,53,0.1)">Todos <span id="leads-count-all" class="count-badge" style="margin-left:4px">0</span></button>
-              <button id="leads-tab-new" onclick="filterLeads('new')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Nuevos</button>
-              <button id="leads-tab-qualified" onclick="filterLeads('qualified')" style="padding:6px 14px;border-radius:7px;border:0;background:transparent;font-size:13px;font-weight:600;color:#8c939b;cursor:pointer">Calificados</button>
+            <div class="period-group">
+              <button id="leads-tab-all" onclick="filterLeads('all')" class="period-pill active">Todos <span id="leads-count-all" class="count-badge" style="margin-left:3px">0</span></button>
+              <button id="leads-tab-new" onclick="filterLeads('new')" class="period-pill">Nuevos</button>
+              <button id="leads-tab-qualified" onclick="filterLeads('qualified')" class="period-pill">Calificados</button>
             </div>
             <input class="search-input" type="text" id="leads-search" placeholder="Buscar por nombre o teléfono…" style="width:230px" />
           </div>
