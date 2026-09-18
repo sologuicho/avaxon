@@ -857,9 +857,9 @@
           <!-- Center: chat area -->
           <div class="chat-area">
             <!-- Empty state (shown when no conversation selected) -->
-            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#a7adb5;background:#fafbfc">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d0d4d9" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-              <span style="font-size:13.5px">Selecciona una conversación</span>
+            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--text-dim);background:color-mix(in srgb,var(--page-bg) 40%,transparent)">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+              <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Selecciona una conversación</span>
             </div>
             <!-- Active conversation (hidden until one is selected) -->
             <div id="chat-input-area" style="display:none;flex-direction:column;flex:1;min-height:0">
