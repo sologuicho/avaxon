@@ -1727,7 +1727,7 @@
 
   function renderMessages(msgs) {
     if (!msgs.length) {
-      $('chat-messages').innerHTML = '<div style="text-align:center;color:#a7adb5;font-size:13px;padding:40px">Sin mensajes en esta conversación</div>';
+      $('chat-messages').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:13px;padding:40px">Sin mensajes en esta conversación</div>';
       return;
     }
     let lastDateKey = '';
