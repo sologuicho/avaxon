@@ -1559,7 +1559,7 @@
       $('wa-webhook-url').value = phone.display_phone_number ? `https://avaxon.lat/webhook/${phone.id}` : '—';
       $('wa-webhook-status').innerHTML = phone.webhook_verified
         ? `<span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span style="font-size:13.5px;color:#10b981;font-weight:600">Verificado</span>`
-        : `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13.5px;color:#8c939b">Pendiente de verificación</span>`;
+        : `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13.5px;color:var(--text-muted)">Pendiente de verificación</span>`;
     } else {
       $('wa-hero-stats').innerHTML = '';
       $('wa-webhook-url').value = '—';
