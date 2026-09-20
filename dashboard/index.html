@@ -1714,13 +1714,13 @@
         .order('scheduled_at', { ascending: false })
         .limit(3);
       $('cpanel-apts').innerHTML = (apts && apts.length)
-        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid #f1f2f4">
-            <div style="font-size:13px;font-weight:600;color:#1a2535">${a.title || 'Cita'}</div>
-            <div style="font-size:11.5px;color:#8c939b">${fmtDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
+        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${a.title || 'Cita'}</div>
+            <div style="font-size:11.5px;color:var(--text-muted)">${fmtDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
           </div>`).join('')
-        : '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
+        : '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
     } else {
-      $('cpanel-apts').innerHTML = '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
+      $('cpanel-apts').innerHTML = '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
     }
   }
   window.openConversacion = openConversacion;
