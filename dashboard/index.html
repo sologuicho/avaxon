@@ -606,7 +606,7 @@
     .btn-ghost:hover { background: var(--accent-100); border-color: var(--accent); color: var(--accent-800); }
 
     /* ── Blueprint corners (matching landing) ── */
-    .bp { position: relative; border: 1px solid var(--border); }
+    .bp { position: relative; border: 1px solid var(--border); overflow: visible !important; }
     .bp > .bc { position: absolute; width: 11px; height: 11px; color: color-mix(in srgb, var(--text) 40%, transparent); }
     .bp > .bc::before, .bp > .bc::after { content: ""; position: absolute; background: currentColor; }
     .bp > .bc::before { left: 5px; top: 0; width: 1px; height: 100%; }
