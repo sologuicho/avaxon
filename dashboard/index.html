@@ -1543,7 +1543,7 @@
 
     if (phone) {
       const qualityColor = phone.quality_rating === 'GREEN' ? '#10b981'
-                         : phone.quality_rating === 'YELLOW' ? '#f59e0b' : '#8c939b';
+                         : phone.quality_rating === 'YELLOW' ? '#f59e0b' : 'var(--text-muted)';
       $('wa-hero-stats').innerHTML = [
         { label: 'Calidad', value: phone.quality_rating || '—', color: qualityColor },
         { label: 'Estado', value: phone.status || '—', color: 'var(--accent)' },
