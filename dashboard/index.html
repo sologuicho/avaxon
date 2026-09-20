@@ -1452,7 +1452,8 @@
       { label: 'Nuevos',           value: newLeads,  color: KPI_COLORS[1] },
       { label: 'Calificados',      value: qualified, color: KPI_COLORS[2] },
     ].map(k => `
-      <div class="kpi-card">
+      <div class="kpi-card bp">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
         <div class="kpi-accent-bar" style="background:${k.color}"></div>
         <div class="kpi-label">${k.label}</div>
         <div class="kpi-row"><div class="kpi-value">${k.value.toLocaleString('es-MX')}</div></div>
