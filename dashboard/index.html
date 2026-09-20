@@ -552,7 +552,7 @@
     .wa-sep { width: 1px; height: 30px; background: var(--border); flex-shrink: 0; }
 
     /* ── Inbox ── */
-    .conv-panel { height: 600px; display: flex; align-items: stretch; gap: 0; border: 1px solid var(--border); overflow: hidden; background: var(--card-bg); }
+    .conv-panel { height: calc(100vh - 140px); min-height: 500px; display: flex; align-items: stretch; gap: 0; border: 1px solid var(--border); overflow: hidden; background: var(--card-bg); }
     .conv-sidebar { width: 290px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
     .conv-sidebar-top { padding: 10px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 7px; }
     .conv-list { flex: 1; overflow-y: auto; }
