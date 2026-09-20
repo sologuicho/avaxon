@@ -1354,7 +1354,7 @@
     const recvTotal = recv.reduce((a, b) => a + b, 0);
     $('chart-sent-total').textContent = sentTotal.toLocaleString('es-MX');
     $('chart-recv-total').textContent = recvTotal.toLocaleString('es-MX');
-    const labels = days.map((d, i) => `<text x="${px(i).toFixed(1)}" y="228" fill="#a7adb5" font-size="11" font-family="Barlow Condensed" text-anchor="middle">${d.label}</text>`).join('');
+    const labels = days.map((d, i) => `<text x="${px(i).toFixed(1)}" y="228" fill="var(--text-dim)" font-size="11" font-family="Barlow Condensed" text-anchor="middle">${d.label}</text>`).join('');
     $('msg-chart-svg').innerHTML = `
       <defs>
         <linearGradient id="avxFill" x1="0" y1="0" x2="0" y2="1">
