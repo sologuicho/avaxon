@@ -1290,7 +1290,8 @@
 
   function buildKpiGrid(kpis) {
     $('kpi-grid').innerHTML = kpis.map((k, i) => `
-      <div class="kpi-card">
+      <div class="kpi-card bp">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
         <div class="kpi-accent-bar" style="background:${KPI_COLORS[i % KPI_COLORS.length]}"></div>
         <div class="kpi-label">${k.label}</div>
         <div class="kpi-row">
