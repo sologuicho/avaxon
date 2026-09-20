@@ -959,8 +959,9 @@
         <!-- Funnel KPIs -->
         <div id="leads-funnel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px"></div>
         <!-- Table -->
-        <div class="card">
-          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e6e7e9">
+        <div class="card bp">
+          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">
             <div class="period-group">
               <button id="leads-tab-all" onclick="filterLeads('all')" class="period-pill active">Todos <span id="leads-count-all" class="count-badge" style="margin-left:3px">0</span></button>
               <button id="leads-tab-new" onclick="filterLeads('new')" class="period-pill">Nuevos</button>
