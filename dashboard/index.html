@@ -82,7 +82,7 @@
     }
 
     /* ── Login ── */
-    #login-screen {
+    #login-screen, #recovery-screen, #forgot-screen {
       display: none; align-items: center; justify-content: center;
       min-height: 100vh; background: var(--login-bg);
       background-image:
@@ -625,6 +625,44 @@
     </div>
     <button class="btn-login" id="login-btn">Entrar</button>
     <div class="login-error" id="login-error"></div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" id="forgot-password-link" style="font-size:13px;color:#5980a6">¿Olvidaste tu contraseña?</a>
+    </div>
+  </div>
+</div>
+
+<!-- Recuperar / crear contraseña -->
+<div id="recovery-screen">
+  <div class="login-card">
+    <div class="login-logo">Avaxon</div>
+    <div class="login-subtitle" id="recovery-subtitle">Crea tu nueva contraseña</div>
+    <div class="form-group">
+      <label class="form-label" for="recovery-password">Nueva contraseña</label>
+      <input class="form-input" type="password" id="recovery-password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="recovery-password-confirm">Confirmar contraseña</label>
+      <input class="form-input" type="password" id="recovery-password-confirm" placeholder="Repite la contraseña" autocomplete="new-password" />
+    </div>
+    <button class="btn-login" id="recovery-btn">Guardar contraseña</button>
+    <div class="login-error" id="recovery-error"></div>
+  </div>
+</div>
+
+<!-- Pedir link de recuperación -->
+<div id="forgot-screen">
+  <div class="login-card">
+    <div class="login-logo">Avaxon</div>
+    <div class="login-subtitle">Recuperar contraseña</div>
+    <div class="form-group">
+      <label class="form-label" for="forgot-email">Correo electrónico</label>
+      <input class="form-input" type="email" id="forgot-email" placeholder="tu@correo.com" autocomplete="email" />
+    </div>
+    <button class="btn-login" id="forgot-btn">Mandar link de recuperación</button>
+    <div class="login-error" id="forgot-error"></div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" id="back-to-login-link" style="font-size:13px;color:#5980a6">Volver a iniciar sesión</a>
+    </div>
   </div>
 </div>
 
@@ -1055,13 +1093,19 @@
   };
 
   function showScreen(name) {
-    $('loading-screen').style.display = 'none';
-    $('login-screen').style.display   = 'none';
-    $('app-shell').style.display      = 'none';
+    $('loading-screen').style.display  = 'none';
+    $('login-screen').style.display    = 'none';
+    $('recovery-screen').style.display = 'none';
+    $('forgot-screen').style.display   = 'none';
+    $('app-shell').style.display       = 'none';
     if (name === 'loading') {
       $('loading-screen').style.display = 'flex';
     } else if (name === 'login') {
       $('login-screen').style.display = 'flex';
+    } else if (name === 'recovery') {
+      $('recovery-screen').style.display = 'flex';
+    } else if (name === 'forgot') {
+      $('forgot-screen').style.display = 'flex';
     } else if (name === 'app') {
       $('app-shell').style.display = 'block';
     }
@@ -1981,6 +2025,75 @@
   $('login-email').addEventListener('keydown',    e => { if (e.key === 'Enter') $('login-password').focus(); });
   $('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
 
+  /* ── Olvidé mi contraseña ── */
+  $('forgot-password-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    $('forgot-email').value = $('login-email').value.trim();
+    showScreen('forgot');
+  });
+  $('back-to-login-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    showScreen('login');
+  });
+
+  async function handleForgotPassword() {
+    const email = $('forgot-email').value.trim();
+    const btn   = $('forgot-btn');
+    const errEl = $('forgot-error');
+    errEl.style.display = 'none';
+    if (!email) {
+      errEl.textContent = 'Ingresa tu correo.';
+      errEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Mandando…';
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname,
+    });
+    btn.disabled = false;
+    btn.textContent = 'Mandar link de recuperación';
+    errEl.style.color = error ? '' : '#10b981';
+    errEl.textContent = error
+      ? `Error: ${error.message}`
+      : 'Listo. Si ese correo tiene cuenta, te llegará un link para crear tu contraseña.';
+    errEl.style.display = 'block';
+  }
+  $('forgot-btn').addEventListener('click', handleForgotPassword);
+
+  /* ── Crear/reestablecer contraseña (desde el link de recuperación) ── */
+  async function handleSetNewPassword() {
+    const pass1 = $('recovery-password').value;
+    const pass2 = $('recovery-password-confirm').value;
+    const btn   = $('recovery-btn');
+    const errEl = $('recovery-error');
+    errEl.style.display = 'none';
+    errEl.style.color = '';
+    if (!pass1 || pass1.length < 8) {
+      errEl.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (pass1 !== pass2) {
+      errEl.textContent = 'Las contraseñas no coinciden.';
+      errEl.style.display = 'block';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    const { data, error } = await sb.auth.updateUser({ password: pass1 });
+    btn.disabled = false;
+    btn.textContent = 'Guardar contraseña';
+    if (error) {
+      errEl.textContent = `Error: ${error.message}`;
+      errEl.style.display = 'block';
+      return;
+    }
+    if (data?.user) await bootstrap(data.user);
+  }
+  $('recovery-btn').addEventListener('click', handleSetNewPassword);
+  $('recovery-password-confirm').addEventListener('keydown', e => { if (e.key === 'Enter') handleSetNewPassword(); });
+
   $('signout-btn').addEventListener('click', async () => {
     await sb.auth.signOut();
     window.location.href = '../index.html';
@@ -2226,13 +2339,22 @@
   setInterval(updateClock, 1000);
   updateClock();
 
+  /* ── Link de recuperación de contraseña: el hash trae type=recovery.
+     Hay que interceptarlo ANTES de dejar que la sesión normal cargue el
+     dashboard, si no el usuario entra sin llegar a poner contraseña nueva. ── */
+  const isRecoveryLink = window.location.hash.includes('type=recovery');
+
   /* ── Auth state listener ── */
   sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      showScreen('recovery');
+      return;
+    }
     if (event === 'SIGNED_OUT') {
       window.location.href = '../index.html';
       return;
     }
-    if (event === 'SIGNED_IN' && session?.user) {
+    if (event === 'SIGNED_IN' && session?.user && !isRecoveryLink) {
       await bootstrap(session.user);
     }
   });
@@ -2240,6 +2362,11 @@
   /* ── Initial session check ── */
   (async () => {
     showScreen('loading');
+    if (isRecoveryLink) {
+      // Deja que onAuthStateChange('PASSWORD_RECOVERY') tome el control.
+      showScreen('recovery');
+      return;
+    }
     const { data: { session } } = await sb.auth.getSession();
     if (session?.user) {
       await bootstrap(session.user);
