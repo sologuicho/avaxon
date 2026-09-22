@@ -1616,7 +1616,6 @@
       $('wa-pending-notice').style.display = 'none';
     }
 
-<<<<<<< HEAD
     // Phone numbers list
     const listEl = $('wa-numbers-list');
     if (!phones.length) {
@@ -1640,10 +1639,6 @@
     }
 
     // Webhook section
-=======
-    $('wa-connect-btn').style.display = phone ? 'none' : 'inline-block';
-
->>>>>>> 67b5c6584afbfa3d926dc19e14495f70c0d978c0
     if (phone) {
       $('wa-webhook-url').value = phone.display_phone_number ? `https://avaxon.lat/webhook/${phone.id}` : '—';
       $('wa-webhook-status').innerHTML = phone.webhook_verified
