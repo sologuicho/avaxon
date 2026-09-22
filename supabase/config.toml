@@ -1,0 +1,15 @@
+project_id = "wprvjhvtnyibiwpeiusc"
+
+# Solo se listan aquí las funciones nuevas de cron (daily-report,
+# reactivate-cold-leads). El resto (webhook-wa, send-message, landing-*,
+# admin-*) se configuraron por fuera de este archivo y no se tocan.
+
+[functions.daily-report]
+verify_jwt = false
+# 22:00 hora de Ciudad de México (UTC-6, sin horario de verano) = 04:00 UTC
+cron = "0 4 * * *"
+
+[functions.reactivate-cold-leads]
+verify_jwt = false
+# cada 6 horas
+cron = "0 */6 * * *"
