@@ -1559,34 +1559,49 @@
   window.filterLeads = filterLeads;
 
   function renderConexiones(phoneData, waData) {
-    const phone = phoneData?.[0];
+    const phones = phoneData || [];
+    const phone  = phones[0];
 
-    // WA hero card
-    $('wa-hero-sub').textContent = phone
-      ? `${phone.display_phone_number}${phone.verified_name ? ' · ' + phone.verified_name : ''}`
-      : 'Sin número configurado';
+    // Connect button state — disabled until Meta approves Tech Provider
+    const connectBtn = $('wa-connect-btn');
+    if (!WA_SIGNUP_ENABLED) {
+      connectBtn.disabled = true;
+      connectBtn.title = 'Disponible cuando Meta apruebe el Tech Provider';
+      $('wa-pending-notice').style.display = 'flex';
+    } else {
+      connectBtn.disabled = false;
+      $('wa-pending-notice').style.display = 'none';
+    }
 
+    // Phone numbers list
+    const listEl = $('wa-numbers-list');
+    if (!phones.length) {
+      listEl.innerHTML = '<div class="wa-phone-empty">Sin números de WhatsApp conectados</div>';
+    } else {
+      listEl.innerHTML = phones.map(p => {
+        const wa = p.whatsapp_accounts;
+        return `
+          <div class="wa-phone-row">
+            <div class="wa-phone-num">${p.display_phone_number || '—'}</div>
+            <div class="wa-phone-name">${p.verified_name || '—'}</div>
+            <div class="wa-phone-actions">
+              ${statusPill(p.status)}
+              ${qualityBadge(p.quality_rating)}
+              ${webhookBadge(p.webhook_verified)}
+              ${wa?.business_name ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--text-muted);letter-spacing:.02em">${wa.business_name}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Webhook section
     if (phone) {
-      const qualityColor = phone.quality_rating === 'GREEN' ? '#10b981'
-                         : phone.quality_rating === 'YELLOW' ? '#f59e0b' : 'var(--text-muted)';
-      $('wa-hero-stats').innerHTML = [
-        { label: 'Calidad', value: phone.quality_rating || '—', color: qualityColor },
-        { label: 'Estado', value: phone.status || '—', color: 'var(--accent)' },
-        { label: 'Webhook', value: phone.webhook_verified ? 'Verificado' : 'Pendiente', color: phone.webhook_verified ? '#10b981' : '#f59e0b' },
-      ].map(s => `
-        <div style="text-align:left">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5f7185;margin-bottom:3px">${s.label}</div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:${s.color}">${s.value}</div>
-        </div>
-      `).join('');
-
-      // Webhook section
       $('wa-webhook-url').value = phone.display_phone_number ? `https://avaxon.lat/webhook/${phone.id}` : '—';
       $('wa-webhook-status').innerHTML = phone.webhook_verified
         ? `<span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span style="font-size:13.5px;color:#10b981;font-weight:600">Verificado</span>`
         : `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13.5px;color:var(--text-muted)">Pendiente de verificación</span>`;
     } else {
-      $('wa-hero-stats').innerHTML = '';
       $('wa-webhook-url').value = '—';
     }
 
