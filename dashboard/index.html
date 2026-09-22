@@ -1041,20 +1041,33 @@
           <span class="view-section-label">05 · Conexiones</span>
           <hr class="view-section-hr">
         </div>
-        <!-- WhatsApp hero card -->
-        <div id="wa-hero" style="background:var(--accent-900);border:1px solid color-mix(in srgb,#fff 10%,transparent);padding:20px 24px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div style="display:flex;align-items:center;gap:14px;min-width:0">
-            <div style="width:46px;height:46px;background:#10b981;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.04em">WA</div>
-            <div id="wa-hero-info">
-              <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.01em">WhatsApp Business</div>
-              <div id="wa-hero-sub" style="font-family:'Barlow Condensed',sans-serif;font-size:15px;color:#93a4b8;margin-top:3px">Sin número configurado</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:22px;flex-wrap:wrap" id="wa-hero-stats"></div>
-        </div>
-
         <!-- Cards grid -->
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px">
+
+          <!-- WhatsApp Business card - full width -->
+          <div class="card bp" style="grid-column:1/-1;padding:0">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <!-- Header -->
+            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:42px;height:42px;background:#10b981;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:.06em">WA</div>
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:var(--text)">WhatsApp Business</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Conecta y gestiona tus números de WhatsApp Business API</div>
+                </div>
+              </div>
+              <button id="wa-connect-btn" class="btn-primary" onclick="launchEmbeddedSignup()">+ Conectar número</button>
+            </div>
+            <!-- Pending Tech Provider notice -->
+            <div id="wa-pending-notice" style="padding:10px 24px;background:color-mix(in srgb,#f59e0b 8%,transparent);border-bottom:1px solid color-mix(in srgb,#f59e0b 22%,transparent);display:none;align-items:center;gap:10px">
+              <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0;display:inline-block"></span>
+              <span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#b45309;letter-spacing:.05em;text-transform:uppercase">Aprobación Meta pendiente</span>
+              <span style="font-size:12px;color:var(--text-muted)">· La conexión automática estará disponible cuando Meta apruebe el Tech Provider (enviado 13-sep). Tu número actual está activo y funcional.</span>
+            </div>
+            <!-- Phone numbers list -->
+            <div id="wa-numbers-list"></div>
+          </div>
+
           <!-- Motor IA -->
           <div class="card bp" style="padding:20px">
             <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
@@ -1106,6 +1119,7 @@
               </label>
             </div>
           </div>
+
         </div>
       </div>
 
