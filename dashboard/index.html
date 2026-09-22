@@ -2448,7 +2448,6 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-<<<<<<< HEAD
   /* ── WhatsApp Embedded Signup (Bloque 4) ── */
   const WA_APP_ID    = 'TU_META_APP_ID';   // Reemplazar cuando Meta apruebe Tech Provider
   const WA_CONFIG_ID = 'TU_CONFIG_ID';      // ID de configuración del Embedded Signup en Meta
@@ -2487,12 +2486,11 @@
   }
 
   window.launchEmbeddedSignup = launchEmbeddedSignup;
-=======
+
   /* ── Link de recuperación de contraseña: el hash trae type=recovery.
      Hay que interceptarlo ANTES de dejar que la sesión normal cargue el
      dashboard, si no el usuario entra sin llegar a poner contraseña nueva. ── */
   const isRecoveryLink = window.location.hash.includes('type=recovery');
->>>>>>> 67b5c6584afbfa3d926dc19e14495f70c0d978c0
 
   /* ── Auth state listener ── */
   sb.auth.onAuthStateChange(async (event, session) => {
