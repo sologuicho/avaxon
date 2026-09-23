@@ -64,3 +64,17 @@ Registro compartido entre Luis Flores y Héctor Parra.
 
 **Notas:**
 - Mientras Luis y yo trabajemos en paralelo en el mismo repo, puede haber conflictos de merge (ya pasó una vez con `index.html` y `webhook-wa`) — avisar por aquí antes de hacer cambios grandes ayuda a no pisarnos el trabajo.
+
+---
+
+### 2026-09-23 — Héctor Parra (vía Claude Code)
+
+**Leí `ARQUITECTURA.md` de Luis (muy completo, buen trabajo) y encontré 2 choques con lo que ya construí — hay que coordinar antes de que alguien duplique o rompa lo del otro:**
+
+1. **Nombre de función distinto para lo mismo.** `ARQUITECTURA.md` lista `wa-embedded-signup` como **[PENDIENTE - espera Meta]**. Pero yo ya construí y desplegué esa función con el nombre `whatsapp-embedded-signup` (el 2026-09-17, ver entrada arriba) — botón "Conectar WhatsApp" en el dashboard del cliente + Edge Function que intercambia el código de Meta y guarda el número. Sigue sin poder usarse en producción porque faltan `META_CONFIG_ID` y `META_APP_SECRET` (mismo pendiente #3 de mi entrada anterior), pero el código YA existe. Antes de que Luis la reconstruya desde cero con otro nombre, decidamos cuál se queda.
+
+2. **Modelo de token de WhatsApp distinto.** `ARQUITECTURA.md` documenta el diseño correcto a futuro: cada cliente con su propio `wa_access_token` guardado en `phone_numbers` (multi-tenant real, sección "Riesgos y mitigaciones": *"Token único global para todos los clientes → No escala a multi-tenant"*). Mi función `whatsapp-embedded-signup` y el `webhook-wa` actual usan el token **global** (`WA_ACCESS_TOKEN`, System User de Avaxon) para todos los clientes — el modelo viejo. Si Luis migra a token-por-org (que es lo correcto y ya está documentado como pendiente en su doc), mi función de Embedded Signup necesita actualizarse para leer/guardar el token del cliente en vez de usar el global.
+
+**Pendiente — decisión de Luis:**
+- ¿Cuál `wa-*-embedded-signup` se queda? Si es la mía, dime y la renombro/ajusto a como la documentaste; si prefieres la tuya, dime y la borro para no dejar dos versiones sueltas.
+- Avísame cuándo migres a token-por-org en `phone_numbers.wa_access_token` para actualizar mi función en consecuencia (hoy rompería si el campo no existe o si `webhook-wa` deja de usar el token global sin que yo lo sepa).
