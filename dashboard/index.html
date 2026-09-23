@@ -1223,6 +1223,74 @@
         </div>
       </div>
 
+      <!-- VIEW: Asignación -->
+      <div class="view" id="view-asignacion">
+        <div class="view-section-header">
+          <span class="view-section-label">06 · Asignación</span>
+          <hr class="view-section-hr">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
+
+          <!-- Agentes -->
+          <div class="card bp" style="padding:0">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <div style="font-size:15px;font-weight:700">Equipo de vendedores</div>
+              <span id="asig-total-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+            </div>
+            <div id="asig-agents-list"></div>
+          </div>
+
+          <!-- Config -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+
+            <!-- Modo de asignación -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:14px;font-weight:700;margin-bottom:14px">Modo de asignación</div>
+              <div style="display:flex;flex-direction:column;gap:8px" id="asig-mode-options">
+                <label class="asig-mode-opt" data-mode="round_robin">
+                  <input type="radio" name="asig-mode" value="round_robin" style="display:none">
+                  <div class="asig-mode-card">
+                    <div style="font-size:13px;font-weight:700">Rotación pareja</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Se turna entre todos los vendedores disponibles</div>
+                  </div>
+                </label>
+                <label class="asig-mode-opt" data-mode="least_busy">
+                  <input type="radio" name="asig-mode" value="least_busy" style="display:none">
+                  <div class="asig-mode-card">
+                    <div style="font-size:13px;font-weight:700">Menor carga</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Al que tenga menos conversaciones abiertas</div>
+                  </div>
+                </label>
+                <label class="asig-mode-opt" data-mode="manual">
+                  <input type="radio" name="asig-mode" value="manual" style="display:none">
+                  <div class="asig-mode-card">
+                    <div style="font-size:13px;font-weight:700">Manual</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">El supervisor asigna cada conversación</div>
+                  </div>
+                </label>
+              </div>
+              <div id="asig-mode-note" style="margin-top:10px;font-size:11px;color:var(--text-dim);padding:8px 10px;border:1px solid var(--border);background:var(--page-bg)"></div>
+            </div>
+
+            <!-- Info -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:13px;font-weight:700;margin-bottom:10px">¿Cómo funciona?</div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-muted)">
+                <div style="display:flex;gap:8px"><span style="width:18px;height:18px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>Llega un mensaje nuevo de WhatsApp</div>
+                <div style="display:flex;gap:8px"><span style="width:18px;height:18px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>Se crea la conversación en el inbox</div>
+                <div style="display:flex;gap:8px"><span style="width:18px;height:18px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>Se asigna automáticamente según el modo</div>
+                <div style="display:flex;gap:8px"><span style="width:18px;height:18px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</span>El vendedor ve la conversación en su inbox</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
