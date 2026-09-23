@@ -2383,6 +2383,180 @@
     loadConversaciones();
   }
 
+  /* ── Pipeline ── */
+  const PIPELINE_STAGES = [
+    { key: 'new',        label: 'Nuevo',       color: '#5980a6' },
+    { key: 'contacted',  label: 'Contactado',  color: '#f59e0b' },
+    { key: 'qualified',  label: 'Calificado',  color: '#10b981' },
+    { key: 'won',        label: 'Ganado',      color: '#059669' },
+    { key: 'lost',       label: 'Perdido',     color: '#ef4444' },
+  ];
+
+  async function loadPipeline() {
+    const board = $('pipeline-board');
+    if (!board) return;
+    board.innerHTML = PIPELINE_STAGES.map(s =>
+      `<div class="pipeline-col" id="pipe-col-${s.key}">
+        <div class="pipeline-col-accent" style="background:${s.color}"></div>
+        <div class="pipeline-col-header">
+          <span class="pipeline-col-title" style="color:${s.color}">${s.label}</span>
+          <span class="pipeline-col-count" id="pipe-count-${s.key}">0</span>
+        </div>
+        <div class="pipeline-col-body" id="pipe-body-${s.key}"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="onPipeDrop(event,'${s.key}')">
+          <div class="pipeline-empty">Cargando…</div>
+        </div>
+      </div>`
+    ).join('');
+
+    let q = sb.from('contacts').select('id,name,phone,status,tags,last_seen_at').order('last_seen_at', { ascending: false });
+    if (state.currentOrgId) q = q.eq('organization_id', state.currentOrgId);
+    const { data: contacts } = await q;
+
+    const grouped = {};
+    PIPELINE_STAGES.forEach(s => grouped[s.key] = []);
+    (contacts || []).forEach(c => {
+      if (grouped[c.status] !== undefined) grouped[c.status].push(c);
+    });
+
+    // KPIs
+    $('pipeline-kpis').innerHTML = PIPELINE_STAGES.map(s => `
+      <div class="kpi-card bp">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+        <div class="kpi-accent-bar" style="background:${s.color}"></div>
+        <div class="kpi-label">${s.label}</div>
+        <div class="kpi-row"><div class="kpi-value">${grouped[s.key].length}</div></div>
+      </div>
+    `).join('');
+
+    PIPELINE_STAGES.forEach(s => {
+      const body  = $(`pipe-body-${s.key}`);
+      const count = $(`pipe-count-${s.key}`);
+      count.textContent = grouped[s.key].length;
+      if (!grouped[s.key].length) {
+        body.innerHTML = `<div class="pipeline-empty">Sin contactos</div>`;
+        return;
+      }
+      body.innerHTML = grouped[s.key].map(c => `
+        <div class="pipeline-card" draggable="true"
+          id="pipe-card-${c.id}"
+          ondragstart="onPipeDragStart(event,'${c.id}','${c.status}')">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div class="avatar" style="width:26px;height:26px;font-size:11px;flex-shrink:0">${initials(c.name || c.phone)}</div>
+            <div>
+              <div class="pipeline-card-name">${c.name || '—'}</div>
+              <div class="pipeline-card-phone">${c.phone || ''}</div>
+            </div>
+          </div>
+          ${c.tags?.length ? `<div class="tags-wrap" style="margin-bottom:4px">${c.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}</div>` : ''}
+          <div class="pipeline-card-time">${fmtDate(c.last_seen_at)}</div>
+        </div>
+      `).join('');
+    });
+  }
+
+  let pipeDragging = { id: null, fromStatus: null };
+
+  window.onPipeDragStart = function(e, id, fromStatus) {
+    pipeDragging = { id, fromStatus };
+    e.dataTransfer.effectAllowed = 'move';
+    document.getElementById(`pipe-card-${id}`)?.classList.add('dragging');
+  };
+
+  window.onPipeDrop = async function(e, toStatus) {
+    e.preventDefault();
+    document.querySelectorAll('.pipeline-col-body').forEach(el => el.classList.remove('drag-over'));
+    const { id, fromStatus } = pipeDragging;
+    if (!id || fromStatus === toStatus) return;
+    document.getElementById(`pipe-card-${id}`)?.classList.remove('dragging');
+    try {
+      await sb.from('contacts').update({ status: toStatus }).eq('id', id);
+    } catch (_) { /* silencioso */ }
+    await loadPipeline();
+  };
+
+  /* ── Asignación ── */
+  async function loadAsignacion() {
+    const listEl = $('asig-agents-list');
+    if (!listEl) return;
+
+    // Cargar profiles de la org
+    let q = sb.from('profiles').select('id,full_name,role,organization_id');
+    if (state.currentOrgId) q = q.eq('organization_id', state.currentOrgId);
+    else if (state.userOrgId) q = q.eq('organization_id', state.userOrgId);
+    const { data: profiles } = await q;
+
+    // Contar conversaciones abiertas por agente
+    let countMap = {};
+    try {
+      let convQ = sb.from('conversations').select('assigned_to').eq('status', 'open');
+      if (state.currentOrgId) convQ = convQ.eq('organization_id', state.currentOrgId);
+      else if (state.userOrgId) convQ = convQ.eq('organization_id', state.userOrgId);
+      const { data: convs } = await convQ;
+      (convs || []).forEach(c => { if (c.assigned_to) countMap[c.assigned_to] = (countMap[c.assigned_to] || 0) + 1; });
+    } catch (_) { /* columna assigned_to puede no existir aún */ }
+
+    const agents = (profiles || []).filter(p => p.role === 'agent' || p.role === 'admin');
+    $('asig-total-badge').textContent = `${agents.length} vendedor${agents.length !== 1 ? 'es' : ''}`;
+
+    if (!agents.length) {
+      listEl.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin vendedores en este equipo todavía</div>`;
+    } else {
+      listEl.innerHTML = agents.map(a => {
+        const count     = countMap[a.id] || 0;
+        const roleLabel = a.role === 'admin' ? 'Admin' : 'Vendedor';
+        return `
+          <div class="asig-agent-row">
+            <div class="asig-agent-avatar">${initials(a.full_name || a.id)}</div>
+            <div>
+              <div class="asig-agent-name">${a.full_name || '—'}</div>
+              <div class="asig-agent-role">${roleLabel}</div>
+            </div>
+            <div class="asig-agent-count" title="Conversaciones abiertas">${count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modo de asignación — guardado en bot_configs.assignment_mode
+    try {
+      const orgId = state.currentOrgId || state.userOrgId;
+      const { data: cfg } = await sb.from('bot_configs').select('assignment_mode').eq('organization_id', orgId).maybeSingle();
+      const currentMode = cfg?.assignment_mode || 'round_robin';
+      document.querySelectorAll('[name="asig-mode"]').forEach(r => { r.checked = r.value === currentMode; });
+      updateAsigModeNote(currentMode);
+    } catch (_) {
+      updateAsigModeNote('round_robin');
+    }
+
+    // Re-attach listeners each time (remove old ones by replacing elements isn't trivial;
+    // use a flag to avoid stacking listeners)
+    document.querySelectorAll('[name="asig-mode"]').forEach(r => {
+      r.onchange = async () => {
+        const mode  = r.value;
+        updateAsigModeNote(mode);
+        const orgId = state.currentOrgId || state.userOrgId;
+        if (orgId) {
+          try {
+            await sb.from('bot_configs').update({ assignment_mode: mode }).eq('organization_id', orgId);
+          } catch (_) { /* silencioso */ }
+        }
+      };
+    });
+  }
+
+  function updateAsigModeNote(mode) {
+    const notes = {
+      round_robin: 'Cada nueva conversación se asigna al siguiente vendedor en turno.',
+      least_busy:  'La nueva conversación va al vendedor con menos chats abiertos en este momento.',
+      manual:      'Las conversaciones entran sin asignar. El supervisor las asigna desde el inbox.',
+    };
+    const el = $('asig-mode-note');
+    if (el) el.textContent = notes[mode] || '';
+  }
+
   /* ── Calendar ── */
   const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
