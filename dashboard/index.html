@@ -1039,11 +1039,31 @@
           <!-- Left sidebar: conversation list -->
           <div class="conv-sidebar">
             <div class="conv-sidebar-top">
+              <!-- Search -->
               <input id="conv-search" placeholder="Buscar contacto…" class="search-input" style="padding-left:10px;background-image:none" />
-              <div class="period-group">
-                <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    class="period-pill active" style="flex:1;text-align:center">Todas</button>
-                <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   class="period-pill" style="flex:1;text-align:center">Abiertas</button>
-                <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" class="period-pill" style="flex:1;text-align:center">Cerradas</button>
+              <!-- Status tabs -->
+              <div class="conv-tabs">
+                <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    class="conv-tab active">Todas</button>
+                <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   class="conv-tab">Abiertas</button>
+                <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" class="conv-tab">Cerradas</button>
+              </div>
+              <!-- Stage chips -->
+              <div class="conv-chips" id="conv-chips">
+                <button class="conv-chip active" data-stage="all"         onclick="filterConvStage(this,'all')">Todas</button>
+                <button class="conv-chip"        data-stage="nuevo"       onclick="filterConvStage(this,'nuevo')">Nuevo</button>
+                <button class="conv-chip"        data-stage="calificando" onclick="filterConvStage(this,'calificando')">Calificando</button>
+                <button class="conv-chip"        data-stage="calificado"  onclick="filterConvStage(this,'calificado')">Calificado</button>
+                <button class="conv-chip"        data-stage="atencion"    onclick="filterConvStage(this,'atencion')">En atención</button>
+                <button class="conv-chip"        data-stage="cotizado"    onclick="filterConvStage(this,'cotizado')">Cotizado</button>
+                <button class="conv-chip"        data-stage="ganado"      onclick="filterConvStage(this,'ganado')">Ganado</button>
+                <button class="conv-chip"        data-stage="perdido"     onclick="filterConvStage(this,'perdido')">Perdido</button>
+              </div>
+              <!-- Solo mis convs -->
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <button class="conv-mine-btn" id="conv-mine-btn" onclick="toggleConvMine(this)">
+                  <i class="fa fa-user"></i> Solo mis conversaciones
+                </button>
+                <span id="conv-count-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:.04em"></span>
               </div>
             </div>
             <div id="conv-list" class="conv-list">
@@ -1057,29 +1077,54 @@
           <!-- Center: chat area -->
           <div class="chat-area">
             <!-- Empty state (shown when no conversation selected) -->
-            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--page-bg) 40%,transparent)">
-              <div class="bp" style="padding:32px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--text-dim)">
-                <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Selecciona una conversación</span>
+            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f8fafc">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:16px;color:var(--text-dim)">
+                <div style="width:64px;height:64px;background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center">
+                  <i class="fab fa-whatsapp" style="font-size:32px;color:var(--accent);opacity:.7"></i>
+                </div>
+                <div style="text-align:center">
+                  <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Selecciona una conversación</div>
+                  <div style="font-size:12px;color:var(--text-dim)">Elige un chat de la lista para comenzar</div>
+                </div>
               </div>
             </div>
             <!-- Active conversation (hidden until one is selected) -->
             <div id="chat-input-area" style="display:none;flex-direction:column;flex:1;min-height:0">
               <div class="chat-header">
-                <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <span id="chat-header-name" style="font-size:14.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
-                    <span id="chat-header-status"></span>
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+                  <div id="chat-header-avatar" style="width:36px;height:36px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;flex-shrink:0"></div>
+                  <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span id="chat-header-name" style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+                      <span id="chat-header-status"></span>
+                    </div>
+                    <span id="chat-header-phone" style="font-size:11.5px;color:var(--text-muted)"></span>
                   </div>
-                  <span id="chat-header-phone" style="font-size:12px;color:var(--text-muted)"></span>
                 </div>
-                <button id="chat-btn-toggle" class="btn-ghost" style="flex-shrink:0"></button>
+                <div class="chat-header-actions">
+                  <a id="chat-wa-link" href="#" target="_blank" class="chat-icon-btn wa" title="Abrir en WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                  </a>
+                  <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado">
+                    <i class="fa fa-check-circle"></i>
+                  </button>
+                  <button class="chat-icon-btn" id="chat-btn-info" title="Info del contacto" onclick="document.querySelector('.contact-panel').style.display=document.querySelector('.contact-panel').style.display==='none'?'flex':'none'">
+                    <i class="fa fa-info-circle"></i>
+                  </button>
+                </div>
               </div>
               <div id="chat-messages" class="chat-messages"></div>
               <div class="chat-input-bar">
+                <button class="chat-input-icon" title="Adjuntar archivo" onclick="alert('Próximamente: adjuntar archivos')">
+                  <i class="fa fa-paperclip"></i>
+                </button>
+                <button class="chat-input-icon" title="Usar plantilla" onclick="alert('Próximamente: plantillas de mensajes')">
+                  <i class="fa fa-file-alt"></i>
+                </button>
                 <textarea id="chat-input" rows="1" placeholder="Escribe un mensaje…"></textarea>
-                <button id="chat-send-btn" class="btn-primary" style="flex-shrink:0">Enviar</button>
+                <button id="chat-send-btn" class="chat-send-round" title="Enviar">
+                  <i class="fa fa-paper-plane"></i>
+                </button>
               </div>
             </div>
           </div>
