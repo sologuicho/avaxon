@@ -177,14 +177,14 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── 4. Guardar mensaje entrante ────────────────────────────────────────────
-  await sb.from('messages').insert({
+  const { data: savedMsg } = await sb.from('messages').insert({
     conversation_id,
     organization_id,
     direction:     'inbound',
     content:       messageText,
     media_type:    mediaType,
     wa_message_id: waMessageId,
-  })
+  }).select('created_at').single()
 
   // ── 5. Bot IA (solo si está habilitado para esta org) ──────────────────────
   const { data: botConfig } = await sb
