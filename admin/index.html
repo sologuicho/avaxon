@@ -202,28 +202,29 @@
     }
     .login-form-title {
       font-family: 'Space Grotesk', sans-serif; font-weight: 700;
-      font-size: 28px; letter-spacing: -0.02em; color: #fff;
+      font-size: 28px; letter-spacing: -0.02em; color: #111827;
       margin: 0 0 6px;
     }
     .login-form-sub {
-      font-size: 14px; color: #64748b; margin-bottom: 36px;
+      font-size: 14px; color: #6b7280; margin-bottom: 36px;
     }
     .form-group { margin-bottom: 20px; }
     .form-label {
       display: block; font-size: 13px; font-weight: 500;
-      color: #8b97ab; margin-bottom: 8px;
+      color: #6b7280; margin-bottom: 8px;
     }
     .form-input {
       width: 100%;
-      background: rgba(9,14,26,0.7); border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 12px; padding: 13px 16px; color: #e6ebf3;
+      background: #f9fafb; border: 1px solid #e5e7eb;
+      border-radius: 12px; padding: 13px 16px; color: #111827;
       font-size: 15px; font-family: 'Plus Jakarta Sans', sans-serif; outline: none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .form-input::placeholder { color: rgba(255,255,255,0.25); }
+    .form-input::placeholder { color: #9ca3af; }
     .form-input:focus {
-      border-color: rgba(37,211,102,0.55);
-      box-shadow: 0 0 0 3px rgba(37,211,102,0.10);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: #fff;
     }
     .btn-login {
       width: 100%; background: var(--accent); color: #fff; font-weight: 700;
