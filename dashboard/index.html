@@ -967,9 +967,17 @@
 
       <!-- VIEW: Inicio -->
       <div class="view active" id="view-inicio">
-        <div class="view-section-header">
-          <span class="view-section-label">01 · Resumen</span>
-          <hr class="view-section-hr">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:var(--accent-sub);color:var(--accent)"><i class="fa fa-chart-line"></i></div>
+            <div>
+              <div class="view-header-title">Inicio</div>
+              <div class="view-header-sub">Resumen de actividad en tiempo real</div>
+            </div>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-refresh" onclick="loadDashboard()"><i class="fa fa-rotate-right" style="font-size:11px"></i> Actualizar</button>
+          </div>
         </div>
         <div class="kpi-grid" id="kpi-grid"></div>
 
