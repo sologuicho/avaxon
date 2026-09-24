@@ -2278,7 +2278,7 @@
       alert('Error: ' + e.message);
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Enviar';
+      btn.innerHTML = '<i class="fa fa-paper-plane"></i>';
       input.disabled = false;
       input.focus();
     }
