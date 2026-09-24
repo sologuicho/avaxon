@@ -196,17 +196,54 @@ Deno.serve(async (req: Request) => {
 
   if (!botConfig) return new Response('ok', { status: 200 })
 
+  // ── Debounce: esperar 3 s por si el usuario manda varios mensajes seguidos ──
+  // Guardamos el timestamp del mensaje actual para luego verificar si llegó uno más nuevo.
+  const msgTimestamp = new Date().toISOString()
+  await new Promise(resolve => setTimeout(resolve, 3000))
+
+  // Si llegó un mensaje más reciente de este contacto en la misma conversación,
+  // ese invocation lo procesará — este sale sin responder para evitar doble respuesta.
+  const { data: newerMsg } = await sb
+    .from('messages')
+    .select('id')
+    .eq('conversation_id', conversation_id)
+    .eq('direction', 'inbound')
+    .gt('created_at', msgTimestamp)
+    .limit(1)
+    .maybeSingle()
+
+  if (newerMsg) return new Response('ok', { status: 200 })
+
+  // Traer todos los mensajes inbound recientes (últimos 8 s) para combinarlos en un solo turno
+  const batchSince = new Date(Date.now() - 8000).toISOString()
+  const { data: batchMsgs } = await sb
+    .from('messages')
+    .select('content, created_at')
+    .eq('conversation_id', conversation_id)
+    .eq('direction', 'inbound')
+    .gte('created_at', batchSince)
+    .order('created_at', { ascending: true })
+
+  const combinedUserText = batchMsgs && batchMsgs.length > 1
+    ? batchMsgs.map(m => m.content).join('\n')
+    : messageText
+
   const { data: history } = await sb
     .from('messages')
-    .select('direction, content')
+    .select('direction, content, created_at')
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(12)
 
-  const chatHistory: any[] = (history ?? []).reverse().map(m => ({
-    role:    m.direction === 'inbound' ? 'user' : 'assistant',
-    content: m.content,
-  }))
+  // Construir historial excluyendo los mensajes del batch actual (se fusionan en uno)
+  const batchIds = new Set((batchMsgs ?? []).map(m => m.created_at))
+  const chatHistory: any[] = (history ?? [])
+    .reverse()
+    .filter(m => m.direction === 'outbound' || !batchIds.has(m.created_at))
+    .map(m => ({ role: m.direction === 'inbound' ? 'user' : 'assistant', content: m.content }))
+
+  // Añadir el turno combinado del usuario al final
+  chatHistory.push({ role: 'user', content: combinedUserText })
 
   // Si el mensaje actual trae una imagen procesada, se reemplaza el último
   // turno (el que se acaba de insertar arriba) por contenido multimodal para
