@@ -610,21 +610,22 @@
     /* ── Buttons ── */
     .btn-primary {
       display: inline-flex; align-items: center; gap: 6px;
-      background: var(--accent-800); color: #fff; border: 1px solid var(--accent-800);
-      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      padding: 7px 14px; cursor: pointer; transition: all 0.15s;
-      white-space: nowrap;
+      background: var(--accent); color: #fff; border: 1px solid var(--accent);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+      border-radius: 10px;
+      padding: 7px 16px; cursor: pointer; transition: all 0.15s;
+      white-space: nowrap; box-shadow: 0 2px 8px var(--accent-glow);
     }
-    .btn-primary:hover { background: var(--accent-900); border-color: var(--accent-900); }
+    .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 14px var(--accent-glow); }
+    .btn-primary:active { transform: translateY(0); }
     .btn-ghost {
       display: inline-flex; align-items: center; gap: 5px;
-      background: var(--card-bg); border: 1px solid var(--border); color: var(--text-muted);
-      font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
-      letter-spacing: .06em; text-transform: uppercase;
-      padding: 5px 10px; cursor: pointer; transition: all 0.15s;
+      background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600;
+      border-radius: 10px;
+      padding: 5px 12px; cursor: pointer; transition: all 0.15s;
     }
-    .btn-ghost:hover { background: var(--accent-100); border-color: var(--accent); color: var(--accent-800); }
+    .btn-ghost:hover { background: rgba(255,255,255,.09); border-color: var(--border-hover); color: var(--text); }
 
     /* ── Blueprint corners (matching landing) ── */
     .bp { position: relative; border: 1px solid var(--border); }
