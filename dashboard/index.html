@@ -227,23 +227,23 @@
       display: flex; align-items: center; gap: 9px; padding: 8px 10px;
       cursor: pointer; border-radius: 10px;
       transition: background 0.13s, color 0.13s;
-      color: var(--text-dim);
+      color: var(--sidebar-dim);
       font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 500;
       font-size: 13.5px;
       position: relative; user-select: none; margin-bottom: 2px;
     }
-    .nav-item:hover { background: rgba(0,0,0,.04); color: var(--text); }
+    .nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text); }
     .nav-item.active {
-      background: var(--accent-sub);
+      background: var(--sidebar-active);
       color: var(--accent); border-left: 2px solid var(--accent);
       font-weight: 600;
     }
     .nav-dot {
-      width: 5px; height: 5px; border-radius: 50%; background: #d1d5db;
+      width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.20);
       flex-shrink: 0;
     }
     .nav-item.active .nav-dot { background: var(--accent); }
-    .nav-icon { width: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.6; }
+    .nav-icon { width: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0.5; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
 
     /* Sidebar bottom */
