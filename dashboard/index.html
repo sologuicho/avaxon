@@ -207,20 +207,21 @@
     .sidebar-nav { flex: 1; padding: 8px 10px; overflow-y: auto; }
     .nav-item {
       display: flex; align-items: center; gap: 9px; padding: 8px 10px;
-      cursor: pointer;
+      cursor: pointer; border-radius: 10px;
       transition: background 0.13s, color 0.13s;
-      color: color-mix(in srgb, #fff 55%, transparent);
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 600;
-      font-size: 14px; letter-spacing: .03em; text-transform: uppercase;
-      position: relative; user-select: none; margin-bottom: 1px;
+      color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 500;
+      font-size: 13.5px;
+      position: relative; user-select: none; margin-bottom: 2px;
     }
-    .nav-item:hover { background: color-mix(in srgb, #fff 7%, transparent); color: #e2eaf2; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: var(--text); }
     .nav-item.active {
-      background: color-mix(in srgb, var(--accent) 18%, transparent);
-      color: #fff; border-left: 2px solid var(--accent);
+      background: var(--accent-sub);
+      color: var(--accent); border-left: 2px solid var(--accent);
+      font-weight: 600;
     }
     .nav-dot {
-      width: 5px; height: 5px; border-radius: 50%; background: color-mix(in srgb, #fff 20%, transparent);
+      width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.20);
       flex-shrink: 0;
     }
     .nav-item.active .nav-dot { background: var(--accent); }
