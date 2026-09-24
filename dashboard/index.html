@@ -1911,7 +1911,7 @@
   }
 
   // ── Conversaciones ─────────────────────────────────────────────
-  const convState = { all: [], filtered: [], activeId: null, realtimeSub: null };
+  const convState = { all: [], filtered: [], activeId: null, realtimeSub: null, activeTab: 'all', activeStage: 'all', mineOnly: false };
 
   async function loadConversaciones() {
     const orgId = state.currentOrgId;
