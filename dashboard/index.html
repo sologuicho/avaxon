@@ -1582,8 +1582,8 @@
       </defs>
       ${[0.25,0.5,0.75,1].map(f => `<line x1="0" y1="${(bot - f*span).toFixed(1)}" x2="${W}" y2="${(bot - f*span).toFixed(1)}" stroke="#eef0f2" stroke-width="1"/>`).join('')}
       <path d="${area(recv)}" fill="url(#avxFill)"/>
-      <path d="${line(recv)}" fill="none" stroke="#5980a6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-      <path d="${line(sent)}" fill="none" stroke="#2c455d" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${line(recv)}" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${line(sent)}" fill="none" stroke="#7c8899" stroke-width="2" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>
       ${labels}
     `;
   }
