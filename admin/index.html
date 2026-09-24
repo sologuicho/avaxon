@@ -318,28 +318,28 @@
     /* ── Main content ── */
     .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
     .topbar {
-      background: #fff; border-bottom: 1px solid #e6e7e9;
+      background: rgba(6,10,18,.85); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 32px; height: 64px; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
     .topbar-left { display: flex; flex-direction: column; gap: 2px; }
     .topbar-eyebrow {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 1px; color: #8c939b;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
     }
     .topbar-h1 {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700;
-      color: #1a2535; line-height: 1; letter-spacing: -0.2px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
+      color: var(--text); line-height: 1; letter-spacing: -0.2px;
     }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .topbar-time { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
     .btn-refresh {
-      display: flex; align-items: center; gap: 6px; background: #fff;
-      border: 1px solid #e6e7e9; color: var(--text-muted); font-size: 12px;
-      font-weight: 500; font-family: 'Barlow', sans-serif; padding: 6px 14px;
+      display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.06);
+      border: 1px solid var(--border); color: var(--text-muted); font-size: 12px;
+      font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; padding: 6px 14px;
       border-radius: 10px; cursor: pointer; transition: all 0.18s; white-space: nowrap;
     }
-    .btn-refresh:hover { background: #eef6ff; border-color: #5980a6; color: #2c455d; }
+    .btn-refresh:hover { background: rgba(255,255,255,.10); border-color: var(--border-h); color: var(--text); }
     .page-area { flex: 1; padding: 28px 32px 56px; }
     .view { display: none; }
     .view.active { display: block; animation: avx-fade 0.22s ease forwards; }
