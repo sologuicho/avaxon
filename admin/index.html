@@ -261,7 +261,7 @@
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
       background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
+      border-right: 1px solid var(--sidebar-border);
       display: flex; flex-direction: column; z-index: 200;
       transition: transform 0.25s ease;
     }
@@ -270,18 +270,18 @@
     .sidebar-logo-icon {
       width: 32px; height: 32px; border-radius: 10px;
       object-fit: cover; flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
     .sidebar-logo-text {
-      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: var(--text); line-height: 1;
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #fff; line-height: 1;
     }
     .sidebar-logo-sub {
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; color: var(--text-dim);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; color: var(--sidebar-dim);
       font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
     }
     .sidebar-section-label {
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
-      color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--sidebar-dim); text-transform: uppercase; letter-spacing: 1.2px;
       padding: 0 10px; margin-bottom: 6px; margin-top: 16px;
     }
     .sidebar-nav { flex: 1; padding: 4px 12px; overflow-y: auto; }
