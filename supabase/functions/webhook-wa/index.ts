@@ -208,7 +208,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         { role: 'system', content: botConfig.system_prompt },
         ...chatHistory,
       ],
-      max_tokens:  400,
+      max_tokens:  600,
       temperature: 0.7,
     }),
   })
