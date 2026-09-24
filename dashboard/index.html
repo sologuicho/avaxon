@@ -1215,10 +1215,10 @@
         <div class="card bp">
           <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
           <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">
-            <div class="period-group">
-              <button id="leads-tab-all" onclick="filterLeads('all')" class="period-pill active">Todos <span id="leads-count-all" class="count-badge" style="margin-left:3px">0</span></button>
-              <button id="leads-tab-new" onclick="filterLeads('new')" class="period-pill">Nuevos</button>
-              <button id="leads-tab-qualified" onclick="filterLeads('qualified')" class="period-pill">Calificados</button>
+            <div class="conv-tabs" style="width:auto;min-width:240px">
+              <button id="leads-tab-all" onclick="filterLeads('all')" class="conv-tab active">Todos <span id="leads-count-all" class="count-badge" style="margin-left:3px">0</span></button>
+              <button id="leads-tab-new" onclick="filterLeads('new')" class="conv-tab">Nuevos</button>
+              <button id="leads-tab-qualified" onclick="filterLeads('qualified')" class="conv-tab">Calificados</button>
             </div>
             <input class="search-input" type="text" id="leads-search" placeholder="Buscar por nombre o teléfono…" style="width:230px" />
           </div>
