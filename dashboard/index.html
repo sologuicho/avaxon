@@ -2158,10 +2158,7 @@
   }
 
   // Search wire-up for conversation inbox
-  $('conv-search').addEventListener('input', () => {
-    const activeTab = document.querySelector('[id^="conv-tab-"].active-tab')?.dataset?.tab ?? 'all';
-    filterConvs(activeTab, false);
-  });
+  $('conv-search').addEventListener('input', () => applyConvFilters());
 
   // Send message
   const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
