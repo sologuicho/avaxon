@@ -2087,6 +2087,39 @@
       .order('created_at', { ascending: true });
     renderMessages(msgsData || []);
 
+    // 24h window check — last inbound message
+    const lastInbound = (msgsData || []).filter(m => m.direction === 'inbound').at(-1);
+    const banner      = $('wa-window-banner');
+    const chatInput   = $('chat-input');
+    const sendBtn     = $('chat-send-btn');
+    if (lastInbound) {
+      const msgsAgo = Date.now() - new Date(lastInbound.created_at).getTime();
+      const hrsAgo  = msgsAgo / 3600000;
+      if (hrsAgo > 24) {
+        const hrsLeft = null; // window already closed
+        banner.classList.add('visible');
+        chatInput.disabled = true;
+        chatInput.placeholder = 'Ventana de 24 h cerrada — usa una plantilla';
+        sendBtn.disabled = true;
+      } else {
+        const minsLeft = Math.round((24 - hrsAgo) * 60);
+        const label = minsLeft < 60
+          ? `${minsLeft} min`
+          : `${Math.floor(minsLeft / 60)}h ${minsLeft % 60}min`;
+        banner.classList.add('visible');
+        $('wa-window-text').innerHTML = `Ventana de 24 h: quedan <strong>${label}</strong> para responder libremente. Después solo podrás usar <a onclick="alert('Próximamente: plantillas de mensajes')">plantillas aprobadas</a>.`;
+        chatInput.disabled = false;
+        chatInput.placeholder = 'Escribe un mensaje…';
+        sendBtn.disabled = false;
+      }
+    } else {
+      // No inbound messages yet — no window
+      banner.classList.remove('visible');
+      chatInput.disabled = false;
+      chatInput.placeholder = 'Escribe un mensaje…';
+      sendBtn.disabled = false;
+    }
+
     // Contact panel
     $('cpanel-empty').style.display   = 'none';
     $('cpanel-content').style.display = 'flex';
