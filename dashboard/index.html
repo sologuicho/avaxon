@@ -1939,16 +1939,16 @@
     const phones = phoneData || [];
     const phone  = phones[0];
 
-    // Connect button state — disabled until Meta approves Tech Provider
+    // Connect button — Meta verified 23 sept 2026, signup enabled
     const connectBtn = $('wa-connect-btn');
     if (!WA_SIGNUP_ENABLED) {
       connectBtn.disabled = true;
-      connectBtn.title = 'Disponible cuando Meta apruebe el Tech Provider';
-      $('wa-pending-notice').style.display = 'flex';
+      connectBtn.title = 'Configura WA_APP_ID para habilitar la conexión';
     } else {
       connectBtn.disabled = false;
-      $('wa-pending-notice').style.display = 'none';
     }
+    // Always show verified badge
+    $('wa-pending-notice').style.display = 'flex';
 
     // Phone numbers list
     const listEl = $('wa-numbers-list');
