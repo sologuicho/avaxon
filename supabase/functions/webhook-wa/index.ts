@@ -215,7 +215,7 @@ Deno.serve(async (req: Request) => {
   if (newerMsg) return new Response('ok', { status: 200 })
 
   // Traer todos los mensajes inbound recientes (últimos 8 s) para combinarlos en un solo turno
-  const batchSince = new Date(Date.now() - 8000).toISOString()
+  const batchSince = new Date(Date.now() - 12000).toISOString()
   const { data: batchMsgs } = await sb
     .from('messages')
     .select('content, created_at')
