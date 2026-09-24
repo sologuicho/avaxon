@@ -253,50 +253,50 @@
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
-      background: #1a2535;
-      background-image: linear-gradient(180deg, #1f2c3f 0%, #16202d 100%);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
       display: flex; flex-direction: column; z-index: 200;
       transition: transform 0.25s ease;
     }
     .sidebar-top { padding: 20px 16px 0; flex-shrink: 0; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
     .sidebar-logo-icon {
-      width: 30px; height: 30px; background: #5980a6; border-radius: 9px;
-      display: flex; align-items: center; justify-content: center; color: #fff;
+      width: 30px; height: 30px; background: var(--accent-sub); border: 1px solid rgba(37,211,102,.25); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center; color: var(--accent);
       font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; flex-shrink: 0;
     }
     .sidebar-logo-text {
       font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700; color: #fff; line-height: 1;
     }
     .sidebar-logo-sub {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; color: #5980a6;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; color: var(--text-dim);
       font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
     }
     .sidebar-section-label {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
-      color: #3b4d63; text-transform: uppercase; letter-spacing: 1.2px;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700;
+      color: var(--text-faint); text-transform: uppercase; letter-spacing: 1.2px;
       padding: 0 10px; margin-bottom: 6px; margin-top: 16px;
     }
     .sidebar-nav { flex: 1; padding: 4px 12px; overflow-y: auto; }
     .nav-item {
       display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-      border-radius: 9px; cursor: pointer;
-      transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-      color: #93a4b8; font-weight: 500; font-size: 14px;
+      border-radius: 10px; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      color: var(--text-dim); font-weight: 500; font-size: 14px;
       user-select: none; margin-bottom: 2px;
     }
-    .nav-item:hover { background: rgba(44,69,93,0.5); color: #c8d6e3; }
-    .nav-item.active { background: #2c455d; color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 #5980a6; }
-    .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #3b4d63; flex-shrink: 0; margin-right: 2px; }
-    .nav-item.active .nav-dot { background: #5980a6; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: var(--text-muted); }
+    .nav-item.active { background: var(--accent-sub); color: var(--accent); font-weight: 600; border-left: 2px solid var(--accent); }
+    .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); flex-shrink: 0; margin-right: 2px; }
+    .nav-item.active .nav-dot { background: var(--accent); }
     .nav-icon { width: 20px; display: flex; align-items: center; justify-content: center; opacity: 0.7; flex-shrink: 0; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
-    .sidebar-bottom { padding: 14px 14px 20px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
+    .sidebar-bottom { padding: 14px 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .sidebar-user { display: flex; align-items: center; gap: 8px; }
     .sidebar-user-avatar {
-      width: 30px; height: 30px; border-radius: 50%; background: #5980a6;
+      width: 30px; height: 30px; border-radius: 50%; background: var(--accent-sub); border: 1px solid rgba(37,211,102,.25);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
       color: #fff; flex-shrink: 0;
     }
     .sidebar-user-email { flex: 1; font-size: 11.5px; color: #6b7e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
