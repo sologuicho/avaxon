@@ -2258,7 +2258,7 @@
     if (!text || !convState.activeId) return;
 
     btn.disabled = true;
-    btn.textContent = '…';
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     input.disabled = true;
 
     const { data: { session } } = await sb.auth.getSession();
