@@ -488,13 +488,13 @@
     /* ── Toast ── */
     #toast {
       position: fixed; bottom: 24px; right: 24px; z-index: 1000;
-      background: #2c455d; color: #fff; font-size: 13px; font-weight: 500;
-      padding: 11px 18px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      background: #0d1117; border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 500;
+      padding: 11px 18px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
       display: none; max-width: 320px;
     }
     #toast.show { display: block; animation: avx-fade 0.2s ease; }
-    #toast.toast-error { background: var(--red); }
-    #toast.toast-success { background: var(--green); }
+    #toast.toast-error { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.3); color: #f87171; }
+    #toast.toast-success { background: var(--accent-sub); border-color: rgba(37,211,102,.3); color: var(--accent); }
 
     /* ── Empty state ── */
     .empty-state { text-align: center; padding: 48px 24px; color: var(--text-muted); font-size: 13.5px; }
