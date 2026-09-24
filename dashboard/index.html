@@ -357,10 +357,11 @@
     }
 
     /* ── Cards ── */
-    .card { background: var(--card-bg); border: 1px solid var(--border); overflow: hidden; position: relative; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; position: relative; box-shadow: 0 2px 12px rgba(0,0,0,.4); }
+    .card:hover { border-color: var(--border-hover); }
     .card-header { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: .06em; text-transform: uppercase; }
-    .count-badge { background: var(--accent-100); color: var(--accent); font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; padding: 2px 8px; letter-spacing: .04em; }
+    .card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: .04em; text-transform: uppercase; }
+    .count-badge { background: var(--accent-sub); color: var(--accent); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
 
     /* Search bar */
     .search-bar-wrap { padding: 10px 16px; border-bottom: 1px solid var(--border); }
