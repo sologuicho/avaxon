@@ -176,21 +176,21 @@
     /* Org switcher */
     .org-switcher-wrap { position: relative; margin-bottom: 14px; }
     .org-switcher-btn {
-      width: 100%; background: #f9fafb;
-      border: 1px solid var(--border); border-radius: 10px;
+      width: 100%; background: rgba(255,255,255,.06);
+      border: 1px solid var(--sidebar-border); border-radius: 10px;
       padding: 8px 10px;
       display: flex; align-items: center; gap: 8px; cursor: pointer;
       transition: all 0.15s; text-align: left; font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .org-switcher-btn:hover { background: #f3f4f6; border-color: var(--border-hover); }
+    .org-switcher-btn:hover { background: rgba(255,255,255,.10); border-color: rgba(255,255,255,.14); }
     .org-switcher-icon {
-      width: 24px; height: 24px; background: var(--accent-sub);
+      width: 24px; height: 24px; background: var(--sidebar-active);
       border-radius: 6px;
       display: flex; align-items: center; justify-content: center; color: var(--accent);
       font-size: 10px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; flex-shrink: 0;
     }
     .org-switcher-name {
-      flex: 1; font-size: 13px; font-weight: 600; color: var(--text-muted);
+      flex: 1; font-size: 13px; font-weight: 600; color: var(--sidebar-muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .org-switcher-chevron { color: var(--accent); transition: transform 0.18s; flex-shrink: 0; }
