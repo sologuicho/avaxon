@@ -2078,6 +2078,7 @@
     if (waLink && contact?.phone) waLink.href = `https://wa.me/${contact.phone}`;
     $('chat-empty-state').style.display = 'none';
     $('chat-input-area').style.display  = 'flex';
+    $('wa-window-banner').classList.remove('visible');
 
     // Load messages
     $('chat-messages').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:8px;align-items:center;justify-content:center"><div class="spinner-light"></div></div>';
