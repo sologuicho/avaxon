@@ -263,7 +263,23 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   })
   const waData = await waRes.json()
 
-  // ── 9. Guardar mensaje saliente ────────────────────────────────────────────
+  // ── 9. Notificar a Luis si el lead quiere agendar ─────────────────────────
+  if (notifyOwner) {
+    const leadName = contactName ?? fromPhone
+    const notifText = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
+    await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to:   '19563285800',
+        type: 'text',
+        text: { body: notifText },
+      }),
+    }).catch(() => {})
+  }
+
+  // ── 10. Guardar mensaje saliente ───────────────────────────────────────────
   const savedContent = buttonLabels.length > 0
     ? `${replyText}\n[Botones: ${buttonLabels.join(' | ')}]`
     : replyText
