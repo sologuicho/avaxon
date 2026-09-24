@@ -77,56 +77,51 @@
     #login-screen, #recovery-screen, #forgot-screen {
       display: none; align-items: center; justify-content: center;
       min-height: 100vh;
-      background: var(--page-bg);
-      background-image:
-        linear-gradient(var(--border) 1px, transparent 1px),
-        linear-gradient(90deg, var(--border) 1px, transparent 1px);
-      background-size: 48px 48px;
+      background: radial-gradient(120% 90% at 50% 0%, #0d1e3a 0%, #0a0e17 60%);
     }
     .login-card {
-      background: var(--card-bg); border: 1px solid var(--border);
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: 18px;
       padding: 44px 40px; width: 100%; max-width: 380px;
       position: relative;
+      box-shadow: 0 2px 12px rgba(0,0,0,.4);
     }
-    .login-card::before, .login-card::after,
-    .login-card .lc-corner-bl, .login-card .lc-corner-br {
-      content: ''; position: absolute; width: 11px; height: 11px;
-      color: color-mix(in srgb, var(--text) 40%, transparent);
-    }
-    .login-card::before  { top: -6px; left: -6px; box-shadow: inset 1px 0 0 currentColor, inset 0 1px 0 currentColor; }
-    .login-card::after   { top: -6px; right: -6px; box-shadow: inset -1px 0 0 currentColor, inset 0 1px 0 currentColor; }
     .login-logo {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 700;
-      color: var(--text); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px;
+      font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700;
+      color: var(--text); letter-spacing: -.01em; text-transform: uppercase; margin-bottom: 4px;
     }
     .login-subtitle {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 500;
-      color: var(--text-muted); margin-bottom: 32px; letter-spacing: .06em; text-transform: uppercase;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 500;
+      color: var(--text-muted); margin-bottom: 32px;
     }
     .form-group { margin-bottom: 18px; }
     .form-label {
-      display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 11px;
+      display: block; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px;
       font-weight: 700; color: var(--text-muted); margin-bottom: 6px;
-      letter-spacing: .08em; text-transform: uppercase;
+      letter-spacing: .06em; text-transform: uppercase;
     }
     .form-input {
-      width: 100%; background: color-mix(in srgb, #fff 60%, transparent);
-      border: 1px solid var(--border); padding: 10px 12px; color: var(--text);
-      font-size: 14px; font-family: 'Barlow', sans-serif; outline: none;
-      transition: border-color 0.2s;
+      width: 100%; background: rgba(255,255,255,.04);
+      border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text);
+      font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .form-input:focus { border-color: var(--accent); }
+    .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .form-input::placeholder { color: var(--text-faint); }
     .btn-login {
-      width: 100%; background: var(--accent); color: #fff; font-weight: 600;
-      font-size: 13px; font-family: 'Barlow Condensed', sans-serif; border: 1px solid var(--accent);
-      padding: 11px; cursor: pointer; letter-spacing: .08em; text-transform: uppercase;
-      transition: background 0.2s; margin-top: 8px;
+      width: 100%; background: var(--accent); color: #062513; font-weight: 700;
+      font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; border: 0;
+      border-radius: 10px;
+      padding: 12px; cursor: pointer;
+      box-shadow: 0 6px 20px var(--accent-glow);
+      transition: background 0.15s, transform 0.15s; margin-top: 8px;
     }
-    .btn-login:hover { background: var(--accent-800); border-color: var(--accent-800); }
-    .btn-login:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-login:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-login:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .login-error {
       color: var(--red); font-size: 12px; margin-top: 12px; display: none;
-      background: var(--red-bg); border: 1px solid rgba(239,68,68,0.2);
+      background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 8px;
       padding: 8px 12px;
     }
 
