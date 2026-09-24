@@ -152,20 +152,20 @@
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
       background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
+      border-right: 1px solid var(--sidebar-border);
       display: flex; flex-direction: column; z-index: 200;
       transition: transform 0.25s ease;
     }
     .sidebar-top { padding: 20px 16px 0; flex-shrink: 0; }
-    .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--sidebar-border); }
     .sidebar-logo-icon {
       width: 32px; height: 32px; border-radius: 10px;
       object-fit: cover; flex-shrink: 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,.4);
+      box-shadow: 0 2px 8px rgba(0,0,0,.5);
     }
     .sidebar-logo-text {
       font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700;
-      color: var(--text); line-height: 1; letter-spacing: .02em; text-transform: uppercase;
+      color: #fff; line-height: 1; letter-spacing: .02em; text-transform: uppercase;
     }
     .sidebar-logo-sub {
       font-family: 'Plus Jakarta Sans', sans-serif;
