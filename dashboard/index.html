@@ -118,14 +118,14 @@
     .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
     .form-input::placeholder { color: var(--text-faint); }
     .btn-login {
-      width: 100%; background: var(--accent); color: #062513; font-weight: 700;
+      width: 100%; background: var(--accent); color: #fff; font-weight: 700;
       font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif; border: 0;
       border-radius: 10px;
       padding: 12px; cursor: pointer;
-      box-shadow: 0 6px 20px var(--accent-glow);
-      transition: background 0.15s, transform 0.15s; margin-top: 8px;
+      box-shadow: 0 4px 16px var(--accent-glow);
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s; margin-top: 8px;
     }
-    .btn-login:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-login:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 6px 22px var(--accent-glow); }
     .btn-login:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     .login-error {
       color: var(--red); font-size: 12px; margin-top: 12px; display: none;
