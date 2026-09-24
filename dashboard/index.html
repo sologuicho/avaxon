@@ -1968,34 +1968,77 @@
       btn.classList.toggle('active', t === tab);
       btn.classList.toggle('active-tab', t === tab);
     });
-    const q = ($('conv-search')?.value ?? '').toLowerCase();
-    convState.filtered = convState.all
-      .filter(c => tab === 'all' || c.status === tab)
-      .filter(c => !q || (c.contacts?.name ?? '').toLowerCase().includes(q) || (c.contacts?.phone ?? '').includes(q));
-    renderConvList(convState.filtered);
+    convState.activeTab = tab;
+    applyConvFilters();
   }
   window.filterConvs = filterConvs;
 
+  function filterConvStage(el, stage) {
+    document.querySelectorAll('.conv-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    convState.activeStage = stage;
+    applyConvFilters();
+  }
+  window.filterConvStage = filterConvStage;
+
+  function toggleConvMine(el) {
+    convState.mineOnly = !convState.mineOnly;
+    el.classList.toggle('active', convState.mineOnly);
+    applyConvFilters();
+  }
+  window.toggleConvMine = toggleConvMine;
+
+  function applyConvFilters() {
+    const tab   = convState.activeTab   ?? 'all';
+    const stage = convState.activeStage ?? 'all';
+    const mine  = convState.mineOnly    ?? false;
+    const q     = ($('conv-search')?.value ?? '').toLowerCase();
+    convState.filtered = convState.all
+      .filter(c => tab === 'all' || c.status === tab)
+      .filter(c => stage === 'all' || (c.contacts?.stage ?? '') === stage)
+      .filter(c => !mine /* future: filter by assigned_to === currentUser */)
+      .filter(c => !q || (c.contacts?.name ?? '').toLowerCase().includes(q) || (c.contacts?.phone ?? '').includes(q));
+    renderConvList(convState.filtered);
+  }
+
   function renderConvList(convs) {
+    const badge = $('conv-count-badge');
+    if (badge) badge.textContent = convs.length ? `${convs.length} conv` : '';
     if (!convs.length) {
-      $('conv-list').innerHTML = '<div style="padding:36px 20px;text-align:center;color:var(--text-dim);font-family:\'Barlow Condensed\',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Sin conversaciones</div>';
+      $('conv-list').innerHTML = `<div style="padding:48px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--text-dim)">
+        <i class="fab fa-whatsapp" style="font-size:28px;opacity:.3"></i>
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Sin conversaciones</span>
+      </div>`;
       return;
     }
-    $('conv-list').innerHTML = convs.map(c => {
-      const contact = c.contacts;
-      const name    = contact?.name || contact?.phone || '—';
-      const preview = c.lastMsg ? (c.lastMsg.direction === 'outbound' ? '→ ' : '') + (c.lastMsg.content || '[media]') : 'Sin mensajes';
-      const time    = c.lastMsg ? fmtRelTime(c.lastMsg.created_at) : '';
-      const ini     = initials(name);
+
+    const avatarColors = [
+      ['#22c55e','#16a34a'], ['#3b82f6','#1d4ed8'], ['#8b5cf6','#6d28d9'],
+      ['#f59e0b','#d97706'], ['#ef4444','#b91c1c'], ['#06b6d4','#0e7490'],
+    ];
+
+    $('conv-list').innerHTML = convs.map((c, idx) => {
+      const contact  = c.contacts;
+      const name     = contact?.name || contact?.phone || '—';
+      const isBot    = c.lastMsg?.direction === 'outbound' && (c.lastMsg?.content ?? '').startsWith('[');
+      const senderPfx = c.lastMsg
+        ? (c.lastMsg.direction === 'outbound' ? '<span class="conv-item-sender">Tú: </span>' : '')
+        : '';
+      const preview  = c.lastMsg ? (c.lastMsg.content || '[media]') : 'Sin mensajes';
+      const time     = c.lastMsg ? fmtRelTime(c.lastMsg.created_at) : '';
+      const ini      = initials(name);
       const isActive = c.id === convState.activeId;
+      const [g1, g2] = avatarColors[name.charCodeAt(0) % avatarColors.length];
       return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openConversacion('${c.id}')">
-        <div class="conv-item-avatar">${ini}</div>
+        <div class="conv-item-avatar-wrap">
+          <div class="conv-item-avatar" style="background:linear-gradient(135deg,${g1},${g2})">${ini}</div>
+        </div>
         <div class="conv-item-body">
           <div class="conv-item-row">
             <div class="conv-item-name">${name}</div>
             <div class="conv-item-time">${time}</div>
           </div>
-          <div class="conv-item-preview">${preview.slice(0, 60)}</div>
+          <div class="conv-item-preview">${senderPfx}${preview.slice(0, 55)}</div>
         </div>
       </div>`;
     }).join('');
@@ -2009,11 +2052,20 @@
     const contact = conv?.contacts;
 
     // Chat header
-    $('chat-header-name').textContent  = contact?.name || contact?.phone || '—';
+    const name = contact?.name || contact?.phone || '—';
+    const ini  = initials(name);
+    if ($('chat-header-avatar')) $('chat-header-avatar').textContent = ini;
+    $('chat-header-name').textContent  = name;
     $('chat-header-phone').textContent = contact?.phone || '';
     $('chat-header-status').innerHTML  = statusPill(conv?.status);
-    $('chat-btn-toggle').textContent   = conv?.status === 'open' ? 'Cerrar' : 'Reabrir';
-    $('chat-btn-toggle').onclick       = () => toggleConvStatus(convId, conv?.status);
+    const toggleBtn = $('chat-btn-toggle');
+    toggleBtn.innerHTML = conv?.status === 'open'
+      ? '<i class="fa fa-check-circle"></i>'
+      : '<i class="fa fa-redo"></i>';
+    toggleBtn.title   = conv?.status === 'open' ? 'Cerrar conversación' : 'Reabrir conversación';
+    toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
+    const waLink = $('chat-wa-link');
+    if (waLink && contact?.phone) waLink.href = `https://wa.me/${contact.phone}`;
     $('chat-empty-state').style.display = 'none';
     $('chat-input-area').style.display  = 'flex';
 
