@@ -297,23 +297,23 @@
       width: 30px; height: 30px; border-radius: 50%; background: var(--accent-sub); border: 1px solid rgba(37,211,102,.25);
       display: flex; align-items: center; justify-content: center;
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700;
-      color: #fff; flex-shrink: 0;
+      color: var(--accent); flex-shrink: 0;
     }
-    .sidebar-user-email { flex: 1; font-size: 11.5px; color: #6b7e93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-user-email { flex: 1; font-size: 11.5px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .btn-signout {
-      background: none; border: 1px solid rgba(255,255,255,0.1); color: #6b7e93;
-      font-size: 12px; font-weight: 500; font-family: 'Barlow', sans-serif;
-      padding: 5px 10px; border-radius: 6px; cursor: pointer; transition: all 0.18s;
+      background: none; border: 1px solid var(--border); color: var(--text-faint);
+      font-size: 12px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 5px 10px; border-radius: 8px; cursor: pointer; transition: all 0.18s;
       white-space: nowrap; flex-shrink: 0;
     }
     .btn-signout:hover { border-color: rgba(239,68,68,0.4); color: #ef4444; }
-    .nav-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 8px 0; }
+    .nav-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
     .nav-back {
       display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-      border-radius: 9px; cursor: pointer; color: #6b7e93;
+      border-radius: 10px; cursor: pointer; color: var(--text-faint);
       font-size: 13px; font-weight: 500; transition: all 0.15s; margin-bottom: 2px;
     }
-    .nav-back:hover { background: rgba(44,69,93,0.5); color: #c8d6e3; }
+    .nav-back:hover { background: rgba(255,255,255,.06); color: var(--text-muted); }
 
     /* ── Main content ── */
     .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
