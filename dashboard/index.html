@@ -406,17 +406,16 @@
     /* ── Pills / Status badges ── */
     .pill {
       display: inline-flex; align-items: center; gap: 5px;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 11px;
-      font-weight: 700; padding: 2px 8px; white-space: nowrap; letter-spacing: .04em;
-      text-transform: uppercase;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px;
+      font-weight: 600; padding: 2px 8px; white-space: nowrap; border-radius: 999px;
     }
     .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .pill.no-dot::before { display: none; }
-    .pill-green  { color: var(--green); background: var(--green-bg); }
-    .pill-amber  { color: var(--amber); background: var(--amber-bg); }
-    .pill-red    { color: var(--red);   background: var(--red-bg); }
-    .pill-muted  { color: var(--text-muted); background: var(--muted-bg); }
-    .pill-accent { color: var(--accent); background: var(--accent-100); }
+    .pill-green  { color: #4ade80; background: rgba(37,211,102,.12); }
+    .pill-amber  { color: #fbbf24; background: rgba(245,158,11,.12); }
+    .pill-red    { color: #f87171; background: rgba(239,68,68,.12); }
+    .pill-muted  { color: var(--text-muted); background: rgba(255,255,255,.06); }
+    .pill-accent { color: var(--accent); background: var(--accent-sub); }
 
     /* Direction badges */
     .badge-in {
