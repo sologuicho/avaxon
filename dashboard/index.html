@@ -131,27 +131,28 @@
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
-      background: var(--accent-900);
-      border-right: 1px solid color-mix(in srgb, #fff 8%, transparent);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
       display: flex; flex-direction: column; z-index: 200;
       transition: transform 0.25s ease;
     }
     .sidebar-top { padding: 20px 16px 0; flex-shrink: 0; }
-    .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 2px solid color-mix(in srgb, #fff 14%, transparent); }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
     .sidebar-logo-icon {
       width: 30px; height: 30px; background: var(--accent);
-      display: flex; align-items: center; justify-content: center; color: #fff;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700;
-      flex-shrink: 0; letter-spacing: .02em;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; color: #062513;
+      font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700;
+      flex-shrink: 0;
     }
     .sidebar-logo-text {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700;
-      color: #fff; line-height: 1; letter-spacing: .14em; text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700;
+      color: #fff; line-height: 1; letter-spacing: .02em; text-transform: uppercase;
     }
     .sidebar-logo-sub {
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 10px; color: var(--accent); font-weight: 600;
-      text-transform: uppercase; letter-spacing: .08em; margin-top: 3px;
+      letter-spacing: .04em; margin-top: 3px;
     }
 
     /* Org switcher */
