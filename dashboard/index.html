@@ -1954,7 +1954,7 @@
           conv.lastMsg = payload.new;
           conv.updated_at = payload.new.created_at;
           convState.all.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-          filterConvs(document.querySelector('[id^="conv-tab-"].active-tab')?.dataset?.tab ?? 'all', false);
+          applyConvFilters();
         }
         if (convId === convState.activeId) appendMessage(payload.new);
       })
