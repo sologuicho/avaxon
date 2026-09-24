@@ -196,10 +196,10 @@ Deno.serve(async (req: Request) => {
 
   if (!botConfig) return new Response('ok', { status: 200 })
 
-  // ── Debounce: esperar 3 s por si el usuario manda varios mensajes seguidos ──
-  // Guardamos el timestamp del mensaje actual para luego verificar si llegó uno más nuevo.
-  const msgTimestamp = new Date().toISOString()
-  await new Promise(resolve => setTimeout(resolve, 3000))
+  // ── Debounce: esperar 5 s por si el usuario manda varios mensajes seguidos ──
+  // Usamos el created_at real de BD (no Date.now()) para evitar drift por latencia de queries.
+  const msgTimestamp = savedMsg?.created_at ?? new Date().toISOString()
+  await new Promise(resolve => setTimeout(resolve, 5000))
 
   // Si llegó un mensaje más reciente de este contacto en la misma conversación,
   // ese invocation lo procesará — este sale sin responder para evitar doble respuesta.
