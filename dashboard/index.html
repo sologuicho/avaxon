@@ -2144,7 +2144,7 @@
     const conv = convState.all.find(c => c.id === convId);
     if (conv) conv.status = newStatus;
     openConversacion(convId); // refresh panel
-    filterConvs('all', false);
+    applyConvFilters();
   }
   window.toggleConvStatus = toggleConvStatus;
 
