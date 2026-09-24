@@ -217,7 +217,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const rawReply = aiData.choices?.[0]?.message?.content?.trim()
   if (!rawReply) return
 
-  let parsed: { text: string; buttons?: string[] }
+  let parsed: { text: string; buttons?: string[]; notify_owner?: boolean }
   try {
     parsed = JSON.parse(rawReply)
   } catch {
@@ -226,6 +226,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const replyText    = parsed.text ?? rawReply
   const buttonLabels = (parsed.buttons ?? []).slice(0, 3)
+  const notifyOwner  = parsed.notify_owner === true
 
   // ── 8. Enviar mensaje WhatsApp ─────────────────────────────────────────────
   let waPayload: any
