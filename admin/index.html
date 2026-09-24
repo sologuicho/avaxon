@@ -406,14 +406,14 @@
     .contact-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
     /* ── Pills ── */
-    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 7px; white-space: nowrap; letter-spacing: 0.2px; }
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; letter-spacing: 0.2px; }
     .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
     .pill.no-dot::before { display: none; }
-    .pill-green  { color: var(--green); background: var(--green-bg); }
-    .pill-amber  { color: var(--amber); background: var(--amber-bg); }
-    .pill-red    { color: var(--red);   background: var(--red-bg); }
-    .pill-muted  { color: var(--text-muted); background: var(--muted-bg); }
-    .pill-accent { color: var(--accent); background: var(--accent-100); }
+    .pill-green  { background: rgba(37,211,102,.12); color: #4ade80; border-radius: 999px; }
+    .pill-amber  { background: rgba(245,158,11,.12); color: #fbbf24; border-radius: 999px; }
+    .pill-red    { background: rgba(239,68,68,.12);  color: #f87171; border-radius: 999px; }
+    .pill-muted  { background: rgba(255,255,255,.06); color: var(--text-muted); border-radius: 999px; }
+    .pill-accent { color: var(--accent); background: var(--accent-sub); border-radius: 999px; }
 
     /* ── Action buttons ── */
     .btn-primary {
