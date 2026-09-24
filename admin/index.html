@@ -365,40 +365,40 @@
 
     /* ── Search input ── */
     .search-input {
-      height: 34px; padding: 0 12px; border: 1px solid #dfe2e6; border-radius: 9px;
-      font-family: 'Barlow', sans-serif; font-size: 13.5px; color: #1a2535;
-      background: #fff; outline: none; transition: border-color 0.15s;
+      height: 34px; padding: 0 12px; border: 1px solid var(--border); border-radius: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; color: var(--text);
+      background: rgba(255,255,255,.04); outline: none; transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .search-input:focus { border-color: #5980a6; }
-    .search-input::placeholder { color: #a7adb5; }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .search-input::placeholder { color: var(--text-faint); }
 
     /* ── Section header ── */
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 28px; }
     .section-header:first-child { margin-top: 0; }
-    .section-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: #1a2535; letter-spacing: 0.2px; }
-    .count-badge { background: var(--accent-100); color: var(--accent); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+    .section-title { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); letter-spacing: 0.2px; }
+    .count-badge { background: var(--accent-sub); color: var(--accent); font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
 
     /* ── Cards / Tables ── */
-    .card { background: #fff; border: 1px solid #e6e7e9; border-radius: 13px; overflow: hidden; box-shadow: 0 1px 2px rgba(26,37,53,0.04); }
-    .card-header { padding: 14px 20px; border-bottom: 1px solid #e6e7e9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: #1a2535; letter-spacing: 0.2px; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .card-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: 0.2px; }
     .mb-24 { margin-bottom: 24px; }
     .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; }
     th {
-      background: #fafbfc; font-family: 'Barlow Condensed', sans-serif;
-      font-size: 11.5px; font-weight: 700; color: #8c939b;
+      background: rgba(255,255,255,.03); font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px; font-weight: 700; color: var(--text-dim);
       text-transform: uppercase; letter-spacing: 0.7px; padding: 10px 20px;
-      text-align: left; border-bottom: 1px solid #f1f2f4; white-space: nowrap;
+      text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap;
     }
-    td { padding: 12px 20px; font-size: 13.5px; border-bottom: 1px solid #f1f2f4; color: var(--text); vertical-align: middle; }
+    td { padding: 12px 20px; font-size: 13.5px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tbody tr { transition: background 0.12s; }
-    tbody tr:hover td { background: #fafbfc; }
+    tbody tr:hover td { background: rgba(255,255,255,.02); }
     .avatar {
-      width: 32px; height: 32px; border-radius: 50%; background: var(--accent-200);
-      color: var(--accent-800); font-size: 11px; font-weight: 700;
-      font-family: 'Barlow Condensed', sans-serif; display: inline-flex;
+      width: 32px; height: 32px; border-radius: 50%; background: var(--accent-sub); border: 1px solid rgba(37,211,102,.2);
+      color: var(--accent); font-size: 11px; font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif; display: inline-flex;
       align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.5px;
     }
     .contact-cell { display: flex; align-items: center; gap: 10px; }
