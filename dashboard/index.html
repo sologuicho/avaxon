@@ -546,8 +546,8 @@
 
     /* ── Conexiones cards ── */
     .conexiones-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-    .conexion-card { background: var(--card-bg); border: 1px solid var(--border); padding: 20px; transition: border-color 0.15s; }
-    .conexion-card:hover { border-color: var(--accent); }
+    .conexion-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px; transition: border-color 0.15s, box-shadow 0.15s; }
+    .conexion-card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-sub); }
     .conexion-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
     .conexion-icon { font-size: 26px; line-height: 1; }
     .conexion-name { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; margin-top: 8px; letter-spacing: .04em; text-transform: uppercase; }
