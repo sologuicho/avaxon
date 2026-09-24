@@ -418,27 +418,27 @@
     /* ── Action buttons ── */
     .btn-primary {
       display: inline-flex; align-items: center; gap: 6px;
-      background: #2c455d; color: #fff; border: none;
-      font-size: 13px; font-weight: 600; font-family: 'Barlow', sans-serif;
+      background: var(--accent); color: #062513; border: 0;
+      font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif;
       padding: 8px 16px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
-      white-space: nowrap;
+      white-space: nowrap; box-shadow: 0 6px 20px var(--accent-glow);
     }
-    .btn-primary:hover { background: #22384c; }
-    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-primary:hover { background: var(--accent-h); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-ghost {
       display: inline-flex; align-items: center; gap: 5px;
-      background: #fff; border: 1px solid #e6e7e9; color: var(--text-muted);
-      font-size: 12px; font-weight: 500; font-family: 'Barlow', sans-serif;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--text-muted);
+      font-size: 12px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif;
       padding: 5px 11px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
     }
-    .btn-ghost:hover { background: #eef6ff; border-color: #5980a6; color: #2c455d; }
+    .btn-ghost:hover { background: rgba(255,255,255,.10); border-color: var(--border-h); color: var(--text); }
     .btn-danger {
       display: inline-flex; align-items: center; gap: 5px;
-      background: #fef5f5; border: 1px solid #f4cccc; color: #b91c1c;
-      font-size: 12px; font-weight: 600; font-family: 'Barlow', sans-serif;
+      background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.25); color: #f87171;
+      font-size: 12px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif;
       padding: 5px 11px; border-radius: 10px; cursor: pointer; transition: all 0.18s;
     }
-    .btn-danger:hover { background: #fee2e2; border-color: #ef4444; }
+    .btn-danger:hover { background: rgba(239,68,68,.18); border-color: rgba(239,68,68,.45); }
     .actions-cell { display: flex; align-items: center; gap: 6px; }
 
     /* ── Modal ── */
