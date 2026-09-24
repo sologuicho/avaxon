@@ -286,31 +286,31 @@
 
     /* Topbar */
     .topbar {
-      background: color-mix(in srgb, var(--page-bg) 92%, transparent);
-      backdrop-filter: blur(8px);
+      background: rgba(6,10,18,.85);
+      backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 28px; height: 56px; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
     .topbar-left { display: flex; flex-direction: column; gap: 1px; }
     .topbar-eyebrow {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim);
     }
     .topbar-h1 {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 700;
-      color: var(--text); line-height: 1; letter-spacing: .06em; text-transform: uppercase;
+      font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
+      color: var(--text); line-height: 1; letter-spacing: -.01em;
     }
     .topbar-right { display: flex; align-items: center; gap: 10px; }
-    .topbar-time { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; color: var(--text-muted); white-space: nowrap; letter-spacing: .04em; }
+    .topbar-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
     .btn-refresh {
       display: flex; align-items: center; gap: 5px;
-      background: transparent; border: 1px solid var(--border);
-      color: var(--text-muted); font-family: 'Barlow Condensed', sans-serif;
-      font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text-muted); font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px; font-weight: 600;
       padding: 5px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap;
     }
-    .btn-refresh:hover { background: var(--accent-100); border-color: var(--accent); color: var(--accent-800); }
+    .btn-refresh:hover { background: rgba(255,255,255,.10); border-color: var(--border-hover); color: var(--text); }
 
     /* Page area */
     .page-area { flex: 1; padding: 24px 28px 52px; }
