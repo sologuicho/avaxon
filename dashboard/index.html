@@ -2431,6 +2431,182 @@
   }
   window.saveWANumber = saveWANumber;
 
+  // ── Onboarding requests ─────────────────────────────────────────
+
+  function showToast(msg, duration = 2500) {
+    let el = $('avx-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'avx-toast';
+      el.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(12px);background:#1e293b;color:#f1f5f9;font-family:\'Plus Jakarta Sans\',sans-serif;font-size:13px;font-weight:600;padding:10px 20px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:9999;opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.08)';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(el._avxTimer);
+    el._avxTimer = setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(-50%) translateY(12px)';
+    }, duration);
+  }
+
+  async function loadOnboardingRequests() {
+    const { data, error } = await sb
+      .from('onboarding_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+
+    const section = $('onboarding-requests-section');
+    const list    = $('onboarding-requests-list');
+    const badge   = $('onboarding-badge');
+    const countBadge = $('onboarding-count-badge');
+
+    if (!data || data.length === 0) {
+      section.style.display = 'none';
+      badge.style.display = 'none';
+      return;
+    }
+
+    section.style.display = 'block';
+    badge.style.display = 'flex';
+    badge.textContent = data.length;
+    if (countBadge) countBadge.textContent = data.length;
+
+    function relDays(iso) {
+      if (!iso) return '';
+      const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      if (diff === 0) return 'hoy';
+      if (diff === 1) return 'hace 1 día';
+      return `hace ${diff} días`;
+    }
+
+    list.innerHTML = data.map(r => `
+      <div id="req-row-${r.id}" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 24px;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:700;color:var(--text)">${r.business_name || '—'}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">${r.phone_number || '—'} · ${relDays(r.created_at)}</div>
+          ${r.contact_name ? `<div style="font-size:12px;color:var(--text-muted);margin-top:1px">Contacto: ${r.contact_name}${r.contact_phone ? ' · ' + r.contact_phone : ''}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button onclick="activateOnboarding('${r.id}')" class="btn-primary" style="font-size:12px;padding:6px 14px">Activar</button>
+          <button onclick="rejectOnboarding('${r.id}')" style="display:inline-flex;align-items:center;background:transparent;color:var(--red);border:1px solid var(--red);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;border-radius:10px;padding:6px 14px;cursor:pointer;transition:all 0.15s">Rechazar</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  window.loadOnboardingRequests = loadOnboardingRequests;
+
+  async function activateOnboarding(id) {
+    const orgId = state.currentOrgId || state.userOrgId;
+
+    const { data: req, error: fetchErr } = await sb
+      .from('onboarding_requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !req) {
+      showToast('Error: no se pudo obtener la solicitud.');
+      return;
+    }
+
+    // Insert whatsapp_account
+    const { data: waAccount, error: waErr } = await sb
+      .from('whatsapp_accounts')
+      .insert({
+        organization_id: orgId,
+        waba_id:         req.waba_id,
+        business_name:   req.business_name,
+        access_token:    req.access_token,
+        status:          'active',
+      })
+      .select('id')
+      .single();
+
+    if (waErr) {
+      showToast('Error al crear cuenta WA: ' + (waErr.message || ''));
+      return;
+    }
+
+    // Insert phone_number
+    const { error: phoneErr } = await sb
+      .from('phone_numbers')
+      .insert({
+        organization_id:      orgId,
+        whatsapp_account_id:  waAccount.id,
+        phone_number_id:      req.phone_number_id,
+        display_phone_number: req.phone_number,
+        verified_name:        req.business_name,
+        status:               'active',
+      });
+
+    if (phoneErr) {
+      showToast('Error al crear número: ' + (phoneErr.message || ''));
+      return;
+    }
+
+    // Mark onboarding_request as activated
+    await sb.from('onboarding_requests').update({ status: 'activated' }).eq('id', id);
+
+    // Remove row from DOM
+    const row = $('req-row-' + id);
+    if (row) row.remove();
+
+    // Update badge counts
+    const remaining = document.querySelectorAll('[id^="req-row-"]').length;
+    const badge = $('onboarding-badge');
+    const countBadge = $('onboarding-count-badge');
+    if (remaining === 0) {
+      const section = $('onboarding-requests-section');
+      if (section) section.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+    } else {
+      if (badge) badge.textContent = remaining;
+      if (countBadge) countBadge.textContent = remaining;
+    }
+
+    // Reload WA numbers in Conexiones view
+    await loadDashboard(orgId);
+
+    showToast('Número activado correctamente.');
+  }
+  window.activateOnboarding = activateOnboarding;
+
+  async function rejectOnboarding(id) {
+    await sb.from('onboarding_requests').update({ status: 'rejected' }).eq('id', id);
+
+    const row = $('req-row-' + id);
+    if (row) row.remove();
+
+    const remaining = document.querySelectorAll('[id^="req-row-"]').length;
+    const badge = $('onboarding-badge');
+    const countBadge = $('onboarding-count-badge');
+    if (remaining === 0) {
+      const section = $('onboarding-requests-section');
+      if (section) section.style.display = 'none';
+      if (badge) badge.style.display = 'none';
+    } else {
+      if (badge) badge.textContent = remaining;
+      if (countBadge) countBadge.textContent = remaining;
+    }
+
+    showToast('Solicitud rechazada.');
+  }
+  window.rejectOnboarding = rejectOnboarding;
+
+  function copyOnboardingLink() {
+    navigator.clipboard.writeText('https://avaxon.lat/onboarding.html').then(() => {
+      showToast('¡Link copiado!');
+    }).catch(() => {
+      showToast('No se pudo copiar el link.');
+    });
+  }
+  window.copyOnboardingLink = copyOnboardingLink;
+
+  // ── End onboarding ──────────────────────────────────────────────
+
   function copyWebhookUrl() {
     const url = $('wa-webhook-url')?.value;
     if (url && url !== '—') {
