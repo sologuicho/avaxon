@@ -3465,7 +3465,7 @@
     const email = state.userEmail || 'usuario@gmail.com';
     gcalSetStatus({ connected: true, email, connectedAt: new Date().toISOString() });
     updateGcalUI();
-    showToast('Google Calendar conectado correctamente', 'green');
+    showToast('Google Calendar conectado correctamente');
   }
 
   function gcalDisconnect() {
