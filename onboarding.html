@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conecta tu WhatsApp — Avaxon</title>
+  <meta name="description" content="Guía paso a paso para conectar tu número de WhatsApp Business a Avaxon." />
+  <link rel="icon" type="image/jpeg" href="avaxon_favicon.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #0a0e17;
+      color: #e2e8f0;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.65;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 56px 24px 96px; }
+
+    /* Header */
+    .logo { font-size: 20px; font-weight: 700; color: #22c55e; letter-spacing: -.5px; margin-bottom: 48px; display: inline-block; text-decoration: none; }
+    .badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(37,211,102,.1); border: 1px solid rgba(37,211,102,.25); color: #22c55e; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 20px; }
+    h1 { font-size: 30px; font-weight: 700; color: #f1f5f9; line-height: 1.25; margin-bottom: 12px; }
+    .subtitle { font-size: 15px; color: #64748b; margin-bottom: 48px; }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 0; }
+    .step { display: flex; gap: 20px; padding: 28px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: rgba(37,211,102,.12); border: 1.5px solid rgba(37,211,102,.3);
+      color: #22c55e; font-size: 14px; font-weight: 700;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+    .step-desc { font-size: 14px; color: #94a3b8; }
+    .step-desc strong { color: #cbd5e1; font-weight: 600; }
+
+    /* Path */
+    .path {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      padding: 7px 12px; border-radius: 8px; margin: 10px 0 4px;
+      font-size: 13px; color: #94a3b8; flex-wrap: wrap;
+    }
+    .path span { color: #e2e8f0; font-weight: 600; }
+    .path i { color: #475569; font-size: 11px; }
+
+    /* Screenshot placeholder */
+    .img-note {
+      margin-top: 12px; padding: 10px 14px;
+      background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.15);
+      border-radius: 8px; font-size: 12.5px; color: #60a5fa;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Permisos */
+    .perms { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+    .perm {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      padding: 9px 13px; border-radius: 8px; font-size: 13px;
+    }
+    .perm-icon { font-size: 15px; }
+    .perm-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #22c55e; font-weight: 500; }
+    .perm-desc { font-size: 12px; color: #64748b; margin-left: auto; }
+
+    /* Token settings */
+    .token-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    .token-opt {
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+      border-radius: 10px; padding: 14px;
+    }
+    .token-opt-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 4px; }
+    .token-opt-value { font-size: 14px; color: #f1f5f9; font-weight: 600; }
+
+    /* Data to share */
+    .data-card {
+      margin-top: 40px;
+      background: rgba(37,211,102,.05); border: 1.5px solid rgba(37,211,102,.2);
+      border-radius: 16px; padding: 24px 28px;
+    }
+    .data-card-title { font-size: 15px; font-weight: 700; color: #22c55e; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .data-fields { display: flex; flex-direction: column; gap: 10px; }
+    .data-field { display: flex; align-items: center; gap: 12px; }
+    .data-field-name { font-size: 13px; font-weight: 600; color: #94a3b8; width: 140px; flex-shrink: 0; }
+    .data-field-input {
+      flex: 1; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #cbd5e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* CTA */
+    .cta {
+      margin-top: 40px; padding: 24px 28px;
+      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px; display: flex; align-items: center; gap: 16px;
+    }
+    .cta-icon { font-size: 28px; }
+    .cta-text h3 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+    .cta-text p { font-size: 13px; color: #64748b; }
+    .cta-text a { color: #22c55e; text-decoration: none; font-weight: 600; }
+
+    /* Warning */
+    .warn {
+      margin-top: 10px; padding: 9px 13px;
+      background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2);
+      border-radius: 8px; font-size: 12.5px; color: #fbbf24;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+
+    /* Time estimate */
+    .time-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      padding: 4px 10px; border-radius: 999px; font-size: 12px; color: #64748b;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="logo" href="/">Avaxon</a>
+
+    <div class="badge">⚡ Configuración inicial</div>
+    <h1>Conecta tu número de<br>WhatsApp Business</h1>
+    <p class="subtitle">Sigue estos 4 pasos para activar tu agente de IA. Solo se hace una vez.</p>
+    <div class="time-badge">⏱ Tiempo estimado: 10 minutos</div>
+
+    <div class="steps" style="margin-top: 40px">
+
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Entra a Meta Business Suite</div>
+          <div class="step-desc">
+            Ve a <strong>business.facebook.com</strong> e inicia sesión con la cuenta que administra tu negocio en Meta.
+            <div class="path">
+              <span>business.facebook.com</span>
+            </div>
+            Asegúrate de estar en el negocio correcto si tienes varios.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Crea un Usuario del Sistema</div>
+          <div class="step-desc">
+            En el menú izquierdo ve a <strong>Configuración</strong>, luego busca la sección <strong>Usuarios</strong> → <strong>Usuarios del sistema</strong>.
+            <div class="path">
+              <span>Configuración</span> <i>›</i> <span>Usuarios</span> <i>›</i> <span>Usuarios del sistema</span>
+            </div>
+            Haz clic en <strong>"Agregar"</strong> y ponle el nombre <strong>"Avaxon Bot"</strong> con rol de <strong>Administrador</strong>.
+            <div class="img-note">💡 Si ya tienes un usuario del sistema creado, puedes usarlo y saltar al paso 3.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Asigna tu número de WhatsApp</div>
+          <div class="step-desc">
+            Con el usuario <strong>"Avaxon Bot"</strong> seleccionado, haz clic en <strong>"Asignar activos"</strong>.
+            <div class="path">
+              <span>Avaxon Bot</span> <i>›</i> <span>Asignar activos</span> <i>›</i> <span>Cuentas de WhatsApp</span>
+            </div>
+            Selecciona tu cuenta de WhatsApp Business y marca el permiso de <strong>Administración completa</strong>. Guarda los cambios.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Genera el Access Token</div>
+          <div class="step-desc">
+            Regresa a <strong>Usuarios del sistema</strong>, selecciona <strong>"Avaxon Bot"</strong> y haz clic en <strong>"Generar nuevo token"</strong>.
+            <div class="path">
+              <span>Usuarios del sistema</span> <i>›</i> <span>Avaxon Bot</span> <i>›</i> <span>Generar nuevo token</span>
+            </div>
+            Selecciona tu app y activa estos dos permisos:
+            <div class="perms">
+              <div class="perm">
+                <span class="perm-icon">✅</span>
+                <span class="perm-name">whatsapp_business_management</span>
+                <span class="perm-desc">Gestión de cuenta</span>
+              </div>
+              <div class="perm">
+                <span class="perm-icon">✅</span>
+                <span class="perm-name">whatsapp_business_messaging</span>
+                <span class="perm-desc">Envío de mensajes</span>
+              </div>
+            </div>
+            <div class="token-opts">
+              <div class="token-opt">
+                <div class="token-opt-label">Expiración del token</div>
+                <div class="token-opt-value">Sin fecha de vencimiento</div>
+              </div>
+              <div class="token-opt">
+                <div class="token-opt-label">App seleccionada</div>
+                <div class="token-opt-value">Tu app de Meta</div>
+              </div>
+            </div>
+            <div class="warn">⚠️ Copia el token inmediatamente — Meta solo lo muestra una vez. Si lo pierdes, tendrás que generar uno nuevo.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Data to share -->
+    <div class="data-card">
+      <div class="data-card-title">
+        📋 Datos que necesitas enviarle a Avaxon
+      </div>
+      <p style="font-size:13px;color:#64748b;margin-bottom:16px">Busca estos datos en Meta Business Suite → WhatsApp → Configuración de API</p>
+      <div class="data-fields">
+        <div class="data-field">
+          <div class="data-field-name">Nombre del negocio</div>
+          <div class="data-field-input">Ej: Suplementos García</div>
+        </div>
+        <div class="data-field">
+          <div class="data-field-name">Número de teléfono</div>
+          <div class="data-field-input">+52 55 1234 5678</div>
+        </div>
+        <div class="data-field">
+          <div class="data-field-name">Phone Number ID</div>
+          <div class="data-field-input">1234567890123456</div>
+        </div>
+        <div class="data-field">
+          <div class="data-field-name">WABA ID</div>
+          <div class="data-field-input">9876543210987654</div>
+        </div>
+        <div class="data-field">
+          <div class="data-field-name">Access Token</div>
+          <div class="data-field-input">EAAd... (token largo)</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#475569;margin-top:16px">📍 Encuentra el Phone Number ID y WABA ID en: Meta Business Suite → WhatsApp → Configuración → API Setup</p>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta">
+      <div class="cta-icon">💬</div>
+      <div class="cta-text">
+        <h3>¿Tienes dudas durante el proceso?</h3>
+        <p>Escríbele directamente a Luis: <a href="https://wa.me/19563285800">wa.me/19563285800</a></p>
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:#334155;margin-top:40px;text-align:center">© 2026 Avaxon · <a href="/privacy.html" style="color:#334155">Privacidad</a></p>
+  </div>
+</body>
+</html>
