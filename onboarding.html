@@ -4,263 +4,884 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Conecta tu WhatsApp — Avaxon</title>
-  <meta name="description" content="Guía paso a paso para conectar tu número de WhatsApp Business a Avaxon." />
+  <meta name="description" content="Guía paso a paso para conectar tu número de WhatsApp Business a Avaxon. Tu agente de IA estará activo en 10 minutos." />
   <link rel="icon" type="image/jpeg" href="avaxon_favicon.jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       background: #0a0e17;
       color: #e2e8f0;
       -webkit-font-smoothing: antialiased;
       line-height: 1.65;
+      min-height: 100vh;
     }
-    .wrap { max-width: 680px; margin: 0 auto; padding: 56px 24px 96px; }
 
-    /* Header */
-    .logo { font-size: 20px; font-weight: 700; color: #22c55e; letter-spacing: -.5px; margin-bottom: 48px; display: inline-block; text-decoration: none; }
-    .badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(37,211,102,.1); border: 1px solid rgba(37,211,102,.25); color: #22c55e; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 20px; }
-    h1 { font-size: 30px; font-weight: 700; color: #f1f5f9; line-height: 1.25; margin-bottom: 12px; }
-    .subtitle { font-size: 15px; color: #64748b; margin-bottom: 48px; }
+    .wrap {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 48px 20px 96px;
+    }
 
-    /* Steps */
-    .steps { display: flex; flex-direction: column; gap: 0; }
-    .step { display: flex; gap: 20px; padding: 28px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
-    .step:last-child { border-bottom: none; }
+    /* ── Header ── */
+    .site-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 52px;
+    }
+
+    .logo {
+      font-size: 22px;
+      font-weight: 800;
+      color: #22c55e;
+      letter-spacing: -0.6px;
+      text-decoration: none;
+    }
+
+    .logo-dot { color: #166534; }
+
+    .support-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(37,211,102,.08);
+      border: 1px solid rgba(37,211,102,.2);
+      color: #22c55e;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .support-link:hover {
+      background: rgba(37,211,102,.14);
+      border-color: rgba(37,211,102,.35);
+    }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 44px; }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(37,211,102,.08);
+      border: 1px solid rgba(37,211,102,.2);
+      color: #22c55e;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(26px, 5vw, 34px);
+      font-weight: 800;
+      color: #f1f5f9;
+      line-height: 1.2;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 0;
+    }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 44px;
+      background: #111827;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+      padding: 18px 20px;
+      overflow-x: auto;
+    }
+
+    .stepper-item {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stepper-circle {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(37,211,102,.12);
+      border: 1.5px solid rgba(37,211,102,.35);
+      color: #22c55e;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stepper-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-left: 8px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stepper-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,.08);
+      margin: 0 10px;
+      flex-shrink: 0;
+      min-width: 12px;
+    }
+
+    /* ── Step Cards ── */
+    .steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+
+    .step-card {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,.07);
+      border-left: 3px solid rgba(37,211,102,.25);
+      border-radius: 14px;
+      padding: 24px 24px 24px 22px;
+      transition: border-left-color 0.2s;
+    }
+
+    .step-card:hover {
+      border-left-color: #22c55e;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
     .step-num {
-      width: 36px; height: 36px; flex-shrink: 0;
-      background: rgba(37,211,102,.12); border: 1.5px solid rgba(37,211,102,.3);
-      color: #22c55e; font-size: 14px; font-weight: 700;
-      border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      margin-top: 2px;
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      background: rgba(37,211,102,.12);
+      border: 1.5px solid rgba(37,211,102,.3);
+      color: #22c55e;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
     }
-    .step-content { flex: 1; }
-    .step-title { font-size: 16px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
-    .step-desc { font-size: 14px; color: #94a3b8; }
-    .step-desc strong { color: #cbd5e1; font-weight: 600; }
 
-    /* Path */
+    .step-meta { flex: 1; min-width: 0; }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 3px;
+    }
+
+    .step-summary {
+      font-size: 13px;
+      color: #64748b;
+    }
+
+    .step-body {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.7;
+    }
+
+    .step-body strong { color: #cbd5e1; font-weight: 600; }
+
+    /* ── Path breadcrumbs ── */
     .path {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
-      padding: 7px 12px; border-radius: 8px; margin: 10px 0 4px;
-      font-size: 13px; color: #94a3b8; flex-wrap: wrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 7px 12px;
+      border-radius: 8px;
+      margin: 12px 0 4px;
+      font-size: 12.5px;
+      color: #94a3b8;
+      flex-wrap: wrap;
+      line-height: 1.4;
     }
+
     .path span { color: #e2e8f0; font-weight: 600; }
-    .path i { color: #475569; font-size: 11px; }
+    .path i { color: #475569; font-style: normal; font-size: 11px; }
 
-    /* Screenshot placeholder */
-    .img-note {
-      margin-top: 12px; padding: 10px 14px;
-      background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.15);
-      border-radius: 8px; font-size: 12.5px; color: #60a5fa;
-      display: flex; align-items: center; gap: 8px;
-    }
+    /* ── Permissions ── */
+    .perms { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
 
-    /* Permisos */
-    .perms { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
     .perm {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
-      padding: 9px 13px; border-radius: 8px; font-size: 13px;
-    }
-    .perm-icon { font-size: 15px; }
-    .perm-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #22c55e; font-weight: 500; }
-    .perm-desc { font-size: 12px; color: #64748b; margin-left: auto; }
-
-    /* Token settings */
-    .token-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-    .token-opt {
-      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
-      border-radius: 10px; padding: 14px;
-    }
-    .token-opt-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; margin-bottom: 4px; }
-    .token-opt-value { font-size: 14px; color: #f1f5f9; font-weight: 600; }
-
-    /* Data to share */
-    .data-card {
-      margin-top: 40px;
-      background: rgba(37,211,102,.05); border: 1.5px solid rgba(37,211,102,.2);
-      border-radius: 16px; padding: 24px 28px;
-    }
-    .data-card-title { font-size: 15px; font-weight: 700; color: #22c55e; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .data-fields { display: flex; flex-direction: column; gap: 10px; }
-    .data-field { display: flex; align-items: center; gap: 12px; }
-    .data-field-name { font-size: 13px; font-weight: 600; color: #94a3b8; width: 140px; flex-shrink: 0; }
-    .data-field-input {
-      flex: 1; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1);
-      border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #cbd5e1;
-      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(37,211,102,.06);
+      border: 1px solid rgba(37,211,102,.18);
+      padding: 10px 14px;
+      border-radius: 9px;
     }
 
-    /* CTA */
-    .cta {
-      margin-top: 40px; padding: 24px 28px;
-      background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
-      border-radius: 16px; display: flex; align-items: center; gap: 16px;
+    .perm-check {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      background: #22c55e;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #0a0e17;
+      font-weight: 800;
     }
-    .cta-icon { font-size: 28px; }
-    .cta-text h3 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
-    .cta-text p { font-size: 13px; color: #64748b; }
-    .cta-text a { color: #22c55e; text-decoration: none; font-weight: 600; }
 
-    /* Warning */
+    .perm-name {
+      font-family: 'Courier New', monospace;
+      font-size: 12.5px;
+      color: #86efac;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .perm-badge {
+      font-size: 11px;
+      color: #4ade80;
+      background: rgba(37,211,102,.1);
+      border: 1px solid rgba(37,211,102,.2);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── Warning ── */
     .warn {
-      margin-top: 10px; padding: 9px 13px;
-      background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.2);
-      border-radius: 8px; font-size: 12.5px; color: #fbbf24;
-      display: flex; gap: 8px; align-items: flex-start;
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: rgba(245,158,11,.07);
+      border: 1px solid rgba(245,158,11,.25);
+      border-radius: 9px;
+      font-size: 13px;
+      color: #fbbf24;
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      line-height: 1.5;
     }
 
-    /* Time estimate */
-    .time-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
-      padding: 4px 10px; border-radius: 999px; font-size: 12px; color: #64748b;
-      margin-top: 8px;
+    .warn-icon { flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+
+    /* ── Info note ── */
+    .info-note {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(59,130,246,.07);
+      border: 1px solid rgba(59,130,246,.15);
+      border-radius: 8px;
+      font-size: 12.5px;
+      color: #60a5fa;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.5;
     }
+
+    /* ── Form Card ── */
+    .form-card {
+      background: #131d2e;
+      border: 1px solid rgba(34,197,94,.18);
+      border-top: 3px solid #22c55e;
+      border-radius: 16px;
+      padding: 32px 28px;
+      margin-top: 32px;
+    }
+
+    @media (max-width: 480px) {
+      .form-card { padding: 24px 18px; }
+    }
+
+    .form-card-header { margin-bottom: 26px; }
+
+    .form-step-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #22c55e;
+      text-transform: uppercase;
+      letter-spacing: .09em;
+      margin-bottom: 6px;
+    }
+
+    .form-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 6px;
+    }
+
+    .form-subtitle {
+      font-size: 13.5px;
+      color: #64748b;
+    }
+
+    .form-grid { display: flex; flex-direction: column; gap: 16px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .required-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+
+    .optional-tag {
+      font-size: 10.5px;
+      color: #475569;
+      font-weight: 500;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      padding: 1px 7px;
+      border-radius: 999px;
+    }
+
+    .field-hint {
+      font-size: 11.5px;
+      color: #475569;
+      margin-top: -2px;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    textarea {
+      width: 100%;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 9px;
+      padding: 11px 14px;
+      font-size: 14px;
+      color: #f1f5f9;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -webkit-appearance: none;
+    }
+
+    input[type="text"]::placeholder,
+    input[type="tel"]::placeholder,
+    textarea::placeholder {
+      color: #334155;
+    }
+
+    input[type="text"]:focus,
+    input[type="tel"]:focus,
+    textarea:focus {
+      border-color: rgba(34,197,94,.5);
+      box-shadow: 0 0 0 3px rgba(34,197,94,.08);
+    }
+
+    textarea { resize: vertical; min-height: 88px; font-size: 13px; line-height: 1.5; }
+
+    .submit-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      width: 100%;
+      background: #22c55e;
+      color: #052e16;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 14px 24px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      letter-spacing: -0.1px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: #16a34a;
+      box-shadow: 0 4px 20px rgba(34,197,94,.25);
+    }
+
+    .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+
+    .submit-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .submit-btn .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(5,46,22,.3);
+      border-top-color: #052e16;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    .submit-btn.loading .btn-spinner { display: block; }
+    .submit-btn.loading .btn-text { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .form-error {
+      background: rgba(239,68,68,.07);
+      border: 1px solid rgba(239,68,68,.2);
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 13px;
+      color: #f87171;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .form-error.visible { display: block; }
+
+    /* ── Success Screen ── */
+    .success-screen {
+      background: #111827;
+      border: 1px solid rgba(34,197,94,.2);
+      border-top: 3px solid #22c55e;
+      border-radius: 16px;
+      padding: 52px 32px;
+      margin-top: 32px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-screen.visible { display: block; }
+
+    .success-icon {
+      font-size: 52px;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .success-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 12px;
+    }
+
+    .success-text {
+      font-size: 15px;
+      color: #64748b;
+      line-height: 1.65;
+      margin-bottom: 28px;
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .success-wa-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: rgba(37,211,102,.1);
+      border: 1.5px solid rgba(37,211,102,.3);
+      color: #22c55e;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 22px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .success-wa-btn:hover {
+      background: rgba(37,211,102,.16);
+      border-color: rgba(37,211,102,.45);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+
+    .footer-wa {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(37,211,102,.07);
+      border: 1px solid rgba(37,211,102,.18);
+      color: #22c55e;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    .footer-wa:hover { background: rgba(37,211,102,.13); }
+
+    .footer-copy {
+      font-size: 12px;
+      color: #1e293b;
+    }
+
+    .footer-copy a { color: #1e293b; text-decoration: none; }
+    .footer-copy a:hover { color: #334155; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <a class="logo" href="/">Avaxon</a>
 
-    <div class="badge">⚡ Configuración inicial</div>
-    <h1>Conecta tu número de<br>WhatsApp Business</h1>
-    <p class="subtitle">Sigue estos 4 pasos para activar tu agente de IA. Solo se hace una vez.</p>
-    <div class="time-badge">⏱ Tiempo estimado: 10 minutos</div>
+    <!-- Header -->
+    <header class="site-header">
+      <a class="logo" href="/">Avaxon<span class="logo-dot">.</span></a>
+      <a class="support-link" href="https://wa.me/19563285800" target="_blank" rel="noopener">
+        💬 Soporte
+      </a>
+    </header>
 
-    <div class="steps" style="margin-top: 40px">
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">⚡ Configuración inicial</div>
+      <h1>Conecta tu WhatsApp<br>Business</h1>
+      <p class="subtitle">Tu agente de IA estará activo en 10 minutos. Solo sigue estos pasos.</p>
+    </div>
+
+    <!-- Stepper -->
+    <div class="stepper" aria-label="Progreso de configuración">
+      <div class="stepper-item">
+        <div class="stepper-circle">1</div>
+        <div class="stepper-label">Meta Business<br>Suite</div>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-item">
+        <div class="stepper-circle">2</div>
+        <div class="stepper-label">Usuario del<br>Sistema</div>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-item">
+        <div class="stepper-circle">3</div>
+        <div class="stepper-label">Asigna tu<br>número</div>
+      </div>
+      <div class="stepper-line"></div>
+      <div class="stepper-item">
+        <div class="stepper-circle">4</div>
+        <div class="stepper-label">Access<br>Token</div>
+      </div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps">
 
       <!-- Step 1 -->
-      <div class="step">
-        <div class="step-num">1</div>
-        <div class="step-content">
-          <div class="step-title">Entra a Meta Business Suite</div>
-          <div class="step-desc">
-            Ve a <strong>business.facebook.com</strong> e inicia sesión con la cuenta que administra tu negocio en Meta.
-            <div class="path">
-              <span>business.facebook.com</span>
-            </div>
-            Asegúrate de estar en el negocio correcto si tienes varios.
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">1</div>
+          <div class="step-meta">
+            <div class="step-title">Entra a Meta Business Suite</div>
+            <div class="step-summary">Inicia sesión con tu cuenta de Meta</div>
           </div>
+        </div>
+        <div class="step-body">
+          Ve a <strong>business.facebook.com</strong> e inicia sesión con la cuenta que administra tu negocio en Meta.
+          <div class="path">
+            <span>business.facebook.com</span>
+          </div>
+          Asegúrate de estar en el negocio correcto si tienes varios. Puedes cambiar de negocio desde el menú superior izquierdo.
         </div>
       </div>
 
       <!-- Step 2 -->
-      <div class="step">
-        <div class="step-num">2</div>
-        <div class="step-content">
-          <div class="step-title">Crea un Usuario del Sistema</div>
-          <div class="step-desc">
-            En el menú izquierdo ve a <strong>Configuración</strong>, luego busca la sección <strong>Usuarios</strong> → <strong>Usuarios del sistema</strong>.
-            <div class="path">
-              <span>Configuración</span> <i>›</i> <span>Usuarios</span> <i>›</i> <span>Usuarios del sistema</span>
-            </div>
-            Haz clic en <strong>"Agregar"</strong> y ponle el nombre <strong>"Avaxon Bot"</strong> con rol de <strong>Administrador</strong>.
-            <div class="img-note">💡 Si ya tienes un usuario del sistema creado, puedes usarlo y saltar al paso 3.</div>
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">2</div>
+          <div class="step-meta">
+            <div class="step-title">Crea un Usuario del Sistema</div>
+            <div class="step-summary">Nombre: "Avaxon Bot" · Rol: Administrador</div>
+          </div>
+        </div>
+        <div class="step-body">
+          En el menú de la izquierda busca <strong>Configuración</strong>, luego navega a:
+          <div class="path">
+            <span>Configuración</span> <i>›</i> <span>Usuarios</span> <i>›</i> <span>Usuarios del sistema</span>
+          </div>
+          Haz clic en <strong>"Agregar"</strong>. Usa el nombre <strong>"Avaxon Bot"</strong> y asígnale el rol de <strong>Administrador</strong>. Guarda.
+          <div class="info-note">
+            <span>💡</span>
+            <span>Si ya tienes un usuario del sistema configurado, puedes usarlo directamente y saltar al paso 3.</span>
           </div>
         </div>
       </div>
 
       <!-- Step 3 -->
-      <div class="step">
-        <div class="step-num">3</div>
-        <div class="step-content">
-          <div class="step-title">Asigna tu número de WhatsApp</div>
-          <div class="step-desc">
-            Con el usuario <strong>"Avaxon Bot"</strong> seleccionado, haz clic en <strong>"Asignar activos"</strong>.
-            <div class="path">
-              <span>Avaxon Bot</span> <i>›</i> <span>Asignar activos</span> <i>›</i> <span>Cuentas de WhatsApp</span>
-            </div>
-            Selecciona tu cuenta de WhatsApp Business y marca el permiso de <strong>Administración completa</strong>. Guarda los cambios.
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">3</div>
+          <div class="step-meta">
+            <div class="step-title">Asigna tu número de WhatsApp</div>
+            <div class="step-summary">Concede acceso completo al usuario del sistema</div>
           </div>
+        </div>
+        <div class="step-body">
+          Con el usuario <strong>"Avaxon Bot"</strong> seleccionado, haz clic en el botón <strong>"Asignar activos"</strong>.
+          <div class="path">
+            <span>Avaxon Bot</span> <i>›</i> <span>Asignar activos</span> <i>›</i> <span>Cuentas de WhatsApp</span>
+          </div>
+          Selecciona tu cuenta de WhatsApp Business y activa el permiso de <strong>Administración completa (control total)</strong>. Guarda los cambios.
         </div>
       </div>
 
       <!-- Step 4 -->
-      <div class="step">
-        <div class="step-num">4</div>
-        <div class="step-content">
-          <div class="step-title">Genera el Access Token</div>
-          <div class="step-desc">
-            Regresa a <strong>Usuarios del sistema</strong>, selecciona <strong>"Avaxon Bot"</strong> y haz clic en <strong>"Generar nuevo token"</strong>.
-            <div class="path">
-              <span>Usuarios del sistema</span> <i>›</i> <span>Avaxon Bot</span> <i>›</i> <span>Generar nuevo token</span>
+      <div class="step-card">
+        <div class="step-header">
+          <div class="step-num">4</div>
+          <div class="step-meta">
+            <div class="step-title">Genera el Access Token</div>
+            <div class="step-summary">Activa los dos permisos de WhatsApp · Sin expiración</div>
+          </div>
+        </div>
+        <div class="step-body">
+          Regresa a <strong>Usuarios del sistema</strong>, selecciona <strong>"Avaxon Bot"</strong> y haz clic en <strong>"Generar nuevo token"</strong>.
+          <div class="path">
+            <span>Usuarios del sistema</span> <i>›</i> <span>Avaxon Bot</span> <i>›</i> <span>Generar nuevo token</span>
+          </div>
+          Selecciona tu app y activa <strong>estos dos permisos</strong>:
+          <div class="perms">
+            <div class="perm">
+              <div class="perm-check">✓</div>
+              <span class="perm-name">whatsapp_business_management</span>
+              <span class="perm-badge">Gestión de cuenta</span>
             </div>
-            Selecciona tu app y activa estos dos permisos:
-            <div class="perms">
-              <div class="perm">
-                <span class="perm-icon">✅</span>
-                <span class="perm-name">whatsapp_business_management</span>
-                <span class="perm-desc">Gestión de cuenta</span>
-              </div>
-              <div class="perm">
-                <span class="perm-icon">✅</span>
-                <span class="perm-name">whatsapp_business_messaging</span>
-                <span class="perm-desc">Envío de mensajes</span>
-              </div>
+            <div class="perm">
+              <div class="perm-check">✓</div>
+              <span class="perm-name">whatsapp_business_messaging</span>
+              <span class="perm-badge">Envío de mensajes</span>
             </div>
-            <div class="token-opts">
-              <div class="token-opt">
-                <div class="token-opt-label">Expiración del token</div>
-                <div class="token-opt-value">Sin fecha de vencimiento</div>
-              </div>
-              <div class="token-opt">
-                <div class="token-opt-label">App seleccionada</div>
-                <div class="token-opt-value">Tu app de Meta</div>
-              </div>
-            </div>
-            <div class="warn">⚠️ Copia el token inmediatamente — Meta solo lo muestra una vez. Si lo pierdes, tendrás que generar uno nuevo.</div>
+          </div>
+          Elige <strong>Sin fecha de vencimiento</strong> y genera el token.
+          <div class="warn">
+            <span class="warn-icon">⚠️</span>
+            <span>Copia el token <strong>ahora mismo</strong> — Meta solo lo muestra una vez. Si lo pierdes, tendrás que generar uno nuevo desde cero.</span>
           </div>
         </div>
       </div>
 
     </div>
 
-    <!-- Data to share -->
-    <div class="data-card">
-      <div class="data-card-title">
-        📋 Datos que necesitas enviarle a Avaxon
+    <!-- Form -->
+    <div class="form-card" id="formCard">
+      <div class="form-card-header">
+        <div class="form-step-label">Paso 5 — Último paso</div>
+        <div class="form-title">Envía tus datos a Avaxon</div>
+        <div class="form-subtitle">El equipo activará tu agente en las próximas horas. Te avisamos por WhatsApp.</div>
       </div>
-      <p style="font-size:13px;color:#64748b;margin-bottom:16px">Busca estos datos en Meta Business Suite → WhatsApp → Configuración de API</p>
-      <div class="data-fields">
-        <div class="data-field">
-          <div class="data-field-name">Nombre del negocio</div>
-          <div class="data-field-input">Ej: Suplementos García</div>
+
+      <form id="onboardingForm" novalidate>
+        <div class="form-grid">
+
+          <div class="field">
+            <label class="field-label" for="business_name">
+              <span class="required-dot"></span>
+              Nombre del negocio
+            </label>
+            <input type="text" id="business_name" name="business_name" placeholder="Ej: Suplementos García" required autocomplete="organization" />
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="contact_name">
+                Tu nombre
+                <span class="optional-tag">opcional</span>
+              </label>
+              <input type="text" id="contact_name" name="contact_name" placeholder="Ej: Carlos López" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="contact_phone">
+                Tu WhatsApp
+                <span class="optional-tag">opcional</span>
+              </label>
+              <input type="tel" id="contact_phone" name="contact_phone" placeholder="+52 55 1234 5678" autocomplete="tel" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="phone_number">
+              <span class="required-dot"></span>
+              Número de WhatsApp a conectar
+            </label>
+            <input type="tel" id="phone_number" name="phone_number" placeholder="+52 55 1234 5678" required />
+            <span class="field-hint">El número que tus clientes van a escribir</span>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="phone_number_id">
+                <span class="required-dot"></span>
+                Phone Number ID
+              </label>
+              <input type="text" id="phone_number_id" name="phone_number_id" placeholder="123456789012345" required />
+              <span class="field-hint">Meta → WhatsApp → API Setup</span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="waba_id">
+                <span class="required-dot"></span>
+                WABA ID
+              </label>
+              <input type="text" id="waba_id" name="waba_id" placeholder="987654321098765" required />
+              <span class="field-hint">Meta → WhatsApp → API Setup</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="access_token">
+              <span class="required-dot"></span>
+              Access Token
+            </label>
+            <textarea id="access_token" name="access_token" rows="3" placeholder="EAAd..." required></textarea>
+            <span class="field-hint">El token que generaste en el paso 4</span>
+          </div>
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <div class="btn-spinner"></div>
+            <span class="btn-text">Activar mi agente →</span>
+          </button>
+
+          <div class="form-error" id="formError"></div>
+
         </div>
-        <div class="data-field">
-          <div class="data-field-name">Número de teléfono</div>
-          <div class="data-field-input">+52 55 1234 5678</div>
-        </div>
-        <div class="data-field">
-          <div class="data-field-name">Phone Number ID</div>
-          <div class="data-field-input">1234567890123456</div>
-        </div>
-        <div class="data-field">
-          <div class="data-field-name">WABA ID</div>
-          <div class="data-field-input">9876543210987654</div>
-        </div>
-        <div class="data-field">
-          <div class="data-field-name">Access Token</div>
-          <div class="data-field-input">EAAd... (token largo)</div>
-        </div>
-      </div>
-      <p style="font-size:12px;color:#475569;margin-top:16px">📍 Encuentra el Phone Number ID y WABA ID en: Meta Business Suite → WhatsApp → Configuración → API Setup</p>
+      </form>
     </div>
 
-    <!-- CTA -->
-    <div class="cta">
-      <div class="cta-icon">💬</div>
-      <div class="cta-text">
-        <h3>¿Tienes dudas durante el proceso?</h3>
-        <p>Escríbele directamente a Luis: <a href="https://wa.me/19563285800">wa.me/19563285800</a></p>
-      </div>
+    <!-- Success Screen -->
+    <div class="success-screen" id="successScreen">
+      <span class="success-icon">✅</span>
+      <div class="success-title">¡Listo! Tu solicitud fue enviada</div>
+      <p class="success-text">El equipo de Avaxon activará tu número en las próximas horas. Te avisamos por WhatsApp cuando tu agente esté listo para recibir mensajes.</p>
+      <a class="success-wa-btn" href="https://wa.me/19563285800" target="_blank" rel="noopener">
+        💬 ¿Tienes dudas? Escríbenos
+      </a>
     </div>
 
-    <p style="font-size:12px;color:#334155;margin-top:40px;text-align:center">© 2026 Avaxon · <a href="/privacy.html" style="color:#334155">Privacidad</a></p>
+    <!-- Footer -->
+    <footer class="footer">
+      <a class="footer-wa" href="https://wa.me/19563285800" target="_blank" rel="noopener">
+        💬 ¿Tienes dudas? Escríbenos por WhatsApp
+      </a>
+      <div class="footer-copy">
+        © 2026 Avaxon · <a href="/privacy.html">Privacidad</a> · avaxon.lat
+      </div>
+    </footer>
+
   </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const supabase = createClient(
+      'https://wprvjhvtnyibiwpeiusc.supabase.co',
+      'sb_publishable_w4HF23xO6Nq85926OrAOlg_Bvogo1HX'
+    );
+
+    const form = document.getElementById('onboardingForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const formError = document.getElementById('formError');
+    const formCard = document.getElementById('formCard');
+    const successScreen = document.getElementById('successScreen');
+
+    function showError(msg) {
+      formError.textContent = msg;
+      formError.classList.add('visible');
+    }
+
+    function hideError() {
+      formError.classList.remove('visible');
+    }
+
+    function setLoading(loading) {
+      submitBtn.disabled = loading;
+      submitBtn.classList.toggle('loading', loading);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideError();
+
+      const data = {
+        business_name: form.business_name.value.trim(),
+        contact_name: form.contact_name.value.trim() || null,
+        contact_phone: form.contact_phone.value.trim() || null,
+        phone_number: form.phone_number.value.trim(),
+        phone_number_id: form.phone_number_id.value.trim(),
+        waba_id: form.waba_id.value.trim(),
+        access_token: form.access_token.value.trim(),
+      };
+
+      if (!data.business_name) { showError('Por favor ingresa el nombre del negocio.'); return; }
+      if (!data.phone_number) { showError('Por favor ingresa el número de WhatsApp a conectar.'); return; }
+      if (!data.phone_number_id) { showError('Por favor ingresa el Phone Number ID.'); return; }
+      if (!data.waba_id) { showError('Por favor ingresa el WABA ID.'); return; }
+      if (!data.access_token) { showError('Por favor ingresa el Access Token.'); return; }
+
+      setLoading(true);
+
+      try {
+        const { error } = await supabase.from('onboarding_requests').insert([data]);
+
+        if (error) throw error;
+
+        formCard.style.display = 'none';
+        successScreen.classList.add('visible');
+        successScreen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        console.error(err);
+        showError('Ocurrió un error al enviar tu solicitud. Por favor intenta de nuevo o escríbenos por WhatsApp.');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
 </body>
 </html>
