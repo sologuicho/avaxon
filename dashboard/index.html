@@ -1469,6 +1469,46 @@
 
           </div>
 
+          <!-- Google Calendar -->
+          <div class="card bp" style="padding:0" id="gcal-conexion-card">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:44px;height:44px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg viewBox="0 0 48 48" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M32 14H16a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V16a2 2 0 0 0-2-2zm0 2v3H16v-3h16zm-16 16V21h16v11H16zm2-9h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3zm-10 4h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3z"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:var(--text)">Google Calendar</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Sincroniza citas desde WhatsApp · Recordatorios automáticos</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span id="gcal-status-pill" class="pill pill-amber no-dot">No conectado</span>
+                <button id="gcal-connect-btn" class="btn-primary" onclick="gcalConnect()" style="font-size:13px;padding:7px 16px">
+                  <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google
+                </button>
+              </div>
+            </div>
+            <div id="gcal-detail-panel" style="padding:18px 24px;display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--text-muted)">Estado</span>
+                <span id="gcal-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--text-muted)">Cuenta</span>
+                <span id="gcal-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--text-muted)">Sincronización</span>
+                <span id="gcal-detail-sync" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Deshabilitada</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <span style="font-size:13px;color:var(--text-muted)">Recordatorios</span>
+                <span id="gcal-detail-reminders" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Deshabilitados</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Integraciones -->
           <div class="card bp" style="padding:0">
             <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
