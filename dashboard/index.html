@@ -2023,68 +2023,39 @@
 
   window.filterLeads = filterLeads;
 
-  function renderConexiones(phoneData, waData) {
+  function renderConexiones(phoneData) {
     const phones = phoneData || [];
     const phone  = phones[0];
 
-    // Connect button — Meta verified 23 sept 2026, signup enabled
-    const connectBtn = $('wa-connect-btn');
-    if (!WA_SIGNUP_ENABLED) {
-      connectBtn.disabled = true;
-      connectBtn.title = 'Configura WA_APP_ID para habilitar la conexión';
-    } else {
-      connectBtn.disabled = false;
-    }
-    // Always show verified badge
-    $('wa-pending-notice').style.display = 'flex';
-
-    // Phone numbers list
     const listEl = $('wa-numbers-list');
     if (!phones.length) {
-      listEl.innerHTML = '<div class="wa-phone-empty">Sin números de WhatsApp conectados</div>';
+      listEl.innerHTML = '<div class="wa-phone-empty">Sin números conectados · Haz clic en "Conectar número" para agregar uno</div>';
     } else {
-      listEl.innerHTML = phones.map(p => {
-        const wa = p.whatsapp_accounts;
-        return `
-          <div class="wa-phone-row">
+      listEl.innerHTML = phones.map(p => `
+        <div class="wa-phone-row">
+          <div style="width:36px;height:36px;background:#25D366;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fab fa-whatsapp" style="color:#fff;font-size:18px"></i>
+          </div>
+          <div style="flex:1;min-width:0">
             <div class="wa-phone-num">${p.display_phone_number || '—'}</div>
             <div class="wa-phone-name">${p.verified_name || '—'}</div>
-            <div class="wa-phone-actions">
-              ${statusPill(p.status)}
-              ${qualityBadge(p.quality_rating)}
-              ${webhookBadge(p.webhook_verified)}
-              ${wa?.business_name ? `<span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--text-muted);letter-spacing:.02em">${wa.business_name}</span>` : ''}
-            </div>
           </div>
-        `;
-      }).join('');
-    }
-
-    // Webhook section
-    if (phone) {
-      $('wa-webhook-url').value = phone.display_phone_number ? `https://avaxon.lat/webhook/${phone.id}` : '—';
-      $('wa-webhook-status').innerHTML = phone.webhook_verified
-        ? `<span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span style="font-size:13.5px;color:#10b981;font-weight:600">Verificado</span>`
-        : `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13.5px;color:var(--text-muted)">Pendiente de verificación</span>`;
-    } else {
-      $('wa-webhook-url').value = '—';
-    }
-
-    // Integraciones card
-    const cards = [
-      { name: 'n8n Workflows', desc: 'Automatización de flujos y lógica del bot', statusLabel: 'Conectado', statusClass: 'pill-green' },
-      { name: 'Google Calendar', desc: 'Agendamiento automático con el bot', statusLabel: 'Próximamente', statusClass: 'pill-amber' },
-      { name: 'CRM / Leads Export', desc: 'Exportación de contactos a hojas de cálculo', statusLabel: 'Próximamente', statusClass: 'pill-amber' },
-    ];
-    $('conexiones-grid').innerHTML = cards.map(c => `
-      <div class="conexion-card">
-        <div class="conexion-header">
-          <span class="conexion-name">${c.name}</span>
-          <span class="pill ${c.statusClass} no-dot">${c.statusLabel}</span>
+          <div class="wa-phone-actions">
+            ${statusPill(p.status)}
+            ${qualityBadge(p.quality_rating)}
+            ${webhookBadge(p.webhook_verified)}
+          </div>
         </div>
-        <div class="conexion-desc">${c.desc}</div>
-      </div>
-    `).join('');
+      `).join('');
+    }
+
+    const webhookUrl = phone ? 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/webhook-wa' : '—';
+    $('wa-webhook-url').value = webhookUrl;
+    $('wa-webhook-status').innerHTML = phone?.webhook_verified
+      ? `<span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span style="font-size:13px;color:#10b981;font-weight:600">Verificado</span>`
+      : phone
+      ? `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13px;color:var(--text-muted)">Pendiente</span>`
+      : `<span style="width:7px;height:7px;border-radius:50%;background:var(--text-dim)"></span><span style="font-size:13px;color:var(--text-muted)">Sin configurar</span>`;
   }
 
   // ── Conversaciones ─────────────────────────────────────────────
