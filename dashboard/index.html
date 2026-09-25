@@ -2552,7 +2552,7 @@
       renderLeads(state.allContacts);
       $('leads-search').value = '';
 
-      renderConexiones(phonesRes.data, waAccountsRes.data);
+      renderConexiones(phonesRes.data);
 
     } catch (err) {
       console.error('Error cargando datos:', err);
