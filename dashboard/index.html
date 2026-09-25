@@ -1537,12 +1537,12 @@
                 <div class="integ-name">OpenAI</div>
                 <div class="integ-desc">GPT-4o para respuestas inteligentes y Whisper para transcripción de audio</div>
               </div>
-              <div class="integ-card">
+              <div class="integ-card" style="cursor:pointer" onclick="switchView('conexiones')">
                 <div style="display:flex;align-items:center;justify-content:space-between">
                   <div class="integ-logo" style="background:#fff;border:1.5px solid #e5e7eb">
-                    <svg viewBox="0 0 48 48" width="26" height="26"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M34 16H14v2h20v-2zm0 4H14v2h20v-2zm-8 4H14v2h12v-2zm8 4H14v2h20v-2zm0 4H14v2h20v-2z"/></svg>
+                    <svg viewBox="0 0 48 48" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M32 14H16a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V16a2 2 0 0 0-2-2zm0 2v3H16v-3h16zm-16 16V21h16v11H16zm2-9h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3zm-10 4h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3z"/></svg>
                   </div>
-                  <span class="pill pill-amber no-dot">Próximamente</span>
+                  <span class="pill pill-amber no-dot" id="gcal-integ-pill">No conectado</span>
                 </div>
                 <div class="integ-name">Google Calendar</div>
                 <div class="integ-desc">Agenda citas automáticamente desde WhatsApp y envía recordatorios</div>
