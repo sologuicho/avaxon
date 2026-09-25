@@ -3081,45 +3081,6 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-  /* ── WhatsApp Embedded Signup (Bloque 4) ── */
-  const WA_APP_ID    = '2086225228635820';
-  const WA_CONFIG_ID = 'TU_CONFIG_ID';      // ID de configuración del Embedded Signup en Meta
-  const WA_SIGNUP_ENABLED = true;
-
-  window.fbAsyncInit = function () {
-    FB.init({ appId: WA_APP_ID, xfbml: false, version: 'v21.0' });
-  };
-
-  async function launchEmbeddedSignup() {
-    if (!WA_SIGNUP_ENABLED) return;
-    const btn = $('wa-connect-btn');
-    btn.disabled = true;
-    btn.textContent = 'Abriendo Meta…';
-
-    FB.login(async function (response) {
-      if (!response?.authResponse?.code) {
-        btn.disabled = false;
-        btn.textContent = '+ Conectar número';
-        return;
-      }
-      btn.textContent = 'Conectando…';
-      const orgId = state.currentOrgId || state.userOrgId;
-      const { error } = await sb.functions.invoke('wa-embedded-signup', {
-        body: { code: response.authResponse.code, org_id: orgId },
-      });
-      btn.disabled = false;
-      btn.textContent = '+ Conectar número';
-      if (!error) await loadDashboard(state.currentOrgId);
-    }, {
-      config_id: WA_CONFIG_ID,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { sessionInfoVersion: 2 },
-    });
-  }
-
-  window.launchEmbeddedSignup = launchEmbeddedSignup;
-
   /* ── Link de recuperación de contraseña: el hash trae type=recovery.
      Hay que interceptarlo ANTES de dejar que la sesión normal cargue el
      dashboard, si no el usuario entra sin llegar a poner contraseña nueva. ── */
