@@ -584,6 +584,14 @@
     .wa-phone-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
     .wa-phone-empty { padding: 28px 24px; text-align: center; color: var(--text-dim); font-size: 13px; font-style: italic; }
 
+    /* ── Integration cards ── */
+    .integ-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px 20px; }
+    .integ-card { border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s;background:var(--page-bg); }
+    .integ-card:hover { border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-sub); }
+    .integ-logo { width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .integ-name { font-size:14px;font-weight:700;color:var(--text);line-height:1.2; }
+    .integ-desc { font-size:12px;color:var(--text-muted);line-height:1.4;flex:1; }
+
     /* ── View Headers ── */
     .view-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
     .view-header-left { display:flex; align-items:center; gap:14px; }
