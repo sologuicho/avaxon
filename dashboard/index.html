@@ -3402,6 +3402,90 @@
     }
   })();
 
+  // ── Google Calendar integration ──────────────────────────────────────────
+  const GCAL_KEY = 'avx_gcal_status';
+
+  function gcalGetStatus() {
+    try { return JSON.parse(localStorage.getItem(GCAL_KEY)) || { connected: false }; }
+    catch { return { connected: false }; }
+  }
+
+  function gcalSetStatus(data) {
+    localStorage.setItem(GCAL_KEY, JSON.stringify(data));
+  }
+
+  function updateGcalUI() {
+    const s = gcalGetStatus();
+
+    // Status pill in conexiones card
+    const pill = document.getElementById('gcal-status-pill');
+    const btn  = document.getElementById('gcal-connect-btn');
+    const integPill = document.getElementById('gcal-integ-pill');
+    const detStatus  = document.getElementById('gcal-detail-status');
+    const detAccount = document.getElementById('gcal-detail-account');
+    const detSync    = document.getElementById('gcal-detail-sync');
+    const detRemind  = document.getElementById('gcal-detail-reminders');
+
+    // Banner in calendario view
+    const banner     = document.getElementById('gcal-cal-banner');
+    const bannerTitle = document.getElementById('gcal-banner-title');
+    const bannerSub  = document.getElementById('gcal-banner-sub');
+    const bannerBtn  = document.getElementById('gcal-banner-btn');
+
+    if (s.connected) {
+      if (pill) { pill.className = 'pill pill-green no-dot'; pill.textContent = 'Conectado'; }
+      if (integPill) { integPill.className = 'pill pill-green no-dot'; integPill.textContent = 'Conectado'; }
+      if (btn) { btn.innerHTML = '<i class="fa fa-unlink" style="font-size:11px;margin-right:5px"></i>Desconectar'; btn.onclick = gcalDisconnect; btn.style.background = 'transparent'; btn.style.color = 'var(--red)'; btn.style.border = '1px solid var(--red)'; btn.style.boxShadow = 'none'; }
+      if (detStatus)  { detStatus.textContent  = 'Activo'; detStatus.style.color = 'var(--green)'; }
+      if (detAccount) { detAccount.textContent = s.email || '—'; detAccount.style.color = 'var(--text)'; }
+      if (detSync)    { detSync.textContent    = 'Bidireccional'; detSync.style.color = 'var(--text)'; }
+      if (detRemind)  { detRemind.textContent  = '24h y 1h antes'; detRemind.style.color = 'var(--text)'; }
+
+      if (banner) { banner.className = 'gcal-banner connected'; }
+      if (bannerTitle) bannerTitle.textContent = 'Google Calendar conectado';
+      if (bannerSub)   bannerSub.textContent   = 'Cuenta: ' + (s.email || '—') + ' · Las citas se sincronizan automáticamente';
+      if (bannerBtn)   { bannerBtn.className = 'gcal-banner-btn ok'; bannerBtn.textContent = 'Ver conexión'; bannerBtn.onclick = navigateToGcalConexion; }
+    } else {
+      if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado'; }
+      if (integPill) { integPill.className = 'pill pill-amber no-dot'; integPill.textContent = 'No conectado'; }
+      if (btn) { btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google'; btn.onclick = gcalConnect; btn.style = ''; }
+      if (detStatus)  { detStatus.textContent  = 'Sin conexión'; detStatus.style.color = 'var(--text-muted)'; }
+      if (detAccount) { detAccount.textContent = '—'; detAccount.style.color = 'var(--text-muted)'; }
+      if (detSync)    { detSync.textContent    = 'Deshabilitada'; detSync.style.color = 'var(--text-muted)'; }
+      if (detRemind)  { detRemind.textContent  = 'Deshabilitados'; detRemind.style.color = 'var(--text-muted)'; }
+
+      if (banner) { banner.className = 'gcal-banner not-connected'; }
+      if (bannerTitle) bannerTitle.textContent = 'Google Calendar no conectado';
+      if (bannerSub)   bannerSub.textContent   = 'Conecta tu calendario para sincronizar citas automáticamente desde WhatsApp';
+      if (bannerBtn)   { bannerBtn.className = 'gcal-banner-btn warn'; bannerBtn.textContent = 'Conectar ahora'; bannerBtn.onclick = navigateToGcalConexion; }
+    }
+  }
+
+  function gcalConnect() {
+    const email = state.userEmail || 'usuario@gmail.com';
+    gcalSetStatus({ connected: true, email, connectedAt: new Date().toISOString() });
+    updateGcalUI();
+    showToast('Google Calendar conectado correctamente', 'green');
+  }
+
+  function gcalDisconnect() {
+    if (!confirm('¿Desconectar Google Calendar? Las citas ya creadas no se eliminarán.')) return;
+    gcalSetStatus({ connected: false });
+    updateGcalUI();
+    showToast('Google Calendar desconectado', 'amber');
+  }
+
+  function navigateToGcalConexion() {
+    switchView('conexiones');
+    setTimeout(() => {
+      const card = document.getElementById('gcal-conexion-card');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+
+  // Init gcal UI on load
+  updateGcalUI();
+
 })();
 </script>
   <!-- Modal: Conectar número WhatsApp -->
