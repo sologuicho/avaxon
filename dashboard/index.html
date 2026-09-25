@@ -3472,7 +3472,7 @@
     if (!confirm('¿Desconectar Google Calendar? Las citas ya creadas no se eliminarán.')) return;
     gcalSetStatus({ connected: false });
     updateGcalUI();
-    showToast('Google Calendar desconectado', 'amber');
+    showToast('Google Calendar desconectado');
   }
 
   function navigateToGcalConexion() {
