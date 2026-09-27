@@ -516,6 +516,20 @@
         return;
       }
 
+      // Avisa al equipo por WhatsApp — best-effort, no bloquea el flujo si falla.
+      fetch(SUPA_URL + '/functions/v1/onboarding-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_name:   payload.business_name,
+          phone_number:    payload.phone_number,
+          contact_name:    payload.contact_name,
+          contact_phone:   payload.contact_phone,
+          phone_number_id: payload.phone_number_id,
+          waba_id:         payload.waba_id,
+        }),
+      }).catch(() => {});
+
       form.style.display = 'none';
       success.style.display = 'block';
       success.scrollIntoView({ behavior: 'smooth', block: 'center' });
