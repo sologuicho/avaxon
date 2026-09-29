@@ -113,7 +113,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     messageText = transcript ? `[Audio] ${transcript}` : '[Audio — no se pudo transcribir]'
   }
 
-  // ── 2. Upsert contacto ─────────────────────────────────────────────────────
+  // ── 3. Upsert contacto ─────────────────────────────────────────────────────
   const { data: contact_row } = await sb
     .from('contacts')
     .upsert(
