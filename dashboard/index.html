@@ -1918,6 +1918,7 @@
     $('org-switcher-icon').textContent = iconText;
     buildOrgDropdown();
     loadDashboard(orgId);
+    loadIntegrations();
     const activeView = document.querySelector('.nav-item.active');
     if (activeView?.dataset.view === 'calendario') loadCalendarMonth();
   }
