@@ -3544,6 +3544,29 @@
 
 })();
 </script>
+  <!-- Modal: Integrations (Sheets / Stripe / Zapier) -->
+  <div id="integ-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="integ-modal-icon" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center"></div>
+          <div>
+            <div id="integ-modal-title" style="font-size:18px;font-weight:700;color:var(--text)"></div>
+            <div id="integ-modal-sub" style="font-size:12px;color:var(--text-muted)"></div>
+          </div>
+        </div>
+        <button onclick="closeIntegModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:20px;padding:4px;line-height:1"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div id="integ-modal-body" style="display:flex;flex-direction:column;gap:14px"></div>
+      <div id="integ-modal-error" style="display:none;margin-top:12px;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
+        <button onclick="closeIntegModal()" style="padding:10px 20px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
+        <button id="integ-modal-disconnect-btn" onclick="disconnectIntegModal()" style="display:none;padding:10px 20px;border:1.5px solid var(--red);background:transparent;color:var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Desconectar</button>
+        <button id="integ-modal-save-btn" onclick="saveIntegModal()" class="btn-primary">Conectar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Conectar número WhatsApp -->
   <div id="wa-connect-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto">
