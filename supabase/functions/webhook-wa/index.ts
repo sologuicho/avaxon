@@ -22,7 +22,7 @@ import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 // GPT-4o — si llega un mensaje nuevo mientras se genera la respuesta, ese
 // mensaje NO se marca (sigue pendiente) y lo recoge su propia invocación.
 
-const DEBOUNCE_MS = 8000
+const DEBOUNCE_MS = 5000
 
 async function getMediaUrl(mediaId: string, token: string): Promise<{ url: string; mime: string } | null> {
   const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
