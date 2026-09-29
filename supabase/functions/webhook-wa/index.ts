@@ -97,10 +97,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY)
 
-  // ── 1. Resolver organización ───────────────────────────────────────────────
+  // ── 1. Resolver organización + token por cliente ──────────────────────────
   const { data: pn } = await sb
     .from('phone_numbers')
-    .select('id, organization_id')
+    .select('id, organization_id, whatsapp_accounts(access_token)')
     .eq('phone_number_id', phoneNumberId)
     .single()
 
@@ -110,6 +110,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   const { organization_id } = pn
+  const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
 
   // ── 2. Upsert contacto ─────────────────────────────────────────────────────
   const { data: contact_row } = await sb
