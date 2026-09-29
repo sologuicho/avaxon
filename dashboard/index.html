@@ -3403,63 +3403,88 @@
     }
   })();
 
-  // ── Google Calendar OAuth integration ───────────────────────────────────
-  const GCAL_CLIENT_ID = '515270819069-97u6k53oesn8tuohp8j2v0gforu11991.apps.googleusercontent.com';
-  const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
-  const GCAL_KEY       = 'avx_gcal_status';
+  // ── Integrations (Google Calendar, Sheets, Stripe, Zapier) ─────────────
+  const GOOGLE_CLIENT_ID = '515270819069-97u6k53oesn8tuohp8j2v0gforu11991.apps.googleusercontent.com';
+  const GCAL_SCOPE       = 'https://www.googleapis.com/auth/calendar';
+  const GSHEETS_SCOPE    = 'https://www.googleapis.com/auth/spreadsheets';
 
-  let gcalTokenClient = null;
+  let gcalTokenClient    = null;
+  let gsheetsTokenClient = null;
+  let integModalProvider = null;
 
-  function gcalGetStatus() {
-    try { return JSON.parse(localStorage.getItem(GCAL_KEY)) || { connected: false }; }
-    catch { return { connected: false }; }
+  // ── Load integrations from DB ────────────────────────────────────────────
+  async function loadIntegrations() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+    const { data } = await sb.from('integrations').select('provider,status,config,connected_at').eq('organization_id', orgId);
+    state.integrations = {};
+    (data || []).forEach(r => { state.integrations[r.provider] = r; });
+    updateGcalUI();
+    updateIntegPill('google_sheets', 'gsheets-integ-pill');
+    updateIntegPill('stripe',        'stripe-integ-pill');
+    updateIntegPill('zapier',        'zapier-integ-pill');
   }
 
-  function gcalSetStatus(data) {
-    localStorage.setItem(GCAL_KEY, JSON.stringify(data));
+  function updateIntegPill(provider, pillId) {
+    const pill = document.getElementById(pillId);
+    if (!pill) return;
+    const integ = state.integrations?.[provider];
+    if (integ?.status === 'connected') {
+      pill.className = 'pill pill-green no-dot'; pill.textContent = 'Conectado';
+    } else {
+      pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado';
+    }
   }
 
+  async function saveIntegrationToDB(provider, status, credentials, config) {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+    const { error } = await sb.from('integrations').upsert({
+      organization_id: orgId,
+      provider,
+      status,
+      credentials: credentials ?? null,
+      config: config ?? null,
+      connected_at: status === 'connected' ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'organization_id,provider' });
+    if (!error) {
+      if (!state.integrations) state.integrations = {};
+      state.integrations[provider] = { provider, status, config, connected_at: new Date().toISOString() };
+    }
+    return error;
+  }
+
+  // ── Google Calendar ──────────────────────────────────────────────────────
   function gcalInitTokenClient() {
     if (!window.google?.accounts?.oauth2) return;
     gcalTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GCAL_CLIENT_ID,
+      client_id: GOOGLE_CLIENT_ID,
       scope: GCAL_SCOPE,
-      callback: (response) => {
-        if (response.error) {
-          showToast('Error al conectar con Google: ' + response.error);
-          return;
-        }
-        // Fetch user info from Google to get their email
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: 'Bearer ' + response.access_token }
-        })
-        .then(r => r.json())
-        .then(info => {
-          gcalSetStatus({
-            connected: true,
-            email: info.email || '—',
-            name: info.name || '',
-            access_token: response.access_token,
-            connectedAt: new Date().toISOString()
-          });
-          updateGcalUI();
-          showToast('Google Calendar conectado: ' + (info.email || ''));
-        })
-        .catch(() => {
-          gcalSetStatus({ connected: true, email: '—', access_token: response.access_token, connectedAt: new Date().toISOString() });
-          updateGcalUI();
-          showToast('Google Calendar conectado correctamente');
-        });
+      callback: async (response) => {
+        if (response.error) { showToast('Error al conectar con Google: ' + response.error); return; }
+        let email = '—';
+        try {
+          const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + response.access_token }
+          }).then(r => r.json());
+          email = info.email || '—';
+        } catch {}
+        await saveIntegrationToDB('google_calendar', 'connected', { access_token: response.access_token }, { email });
+        updateGcalUI();
+        showToast('Google Calendar conectado: ' + email);
       }
     });
   }
 
   function updateGcalUI() {
-    const s = gcalGetStatus();
+    const integ      = state.integrations?.['google_calendar'];
+    const connected  = integ?.status === 'connected';
+    const email      = integ?.config?.email || '—';
 
-    const pill      = document.getElementById('gcal-status-pill');
-    const btn       = document.getElementById('gcal-connect-btn');
-    const integPill = document.getElementById('gcal-integ-pill');
+    const pill       = document.getElementById('gcal-status-pill');
+    const btn        = document.getElementById('gcal-connect-btn');
+    const integPill  = document.getElementById('gcal-integ-pill');
     const detStatus  = document.getElementById('gcal-detail-status');
     const detAccount = document.getElementById('gcal-detail-account');
     const detSync    = document.getElementById('gcal-detail-sync');
@@ -3469,7 +3494,7 @@
     const bannerSub  = document.getElementById('gcal-banner-sub');
     const bannerBtn  = document.getElementById('gcal-banner-btn');
 
-    if (s.connected) {
+    if (connected) {
       if (pill) { pill.className = 'pill pill-green no-dot'; pill.textContent = 'Conectado'; }
       if (integPill) { integPill.className = 'pill pill-green no-dot'; integPill.textContent = 'Conectado'; }
       if (btn) {
@@ -3478,12 +3503,12 @@
         btn.style.cssText = 'font-size:13px;padding:7px 16px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:8px;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;box-shadow:none';
       }
       if (detStatus)  { detStatus.textContent = 'Activo'; detStatus.style.color = 'var(--green)'; }
-      if (detAccount) { detAccount.textContent = s.email || '—'; detAccount.style.color = 'var(--text)'; }
+      if (detAccount) { detAccount.textContent = email; detAccount.style.color = 'var(--text)'; }
       if (detSync)    { detSync.textContent = 'Bidireccional'; detSync.style.color = 'var(--text)'; }
       if (detRemind)  { detRemind.textContent = '24h y 1h antes'; detRemind.style.color = 'var(--text)'; }
       if (banner) banner.className = 'gcal-banner connected';
       if (bannerTitle) bannerTitle.textContent = 'Google Calendar conectado';
-      if (bannerSub)   bannerSub.textContent   = 'Cuenta: ' + (s.email || '—') + ' · Las citas se sincronizan automáticamente';
+      if (bannerSub)   bannerSub.textContent   = 'Cuenta: ' + email + ' · Las citas se sincronizan automáticamente';
       if (bannerBtn)   { bannerBtn.className = 'gcal-banner-btn ok'; bannerBtn.textContent = 'Ver conexión'; bannerBtn.onclick = navigateToGcalConexion; }
     } else {
       if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado'; }
