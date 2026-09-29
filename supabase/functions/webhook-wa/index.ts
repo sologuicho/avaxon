@@ -68,33 +68,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const contactName    = contact?.profile?.name ?? null
   const waMessageId    = msg.id
 
-  let messageText = ''
-  let mediaType: 'text' | 'image' | 'audio' = 'text'
-  let imageDataUrl: string | null = null
-
-  if (isText) {
-    messageText = msg.text?.body ?? ''
-  } else if (isButton) {
-    messageText = msg.interactive.button_reply.title ?? ''
-  } else if (isImage) {
-    mediaType = 'image'
-    const caption = msg.image?.caption ?? ''
-    const media = msg.image?.id ? await getMediaUrl(msg.image.id, WA_TOKEN) : null
-    const bytes = media ? await downloadMedia(media.url, WA_TOKEN) : null
-    if (bytes && media) {
-      imageDataUrl = `data:${media.mime};base64,${encodeBase64(bytes)}`
-      messageText = caption ? `[Imagen] ${caption}` : '[Imagen]'
-    } else {
-      messageText = '[Imagen — no se pudo procesar]'
-    }
-  } else if (isAudio) {
-    mediaType = 'audio'
-    const media = msg.audio?.id ? await getMediaUrl(msg.audio.id, WA_TOKEN) : null
-    const bytes = media ? await downloadMedia(media.url, WA_TOKEN) : null
-    const transcript = bytes && media ? await transcribeAudio(bytes, media.mime, OPENAI_KEY) : null
-    messageText = transcript ? `[Audio] ${transcript}` : '[Audio — no se pudo transcribir]'
-  }
-
   const sb = createClient(SUPABASE_URL, SERVICE_KEY)
 
   // ── 1. Resolver organización + token por cliente ──────────────────────────
@@ -111,6 +84,34 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const { organization_id } = pn
   const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
+
+  // ── 2. Procesar contenido del mensaje ─────────────────────────────────────
+  let messageText = ''
+  let mediaType: 'text' | 'image' | 'audio' = 'text'
+  let imageDataUrl: string | null = null
+
+  if (isText) {
+    messageText = msg.text?.body ?? ''
+  } else if (isButton) {
+    messageText = msg.interactive.button_reply.title ?? ''
+  } else if (isImage) {
+    mediaType = 'image'
+    const caption = msg.image?.caption ?? ''
+    const media = msg.image?.id ? await getMediaUrl(msg.image.id, clientToken) : null
+    const bytes = media ? await downloadMedia(media.url, clientToken) : null
+    if (bytes && media) {
+      imageDataUrl = `data:${media.mime};base64,${encodeBase64(bytes)}`
+      messageText = caption ? `[Imagen] ${caption}` : '[Imagen]'
+    } else {
+      messageText = '[Imagen — no se pudo procesar]'
+    }
+  } else if (isAudio) {
+    mediaType = 'audio'
+    const media = msg.audio?.id ? await getMediaUrl(msg.audio.id, clientToken) : null
+    const bytes = media ? await downloadMedia(media.url, clientToken) : null
+    const transcript = bytes && media ? await transcribeAudio(bytes, media.mime, OPENAI_KEY) : null
+    messageText = transcript ? `[Audio] ${transcript}` : '[Audio — no se pudo transcribir]'
+  }
 
   // ── 2. Upsert contacto ─────────────────────────────────────────────────────
   const { data: contact_row } = await sb
