@@ -3542,13 +3542,9 @@
     gcalTokenClient.requestAccessToken({ prompt: 'select_account' });
   }
 
-  function gcalDisconnect() {
+  async function gcalDisconnect() {
     if (!confirm('¿Desconectar Google Calendar? Las citas ya creadas no se eliminarán.')) return;
-    const s = gcalGetStatus();
-    if (s.access_token && window.google?.accounts?.oauth2) {
-      google.accounts.oauth2.revoke(s.access_token, () => {});
-    }
-    gcalSetStatus({ connected: false });
+    await saveIntegrationToDB('google_calendar', 'disconnected', null, null);
     updateGcalUI();
     showToast('Google Calendar desconectado');
   }
@@ -3559,6 +3555,174 @@
       const card = document.getElementById('gcal-conexion-card');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
+  }
+
+  // ── Google Sheets OAuth ──────────────────────────────────────────────────
+  function gsheetsInitTokenClient(callback) {
+    if (!window.google?.accounts?.oauth2) return null;
+    return google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GSHEETS_SCOPE,
+      callback,
+    });
+  }
+
+  // ── Integration modal (Sheets / Stripe / Zapier) ─────────────────────────
+  const INTEG_META = {
+    google_sheets: {
+      title: 'Google Sheets',
+      sub:   'Exportar leads y conversaciones',
+      icon:  '<div style="width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid #e5e7eb;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 48 48" width="26" height="26"><rect fill="#43A047" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M14 14h20v4H14zm0 6h20v4H14zm0 6h12v4H14z"/></svg></div>',
+    },
+    stripe: {
+      title: 'Stripe',
+      sub:   'Cobrar pagos desde WhatsApp',
+      icon:  '<div style="width:40px;height:40px;border-radius:10px;background:#635bff;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg></div>',
+    },
+    zapier: {
+      title: 'Zapier',
+      sub:   'Conectar con más de 6,000 apps',
+      icon:  '<div style="width:40px;height:40px;border-radius:10px;background:#ff4a00;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.001.014c-.294 0-.584.014-.875.04a12.026 12.026 0 0 0-.998 6.25 8.978 8.978 0 0 0 7.373 7.373 12.03 12.03 0 0 0 6.25-.999 12.027 12.027 0 0 0-11.75-12.664zM.014 10.999a12.026 12.026 0 0 0 6.25 10.999A8.979 8.979 0 0 0 13.636 14.626a12.025 12.025 0 0 0-6.25.999A12.024 12.024 0 0 0 .014 11zM10.999.014A12.026 12.026 0 0 0 .014 11.747a12.03 12.03 0 0 0 6.25.999 8.978 8.978 0 0 0 7.373-7.373 12.025 12.025 0 0 0-.999-6.25A11.978 11.978 0 0 0 11 .014zM.014 13.001a12.026 12.026 0 0 0 11.75 10.985 12.026 12.026 0 0 0 .998-6.25 8.978 8.978 0 0 0-7.373-7.373A12.025 12.025 0 0 0 .014 13z"/></svg></div>',
+    },
+  };
+
+  function openIntegModal(provider) {
+    integModalProvider = provider;
+    const meta    = INTEG_META[provider];
+    const integ   = state.integrations?.[provider];
+    const connected = integ?.status === 'connected';
+
+    document.getElementById('integ-modal-icon').innerHTML  = meta.icon;
+    document.getElementById('integ-modal-title').textContent = meta.title;
+    document.getElementById('integ-modal-sub').textContent   = meta.sub;
+    document.getElementById('integ-modal-error').style.display = 'none';
+
+    const disconnectBtn = document.getElementById('integ-modal-disconnect-btn');
+    const saveBtn       = document.getElementById('integ-modal-save-btn');
+    disconnectBtn.style.display = connected ? 'inline-flex' : 'none';
+    saveBtn.textContent = connected ? 'Reconectar' : 'Conectar';
+
+    const body = document.getElementById('integ-modal-body');
+
+    if (provider === 'google_sheets') {
+      const sheetId = integ?.config?.spreadsheet_id || '';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Se abrirá una ventana de Google para autorizar acceso. Después ingresa el ID de tu hoja.
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">ID de la hoja de cálculo</span>
+          <input id="im-sheet-id" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+            value="${sheetId}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          <span style="font-size:11.5px;color:var(--text-dim)">Encuéntralo en la URL de tu Google Sheet: /spreadsheets/d/<strong>ID</strong>/edit</span>
+        </label>`;
+    } else if (provider === 'stripe') {
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Encuentra tus claves en <strong style="color:var(--text)">dashboard.stripe.com → Developers → API Keys</strong>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Publishable Key</span>
+          <input id="im-stripe-pk" type="text" placeholder="pk_live_..."
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Secret Key <span style="font-weight:400;color:var(--text-muted)">(se guarda cifrado)</span></span>
+          <input id="im-stripe-sk" type="password" placeholder="sk_live_..."
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>`;
+    } else if (provider === 'zapier') {
+      const webhookUrl = integ?.config?.webhook_url || '';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          En Zapier, crea un Zap con <strong style="color:var(--text)">Webhooks by Zapier → Catch Hook</strong> y pega aquí la URL que te genera.
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Webhook URL de Zapier</span>
+          <input id="im-zapier-url" type="url" placeholder="https://hooks.zapier.com/hooks/catch/..."
+            value="${webhookUrl}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>`;
+    }
+
+    const modal = document.getElementById('integ-modal');
+    modal.style.display = 'flex';
+  }
+
+  function closeIntegModal() {
+    document.getElementById('integ-modal').style.display = 'none';
+    integModalProvider = null;
+  }
+
+  async function saveIntegModal() {
+    const provider = integModalProvider;
+    if (!provider) return;
+    const errEl = document.getElementById('integ-modal-error');
+    errEl.style.display = 'none';
+    const saveBtn = document.getElementById('integ-modal-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+    try {
+      if (provider === 'google_sheets') {
+        const sheetId = document.getElementById('im-sheet-id')?.value?.trim();
+        if (!sheetId) { errEl.textContent = 'Ingresa el ID de la hoja'; errEl.style.display = 'block'; return; }
+        // Request OAuth for Sheets
+        gsheetsTokenClient = gsheetsInitTokenClient(async (response) => {
+          if (response.error) { errEl.textContent = 'Error Google: ' + response.error; errEl.style.display = 'block'; return; }
+          let email = '—';
+          try {
+            const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: 'Bearer ' + response.access_token }
+            }).then(r => r.json());
+            email = info.email || '—';
+          } catch {}
+          await saveIntegrationToDB('google_sheets', 'connected',
+            { access_token: response.access_token },
+            { spreadsheet_id: sheetId, email }
+          );
+          updateIntegPill('google_sheets', 'gsheets-integ-pill');
+          closeIntegModal();
+          showToast('Google Sheets conectado: ' + email);
+        });
+        gsheetsTokenClient?.requestAccessToken({ prompt: 'select_account' });
+
+      } else if (provider === 'stripe') {
+        const pk = document.getElementById('im-stripe-pk')?.value?.trim();
+        const sk = document.getElementById('im-stripe-sk')?.value?.trim();
+        if (!pk || !sk) { errEl.textContent = 'Ingresa ambas claves de Stripe'; errEl.style.display = 'block'; return; }
+        await saveIntegrationToDB('stripe', 'connected', { publishable_key: pk, secret_key: sk }, {});
+        updateIntegPill('stripe', 'stripe-integ-pill');
+        closeIntegModal();
+        showToast('Stripe conectado correctamente');
+
+      } else if (provider === 'zapier') {
+        const url = document.getElementById('im-zapier-url')?.value?.trim();
+        if (!url || !url.startsWith('https://')) { errEl.textContent = 'Ingresa una URL válida de Zapier'; errEl.style.display = 'block'; return; }
+        await saveIntegrationToDB('zapier', 'connected', null, { webhook_url: url });
+        updateIntegPill('zapier', 'zapier-integ-pill');
+        closeIntegModal();
+        showToast('Zapier conectado correctamente');
+      }
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Conectar';
+    }
+  }
+
+  async function disconnectIntegModal() {
+    const provider = integModalProvider;
+    if (!provider || !confirm('¿Desconectar esta integración?')) return;
+    await saveIntegrationToDB(provider, 'disconnected', null, null);
+    const pillIds = { google_sheets: 'gsheets-integ-pill', stripe: 'stripe-integ-pill', zapier: 'zapier-integ-pill' };
+    if (pillIds[provider]) updateIntegPill(provider, pillIds[provider]);
+    closeIntegModal();
+    showToast('Integración desconectada');
   }
 
   // Init when Google GIS script is ready
