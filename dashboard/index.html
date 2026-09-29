@@ -2585,78 +2585,54 @@
   window.loadOnboardingRequests = loadOnboardingRequests;
 
   async function activateOnboarding(id) {
-    const orgId = state.currentOrgId || state.userOrgId;
+    const email = prompt('Email del cliente para acceder al dashboard:');
+    if (!email || !email.includes('@')) { showToast('Email inválido'); return; }
 
-    const { data: req, error: fetchErr } = await sb
-      .from('onboarding_requests')
-      .select('*')
-      .eq('id', id)
-      .single();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { showToast('Sesión expirada'); return; }
 
-    if (fetchErr || !req) {
-      showToast('Error: no se pudo obtener la solicitud.');
-      return;
-    }
+    const btn = document.querySelector(`[onclick="activateOnboarding('${id}')"]`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
 
-    // Insert whatsapp_account
-    const { data: waAccount, error: waErr } = await sb
-      .from('whatsapp_accounts')
-      .insert({
-        organization_id: orgId,
-        waba_id:         req.waba_id,
-        business_name:   req.business_name,
-        access_token:    req.access_token,
-        status:          'active',
-      })
-      .select('id')
-      .single();
-
-    if (waErr) {
-      showToast('Error al crear cuenta WA: ' + (waErr.message || ''));
-      return;
-    }
-
-    // Insert phone_number
-    const { error: phoneErr } = await sb
-      .from('phone_numbers')
-      .insert({
-        organization_id:      orgId,
-        whatsapp_account_id:  waAccount.id,
-        phone_number_id:      req.phone_number_id,
-        display_phone_number: req.phone_number,
-        verified_name:        req.business_name,
-        status:               'active',
+    try {
+      const res = await fetch(`${EDGE_BASE}/activate-client`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: id, client_email: email }),
       });
+      const data = await res.json();
+      if (!res.ok) { showToast('Error: ' + (data.error || 'Fallo al activar')); return; }
 
-    if (phoneErr) {
-      showToast('Error al crear número: ' + (phoneErr.message || ''));
-      return;
+      // Remove row from DOM
+      const row = $('req-row-' + id);
+      if (row) row.remove();
+
+      const remaining = document.querySelectorAll('[id^="req-row-"]').length;
+      const badge = $('onboarding-badge');
+      const countBadge = $('onboarding-count-badge');
+      if (remaining === 0) {
+        const section = $('onboarding-requests-section');
+        if (section) section.style.display = 'none';
+        if (badge) badge.style.display = 'none';
+      } else {
+        if (badge) badge.textContent = remaining;
+        if (countBadge) countBadge.textContent = remaining;
+      }
+
+      const msg = data.user_invited
+        ? `Cliente activado. Se envió invitación a ${email}`
+        : `Cliente activado (invitación pendiente — revisa el email manualmente)`;
+      showToast(msg, 4000);
+
+      // Refresh org list for super_admin
+      if (state.isSuperAdmin) {
+        const { data: orgs } = await sb.from('organizations').select('id,name,status').order('name');
+        state.allOrgs = orgs || [];
+        buildOrgDropdown();
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Activar'; }
     }
-
-    // Mark onboarding_request as activated
-    await sb.from('onboarding_requests').update({ status: 'activated' }).eq('id', id);
-
-    // Remove row from DOM
-    const row = $('req-row-' + id);
-    if (row) row.remove();
-
-    // Update badge counts
-    const remaining = document.querySelectorAll('[id^="req-row-"]').length;
-    const badge = $('onboarding-badge');
-    const countBadge = $('onboarding-count-badge');
-    if (remaining === 0) {
-      const section = $('onboarding-requests-section');
-      if (section) section.style.display = 'none';
-      if (badge) badge.style.display = 'none';
-    } else {
-      if (badge) badge.textContent = remaining;
-      if (countBadge) countBadge.textContent = remaining;
-    }
-
-    // Reload WA numbers in Conexiones view
-    await loadDashboard(orgId);
-
-    showToast('Número activado correctamente.');
   }
   window.activateOnboarding = activateOnboarding;
 
