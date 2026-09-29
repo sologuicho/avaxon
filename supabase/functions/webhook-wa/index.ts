@@ -39,7 +39,7 @@ async function transcribeAudio(bytes: ArrayBuffer, mime: string, apiKey: string)
 }
 
 interface Env {
-  WA_TOKEN: string
+  WA_TOKEN: string   // fallback only
   OPENAI_KEY: string
   SUPABASE_URL: string
   SERVICE_KEY: string
