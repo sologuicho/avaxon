@@ -260,7 +260,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const waRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
     method:  'POST',
-    headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify(waPayload),
   })
   const waData = await waRes.json()
@@ -271,7 +271,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     const notifText = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
     await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
       method:  'POST',
-      headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
         to:   '19563285800',
