@@ -39,10 +39,10 @@ Deno.serve(async (req: Request) => {
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-  // Get conversation → contact phone + org phone_number_id
+  // Get conversation → contact phone + org phone_number_id + per-client token
   const { data: conv, error: convErr } = await adminClient
     .from('conversations')
-    .select('id, organization_id, contact_id, phone_number_id, contacts(phone), phone_numbers(phone_number_id)')
+    .select('id, organization_id, contact_id, phone_number_id, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
     .eq('id', conversation_id)
     .single()
 
@@ -50,6 +50,7 @@ Deno.serve(async (req: Request) => {
 
   const toPhone      = (conv.contacts as any)?.phone
   const metaPhoneId  = (conv.phone_numbers as any)?.phone_number_id ?? conv.phone_number_id
+  const clientToken  = (conv.phone_numbers as any)?.whatsapp_accounts?.access_token ?? WA_TOKEN
 
   if (!toPhone)     return json({ error: 'El contacto no tiene número de teléfono' }, 422)
   if (!metaPhoneId) return json({ error: 'No hay Phone Number ID configurado para esta org' }, 422)
