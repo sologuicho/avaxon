@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${WA_TOKEN}`,
+        'Authorization': `Bearer ${clientToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
