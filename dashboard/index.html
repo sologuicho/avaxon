@@ -2052,6 +2052,7 @@
     inicio:'Inicio', conversaciones:'Conversaciones',
     leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
     pipeline: 'Pipeline', asignacion: 'Asignación',
+    bot: 'Agente IA', cuenta: 'Mi cuenta',
   };
 
   function switchView(name) {
@@ -2063,11 +2064,13 @@
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
-    if (name === 'calendario') { loadCalendarMonth(); updateGcalUI(); }
+    if (name === 'calendario')    { loadCalendarMonth(); updateGcalUI(); }
     if (name === 'conversaciones') loadConversaciones();
-    if (name === 'pipeline') loadPipeline();
-    if (name === 'asignacion') loadAsignacion();
-    if (name === 'conexiones') { loadOnboardingRequests(); updateGcalUI(); }
+    if (name === 'pipeline')       loadPipeline();
+    if (name === 'asignacion')     loadAsignacion();
+    if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
+    if (name === 'bot')            loadBotConfig();
+    if (name === 'cuenta')         loadCuenta();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
