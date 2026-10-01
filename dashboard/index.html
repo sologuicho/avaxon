@@ -2782,6 +2782,8 @@
   }
 
   async function loadOnboardingRequests() {
+    if (!state.isSuperAdmin) return;
+
     const { data, error } = await sb
       .from('onboarding_requests')
       .select('*')
