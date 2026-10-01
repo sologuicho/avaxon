@@ -1730,6 +1730,198 @@
         </div>
       </div>
 
+      <!-- ── Vista: Agente IA ──────────────────────────────────────────── -->
+      <div class="view" id="view-bot">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(34,197,94,.12);color:var(--accent)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+            </div>
+            <div>
+              <div class="view-header-title">Agente IA</div>
+              <div class="view-header-sub">Configura la personalidad y comportamiento de tu bot</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
+
+          <!-- Prompt editor -->
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:32px;height:32px;background:rgba(34,197,94,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-pen-to-square"></i></div>
+                  <div>
+                    <div style="font-size:15px;font-weight:700">Personalidad del agente</div>
+                    <div style="font-size:12px;color:var(--text-muted)">Define cómo habla y qué sabe tu bot</div>
+                  </div>
+                </div>
+              </div>
+              <textarea id="bot-prompt-textarea"
+                style="width:100%;min-height:280px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13.5px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);line-height:1.7;resize:vertical;outline:none;transition:border-color .15s"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+                placeholder="Eres el asistente virtual de [tu negocio]..."></textarea>
+              <div style="margin-top:10px;padding:10px 13px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15);border-radius:9px;font-size:12.5px;color:#818cf8;line-height:1.55">
+                <strong>Tip:</strong> Incluye el nombre de tu negocio, los productos o servicios que ofreces, el tono de voz (formal / amigable) y qué hacer cuando el cliente quiere hablar con alguien.
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:14px">
+                <button id="bot-save-btn" onclick="saveBotConfig()" class="btn-primary">Guardar cambios</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar config -->
+          <div style="display:flex;flex-direction:column;gap:12px">
+
+            <!-- Toggle estado -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:13px;font-weight:700;margin-bottom:14px">Estado del agente</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;transition:all .15s" id="bot-toggle-active"
+                  onclick="setBotEnabled(true)">
+                  <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
+                  <div><div style="font-size:13px;font-weight:700">Activo</div><div style="font-size:11.5px;color:var(--text-muted)">Responde automáticamente</div></div>
+                </label>
+                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;transition:all .15s" id="bot-toggle-paused"
+                  onclick="setBotEnabled(false)">
+                  <span style="width:10px;height:10px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></span>
+                  <div><div style="font-size:13px;font-weight:700">Pausado</div><div style="font-size:11.5px;color:var(--text-muted)">Los mensajes llegan pero no responde</div></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Modelo -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px">Modelo de IA</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:10px">
+                <div style="width:28px;height:28px;background:#000;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494z"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px;font-weight:700">GPT-4o</div>
+                  <div style="font-size:11.5px;color:var(--text-muted)">OpenAI · Incluido en tu plan</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estadísticas rápidas -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px">Últimas 24 horas</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--text-muted)">Mensajes recibidos</span>
+                  <span id="bot-stat-recv" style="font-weight:700">—</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                  <span style="color:var(--text-muted)">Respuestas enviadas</span>
+                  <span id="bot-stat-sent" style="font-weight:700">—</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Vista: Mi Cuenta ──────────────────────────────────────────── -->
+      <div class="view" id="view-cuenta">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(99,102,241,.12);color:#818cf8">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="view-header-title">Mi cuenta</div>
+              <div class="view-header-sub">Plan, facturación y datos de acceso</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+          <!-- Plan activo -->
+          <div class="card bp" style="padding:22px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:18px">
+              <div style="width:32px;height:32px;background:rgba(34,197,94,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-rocket"></i></div>
+              <div style="font-size:15px;font-weight:700">Plan activo</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Plan</span>
+                <span id="cuenta-plan-name" style="font-size:13px;font-weight:700">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Estado</span>
+                <span id="cuenta-plan-status">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Vence</span>
+                <span id="cuenta-plan-end" style="font-size:13px;font-weight:600">—</span>
+              </div>
+              <div id="cuenta-trial-bar-wrap" style="display:none;margin-top:4px">
+                <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-muted);margin-bottom:5px">
+                  <span>Período de prueba</span>
+                  <span id="cuenta-trial-days"></span>
+                </div>
+                <div style="height:5px;background:var(--border);border-radius:999px;overflow:hidden">
+                  <div id="cuenta-trial-progress" style="height:100%;background:var(--accent);border-radius:999px;transition:width .4s"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Info de cuenta -->
+          <div class="card bp" style="padding:22px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:18px">
+              <div style="width:32px;height:32px;background:rgba(99,102,241,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:13px"><i class="fa fa-id-card"></i></div>
+              <div style="font-size:15px;font-weight:700">Datos de acceso</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Email</span>
+                <span id="cuenta-email" style="font-size:13px;font-weight:600">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Negocio</span>
+                <span id="cuenta-org-name" style="font-size:13px;font-weight:600">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Rol</span>
+                <span id="cuenta-role" style="font-size:13px;font-weight:600">—</span>
+              </div>
+            </div>
+            <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+              <button onclick="showChangePasswordModal()" style="font-size:13px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;padding:0">Cambiar contraseña</button>
+            </div>
+          </div>
+
+          <!-- Incluido en tu plan -->
+          <div class="card bp" style="padding:22px;grid-column:1/-1">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="font-size:15px;font-weight:700;margin-bottom:16px">Incluido en tu plan</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Agente IA con GPT-4o</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Número de WhatsApp</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Conversaciones ilimitadas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Transcripción de audios</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Pipeline de leads</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Integraciones Google y Stripe</div>
+            </div>
+            <div style="margin-top:16px;padding:12px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:10px;font-size:13px;color:var(--text-muted)">
+              ¿Preguntas sobre tu plan? Escríbenos a <a href="mailto:hola@avaxon.lat" style="color:var(--accent);font-weight:600">hola@avaxon.lat</a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </div>
 
