@@ -2120,6 +2120,51 @@
     backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
   });
 
+  // ── Bot config modal ───────────────────────────────────────────────────
+  const botState = { orgId: null };
+
+  async function openBotModal(orgId, orgName) {
+    botState.orgId = orgId;
+    $('bot-modal-title').textContent = `Bot — ${orgName}`;
+    $('bot-modal-error').style.display = 'none';
+    $('bot-modal-success').style.display = 'none';
+    $('bot-modal-prompt').value = '';
+    $('bot-modal-enabled').checked = true;
+    $('btn-guardar-bot').disabled = false;
+
+    const { data } = await sb.from('bot_configs').select('system_prompt, enabled').eq('organization_id', orgId).single();
+    if (data) {
+      $('bot-modal-prompt').value   = data.system_prompt ?? '';
+      $('bot-modal-enabled').checked = data.enabled ?? true;
+    }
+    openModal('modal-bot');
+  }
+  window.openBotModal = openBotModal;
+
+  $('btn-guardar-bot').addEventListener('click', async () => {
+    $('bot-modal-error').style.display   = 'none';
+    $('bot-modal-success').style.display = 'none';
+    $('btn-guardar-bot').disabled = true;
+    $('btn-guardar-bot').textContent = 'Guardando…';
+
+    const { error } = await sb.from('bot_configs').upsert({
+      organization_id: botState.orgId,
+      system_prompt:   $('bot-modal-prompt').value.trim(),
+      enabled:         $('bot-modal-enabled').checked,
+    }, { onConflict: 'organization_id' });
+
+    $('btn-guardar-bot').disabled = false;
+    $('btn-guardar-bot').textContent = 'Guardar';
+
+    if (error) {
+      $('bot-modal-error').textContent = error.message;
+      $('bot-modal-error').style.display = 'block';
+    } else {
+      $('bot-modal-success').style.display = 'block';
+      setTimeout(() => { $('bot-modal-success').style.display = 'none'; }, 2500);
+    }
+  });
+
   $('hamburger-btn').addEventListener('click', () => {
     $('sidebar').classList.toggle('open');
     $('sidebar-overlay').style.display = $('sidebar').classList.contains('open') ? 'block' : 'none';
