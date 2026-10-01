@@ -458,14 +458,15 @@
         return;
       }
 
-      fetch(SUPA_URL + '/functions/v1/onboarding-notify', {
+      fetch(SUPA_URL + '/functions/v1/notify-onboarding', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY },
         body: JSON.stringify({
           business_name:   payload.business_name,
           phone_number:    payload.phone_number,
           contact_name:    payload.contact_name,
           contact_phone:   payload.contact_phone,
+          email:           payload.email,
           phone_number_id: payload.phone_number_id,
           waba_id:         payload.waba_id,
         }),
