@@ -2066,7 +2066,7 @@
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
     if (name === 'calendario')    { loadCalendarMonth(); updateGcalUI(); }
-    if (name === 'conversaciones') loadConversaciones();
+    if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
     if (name === 'pipeline')       loadPipeline();
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
