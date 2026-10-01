@@ -10,96 +10,77 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
   <style>
-    html, body { margin: 0; padding: 0; background: #0a0e17; }
-    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #e2e8f0; -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.75; }
+    html, body { margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #475569; -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.75; }
     * { box-sizing: border-box; }
-    a { color: #25D366; text-decoration: none; }
-    a:hover { color: #2ef175; }
+    a { color: #16a34a; text-decoration: none; }
+    a:hover { color: #15803d; }
 
-    .navlink { font-size: 15px; font-weight: 500; color: #c3ccdb; }
-    .navlink:hover { color: #fff; }
+    .navlink { font-size: 15px; font-weight: 500; color: #64748b; }
+    .navlink:hover { color: #0f172a; }
 
-    .nav-toggle { display: none; width: 46px; height: 46px; flex-direction: column; justify-content: center; gap: 5px; padding: 0 11px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; cursor: pointer; }
-    .nav-mobile-panel { display: none; border-top: 1px solid rgba(255,255,255,.08); padding: 10px 20px 22px; flex-direction: column; background: rgba(10,14,23,.96); }
+    .nav-toggle { display: none; width: 44px; height: 44px; flex-direction: column; justify-content: center; gap: 5px; padding: 0 11px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; }
+    .nav-mobile-panel { display: none; border-top: 1px solid #e2e8f0; padding: 10px 20px 22px; flex-direction: column; background: #fff; }
     .nav-mobile-panel.is-open { display: flex; }
-    .nav-mobile-panel a { padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,.07); font-size: 17px; font-weight: 500; color: #e6ebf3; }
+    .nav-mobile-panel a { padding: 15px 0; border-bottom: 1px solid #f1f5f9; font-size: 16px; font-weight: 500; color: #334155; }
 
     @media (max-width: 899px) {
       .nav-links-wide { display: none !important; }
       .nav-toggle { display: flex; }
     }
 
-    .wrap {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 64px 24px 96px;
-    }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 64px 24px 96px; }
+
     h1 {
       font-family: 'Space Grotesk', sans-serif;
       font-size: clamp(28px, 4vw, 36px);
-      font-weight: 700;
-      color: #f1f5f9;
-      margin-bottom: 8px;
-      letter-spacing: -.02em;
+      font-weight: 700; color: #0f172a;
+      margin-bottom: 8px; letter-spacing: -.02em;
     }
     .updated {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #64748b;
-      margin-bottom: 40px;
+      font-size: 12px; color: #94a3b8; margin-bottom: 40px;
     }
     .intro {
-      font-size: 16px;
-      color: #8b97ab;
-      margin-bottom: 48px;
-      border-left: 3px solid rgba(37,211,102,.4);
+      font-size: 16px; color: #64748b;
+      margin-bottom: 48px; line-height: 1.7;
+      border-left: 3px solid #25D366;
       padding-left: 16px;
     }
     h2 {
       font-family: 'Space Grotesk', sans-serif;
-      font-size: 16px;
-      font-weight: 600;
-      color: #f1f5f9;
-      margin: 40px 0 10px;
-      letter-spacing: -.01em;
+      font-size: 16px; font-weight: 600; color: #1e293b;
+      margin: 40px 0 10px; letter-spacing: -.01em;
     }
-    p { font-size: 15px; color: #8b97ab; margin: 0 0 10px; }
-    li { font-size: 15px; color: #8b97ab; }
-    ul {
-      padding-left: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-    .divider {
-      border: none;
-      border-top: 1px solid rgba(255,255,255,.07);
-      margin: 48px 0;
-    }
+    p { font-size: 15px; color: #64748b; margin: 0 0 10px; }
+    li { font-size: 15px; color: #64748b; }
+    ul { padding-left: 20px; display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    strong { color: #334155; font-weight: 600; }
+
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 48px 0; }
+
     .contact-block {
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.08);
+      background: #fff;
+      border: 1px solid #e2e8f0;
       border-radius: 16px;
-      padding: 24px 26px;
+      padding: 24px 28px;
     }
     .contact-block h2 { margin-top: 0; }
+
     .footer-copy {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #475569;
-      margin-top: 56px;
+      font-size: 12px; color: #cbd5e1; margin-top: 56px;
     }
   </style>
 </head>
 <body>
 
 <!-- NAV -->
-<header style="position: sticky; top: 0; z-index: 50; background: rgba(10,14,23,.72); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255,255,255,.08);">
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(248,250,252,.9); backdrop-filter: blur(14px); border-bottom: 1px solid #e2e8f0;">
   <div style="max-width: 1240px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 28px;">
-    <a href="/" style="display: flex; align-items: center; gap: 11px; color: #fff;">
-      <img src="avaxon_favicon.jpeg" alt="Avaxon" style="width: 30px; height: 30px; border-radius: 9px; object-fit: cover; box-shadow: 0 6px 18px rgba(79,142,247,.35);">
-      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -.01em; color: #fff; text-transform: uppercase;">Avaxon</span>
+    <a href="/" style="display: flex; align-items: center; gap: 11px; text-decoration: none;">
+      <img src="avaxon_favicon.jpeg" alt="Avaxon" style="width: 30px; height: 30px; border-radius: 9px; object-fit: cover;">
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -.01em; color: #0f172a; text-transform: uppercase;">Avaxon</span>
     </a>
     <div style="flex: 1;"></div>
     <nav class="nav-links-wide" style="display: flex; align-items: center; gap: 30px;">
@@ -107,12 +88,12 @@
       <a class="navlink" href="/#proceso">Proceso</a>
       <a class="navlink" href="/#panel">Panel</a>
       <a class="navlink" href="/#precios">Precios</a>
-      <a href="/#contacto" style="padding: 11px 20px; border-radius: 12px; background: #25D366; color: #062513; font-weight: 700; font-size: 15px; box-shadow: 0 14px 34px rgba(37,211,102,.32);">Agendar demo</a>
+      <a href="/#contacto" style="padding: 11px 20px; border-radius: 12px; background: #25D366; color: #062513; font-weight: 700; font-size: 15px; text-decoration: none;">Agendar demo</a>
     </nav>
     <button class="nav-toggle" id="navToggle" type="button" aria-label="Menú" aria-expanded="false" aria-controls="navMobilePanel">
-      <span style="display: block; height: 2px; background: #fff; border-radius: 2px;"></span>
-      <span style="display: block; height: 2px; background: #fff; border-radius: 2px;"></span>
-      <span style="display: block; height: 2px; background: #fff; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
     </button>
   </div>
   <nav class="nav-mobile-panel" id="navMobilePanel">
@@ -120,7 +101,7 @@
     <a href="/#proceso">Proceso</a>
     <a href="/#panel">Panel</a>
     <a href="/#precios">Precios</a>
-    <a href="/#contacto" style="margin-top: 18px; padding: 16px; border-radius: 12px; background: #25D366; color: #062513; text-align: center; font-weight: 700; font-size: 16px; border-bottom: 0;">Agendar demo</a>
+    <a href="/#contacto" style="margin-top: 14px; padding: 15px; border-radius: 12px; background: #25D366; color: #062513; text-align: center; font-weight: 700; font-size: 16px; border-bottom: 0;">Agendar demo</a>
   </nav>
 </header>
 
@@ -235,19 +216,19 @@
 </div>
 
 <!-- FOOTER -->
-<footer style="background: #05070c; border-top: 1px solid rgba(255,255,255,.07);">
+<footer style="background: #f1f5f9; border-top: 1px solid #e2e8f0;">
   <div style="max-width: 1240px; margin: 0 auto; padding: 40px 20px; display: flex; flex-wrap: wrap; gap: 26px; justify-content: space-between; align-items: flex-start;">
     <div style="display: flex; flex-direction: column; gap: 10px;">
       <span style="display: flex; align-items: center; gap: 10px;">
         <img src="avaxon_favicon.jpeg" alt="Avaxon" style="width: 26px; height: 26px; border-radius: 8px; object-fit: cover;">
-        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; color: #fff; text-transform: uppercase;">Avaxon</span>
+        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; color: #0f172a; text-transform: uppercase;">Avaxon</span>
       </span>
-      <span style="font-size: 14.5px; color: #9aa7bc;">Tu WhatsApp contesta, califica y agenda solo.</span>
+      <span style="font-size: 14px; color: #94a3b8;">Tu WhatsApp contesta, califica y agenda solo.</span>
     </div>
     <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
-      <a href="https://wa.me/528991709336" style="color: #25D366; font-weight: 600;">+52 899 170 9336</a>
-      <a href="/privacy.html" style="color: #9aa7bc;">Política de privacidad</a>
-      <span style="color: #8b97ab; font-family: 'JetBrains Mono', monospace; font-size: 12px;">© 2026 Avaxon</span>
+      <a href="https://wa.me/528991709336" style="color: #16a34a; font-weight: 600;">+52 899 170 9336</a>
+      <a href="/privacy.html" style="color: #94a3b8;">Política de privacidad</a>
+      <span style="color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-size: 12px;">© 2026 Avaxon</span>
     </div>
   </div>
 </footer>
