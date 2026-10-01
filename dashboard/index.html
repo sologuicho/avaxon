@@ -3622,6 +3622,128 @@
     }
   })();
 
+  // ── Bot config ───────────────────────────────────────────────────────────
+  async function loadBotConfig() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+
+    const { data } = await sb.from('bot_configs')
+      .select('enabled, system_prompt')
+      .eq('organization_id', orgId)
+      .maybeSingle();
+
+    const textarea = $('bot-prompt-textarea');
+    if (textarea) textarea.value = data?.system_prompt ?? '';
+
+    updateBotToggleUI(data?.enabled !== false);
+
+    // Stats: last 24h
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: msgs } = await sb.from('messages')
+      .select('direction')
+      .eq('organization_id', orgId)
+      .gte('created_at', since);
+
+    const recv = (msgs || []).filter(m => m.direction === 'inbound').length;
+    const sent = (msgs || []).filter(m => m.direction === 'outbound').length;
+    const statRecv = $('bot-stat-recv');
+    const statSent = $('bot-stat-sent');
+    if (statRecv) statRecv.textContent = recv;
+    if (statSent) statSent.textContent = sent;
+  }
+
+  function updateBotToggleUI(enabled) {
+    const activeEl  = $('bot-toggle-active');
+    const pausedEl  = $('bot-toggle-paused');
+    if (!activeEl || !pausedEl) return;
+    activeEl.style.borderColor  = enabled ? 'var(--accent)' : 'var(--border)';
+    activeEl.style.background   = enabled ? 'rgba(34,197,94,.06)' : '';
+    pausedEl.style.borderColor  = !enabled ? 'var(--red)' : 'var(--border)';
+    pausedEl.style.background   = !enabled ? 'rgba(239,68,68,.06)' : '';
+  }
+
+  async function setBotEnabled(enabled) {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+    await sb.from('bot_configs').upsert({ organization_id: orgId, enabled }, { onConflict: 'organization_id' });
+    updateBotToggleUI(enabled);
+    showToast(enabled ? 'Agente activado' : 'Agente pausado');
+  }
+
+  async function saveBotConfig() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+    const prompt = $('bot-prompt-textarea')?.value?.trim();
+    if (!prompt) { showToast('El prompt no puede estar vacío'); return; }
+
+    const btn = $('bot-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+    const { error } = await sb.from('bot_configs')
+      .upsert({ organization_id: orgId, system_prompt: prompt }, { onConflict: 'organization_id' });
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
+    showToast(error ? 'Error al guardar' : 'Cambios guardados');
+  }
+  window.saveBotConfig  = saveBotConfig;
+  window.setBotEnabled  = setBotEnabled;
+
+  // ── Cuenta ───────────────────────────────────────────────────────────────
+  async function loadCuenta() {
+    const orgId = state.currentOrgId || state.userOrgId;
+
+    // Email y rol
+    const emailEl = $('cuenta-email');
+    const roleEl  = $('cuenta-role');
+    const orgEl   = $('cuenta-org-name');
+    if (emailEl) emailEl.textContent = state.userEmail || '—';
+    if (roleEl)  roleEl.textContent  = state.userRole === 'super_admin' ? 'Super Admin' : state.userRole === 'owner' ? 'Propietario' : 'Agente';
+
+    if (orgId) {
+      const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle();
+      if (orgEl) orgEl.textContent = org?.name || '—';
+
+      // Suscripción
+      const { data: sub } = await sb.from('subscriptions')
+        .select('plan_id, status, current_period_end')
+        .eq('organization_id', orgId)
+        .maybeSingle();
+
+      const planName  = $('cuenta-plan-name');
+      const planSt    = $('cuenta-plan-status');
+      const planEnd   = $('cuenta-plan-end');
+      const trialWrap = $('cuenta-trial-bar-wrap');
+      const trialDays = $('cuenta-trial-days');
+      const trialProg = $('cuenta-trial-progress');
+
+      if (planName) planName.textContent = sub?.plan_id === 'pro' ? 'Pro — $2,990/mes' : sub?.plan_id ?? 'Pro';
+
+      if (sub?.status === 'trialing') {
+        const end       = new Date(sub.current_period_end);
+        const daysLeft  = Math.max(0, Math.ceil((end - Date.now()) / 86400000));
+        const total     = 14;
+        const pct       = Math.round(((total - daysLeft) / total) * 100);
+        if (planSt)    { planSt.innerHTML = '<span class="pill pill-amber no-dot" style="font-size:11px">Trial</span>'; }
+        if (planEnd)   planEnd.textContent = end.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+        if (trialWrap) trialWrap.style.display = 'block';
+        if (trialDays) trialDays.textContent = `${daysLeft} día${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''}`;
+        if (trialProg) trialProg.style.width = pct + '%';
+      } else if (sub) {
+        if (planSt)  { planSt.innerHTML = '<span class="pill pill-green no-dot" style="font-size:11px">Activo</span>'; }
+        const end = new Date(sub.current_period_end);
+        if (planEnd) planEnd.textContent = end.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+      } else {
+        if (planSt) planSt.textContent = '—';
+      }
+    }
+  }
+
+  function showChangePasswordModal() {
+    switchView('recovery');
+    setTimeout(() => showScreen('recovery'), 50);
+  }
+  window.showChangePasswordModal = showChangePasswordModal;
+
   // ── Integrations (Google Calendar, Sheets, Stripe, Zapier) ─────────────
   const GOOGLE_CLIENT_ID = '515270819069-97u6k53oesn8tuohp8j2v0gforu11991.apps.googleusercontent.com';
   const GCAL_SCOPE       = 'https://www.googleapis.com/auth/calendar';
