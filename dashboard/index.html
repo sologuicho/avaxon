@@ -3193,8 +3193,10 @@
     state.userOrgId    = profileData?.organization_id ?? null;
 
     if (role === 'agent') {
-      const navConex = $('nav-conexiones');
-      if (navConex) navConex.style.display = 'none';
+      // Agentes solo ven ventas y calendario
+      ['nav-conexiones','nav-bot','nav-cuenta','nav-section-cuenta'].forEach(id => {
+        const el = $(id); if (el) el.style.display = 'none';
+      });
     }
 
     if (state.isSuperAdmin) {
