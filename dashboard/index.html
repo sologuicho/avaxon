@@ -2442,7 +2442,7 @@
     convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
     filterConvs('all');
 
-    // Realtime: new messages update list
+    // Realtime: new messages + new conversations
     if (convState.realtimeSub) sb.removeChannel(convState.realtimeSub);
     convState.realtimeSub = sb.channel('inbox-msgs')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
@@ -2454,9 +2454,27 @@
           convState.all.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
           applyConvFilters();
         }
-        if (convId === convState.activeId) appendMessage(payload.new);
+        if (convId === convState.activeId) {
+          appendMessage(payload.new);
+        } else if (payload.new.direction === 'inbound') {
+          convState.unreadCount = (convState.unreadCount ?? 0) + 1;
+          updateUnreadBadge();
+        }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, async () => {
+        // New conversation from a brand-new contact — reload the list
+        await loadConversaciones();
       })
       .subscribe();
+  }
+
+  function updateUnreadBadge() {
+    const badge = $('nav-unread-badge');
+    if (!badge) return;
+    const count = convState.unreadCount ?? 0;
+    if (count === 0) { badge.style.display = 'none'; return; }
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.style.display = 'flex';
   }
 
   function filterConvs(tab, resetScroll = true) {
