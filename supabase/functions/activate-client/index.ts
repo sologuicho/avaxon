@@ -115,6 +115,7 @@ Deno.serve(async (req: Request) => {
   // ── 6. Crear usuario + invitar por email ─────────────────────────────
   const { data: newUser, error: userErr } = await adminSb.auth.admin.inviteUserByEmail(client_email, {
     data: { organization_id: org.id },
+    redirectTo: 'https://avaxon.lat/dashboard/',
   })
 
   if (userErr || !newUser?.user) {
