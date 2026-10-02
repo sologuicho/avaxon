@@ -3321,24 +3321,56 @@
   function showOnboardingModal(fullName) {
     const name = (fullName?.split(' ')[0] || 'bienvenido');
     $('onboarding-welcome-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    wizState.botEnabled = true;
+    const toggleBtn = $('wiz-bot-toggle');
+    if (toggleBtn) toggleBtn.classList.remove('off');
+    // Wire up tone cards
+    document.querySelectorAll('.wiz-tone-card').forEach(card => {
+      card.onclick = () => {
+        document.querySelectorAll('.wiz-tone-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        wizState.tone = card.dataset.tone;
+      };
+    });
+    // Wire up toggle
+    if (toggleBtn) {
+      toggleBtn.onclick = () => {
+        wizState.botEnabled = !wizState.botEnabled;
+        toggleBtn.classList.toggle('off', !wizState.botEnabled);
+      };
+    }
+    // Wire up footer buttons
+    const nextBtn = $('wiz-next-btn2');
+    const backBtn = $('wiz-back-btn2');
+    const skipBtn = $('wiz-skip-btn2');
+    if (nextBtn) nextBtn.onclick = () => wizNext();
+    if (backBtn) backBtn.onclick = () => wizBack();
+    if (skipBtn) skipBtn.onclick = () => wizSkip();
     wizGoTo(1);
     $('modal-onboarding').style.display = 'flex';
   }
 
   function wizGoTo(step) {
     wizState.step = step;
-    [1,2,3].forEach(n => {
-      $(`wiz-step-${n}`).style.display = n === step ? 'block' : 'none';
+    [1, 2, 3].forEach(s => {
+      const el = $('wiz-step-' + s);
+      if (el) el.style.display = s === step ? 'block' : 'none';
     });
-    $('wiz-step-label').textContent = `Paso ${step} de 3`;
-    $('wiz-progress').style.width = (step === 1 ? 33 : step === 2 ? 66 : 100) + '%';
-    // step labels color
-    const colors = { 1: ['#25D366','#4a5568','#4a5568'], 2: ['#25D366','#25D366','#4a5568'], 3: ['#25D366','#25D366','#25D366'] };
-    ['wiz-s1-label','wiz-s2-label','wiz-s3-label'].forEach((id,i) => $( id).style.color = colors[step][i]);
-    // back button
-    $('wiz-back-btn').style.display = step > 1 ? 'block' : 'none';
-    // next button label
-    $('wiz-next-btn').textContent = step === 3 ? 'Finalizar ✓' : 'Siguiente →';
+    const stepLbl = $('wiz-step-label');
+    if (stepLbl) stepLbl.textContent = `PASO ${step} DE 3`;
+    // Update tab styles
+    [1, 2, 3].forEach(s => {
+      const tab = $('wiz-tab-' + s);
+      if (!tab) return;
+      tab.classList.remove('active', 'done');
+      if (s === step) tab.classList.add('active');
+      else if (s < step) tab.classList.add('done');
+    });
+    // Back/next buttons
+    const backBtn = $('wiz-back-btn2');
+    const nextBtn = $('wiz-next-btn2');
+    if (backBtn) backBtn.style.display = step > 1 ? 'inline-block' : 'none';
+    if (nextBtn) nextBtn.textContent = step === 3 ? 'Finalizar ✓' : 'Siguiente →';
   }
 
   function wizSelectTone(tone) {
