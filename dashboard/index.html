@@ -3278,10 +3278,134 @@
     }
   }
 
+  // ── Wizard de onboarding ─────────────────────────────────────────────────
+  const wizState = { step: 1, tone: 'amigable' };
+
   function showOnboardingModal(fullName) {
-    const name = fullName?.split(' ')[0] || 'bienvenido';
+    const name = (fullName?.split(' ')[0] || 'bienvenido');
     $('onboarding-welcome-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    wizGoTo(1);
     $('modal-onboarding').style.display = 'flex';
+  }
+
+  function wizGoTo(step) {
+    wizState.step = step;
+    [1,2,3].forEach(n => {
+      $(`wiz-step-${n}`).style.display = n === step ? 'block' : 'none';
+    });
+    $('wiz-step-label').textContent = `Paso ${step} de 3`;
+    $('wiz-progress').style.width = (step === 1 ? 33 : step === 2 ? 66 : 100) + '%';
+    // step labels color
+    const colors = { 1: ['#25D366','#4a5568','#4a5568'], 2: ['#25D366','#25D366','#4a5568'], 3: ['#25D366','#25D366','#25D366'] };
+    ['wiz-s1-label','wiz-s2-label','wiz-s3-label'].forEach((id,i) => $( id).style.color = colors[step][i]);
+    // back button
+    $('wiz-back-btn').style.display = step > 1 ? 'block' : 'none';
+    // next button label
+    $('wiz-next-btn').textContent = step === 3 ? 'Finalizar ✓' : 'Siguiente →';
+  }
+
+  function wizSelectTone(tone) {
+    wizState.tone = tone;
+    ['formal','amigable','casual'].forEach(t => {
+      const lbl = $(`wiz-tone-${t}-lbl`);
+      lbl.style.borderColor = t === tone ? 'var(--accent)' : 'var(--border)';
+      lbl.style.background  = t === tone ? 'var(--accent-100)' : 'transparent';
+    });
+  }
+
+  function wizBack() { if (wizState.step > 1) wizGoTo(wizState.step - 1); }
+
+  async function wizSkip() {
+    if (wizState.step < 3) { wizGoTo(wizState.step + 1); return; }
+    await completeOnboarding();
+  }
+
+  async function wizNext() {
+    if (wizState.step === 1) {
+      await wizSaveStep1();
+      wizGoTo(2);
+    } else if (wizState.step === 2) {
+      await wizSaveStep2();
+      wizPrefillBotPrompt();
+      wizGoTo(3);
+    } else {
+      await wizSaveStep3();
+      await completeOnboarding();
+    }
+  }
+
+  async function wizSaveStep1() {
+    const name     = $('wiz-biz-name').value.trim();
+    const industry = $('wiz-industry').value;
+    if (!name && !industry) return;
+    const updates = {};
+    if (name)     updates.name     = name;
+    if (industry) updates.industry = industry;
+    if (Object.keys(updates).length && state.currentOrgId) {
+      await sb.from('organizations').update(updates).eq('id', state.currentOrgId);
+    }
+  }
+
+  async function wizSaveStep2() {
+    const phone   = $('wiz-wa-phone').value.trim();
+    const phoneId = $('wiz-wa-phone-id').value.trim();
+    const wabaId  = $('wiz-wa-waba-id').value.trim();
+    const token   = $('wiz-wa-token').value.trim();
+    if (!phoneId || !wabaId || !token) return; // skip if incomplete
+    const orgId = state.currentOrgId;
+    // 1. Create whatsapp_account
+    const { data: wa } = await sb.from('whatsapp_accounts').insert({
+      organization_id: orgId,
+      waba_id: wabaId,
+      business_name: $('wiz-biz-name').value.trim() || null,
+      status: 'active',
+      access_token: token,
+    }).select('id').single();
+    if (!wa) return;
+    // 2. Create phone_number
+    await sb.from('phone_numbers').insert({
+      organization_id: orgId,
+      whatsapp_account_id: wa.id,
+      phone_number_id: phoneId,
+      display_phone_number: phone || phoneId,
+      status: 'connected',
+      webhook_verified: false,
+    });
+  }
+
+  function wizPrefillBotPrompt() {
+    const name     = $('wiz-biz-name').value.trim() || 'tu negocio';
+    const industry = $('wiz-industry').options[$('wiz-industry').selectedIndex]?.text || '';
+    const tone     = wizState.tone;
+    const toneDesc = tone === 'formal' ? 'de forma formal y profesional' : tone === 'amigable' ? 'de forma amigable y cálida' : 'de forma casual y directa';
+    const existing = $('wiz-bot-prompt').value.trim();
+    if (!existing) {
+      $('wiz-bot-prompt').value =
+        `Eres el asistente virtual de ${name}${industry ? ` (${industry})` : ''}. Responde siempre en español, ${toneDesc}.\n\n` +
+        `Cuando el cliente pregunte por servicios o precios, proporciona información clara. ` +
+        `Cuando quiera agendar una cita o hablar con alguien del equipo, pídele su nombre y pregunta qué día le queda bien.\n\n` +
+        `Responde ÚNICAMENTE en formato JSON:\n{"text": "tu respuesta", "buttons": [], "notify_owner": false}`;
+    }
+  }
+
+  async function wizSaveStep3() {
+    const prompt  = $('wiz-bot-prompt').value.trim();
+    const enabled = $('wiz-bot-enabled').checked;
+    const orgId   = state.currentOrgId;
+    if (!prompt || !orgId) return;
+    // upsert bot_config
+    const { data: existing } = await sb.from('bot_configs').select('id').eq('organization_id', orgId).maybeSingle();
+    if (existing) {
+      await sb.from('bot_configs').update({ system_prompt: prompt, enabled }).eq('id', existing.id);
+    } else {
+      await sb.from('bot_configs').insert({
+        organization_id: orgId,
+        name: 'Principal',
+        system_prompt: prompt,
+        ai_level: 5,
+        enabled,
+      });
+    }
   }
 
   async function completeOnboarding() {
