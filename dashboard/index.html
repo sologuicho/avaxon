@@ -4358,31 +4358,184 @@
   </div>
 
   <!-- Modal: Términos y condiciones (primer ingreso) -->
-  <div id="modal-terms" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.25)">
-      <div style="padding:24px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-        <div style="width:38px;height:38px;background:var(--accent-100);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:16px;flex-shrink:0"><i class="fa fa-file-contract"></i></div>
-        <div>
-          <div style="font-size:16px;font-weight:700;color:var(--text)">Términos y condiciones</div>
-          <div style="font-size:12px;color:var(--text-muted)">Léelos antes de usar tu panel</div>
+  <style>
+    #modal-terms { font-family: 'Plus Jakarta Sans', sans-serif; }
+    #terms-card {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      width: 100%; max-width: 540px;
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(34,197,94,.12);
+      animation: avx-fade .25s ease;
+    }
+    #terms-header {
+      padding: 26px 28px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex; align-items: center; gap: 14px;
+    }
+    #terms-logo-wrap {
+      width: 44px; height: 44px; flex-shrink: 0;
+      background: rgba(34,197,94,.12);
+      border: 1px solid rgba(34,197,94,.2);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #terms-progress-bar-wrap {
+      height: 3px; background: rgba(255,255,255,.05);
+      position: relative; flex-shrink: 0;
+    }
+    #terms-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #22c55e, #16a34a);
+      transition: width .1s linear;
+      border-radius: 0 2px 2px 0;
+    }
+    #terms-scroll-body {
+      flex: 1; overflow-y: auto; padding: 22px 28px 8px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent;
+    }
+    #terms-scroll-body::-webkit-scrollbar { width: 5px; }
+    #terms-scroll-body::-webkit-scrollbar-track { background: transparent; }
+    #terms-scroll-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+    .terms-item {
+      display: flex; gap: 14px; padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+    .terms-item:last-child { border-bottom: none; padding-bottom: 4px; }
+    .terms-icon {
+      width: 32px; height: 32px; flex-shrink: 0; margin-top: 1px;
+      background: rgba(34,197,94,.08);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; color: #22c55e;
+    }
+    .terms-title { font-size: 13px; font-weight: 700; color: #e2e8f0; margin-bottom: 3px; }
+    .terms-body  { font-size: 12.5px; line-height: 1.65; color: #64748b; }
+    #terms-footer {
+      padding: 18px 28px 22px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.02);
+    }
+    #terms-check-label {
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; margin-bottom: 14px;
+      padding: 12px 14px;
+      background: rgba(34,197,94,.05);
+      border: 1px solid rgba(34,197,94,.12);
+      border-radius: 10px;
+      transition: background .15s, border-color .15s;
+    }
+    #terms-check-label:hover { background: rgba(34,197,94,.09); border-color: rgba(34,197,94,.22); }
+    #terms-check-label.checked { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.3); }
+    #terms-checkbox { width:17px; height:17px; accent-color:#22c55e; cursor:pointer; flex-shrink:0; }
+    #terms-check-text { font-size: 13px; font-weight: 600; color: #94a3b8; line-height: 1.4; user-select: none; }
+    #terms-check-label.checked #terms-check-text { color: #e2e8f0; }
+    #terms-accept-btn {
+      width: 100%;
+      padding: 13px 0;
+      background: #22c55e;
+      color: #fff;
+      border: none; border-radius: 11px;
+      font-size: 14px; font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      opacity: 0.35;
+      transition: opacity .15s, transform .1s, background .15s;
+      letter-spacing: .01em;
+    }
+    #terms-accept-btn:not(:disabled) { opacity: 1; }
+    #terms-accept-btn:not(:disabled):hover { background: #16a34a; transform: translateY(-1px); }
+    #terms-accept-btn:not(:disabled):active { transform: translateY(0); }
+    #terms-scroll-hint {
+      text-align: center; font-size: 11px; color: #475569;
+      padding: 8px 0 14px;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    #terms-scroll-hint.hidden { display: none; }
+  </style>
+  <div id="modal-terms" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(5,8,15,0.92);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+    <div id="terms-card">
+      <div id="terms-header">
+        <div id="terms-logo-wrap">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:16px;font-weight:700;color:#f1f5f9;letter-spacing:-.01em">Términos y condiciones</div>
+          <div style="font-size:12px;color:#475569;margin-top:1px">Avaxon · Versión 1.0 · Octubre 2026</div>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#22c55e;letter-spacing:.04em;text-transform:uppercase">AVAXON</div>
+      </div>
+
+      <div id="terms-progress-bar-wrap">
+        <div id="terms-progress-bar"></div>
+      </div>
+
+      <div id="terms-scroll-body">
+        <p style="font-size:13px;color:#475569;margin-bottom:18px;line-height:1.6">Antes de usar tu panel, lee estos términos. Al aceptarlos confirmas que los entiendes y estás de acuerdo.</p>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa fa-shield-halved"></i></div>
+          <div>
+            <div class="terms-title">1. Uso del servicio</div>
+            <div class="terms-body">El acceso está restringido a usuarios autorizados. No está permitido compartir credenciales ni acceder en nombre de terceros sin autorización expresa.</div>
+          </div>
+        </div>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa fa-lock"></i></div>
+          <div>
+            <div class="terms-title">2. Datos y privacidad</div>
+            <div class="terms-body">La información de tus clientes y conversaciones se almacena de forma segura. Avaxon no comparte datos con terceros sin tu consentimiento.</div>
+          </div>
+        </div>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa-brands fa-whatsapp"></i></div>
+          <div>
+            <div class="terms-title">3. Uso de WhatsApp Business API</div>
+            <div class="terms-body">El agente de IA en WhatsApp está sujeto a las políticas de Meta. Eres responsable del contenido enviado a través de tu número.</div>
+          </div>
+        </div>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa fa-credit-card"></i></div>
+          <div>
+            <div class="terms-title">4. Pagos y suscripción</div>
+            <div class="terms-body">El servicio se factura mensual o anualmente según el plan contratado. La cancelación no genera reembolso del período en curso.</div>
+          </div>
+        </div>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa fa-trademark"></i></div>
+          <div>
+            <div class="terms-title">5. Propiedad intelectual</div>
+            <div class="terms-body">El software, diseño y marca Avaxon son propiedad exclusiva de Avaxon. No se permite reproducción parcial o total sin autorización escrita.</div>
+          </div>
+        </div>
+
+        <div class="terms-item">
+          <div class="terms-icon"><i class="fa fa-rotate"></i></div>
+          <div>
+            <div class="terms-title">6. Modificaciones</div>
+            <div class="terms-body">Avaxon puede actualizar estos términos. Se notificará por correo con al menos 15 días de anticipación ante cambios relevantes.</div>
+          </div>
+        </div>
+
+        <div id="terms-scroll-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          Desplázate para leer todo
         </div>
       </div>
-      <div style="flex:1;overflow-y:auto;padding:24px 28px;font-size:13.5px;line-height:1.7;color:var(--text-2)">
-        <p style="margin-bottom:14px">Bienvenido a <strong>Avaxon</strong>. Al acceder a este panel aceptas los siguientes términos:</p>
-        <p style="margin-bottom:10px"><strong>1. Uso del servicio.</strong> El acceso a este panel está restringido a usuarios autorizados. No está permitido compartir credenciales ni acceder en nombre de terceros sin autorización.</p>
-        <p style="margin-bottom:10px"><strong>2. Datos y privacidad.</strong> La información de tus clientes y conversaciones se almacena de forma segura en nuestra infraestructura. Avaxon no comparte datos con terceros sin tu consentimiento.</p>
-        <p style="margin-bottom:10px"><strong>3. Uso de WhatsApp Business API.</strong> El uso del agente de IA en WhatsApp está sujeto a las políticas de Meta. Eres responsable del contenido enviado a través de tu número.</p>
-        <p style="margin-bottom:10px"><strong>4. Pagos y suscripción.</strong> El servicio se factura mensual o anualmente según el plan contratado. La cancelación no genera reembolso del período en curso.</p>
-        <p style="margin-bottom:10px"><strong>5. Propiedad intelectual.</strong> El software, diseño y marca Avaxon son propiedad exclusiva de Avaxon. No se permite su reproducción parcial o total sin autorización escrita.</p>
-        <p style="margin-bottom:0"><strong>6. Modificaciones.</strong> Avaxon se reserva el derecho de actualizar estos términos. Se notificará por correo con al menos 15 días de anticipación ante cambios relevantes.</p>
-        <p style="margin-top:14px;color:var(--text-muted);font-size:12px">Para más detalles visita <a href="https://avaxon.lat/terms.html" target="_blank" style="color:var(--accent)">avaxon.lat/terms.html</a></p>
-      </div>
-      <div style="padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--page-bg);border-radius:0 0 18px 18px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;font-size:13px;color:var(--text-muted)">
-          <input type="checkbox" id="terms-checkbox" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
-          He leído y acepto los términos y condiciones
+
+      <div id="terms-footer">
+        <label id="terms-check-label" for="terms-checkbox">
+          <input type="checkbox" id="terms-checkbox">
+          <span id="terms-check-text">He leído y acepto los términos y condiciones de Avaxon</span>
         </label>
-        <button id="terms-accept-btn" disabled style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;opacity:0.45;transition:opacity .15s" onmouseover="if(!this.disabled)this.style.opacity='0.88'" onmouseout="if(!this.disabled)this.style.opacity='1'">Aceptar y continuar</button>
+        <button id="terms-accept-btn" disabled>Aceptar y continuar</button>
       </div>
     </div>
   </div>
