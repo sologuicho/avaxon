@@ -3227,7 +3227,7 @@
       }
       if (!profileData?.onboarding_done_at) {
         await finishBootstrap(profileData);
-        showOnboardingModal(profileData?.full_name);
+        startTour();
         return;
       }
     }
