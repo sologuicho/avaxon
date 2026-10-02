@@ -4581,136 +4581,272 @@
   </div>
 
   <!-- Modal: Wizard de onboarding (primer ingreso post-términos) -->
-  <div id="modal-onboarding" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.3)">
-
-      <!-- Header -->
-      <div style="background:linear-gradient(135deg,#1a2535,#0d1117);padding:24px 28px 20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff">¡Hola, <span id="onboarding-welcome-name">bienvenido</span>! 👋</div>
-          <span style="font-size:12px;color:#8b97ab" id="wiz-step-label">Paso 1 de 3</span>
+  <style>
+    #modal-onboarding { font-family: 'Plus Jakarta Sans', sans-serif; }
+    #wiz-card {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      width: 100%; max-width: 520px;
+      max-height: 90vh;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(34,197,94,.1);
+      animation: avx-fade .25s ease;
+    }
+    #wiz-header {
+      padding: 26px 28px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      flex-shrink: 0;
+    }
+    #wiz-header-top {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+    }
+    #wiz-greeting { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #f1f5f9; }
+    #wiz-step-label { font-size: 11px; font-weight: 700; color: #475569; letter-spacing: .06em; text-transform: uppercase; }
+    #wiz-steps-row {
+      display: flex; gap: 0; margin-bottom: -1px;
+    }
+    .wiz-step-tab {
+      flex: 1; padding: 10px 0 12px; text-align: center;
+      font-size: 11px; font-weight: 700; color: #475569;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+      letter-spacing: .02em; text-transform: uppercase;
+      cursor: default;
+    }
+    .wiz-step-tab.active { color: #22c55e; border-bottom-color: #22c55e; }
+    .wiz-step-tab.done   { color: #16a34a; }
+    #wiz-body {
+      flex: 1; overflow-y: auto; padding: 24px 28px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.08) transparent;
+    }
+    #wiz-body::-webkit-scrollbar { width: 4px; }
+    #wiz-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 2px; }
+    .wiz-field-group { margin-bottom: 16px; }
+    .wiz-label {
+      display: block; font-size: 11px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 7px;
+    }
+    .wiz-input {
+      width: 100%; padding: 11px 14px;
+      background: rgba(255,255,255,.04);
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      font-size: 13.5px; color: #e2e8f0;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: border-color .15s, background .15s;
+    }
+    .wiz-input::placeholder { color: #334155; }
+    .wiz-input:focus { border-color: #22c55e; background: rgba(34,197,94,.04); }
+    .wiz-input-mono { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+    .wiz-select {
+      width: 100%; padding: 11px 14px;
+      background: rgba(255,255,255,.04);
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: 10px;
+      font-size: 13.5px; color: #e2e8f0;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer;
+      transition: border-color .15s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    .wiz-select option { background: #1e293b; color: #e2e8f0; }
+    .wiz-select:focus { border-color: #22c55e; }
+    .wiz-tone-grid { display: flex; gap: 8px; }
+    .wiz-tone-card {
+      flex: 1; padding: 11px 8px; text-align: center;
+      background: rgba(255,255,255,.03);
+      border: 1.5px solid rgba(255,255,255,.08);
+      border-radius: 10px; cursor: pointer;
+      transition: all .15s;
+    }
+    .wiz-tone-card:hover { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); }
+    .wiz-tone-card.selected { background: rgba(34,197,94,.1); border-color: #22c55e; }
+    .wiz-tone-card .wiz-tone-name { font-size: 12.5px; font-weight: 700; color: #cbd5e1; }
+    .wiz-tone-card.selected .wiz-tone-name { color: #22c55e; }
+    .wiz-tone-card .wiz-tone-sub { font-size: 10.5px; color: #475569; margin-top: 2px; }
+    .wiz-info-box {
+      margin-top: 14px; padding: 12px 14px;
+      background: rgba(34,197,94,.06);
+      border: 1px solid rgba(34,197,94,.14);
+      border-radius: 10px;
+      display: flex; gap: 10px; align-items: flex-start;
+      font-size: 12px; color: #64748b; line-height: 1.55;
+    }
+    .wiz-info-box i { color: #22c55e; flex-shrink: 0; margin-top: 1px; }
+    .wiz-toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px;
+      background: rgba(255,255,255,.03);
+      border: 1.5px solid rgba(255,255,255,.07);
+      border-radius: 10px; margin-top: 4px;
+    }
+    .wiz-toggle-label { font-size: 13px; font-weight: 600; color: #cbd5e1; }
+    .wiz-toggle-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+    #wiz-bot-toggle {
+      width: 40px; height: 22px; border-radius: 11px;
+      background: #22c55e; border: none; cursor: pointer;
+      position: relative; transition: background .2s; flex-shrink: 0;
+    }
+    #wiz-bot-toggle::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; top: 3px; left: 3px;
+      transition: transform .2s;
+    }
+    #wiz-bot-toggle.off { background: #334155; }
+    #wiz-bot-toggle.off::after { transform: translateX(0); }
+    #wiz-bot-toggle:not(.off)::after { transform: translateX(18px); }
+    #wiz-footer {
+      padding: 16px 28px 22px;
+      border-top: 1px solid rgba(255,255,255,.06);
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,.02);
+      flex-shrink: 0;
+    }
+    #wiz-skip-btn2 {
+      padding: 10px 16px;
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-radius: 10px;
+      font-size: 13px; font-weight: 600; color: #475569;
+      cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: all .15s;
+    }
+    #wiz-skip-btn2:hover { border-color: rgba(255,255,255,.2); color: #94a3b8; }
+    #wiz-back-btn2 {
+      padding: 10px 18px;
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,.1);
+      border-radius: 10px;
+      font-size: 13px; font-weight: 600; color: #64748b;
+      cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: all .15s; display: none;
+    }
+    #wiz-back-btn2:hover { border-color: rgba(255,255,255,.2); color: #94a3b8; }
+    #wiz-next-btn2 {
+      padding: 11px 24px;
+      background: #22c55e; color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      cursor: pointer; transition: background .15s, transform .1s;
+    }
+    #wiz-next-btn2:hover { background: #16a34a; transform: translateY(-1px); }
+    #wiz-next-btn2:active { transform: translateY(0); }
+  </style>
+  <div id="modal-onboarding" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(5,8,15,0.92);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+    <div id="wiz-card">
+      <div id="wiz-header">
+        <div id="wiz-header-top">
+          <div id="wiz-greeting">¡Hola, <span id="onboarding-welcome-name">bienvenido</span>!</div>
+          <span id="wiz-step-label">PASO 1 DE 3</span>
         </div>
-        <!-- Progress bar -->
-        <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
-          <div id="wiz-progress" style="height:100%;background:#25D366;border-radius:4px;transition:width .35s ease;width:33%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px">
-          <span id="wiz-s1-label" style="font-size:11px;font-weight:600;color:#25D366">Tu negocio</span>
-          <span id="wiz-s2-label" style="font-size:11px;font-weight:600;color:#4a5568">WhatsApp</span>
-          <span id="wiz-s3-label" style="font-size:11px;font-weight:600;color:#4a5568">Bot IA</span>
+        <div id="wiz-steps-row">
+          <div class="wiz-step-tab active" id="wiz-tab-1">Tu negocio</div>
+          <div class="wiz-step-tab" id="wiz-tab-2">WhatsApp</div>
+          <div class="wiz-step-tab" id="wiz-tab-3">Bot IA</div>
         </div>
       </div>
 
-      <!-- Steps container -->
-      <div style="padding:24px 28px 0">
-
-        <!-- STEP 1: Tu negocio -->
+      <div id="wiz-body">
+        <!-- STEP 1 -->
         <div id="wiz-step-1">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Cuéntanos sobre tu negocio para personalizar tu experiencia.</p>
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Nombre del negocio *</label>
-              <input id="wiz-biz-name" type="text" placeholder="Ej. Clínica Dental López" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Giro / Industria</label>
-              <select id="wiz-industry" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif">
-                <option value="">Selecciona tu giro…</option>
-                <option value="salud">Salud / Clínica / Médico</option>
-                <option value="inmobiliaria">Inmobiliaria / Bienes raíces</option>
-                <option value="educacion">Educación / Academia</option>
-                <option value="restaurante">Restaurante / Alimentos</option>
-                <option value="ecommerce">E-commerce / Retail</option>
-                <option value="servicios">Servicios profesionales</option>
-                <option value="automotriz">Automotriz</option>
-                <option value="suplementos">Suplementos / Nutrición</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Tono de voz del agente</label>
-              <div style="display:flex;gap:8px">
-                <label id="wiz-tone-formal-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
-                  <input type="radio" name="wiz-tone" value="formal" style="display:none" onchange="wizSelectTone('formal')">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Formal</div>
-                  <div style="font-size:11px;color:var(--text-muted)">Serio y profesional</div>
-                </label>
-                <label id="wiz-tone-amigable-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
-                  <input type="radio" name="wiz-tone" value="amigable" style="display:none" onchange="wizSelectTone('amigable')">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Amigable</div>
-                  <div style="font-size:11px;color:var(--text-muted)">Cercano y cálido</div>
-                </label>
-                <label id="wiz-tone-casual-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
-                  <input type="radio" name="wiz-tone" value="casual" style="display:none" onchange="wizSelectTone('casual')">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Casual</div>
-                  <div style="font-size:11px;color:var(--text-muted)">Relajado y directo</div>
-                </label>
+          <p style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.6">Cuéntanos sobre tu negocio para personalizar tu experiencia con el agente de IA.</p>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-biz-name">Nombre del negocio *</label>
+            <input class="wiz-input" id="wiz-biz-name" type="text" placeholder="Ej. Clínica Dental López" autocomplete="off">
+          </div>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-industry">Giro / Industria</label>
+            <select class="wiz-select" id="wiz-industry">
+              <option value="">Selecciona tu giro…</option>
+              <option value="salud">Salud / Clínica / Médico</option>
+              <option value="inmobiliaria">Inmobiliaria / Bienes raíces</option>
+              <option value="educacion">Educación / Academia</option>
+              <option value="restaurante">Restaurante / Alimentos</option>
+              <option value="ecommerce">E-commerce / Retail</option>
+              <option value="servicios">Servicios profesionales</option>
+              <option value="automotriz">Automotriz</option>
+              <option value="suplementos">Suplementos / Nutrición</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="wiz-field-group" style="margin-bottom:0">
+            <label class="wiz-label">Tono de voz del agente</label>
+            <div class="wiz-tone-grid">
+              <div class="wiz-tone-card selected" id="wiz-tone-formal" data-tone="formal">
+                <div class="wiz-tone-name">Formal</div>
+                <div class="wiz-tone-sub">Serio y profesional</div>
+              </div>
+              <div class="wiz-tone-card" id="wiz-tone-amigable" data-tone="amigable">
+                <div class="wiz-tone-name">Amigable</div>
+                <div class="wiz-tone-sub">Cercano y cálido</div>
+              </div>
+              <div class="wiz-tone-card" id="wiz-tone-casual" data-tone="casual">
+                <div class="wiz-tone-name">Casual</div>
+                <div class="wiz-tone-sub">Relajado y directo</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 2: WhatsApp -->
+        <!-- STEP 2 -->
         <div id="wiz-step-2" style="display:none">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Conecta tu número de WhatsApp Business. Encuentra estos datos en <strong style="color:var(--text)">Meta Business Suite → WhatsApp → API Setup</strong>.</p>
-          <div style="display:flex;flex-direction:column;gap:14px">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Número de teléfono</label>
-              <input id="wiz-wa-phone" type="tel" placeholder="+52 1 899 170 9336" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Phone Number ID</label>
-              <input id="wiz-wa-phone-id" type="text" placeholder="1348271025028457" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">WABA ID</label>
-              <input id="wiz-wa-waba-id" type="text" placeholder="3512648718898077" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Access Token</label>
-              <input id="wiz-wa-token" type="password" placeholder="EAAd…" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-            </div>
+          <p style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.6">Conecta tu número de WhatsApp Business. Encuentra estos datos en <strong style="color:#94a3b8">Meta Business Suite → WhatsApp → API Setup</strong>.</p>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-wa-phone">Número de teléfono</label>
+            <input class="wiz-input" id="wiz-wa-phone" type="tel" placeholder="+52 1 899 170 9336">
           </div>
-          <div style="margin-top:14px;padding:12px 14px;background:var(--accent-100);border-radius:10px;display:flex;align-items:flex-start;gap:9px">
-            <i class="fa fa-circle-info" style="color:var(--accent);margin-top:1px;flex-shrink:0"></i>
-            <span style="font-size:12px;color:var(--text-2);line-height:1.5">¿No tienes estos datos aún? Puedes omitir este paso y configurarlo más tarde desde <strong>Conexiones</strong>.</span>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-wa-phone-id">Phone Number ID</label>
+            <input class="wiz-input wiz-input-mono" id="wiz-wa-phone-id" type="text" placeholder="1348271025028457">
+          </div>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-wa-waba-id">WABA ID</label>
+            <input class="wiz-input wiz-input-mono" id="wiz-wa-waba-id" type="text" placeholder="3512648718898077">
+          </div>
+          <div class="wiz-field-group" style="margin-bottom:0">
+            <label class="wiz-label" for="wiz-wa-token">Access Token</label>
+            <input class="wiz-input wiz-input-mono" id="wiz-wa-token" type="password" placeholder="EAAd…">
+          </div>
+          <div class="wiz-info-box">
+            <i class="fa fa-circle-info"></i>
+            <span>¿No tienes estos datos aún? Puedes omitir este paso y configurarlo más tarde desde <strong style="color:#94a3b8">Conexiones</strong>.</span>
           </div>
         </div>
 
-        <!-- STEP 3: Bot IA -->
+        <!-- STEP 3 -->
         <div id="wiz-step-3" style="display:none">
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Define cómo se va a presentar y comportar tu agente de IA con los clientes.</p>
-          <div style="display:flex;flex-direction:column;gap:14px">
+          <p style="font-size:13px;color:#475569;margin-bottom:20px;line-height:1.6">Define cómo se va a presentar y comportar tu agente de IA con los clientes.</p>
+          <div class="wiz-field-group">
+            <label class="wiz-label" for="wiz-bot-prompt">Instrucciones del agente</label>
+            <textarea class="wiz-input" id="wiz-bot-prompt" rows="6" placeholder="Ej: Eres el asistente virtual de Clínica Dental López. Responde de forma amigable en español. Ofrece información sobre limpiezas ($650), ortodoncia y blanqueamiento. Cuando el cliente quiera agendar, pídele su nombre y pregunta qué día le viene bien." style="resize:vertical;line-height:1.6"></textarea>
+            <div style="font-size:11px;color:#334155;margin-top:6px">Incluye: nombre del negocio, servicios y precios, tono, y qué hacer cuando quieren agendar.</div>
+          </div>
+          <div class="wiz-toggle-row">
             <div>
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Instrucciones del agente</label>
-              <textarea id="wiz-bot-prompt" rows="6" placeholder="Ej: Eres el asistente virtual de Clínica Dental López. Responde de forma amigable y profesional en español. Ofrece información sobre limpiezas ($650), ortodoncia y blanqueamiento. Cuando el cliente quiera agendar, pídele su nombre y pregunta qué día le viene bien." style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;color:var(--text);outline:none;resize:vertical;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.6" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Incluye: nombre del negocio, servicios y precios, tono, y qué hacer cuando quieren agendar.</div>
+              <div class="wiz-toggle-label">Activar bot al terminar</div>
+              <div class="wiz-toggle-sub">Empieza a responder mensajes automáticamente</div>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:10px">
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text)">Activar bot al terminar</div>
-                <div style="font-size:11px;color:var(--text-muted)">Empieza a responder mensajes automáticamente</div>
-              </div>
-              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
-                <input type="checkbox" id="wiz-bot-enabled" checked style="opacity:0;width:0;height:0">
-                <span onclick="this.previousElementSibling.checked=!this.previousElementSibling.checked;this.style.background=this.previousElementSibling.checked?'var(--accent)':'#cbd5e1'" style="position:absolute;inset:0;background:var(--accent);border-radius:11px;transition:background .2s">
-                  <span style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;transform:translateX(0)" id="wiz-toggle-knob"></span>
-                </span>
-              </label>
-            </div>
+            <button id="wiz-bot-toggle" type="button" title="Activar/desactivar bot"></button>
           </div>
         </div>
-
       </div>
 
-      <!-- Footer con botones -->
-      <div style="padding:20px 28px 24px;display:flex;align-items:center;gap:10px;margin-top:20px">
-        <button id="wiz-skip-btn" onclick="wizSkip()" style="padding:10px 16px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--border-hover)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Omitir paso</button>
+      <div id="wiz-footer">
+        <button id="wiz-skip-btn2" type="button">Omitir paso</button>
         <div style="flex:1"></div>
-        <button id="wiz-back-btn" onclick="wizBack()" style="display:none;padding:10px 18px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">← Atrás</button>
-        <button id="wiz-next-btn" onclick="wizNext()" style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Siguiente →</button>
+        <button id="wiz-back-btn2" type="button">← Atrás</button>
+        <button id="wiz-next-btn2" type="button">Siguiente →</button>
       </div>
-
     </div>
   </div>
 
