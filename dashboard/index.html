@@ -4310,6 +4310,19 @@
     updateGcalUI();
   });
 
+  // Expose to global scope for inline onclick handlers
+  window.switchView          = switchView;
+  window.wizNext             = wizNext;
+  window.wizBack             = wizBack;
+  window.wizSkip             = wizSkip;
+  window.gcalConnect         = gcalConnect;
+  window.navigateToGcalConexion = navigateToGcalConexion;
+  window.openIntegModal      = openIntegModal;
+  window.closeIntegModal     = closeIntegModal;
+  window.saveIntegModal      = saveIntegModal;
+  window.disconnectIntegModal = disconnectIntegModal;
+  window.loadDashboard       = loadDashboard;
+
 })();
 </script>
   <!-- Modal: Integrations (Sheets / Stripe / Zapier) -->
