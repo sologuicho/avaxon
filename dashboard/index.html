@@ -3311,7 +3311,7 @@
     loadConversaciones();
     loadIntegrations();
     if (!p?.onboarding_done_at) {
-      showOnboardingModal(p?.full_name);
+      startTour();
     }
   }
 
