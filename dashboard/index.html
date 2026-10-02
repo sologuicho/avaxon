@@ -3255,17 +3255,40 @@
   }
 
   function showTermsModal() {
-    showScreen('app'); // render app en background
-    $('modal-terms').style.display = 'flex';
-    const cb  = $('terms-checkbox');
-    const btn = $('terms-accept-btn');
-    cb.checked = false;
+    showScreen('app');
+    const modal = $('modal-terms');
+    const cb    = $('terms-checkbox');
+    const btn   = $('terms-accept-btn');
+    const body  = $('terms-scroll-body');
+    const bar   = $('terms-progress-bar');
+    const hint  = $('terms-scroll-hint');
+    const lbl   = $('terms-check-label');
+
+    cb.checked   = false;
     btn.disabled = true;
-    btn.style.opacity = '0.45';
+    lbl.classList.remove('checked');
+    modal.style.display = 'flex';
+
+    // Scroll progress bar
+    const onScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = body;
+      const pct = scrollHeight <= clientHeight ? 100 : Math.round((scrollTop / (scrollHeight - clientHeight)) * 100);
+      bar.style.width = pct + '%';
+      if (pct >= 95) hint.classList.add('hidden');
+    };
+    body.removeEventListener('scroll', body._termsCb);
+    body._termsCb = onScroll;
+    body.addEventListener('scroll', onScroll);
+    body.scrollTop = 0;
+    bar.style.width = '0%';
+    hint.classList.remove('hidden');
+
+    // Checkbox
     cb.onchange = () => {
       btn.disabled = !cb.checked;
-      btn.style.opacity = cb.checked ? '1' : '0.45';
+      lbl.classList.toggle('checked', cb.checked);
     };
+
     btn.onclick = () => acceptTerms();
   }
 
