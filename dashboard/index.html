@@ -3257,6 +3257,16 @@
   function showTermsModal() {
     showScreen('app'); // render app en background
     $('modal-terms').style.display = 'flex';
+    const cb  = $('terms-checkbox');
+    const btn = $('terms-accept-btn');
+    cb.checked = false;
+    btn.disabled = true;
+    btn.style.opacity = '0.45';
+    cb.onchange = () => {
+      btn.disabled = !cb.checked;
+      btn.style.opacity = cb.checked ? '1' : '0.45';
+    };
+    btn.onclick = () => acceptTerms();
   }
 
   async function acceptTerms() {
