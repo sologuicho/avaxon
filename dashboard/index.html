@@ -3257,39 +3257,43 @@
   function showTermsModal() {
     showScreen('app');
     const modal = $('modal-terms');
-    const cb    = $('terms-checkbox');
-    const btn   = $('terms-accept-btn');
-    const body  = $('terms-scroll-body');
-    const bar   = $('terms-progress-bar');
-    const hint  = $('terms-scroll-hint');
-    const lbl   = $('terms-check-label');
-
-    cb.checked   = false;
-    btn.disabled = true;
-    lbl.classList.remove('checked');
+    if (!modal) return;
     modal.style.display = 'flex';
 
-    // Scroll progress bar
-    const onScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = body;
-      const pct = scrollHeight <= clientHeight ? 100 : Math.round((scrollTop / (scrollHeight - clientHeight)) * 100);
-      bar.style.width = pct + '%';
-      if (pct >= 95) hint.classList.add('hidden');
-    };
-    body.removeEventListener('scroll', body._termsCb);
-    body._termsCb = onScroll;
-    body.addEventListener('scroll', onScroll);
-    body.scrollTop = 0;
-    bar.style.width = '0%';
-    hint.classList.remove('hidden');
+    const cb   = $('terms-checkbox');
+    const btn  = $('terms-accept-btn');
+    const body = $('terms-scroll-body');
+    const bar  = $('terms-progress-bar');
+    const hint = $('terms-scroll-hint');
+    const lbl  = $('terms-check-label');
 
-    // Checkbox
-    cb.onchange = () => {
-      btn.disabled = !cb.checked;
-      lbl.classList.toggle('checked', cb.checked);
-    };
+    if (cb)  { cb.checked = false; }
+    if (btn) { btn.disabled = true; }
+    if (lbl) { lbl.classList.remove('checked'); }
 
-    btn.onclick = () => acceptTerms();
+    if (body && bar && hint) {
+      const onScroll = () => {
+        const { scrollTop, scrollHeight, clientHeight } = body;
+        const pct = scrollHeight <= clientHeight ? 100 : Math.round((scrollTop / (scrollHeight - clientHeight)) * 100);
+        bar.style.width = pct + '%';
+        if (pct >= 95) hint.classList.add('hidden');
+      };
+      if (body._termsCb) body.removeEventListener('scroll', body._termsCb);
+      body._termsCb = onScroll;
+      body.addEventListener('scroll', onScroll);
+      body.scrollTop = 0;
+      bar.style.width = '0%';
+      hint.classList.remove('hidden');
+    }
+
+    if (cb && btn && lbl) {
+      cb.onchange = () => {
+        btn.disabled = !cb.checked;
+        lbl.classList.toggle('checked', cb.checked);
+      };
+    }
+
+    if (btn) btn.onclick = () => acceptTerms();
   }
 
   async function acceptTerms() {
