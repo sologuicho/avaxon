@@ -3204,7 +3204,7 @@
 
     const { data: profileData } = await sb
       .from('profiles')
-      .select('role, organization_id, full_name')
+      .select('role, organization_id, full_name, terms_accepted_at, onboarding_done_at')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -3214,12 +3214,28 @@
     state.userOrgId    = profileData?.organization_id ?? null;
 
     if (role === 'agent') {
-      // Agentes solo ven ventas y calendario
       ['nav-conexiones','nav-bot','nav-cuenta','nav-section-cuenta'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
       });
     }
 
+    // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
+    if (!state.isSuperAdmin) {
+      if (!profileData?.terms_accepted_at) {
+        showTermsModal();
+        return; // bootstrap continúa desde acceptTerms()
+      }
+      if (!profileData?.onboarding_done_at) {
+        await finishBootstrap(profileData);
+        showOnboardingModal(profileData?.full_name);
+        return;
+      }
+    }
+
+    await finishBootstrap(profileData);
+  }
+
+  async function finishBootstrap(profileData) {
     if (state.isSuperAdmin) {
       $('org-switcher-wrap').style.display = 'block';
       $('nav-admin-link').style.display = 'flex';
@@ -3233,10 +3249,45 @@
       state.currentOrgId = orgId;
       await loadDashboard(orgId);
     }
-
     showScreen('app');
     loadConversaciones();
     loadIntegrations();
+  }
+
+  function showTermsModal() {
+    showScreen('app'); // render app en background
+    $('modal-terms').style.display = 'flex';
+  }
+
+  async function acceptTerms() {
+    const btn = $('terms-accept-btn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando…';
+    await sb.from('profiles').update({ terms_accepted_at: new Date().toISOString() }).eq('id', state.userId);
+    $('modal-terms').style.display = 'none';
+
+    // Recheck onboarding
+    const { data: p } = await sb.from('profiles').select('full_name, onboarding_done_at, organization_id').eq('id', state.userId).maybeSingle();
+    state.userOrgId = p?.organization_id ?? state.userOrgId;
+    state.currentOrgId = state.userOrgId;
+    await loadDashboard(state.currentOrgId);
+    loadConversaciones();
+    loadIntegrations();
+    if (!p?.onboarding_done_at) {
+      showOnboardingModal(p?.full_name);
+    }
+  }
+
+  function showOnboardingModal(fullName) {
+    const name = fullName?.split(' ')[0] || 'bienvenido';
+    $('onboarding-welcome-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    $('modal-onboarding').style.display = 'flex';
+  }
+
+  async function completeOnboarding() {
+    await sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
+    $('modal-onboarding').style.display = 'none';
+    showToast('¡Todo listo! Ya puedes usar tu panel.');
   }
 
   /* ── Pipeline ── */
