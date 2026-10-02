@@ -57,11 +57,21 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'org_name, admin_name y admin_email son requeridos' }, 422)
   }
 
+  // Generar slug único a partir del nombre
+  const baseSlug = org_name.trim()
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // quitar acentos
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48)
+  const slug = `${baseSlug}-${Date.now().toString(36)}`
+
   // 1. Crear organización
   const { data: org, error: orgErr } = await adminClient
     .from('organizations')
     .insert({
       name: org_name.trim(),
+      slug,
       industry: industry?.trim() || null,
       plan_id: plan_id || 'starter',
       status: 'active',
