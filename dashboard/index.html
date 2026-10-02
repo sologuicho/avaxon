@@ -3315,172 +3315,66 @@
     }
   }
 
-  // ── Wizard de onboarding ─────────────────────────────────────────────────
-  const wizState = { step: 1, tone: 'amigable' };
+  // ── Onboarding tour ──────────────────────────────────────────────────────
+  const TOUR_STEPS = [
+    { target: 'view-conversaciones', nav: 'conversaciones', title: 'Tu inbox', body: 'Aquí llegan todos los mensajes de WhatsApp de tus clientes en tiempo real.' },
+    { target: 'view-leads',          nav: 'leads',          title: 'Contactos',  body: 'Gestiona tu base de contactos, etiquétalos y filtra por estado.' },
+    { target: 'view-bot',            nav: 'bot',            title: 'Agente IA',  body: 'Configura el comportamiento y el prompt de tu agente de inteligencia artificial.' },
+    { target: 'view-conexiones',     nav: 'conexiones',     title: 'Conexiones', body: 'Conecta Google Calendar, Sheets, Stripe y más integraciones desde aquí.' },
+  ];
+  let tourStep = 0;
 
-  function showOnboardingModal(fullName) {
-    const name = (fullName?.split(' ')[0] || 'bienvenido');
-    $('onboarding-welcome-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
-    wizState.botEnabled = true;
-    const toggleBtn = $('wiz-bot-toggle');
-    if (toggleBtn) toggleBtn.classList.remove('off');
-    // Wire up tone cards
-    document.querySelectorAll('.wiz-tone-card').forEach(card => {
-      card.onclick = () => {
-        document.querySelectorAll('.wiz-tone-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        wizState.tone = card.dataset.tone;
-      };
+  function startTour() {
+    tourStep = 0;
+    showTourStep();
+  }
+
+  function showTourStep() {
+    removeTourOverlay();
+    if (tourStep >= TOUR_STEPS.length) { endTour(); return; }
+    const step = TOUR_STEPS[tourStep];
+
+    // Switch to the relevant view so the user sees context
+    switchView(step.nav);
+
+    // Create tooltip
+    const tip = document.createElement('div');
+    tip.id = 'tour-tip';
+    tip.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:10px;font-weight:700;color:#22c55e;letter-spacing:.08em;text-transform:uppercase">TOUR · ${tourStep + 1} / ${TOUR_STEPS.length}</span>
+        <button id="tour-close" style="background:none;border:none;color:#475569;font-size:18px;cursor:pointer;line-height:1;padding:0 2px">×</button>
+      </div>
+      <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:5px">${step.title}</div>
+      <div style="font-size:12.5px;color:#64748b;line-height:1.6;margin-bottom:14px">${step.body}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button id="tour-skip" style="padding:7px 14px;background:transparent;border:1.5px solid rgba(255,255,255,.1);border-radius:8px;font-size:12px;font-weight:600;color:#475569;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Saltar tour</button>
+        <button id="tour-next" style="padding:7px 16px;background:#22c55e;border:none;border-radius:8px;font-size:12px;font-weight:700;color:#fff;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">${tourStep === TOUR_STEPS.length - 1 ? '¡Listo! ✓' : 'Siguiente →'}</button>
+      </div>`;
+    Object.assign(tip.style, {
+      position: 'fixed', bottom: '28px', right: '28px', zIndex: '8000',
+      background: '#0f172a', border: '1px solid rgba(255,255,255,.1)',
+      borderRadius: '14px', padding: '18px 20px', width: '300px',
+      boxShadow: '0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(34,197,94,.1)',
+      animation: 'avx-fade .2s ease', fontFamily: "'Plus Jakarta Sans',sans-serif",
     });
-    // Wire up toggle
-    if (toggleBtn) {
-      toggleBtn.onclick = () => {
-        wizState.botEnabled = !wizState.botEnabled;
-        toggleBtn.classList.toggle('off', !wizState.botEnabled);
-      };
+    document.body.appendChild(tip);
+    document.getElementById('tour-next').onclick  = () => { tourStep++; showTourStep(); };
+    document.getElementById('tour-skip').onclick  = () => endTour();
+    document.getElementById('tour-close').onclick = () => endTour();
+  }
+
+  function removeTourOverlay() {
+    const el = document.getElementById('tour-tip');
+    if (el) el.remove();
+  }
+
+  async function endTour() {
+    removeTourOverlay();
+    if (state.userId) {
+      await sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
     }
-    // Wire up footer buttons
-    const nextBtn = $('wiz-next-btn2');
-    const backBtn = $('wiz-back-btn2');
-    const skipBtn = $('wiz-skip-btn2');
-    if (nextBtn) nextBtn.onclick = () => wizNext();
-    if (backBtn) backBtn.onclick = () => wizBack();
-    if (skipBtn) skipBtn.onclick = () => wizSkip();
-    wizGoTo(1);
-    $('modal-onboarding').style.display = 'flex';
-  }
-
-  function wizGoTo(step) {
-    wizState.step = step;
-    [1, 2, 3].forEach(s => {
-      const el = $('wiz-step-' + s);
-      if (el) el.style.display = s === step ? 'block' : 'none';
-    });
-    const stepLbl = $('wiz-step-label');
-    if (stepLbl) stepLbl.textContent = `PASO ${step} DE 3`;
-    // Update tab styles
-    [1, 2, 3].forEach(s => {
-      const tab = $('wiz-tab-' + s);
-      if (!tab) return;
-      tab.classList.remove('active', 'done');
-      if (s === step) tab.classList.add('active');
-      else if (s < step) tab.classList.add('done');
-    });
-    // Back/next buttons
-    const backBtn = $('wiz-back-btn2');
-    const nextBtn = $('wiz-next-btn2');
-    if (backBtn) backBtn.style.display = step > 1 ? 'inline-block' : 'none';
-    if (nextBtn) nextBtn.textContent = step === 3 ? 'Finalizar ✓' : 'Siguiente →';
-  }
-
-  function wizSelectTone(tone) {
-    wizState.tone = tone;
-    ['formal','amigable','casual'].forEach(t => {
-      const lbl = $(`wiz-tone-${t}-lbl`);
-      lbl.style.borderColor = t === tone ? 'var(--accent)' : 'var(--border)';
-      lbl.style.background  = t === tone ? 'var(--accent-100)' : 'transparent';
-    });
-  }
-
-  function wizBack() { if (wizState.step > 1) wizGoTo(wizState.step - 1); }
-
-  async function wizSkip() {
-    if (wizState.step < 3) { wizGoTo(wizState.step + 1); return; }
-    await completeOnboarding();
-  }
-
-  async function wizNext() {
-    if (wizState.step === 1) {
-      await wizSaveStep1();
-      wizGoTo(2);
-    } else if (wizState.step === 2) {
-      await wizSaveStep2();
-      wizPrefillBotPrompt();
-      wizGoTo(3);
-    } else {
-      await wizSaveStep3();
-      await completeOnboarding();
-    }
-  }
-
-  async function wizSaveStep1() {
-    const name     = $('wiz-biz-name').value.trim();
-    const industry = $('wiz-industry').value;
-    if (!name && !industry) return;
-    const updates = {};
-    if (name)     updates.name     = name;
-    if (industry) updates.industry = industry;
-    if (Object.keys(updates).length && state.currentOrgId) {
-      await sb.from('organizations').update(updates).eq('id', state.currentOrgId);
-    }
-  }
-
-  async function wizSaveStep2() {
-    const phone   = $('wiz-wa-phone').value.trim();
-    const phoneId = $('wiz-wa-phone-id').value.trim();
-    const wabaId  = $('wiz-wa-waba-id').value.trim();
-    const token   = $('wiz-wa-token').value.trim();
-    if (!phoneId || !wabaId || !token) return; // skip if incomplete
-    const orgId = state.currentOrgId;
-    // 1. Create whatsapp_account
-    const { data: wa } = await sb.from('whatsapp_accounts').insert({
-      organization_id: orgId,
-      waba_id: wabaId,
-      business_name: $('wiz-biz-name').value.trim() || null,
-      status: 'active',
-      access_token: token,
-    }).select('id').single();
-    if (!wa) return;
-    // 2. Create phone_number
-    await sb.from('phone_numbers').insert({
-      organization_id: orgId,
-      whatsapp_account_id: wa.id,
-      phone_number_id: phoneId,
-      display_phone_number: phone || phoneId,
-      status: 'connected',
-      webhook_verified: false,
-    });
-  }
-
-  function wizPrefillBotPrompt() {
-    const name     = $('wiz-biz-name').value.trim() || 'tu negocio';
-    const industry = $('wiz-industry').options[$('wiz-industry').selectedIndex]?.text || '';
-    const tone     = wizState.tone;
-    const toneDesc = tone === 'formal' ? 'de forma formal y profesional' : tone === 'amigable' ? 'de forma amigable y cálida' : 'de forma casual y directa';
-    const existing = $('wiz-bot-prompt').value.trim();
-    if (!existing) {
-      $('wiz-bot-prompt').value =
-        `Eres el asistente virtual de ${name}${industry ? ` (${industry})` : ''}. Responde siempre en español, ${toneDesc}.\n\n` +
-        `Cuando el cliente pregunte por servicios o precios, proporciona información clara. ` +
-        `Cuando quiera agendar una cita o hablar con alguien del equipo, pídele su nombre y pregunta qué día le queda bien.\n\n` +
-        `Responde ÚNICAMENTE en formato JSON:\n{"text": "tu respuesta", "buttons": [], "notify_owner": false}`;
-    }
-  }
-
-  async function wizSaveStep3() {
-    const prompt  = $('wiz-bot-prompt').value.trim();
-    const enabled = wizState.botEnabled !== false;
-    const orgId   = state.currentOrgId;
-    if (!prompt || !orgId) return;
-    // upsert bot_config
-    const { data: existing } = await sb.from('bot_configs').select('id').eq('organization_id', orgId).maybeSingle();
-    if (existing) {
-      await sb.from('bot_configs').update({ system_prompt: prompt, enabled }).eq('id', existing.id);
-    } else {
-      await sb.from('bot_configs').insert({
-        organization_id: orgId,
-        name: 'Principal',
-        system_prompt: prompt,
-        ai_level: 5,
-        enabled,
-      });
-    }
-  }
-
-  async function completeOnboarding() {
-    await sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
-    $('modal-onboarding').style.display = 'none';
-    showToast('¡Todo listo! Ya puedes usar tu panel.');
+    switchView('conversaciones');
   }
 
   /* ── Pipeline ── */
