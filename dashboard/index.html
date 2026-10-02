@@ -4245,7 +4245,7 @@
       </div>
       <div style="padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--page-bg);border-radius:0 0 18px 18px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;font-size:13px;color:var(--text-muted)">
-          <input type="checkbox" id="terms-checkbox" onchange="$('terms-accept-btn').disabled = !this.checked" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          <input type="checkbox" id="terms-checkbox" onchange="const b=$('terms-accept-btn');b.disabled=!this.checked;b.style.opacity=this.checked?'1':'0.45'" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
           He leído y acepto los términos y condiciones
         </label>
         <button id="terms-accept-btn" onclick="acceptTerms()" disabled style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;opacity:0.45;transition:opacity .15s" onmouseover="if(!this.disabled)this.style.opacity='0.88'" onmouseout="if(!this.disabled)this.style.opacity='1'">Aceptar y continuar</button>
