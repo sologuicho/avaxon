@@ -4222,5 +4222,74 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal: Términos y condiciones (primer ingreso) -->
+  <div id="modal-terms" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.25)">
+      <div style="padding:24px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <div style="width:38px;height:38px;background:var(--accent-100);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:16px;flex-shrink:0"><i class="fa fa-file-contract"></i></div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)">Términos y condiciones</div>
+          <div style="font-size:12px;color:var(--text-muted)">Léelos antes de usar tu panel</div>
+        </div>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:24px 28px;font-size:13.5px;line-height:1.7;color:var(--text-2)">
+        <p style="margin-bottom:14px">Bienvenido a <strong>Avaxon</strong>. Al acceder a este panel aceptas los siguientes términos:</p>
+        <p style="margin-bottom:10px"><strong>1. Uso del servicio.</strong> El acceso a este panel está restringido a usuarios autorizados. No está permitido compartir credenciales ni acceder en nombre de terceros sin autorización.</p>
+        <p style="margin-bottom:10px"><strong>2. Datos y privacidad.</strong> La información de tus clientes y conversaciones se almacena de forma segura en nuestra infraestructura. Avaxon no comparte datos con terceros sin tu consentimiento.</p>
+        <p style="margin-bottom:10px"><strong>3. Uso de WhatsApp Business API.</strong> El uso del agente de IA en WhatsApp está sujeto a las políticas de Meta. Eres responsable del contenido enviado a través de tu número.</p>
+        <p style="margin-bottom:10px"><strong>4. Pagos y suscripción.</strong> El servicio se factura mensual o anualmente según el plan contratado. La cancelación no genera reembolso del período en curso.</p>
+        <p style="margin-bottom:10px"><strong>5. Propiedad intelectual.</strong> El software, diseño y marca Avaxon son propiedad exclusiva de Avaxon. No se permite su reproducción parcial o total sin autorización escrita.</p>
+        <p style="margin-bottom:0"><strong>6. Modificaciones.</strong> Avaxon se reserva el derecho de actualizar estos términos. Se notificará por correo con al menos 15 días de anticipación ante cambios relevantes.</p>
+        <p style="margin-top:14px;color:var(--text-muted);font-size:12px">Para más detalles visita <a href="https://avaxon.lat/terms.html" target="_blank" style="color:var(--accent)">avaxon.lat/terms.html</a></p>
+      </div>
+      <div style="padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--page-bg);border-radius:0 0 18px 18px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;font-size:13px;color:var(--text-muted)">
+          <input type="checkbox" id="terms-checkbox" onchange="$('terms-accept-btn').disabled = !this.checked" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+          He leído y acepto los términos y condiciones
+        </label>
+        <button id="terms-accept-btn" onclick="acceptTerms()" disabled style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;opacity:0.45;transition:opacity .15s" onmouseover="if(!this.disabled)this.style.opacity='0.88'" onmouseout="if(!this.disabled)this.style.opacity='1'">Aceptar y continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Bienvenida / Onboarding (primer ingreso post-términos) -->
+  <div id="modal-onboarding" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.25)">
+      <div style="background:linear-gradient(135deg,#1a2535,#0d1117);padding:32px 28px 28px;text-align:center">
+        <div style="width:56px;height:56px;background:rgba(37,211,102,0.15);border:1.5px solid rgba(37,211,102,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">👋</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:6px">¡Hola, <span id="onboarding-welcome-name">bienvenido</span>!</div>
+        <div style="font-size:14px;color:#8b97ab">Tu panel de Avaxon ya está listo. Estos son tus primeros pasos:</div>
+      </div>
+      <div style="padding:24px 28px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
+          <div style="width:32px;height:32px;background:#25D36620;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#25D366;font-size:14px"><i class="fa fa-1"></i></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Conecta tu WhatsApp</div>
+            <div style="font-size:12px;color:var(--text-muted)">Ve a <strong>Conexiones</strong> y agrega tu número de WhatsApp Business para activar el agente.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
+          <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6366f1;font-size:14px"><i class="fa fa-2"></i></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Configura el bot</div>
+            <div style="font-size:12px;color:var(--text-muted)">En <strong>Bot IA</strong> escribe el prompt de tu negocio: nombre, servicios, tono de voz y qué hacer con los leads.</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
+          <div style="width:32px;height:32px;background:rgba(245,158,11,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#f59e0b;font-size:14px"><i class="fa fa-3"></i></div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Envía un mensaje de prueba</div>
+            <div style="font-size:12px;color:var(--text-muted)">Manda un WhatsApp a tu número y verifica que el agente responde. Las conversaciones aparecen aquí en tiempo real.</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:0 28px 24px;display:flex;gap:10px">
+        <a href="https://avaxon.lat/dashboard/" target="_blank" style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-muted);text-align:center;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">Ver guía completa</a>
+        <button onclick="completeOnboarding()" style="flex:2;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Entendido, ir a mi panel →</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
