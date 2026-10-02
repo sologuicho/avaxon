@@ -3459,7 +3459,7 @@
 
   async function wizSaveStep3() {
     const prompt  = $('wiz-bot-prompt').value.trim();
-    const enabled = $('wiz-bot-enabled').checked;
+    const enabled = wizState.botEnabled !== false;
     const orgId   = state.currentOrgId;
     if (!prompt || !orgId) return;
     // upsert bot_config
