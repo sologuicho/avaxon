@@ -4253,41 +4253,137 @@
     </div>
   </div>
 
-  <!-- Modal: Bienvenida / Onboarding (primer ingreso post-términos) -->
-  <div id="modal-onboarding" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.25)">
-      <div style="background:linear-gradient(135deg,#1a2535,#0d1117);padding:32px 28px 28px;text-align:center">
-        <div style="width:56px;height:56px;background:rgba(37,211,102,0.15);border:1.5px solid rgba(37,211,102,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">👋</div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#fff;margin-bottom:6px">¡Hola, <span id="onboarding-welcome-name">bienvenido</span>!</div>
-        <div style="font-size:14px;color:#8b97ab">Tu panel de Avaxon ya está listo. Estos son tus primeros pasos:</div>
-      </div>
-      <div style="padding:24px 28px;display:flex;flex-direction:column;gap:12px">
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
-          <div style="width:32px;height:32px;background:#25D36620;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#25D366;font-size:14px"><i class="fa fa-1"></i></div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Conecta tu WhatsApp</div>
-            <div style="font-size:12px;color:var(--text-muted)">Ve a <strong>Conexiones</strong> y agrega tu número de WhatsApp Business para activar el agente.</div>
-          </div>
+  <!-- Modal: Wizard de onboarding (primer ingreso post-términos) -->
+  <div id="modal-onboarding" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(10,14,23,0.88);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.3)">
+
+      <!-- Header -->
+      <div style="background:linear-gradient(135deg,#1a2535,#0d1117);padding:24px 28px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff">¡Hola, <span id="onboarding-welcome-name">bienvenido</span>! 👋</div>
+          <span style="font-size:12px;color:#8b97ab" id="wiz-step-label">Paso 1 de 3</span>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
-          <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6366f1;font-size:14px"><i class="fa fa-2"></i></div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Configura el bot</div>
-            <div style="font-size:12px;color:var(--text-muted)">En <strong>Bot IA</strong> escribe el prompt de tu negocio: nombre, servicios, tono de voz y qué hacer con los leads.</div>
-          </div>
+        <!-- Progress bar -->
+        <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+          <div id="wiz-progress" style="height:100%;background:#25D366;border-radius:4px;transition:width .35s ease;width:33%"></div>
         </div>
-        <div style="display:flex;align-items:flex-start;gap:14px;padding:14px;background:var(--page-bg);border-radius:12px;border:1px solid var(--border)">
-          <div style="width:32px;height:32px;background:rgba(245,158,11,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#f59e0b;font-size:14px"><i class="fa fa-3"></i></div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">Envía un mensaje de prueba</div>
-            <div style="font-size:12px;color:var(--text-muted)">Manda un WhatsApp a tu número y verifica que el agente responde. Las conversaciones aparecen aquí en tiempo real.</div>
-          </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <span id="wiz-s1-label" style="font-size:11px;font-weight:600;color:#25D366">Tu negocio</span>
+          <span id="wiz-s2-label" style="font-size:11px;font-weight:600;color:#4a5568">WhatsApp</span>
+          <span id="wiz-s3-label" style="font-size:11px;font-weight:600;color:#4a5568">Bot IA</span>
         </div>
       </div>
-      <div style="padding:0 28px 24px;display:flex;gap:10px">
-        <a href="https://avaxon.lat/dashboard/" target="_blank" style="flex:1;padding:11px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-muted);text-align:center;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--border-hover)'" onmouseout="this.style.borderColor='var(--border)'">Ver guía completa</a>
-        <button onclick="completeOnboarding()" style="flex:2;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Entendido, ir a mi panel →</button>
+
+      <!-- Steps container -->
+      <div style="padding:24px 28px 0">
+
+        <!-- STEP 1: Tu negocio -->
+        <div id="wiz-step-1">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Cuéntanos sobre tu negocio para personalizar tu experiencia.</p>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Nombre del negocio *</label>
+              <input id="wiz-biz-name" type="text" placeholder="Ej. Clínica Dental López" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;transition:border-color .15s;font-family:'Plus Jakarta Sans',sans-serif" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Giro / Industria</label>
+              <select id="wiz-industry" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif">
+                <option value="">Selecciona tu giro…</option>
+                <option value="salud">Salud / Clínica / Médico</option>
+                <option value="inmobiliaria">Inmobiliaria / Bienes raíces</option>
+                <option value="educacion">Educación / Academia</option>
+                <option value="restaurante">Restaurante / Alimentos</option>
+                <option value="ecommerce">E-commerce / Retail</option>
+                <option value="servicios">Servicios profesionales</option>
+                <option value="automotriz">Automotriz</option>
+                <option value="suplementos">Suplementos / Nutrición</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:8px">Tono de voz del agente</label>
+              <div style="display:flex;gap:8px">
+                <label id="wiz-tone-formal-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
+                  <input type="radio" name="wiz-tone" value="formal" style="display:none" onchange="wizSelectTone('formal')">
+                  <div style="font-size:13px;font-weight:600;color:var(--text)">Formal</div>
+                  <div style="font-size:11px;color:var(--text-muted)">Serio y profesional</div>
+                </label>
+                <label id="wiz-tone-amigable-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
+                  <input type="radio" name="wiz-tone" value="amigable" style="display:none" onchange="wizSelectTone('amigable')">
+                  <div style="font-size:13px;font-weight:600;color:var(--text)">Amigable</div>
+                  <div style="font-size:11px;color:var(--text-muted)">Cercano y cálido</div>
+                </label>
+                <label id="wiz-tone-casual-lbl" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;text-align:center;transition:all .15s">
+                  <input type="radio" name="wiz-tone" value="casual" style="display:none" onchange="wizSelectTone('casual')">
+                  <div style="font-size:13px;font-weight:600;color:var(--text)">Casual</div>
+                  <div style="font-size:11px;color:var(--text-muted)">Relajado y directo</div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: WhatsApp -->
+        <div id="wiz-step-2" style="display:none">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Conecta tu número de WhatsApp Business. Encuentra estos datos en <strong style="color:var(--text)">Meta Business Suite → WhatsApp → API Setup</strong>.</p>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Número de teléfono</label>
+              <input id="wiz-wa-phone" type="tel" placeholder="+52 1 899 170 9336" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Phone Number ID</label>
+              <input id="wiz-wa-phone-id" type="text" placeholder="1348271025028457" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">WABA ID</label>
+              <input id="wiz-wa-waba-id" type="text" placeholder="3512648718898077" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Access Token</label>
+              <input id="wiz-wa-token" type="password" placeholder="EAAd…" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:'JetBrains Mono',monospace" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding:12px 14px;background:var(--accent-100);border-radius:10px;display:flex;align-items:flex-start;gap:9px">
+            <i class="fa fa-circle-info" style="color:var(--accent);margin-top:1px;flex-shrink:0"></i>
+            <span style="font-size:12px;color:var(--text-2);line-height:1.5">¿No tienes estos datos aún? Puedes omitir este paso y configurarlo más tarde desde <strong>Conexiones</strong>.</span>
+          </div>
+        </div>
+
+        <!-- STEP 3: Bot IA -->
+        <div id="wiz-step-3" style="display:none">
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">Define cómo se va a presentar y comportar tu agente de IA con los clientes.</p>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Instrucciones del agente</label>
+              <textarea id="wiz-bot-prompt" rows="6" placeholder="Ej: Eres el asistente virtual de Clínica Dental López. Responde de forma amigable y profesional en español. Ofrece información sobre limpiezas ($650), ortodoncia y blanqueamiento. Cuando el cliente quiera agendar, pídele su nombre y pregunta qué día le viene bien." style="width:100%;padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;color:var(--text);outline:none;resize:vertical;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.6" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:5px">Incluye: nombre del negocio, servicios y precios, tono, y qué hacer cuando quieren agendar.</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:10px">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Activar bot al terminar</div>
+                <div style="font-size:11px;color:var(--text-muted)">Empieza a responder mensajes automáticamente</div>
+              </div>
+              <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
+                <input type="checkbox" id="wiz-bot-enabled" checked style="opacity:0;width:0;height:0">
+                <span onclick="this.previousElementSibling.checked=!this.previousElementSibling.checked;this.style.background=this.previousElementSibling.checked?'var(--accent)':'#cbd5e1'" style="position:absolute;inset:0;background:var(--accent);border-radius:11px;transition:background .2s">
+                  <span style="position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;transform:translateX(0)" id="wiz-toggle-knob"></span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Footer con botones -->
+      <div style="padding:20px 28px 24px;display:flex;align-items:center;gap:10px;margin-top:20px">
+        <button id="wiz-skip-btn" onclick="wizSkip()" style="padding:10px 16px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s" onmouseover="this.style.borderColor='var(--border-hover)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Omitir paso</button>
+        <div style="flex:1"></div>
+        <button id="wiz-back-btn" onclick="wizBack()" style="display:none;padding:10px 18px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">← Atrás</button>
+        <button id="wiz-next-btn" onclick="wizNext()" style="padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'">Siguiente →</button>
+      </div>
+
     </div>
   </div>
 
