@@ -1415,8 +1415,9 @@
       el.classList.toggle('active', el.id === 'view-' + name);
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
-    if (name === 'clientes') loadClientes();
-    if (name === 'usuarios') loadUsuarios();
+    if (name === 'clientes')    loadClientes();
+    if (name === 'usuarios')    loadUsuarios();
+    if (name === 'solicitudes') loadSolicitudes();
   }
 
   // ── Render Nuevo Cliente ────────────────────────────────────────────────────
