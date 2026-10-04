@@ -1273,6 +1273,45 @@
   </div>
 </div>
 
+<!-- MODAL: ACTIVAR SOLICITUD -->
+<div class="modal-backdrop" id="modal-activar">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span class="modal-title" id="activar-modal-title">Activar cliente</span>
+      <button class="modal-close" data-close="modal-activar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="activar-error"></div>
+      <input type="hidden" id="activar-request-id" />
+
+      <div style="background:#f9fafb;border:1px solid #e6e7e9;border-radius:10px;padding:14px 16px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px"><span style="font-size:12px;color:#8c939b;width:120px;flex-shrink:0">Negocio</span><span style="font-size:13px;font-weight:600;color:#1a2535" id="activar-info-biz">—</span></div>
+        <div style="display:flex;gap:8px"><span style="font-size:12px;color:#8c939b;width:120px;flex-shrink:0">WhatsApp</span><span style="font-size:13px;color:#1a2535" id="activar-info-phone">—</span></div>
+        <div style="display:flex;gap:8px"><span style="font-size:12px;color:#8c939b;width:120px;flex-shrink:0">Phone Number ID</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#1a2535" id="activar-info-pnid">—</span></div>
+        <div style="display:flex;gap:8px"><span style="font-size:12px;color:#8c939b;width:120px;flex-shrink:0">WABA ID</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#1a2535" id="activar-info-waba">—</span></div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Email para el dashboard *</label>
+        <input class="field-input" type="email" id="activar-email" placeholder="correo@cliente.com" />
+        <p style="font-size:12px;color:var(--text-muted);margin-top:4px">El cliente recibirá aquí su invitación de acceso.</p>
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Plan</label>
+        <select class="field-select" id="activar-plan">
+          <option value="starter">Starter</option>
+          <option value="pro" selected>Pro</option>
+          <option value="enterprise">Enterprise</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="modal-activar">Cancelar</button>
+      <button class="btn-primary" id="btn-confirmar-activar">Activar y enviar invitación →</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
