@@ -1322,7 +1322,7 @@
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const VIEW_TITLES = { overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios' };
+  const VIEW_TITLES = { overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes' };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
   // ── Nuevo cliente state ──────────────────────────────────────────────────────
