@@ -2164,9 +2164,10 @@
   $('signout-btn').addEventListener('click', () => sb.auth.signOut());
   $('refresh-btn').addEventListener('click', () => {
     const active = document.querySelector('.view.active')?.id?.replace('view-', '');
-    if (active === 'overview') loadOverview();
-    if (active === 'clientes') loadClientes();
-    if (active === 'usuarios') loadUsuarios();
+    if (active === 'overview')    loadOverview();
+    if (active === 'clientes')    loadClientes();
+    if (active === 'usuarios')    loadUsuarios();
+    if (active === 'solicitudes') loadSolicitudes();
   });
 
   document.querySelectorAll('.nav-item[data-view]').forEach(el => {
