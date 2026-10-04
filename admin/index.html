@@ -766,6 +766,15 @@
         Usuarios
       </div>
 
+      <div class="nav-item" data-view="solicitudes">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        </span>
+        Solicitudes
+        <span id="solicitudes-badge" style="display:none;margin-left:auto;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.6"></span>
+      </div>
+
       <hr class="nav-divider" />
 
       <div class="nav-back" onclick="window.location.href='../dashboard/'">
@@ -1186,7 +1195,7 @@
         <div class="field-group">
           <label class="field-label">Rol</label>
           <select class="field-select" id="eu-rol">
-            <option value="admin">Admin</option>
+            <option value="owner">Owner (cliente)</option>
             <option value="agent">Agent</option>
           </select>
         </div>
