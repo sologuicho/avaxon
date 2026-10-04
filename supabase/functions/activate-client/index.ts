@@ -64,9 +64,11 @@ Deno.serve(async (req: Request) => {
   if (onbReq.status === 'activated') return json({ error: 'Esta solicitud ya fue activada' }, 409)
 
   // ── 1. Crear organización ──────────────────────────────────────────────
+  const slug = slugify(onbReq.business_name) + '-' + Math.random().toString(36).substring(2, 8)
+
   const { data: org, error: orgErr } = await adminSb
     .from('organizations')
-    .insert({ name: onbReq.business_name, status: 'active', plan_id })
+    .insert({ name: onbReq.business_name, slug, status: 'active', plan_id })
     .select('id')
     .single()
 
