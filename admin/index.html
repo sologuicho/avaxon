@@ -934,6 +934,39 @@
         </div>
       </div>
 
+      <!-- VISTA: SOLICITUDES -->
+      <div class="view" id="view-solicitudes">
+        <div id="solicitudes-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px"></div>
+        <div class="card">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid #e6e7e9">
+            <span style="font-size:15px;font-weight:700;color:#1a2535">Solicitudes de onboarding</span>
+            <button class="btn-ghost" id="btn-reload-solicitudes">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Actualizar
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Negocio</th>
+                  <th>WhatsApp</th>
+                  <th>Email dashboard</th>
+                  <th>Phone Number ID</th>
+                  <th>WABA ID</th>
+                  <th>Recibida</th>
+                  <th>Estado</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tbody-solicitudes">
+                <tr><td colspan="8"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
