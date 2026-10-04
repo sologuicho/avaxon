@@ -1635,6 +1635,10 @@
     $('sidebar-user-avatar').textContent = initials(user.email || '?');
     showScreen('app');
     loadOverview();
+    sb.from('onboarding_requests').select('id', { count: 'exact', head: true }).neq('status', 'activated').then(({ count }) => {
+      const badge = $('solicitudes-badge');
+      if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+    });
   }
 
   sb.auth.onAuthStateChange(async (event, session) => {
