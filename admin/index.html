@@ -2378,6 +2378,9 @@
   }
   window.openBotModal = openBotModal;
 
+  $('btn-confirmar-activar').addEventListener('click', confirmarActivar);
+  $('btn-reload-solicitudes').addEventListener('click', loadSolicitudes);
+
   $('btn-guardar-bot').addEventListener('click', async () => {
     $('bot-modal-error').style.display   = 'none';
     $('bot-modal-success').style.display = 'none';
