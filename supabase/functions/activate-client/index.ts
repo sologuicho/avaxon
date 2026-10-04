@@ -7,6 +7,16 @@ const json = (data: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
   })
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 30)
+}
+
 const DEFAULT_PROMPT = (name: string) =>
   `Eres el asistente virtual de ${name}. Responde siempre en español, de forma amable y profesional.\n\nResponde ÚNICAMENTE en formato JSON con esta estructura:\n{"text": "tu respuesta aquí", "buttons": [], "notify_owner": false}\n\nSolo pon notify_owner en true cuando el cliente quiera agendar una cita o hablar con alguien del equipo.`
 
