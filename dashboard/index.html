@@ -3412,6 +3412,51 @@
     switchView('conversaciones');
   }
 
+  // ── Welcome modal (onboarding checklist) ────────────────────────────────
+  function showWelcomeModal(name) {
+    const modal = $('modal-welcome');
+    if (!modal) return;
+    const title = $('welcome-title');
+    if (title && name) title.textContent = `¡Bienvenido, ${name.split(' ')[0]}!`;
+    // Reset steps to undone
+    ['wstep-1','wstep-2','wstep-3','wstep-4'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('done');
+    });
+    modal.style.display = 'flex';
+  }
+
+  function closeWelcome() {
+    const modal = $('modal-welcome');
+    if (modal) modal.style.display = 'none';
+    // Mark onboarding done so modal won't auto-show again
+    if (state.userId) {
+      sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
+    }
+  }
+
+  function welcomeGoTo(view, stepId) {
+    const step = document.getElementById(stepId);
+    if (step) step.classList.add('done');
+    const modal = $('modal-welcome');
+    if (modal) modal.style.display = 'none';
+    switchView(view);
+    if (view === 'bot') {
+      setTimeout(() => {
+        const card = $('bot-tester-card');
+        if (card && stepId === 'wstep-2') card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 250);
+    }
+    // Mark onboarding done so we don't re-show on refresh
+    if (state.userId) {
+      sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
+    }
+  }
+
+  window.showWelcomeModal = showWelcomeModal;
+  window.closeWelcome     = closeWelcome;
+  window.welcomeGoTo      = welcomeGoTo;
+
   /* ── Pipeline ── */
   const PIPELINE_STAGES = [
     { key: 'new',        label: 'Nuevo',       color: '#7c8899' },
