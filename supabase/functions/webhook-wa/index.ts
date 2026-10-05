@@ -111,6 +111,27 @@ async function parseMessage(msg: any, token: string, openaiKey: string): Promise
   return { waMessageId: msg.id, content, mediaType, imageDataUrl, imageCaption }
 }
 
+async function fireZapier(
+  sb: ReturnType<typeof createClient>,
+  organization_id: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const { data: integ } = await sb
+    .from('integrations')
+    .select('config')
+    .eq('organization_id', organization_id)
+    .eq('provider', 'zapier')
+    .eq('status', 'connected')
+    .maybeSingle()
+  const url = (integ?.config as any)?.webhook_url
+  if (!url) return
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, timestamp: new Date().toISOString() }),
+  }).catch(() => {})
+}
+
 async function handleIncoming(body: any, env: Env): Promise<void> {
   const { WA_TOKEN, OPENAI_KEY, SUPABASE_URL, SERVICE_KEY } = env
 
