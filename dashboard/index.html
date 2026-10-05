@@ -3262,7 +3262,7 @@
       }
       if (!profileData?.onboarding_done_at) {
         await finishBootstrap(profileData);
-        startTour();
+        showWelcomeModal(profileData?.full_name);
         return;
       }
     }
