@@ -403,14 +403,15 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   // ── 12. Notificar al dueño si el lead quiere agendar ────────────────────────
   if (notifyOwner) {
-    const leadName = contactName ?? fromPhone
-    const notifText = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
+    const leadName    = contactName ?? fromPhone
+    const AVAXON_PHONE = '528991709336'
+    const notifText   = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
     await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
       method:  'POST',
       headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
-        to:   '19563285800',
+        to:   AVAXON_PHONE,
         type: 'text',
         text: { body: notifText },
       }),
@@ -420,10 +421,18 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     const reminderText = `⏰ *Recordatorio — Avaxon*\n\n${leadName} todavía espera respuesta para agendar su diagnóstico gratuito.\n\n*WhatsApp:* wa.me/${fromPhone}\n\n¡No pierdas este lead! 🎯`
     await sb.from('reminders').insert({
       send_at:         sendAt,
-      to_phone:        '19563285800',
+      to_phone:        AVAXON_PHONE,
       message:         reminderText,
       phone_number_id: phoneNumberId,
     }).catch(() => {})
+
+    fireZapier(sb, organization_id, {
+      event:           'lead_qualified',
+      contact_name:    leadName,
+      contact_phone:   fromPhone,
+      conversation_id,
+      organization_id,
+    })
   }
 
   // ── 13. Guardar mensaje saliente (siempre queda "procesado") ───────────────
