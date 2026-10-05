@@ -3478,6 +3478,115 @@
   window.closeWelcome     = closeWelcome;
   window.welcomeGoTo      = welcomeGoTo;
 
+  // ── Broadcast ────────────────────────────────────────────────────────────
+  const bcState = { filter: 'all', busy: false }
+
+  function openBroadcast() {
+    const modal = $('modal-broadcast')
+    if (!modal) return
+    $('bc-message').value = ''
+    $('bc-char-count').textContent = '0 / 4096'
+    $('bc-send-label').textContent = 'Enviar'
+    $('bc-send-btn').disabled = false
+    setBcFilterActive('all')
+    modal.style.display = 'flex'
+    fetchBcCount()
+  }
+
+  function closeBroadcast() {
+    const modal = $('modal-broadcast')
+    if (modal) modal.style.display = 'none'
+    bcState.busy = false
+  }
+
+  function setBcFilterActive(filter) {
+    bcState.filter = filter
+    document.querySelectorAll('.bc-filter-btn').forEach(btn => {
+      const active = btn.dataset.filter === filter
+      btn.style.borderColor  = active ? 'var(--accent)'  : 'var(--border)'
+      btn.style.background   = active ? 'var(--accent-sub)' : 'transparent'
+      btn.style.color        = active ? 'var(--accent)'  : 'var(--text-muted)'
+    })
+  }
+
+  function setBcFilter(btn) {
+    setBcFilterActive(btn.dataset.filter)
+    fetchBcCount()
+  }
+
+  async function fetchBcCount() {
+    const countLine = $('bc-count-line')
+    countLine.textContent = 'Calculando…'
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-broadcast`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ preview: true, filter: bcState.filter }),
+      })
+      const d = await res.json()
+      if (typeof d.total === 'number') {
+        countLine.innerHTML = `Se enviará a <strong style="color:var(--text)">${d.total} contacto${d.total !== 1 ? 's' : ''}</strong>`
+      } else {
+        countLine.textContent = 'No se pudo calcular'
+      }
+    } catch {
+      countLine.textContent = 'Error al calcular'
+    }
+  }
+
+  async function sendBroadcast() {
+    if (bcState.busy) return
+    const msg = ($('bc-message').value || '').trim()
+    if (!msg) { $('bc-message').focus(); return }
+
+    const countLine = $('bc-count-line').textContent
+    if (!confirm(`¿Confirmas enviar este mensaje?\n\n${countLine}`)) return
+
+    bcState.busy = true
+    const sendBtn   = $('bc-send-btn')
+    const sendLabel = $('bc-send-label')
+    sendBtn.disabled  = true
+    sendLabel.textContent = 'Enviando…'
+
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-broadcast`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ message: msg, filter: bcState.filter }),
+      })
+      const d = await res.json()
+      if (d.ok) {
+        closeBroadcast()
+        showToast(`Broadcast enviado: ${d.sent} enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
+      } else {
+        sendLabel.textContent = 'Enviar'
+        sendBtn.disabled = false
+        bcState.busy = false
+        showToast('Error: ' + (d.error || 'desconocido'), true)
+      }
+    } catch (e) {
+      sendLabel.textContent = 'Enviar'
+      sendBtn.disabled = false
+      bcState.busy = false
+      showToast('Error de red', true)
+    }
+  }
+
+  // Contador de caracteres
+  document.addEventListener('DOMContentLoaded', () => {
+    const ta = $('bc-message')
+    if (ta) ta.addEventListener('input', () => {
+      $('bc-char-count').textContent = `${ta.value.length} / 4096`
+    })
+  })
+
+  window.openBroadcast  = openBroadcast
+  window.closeBroadcast = closeBroadcast
+  window.setBcFilter    = setBcFilter
+  window.sendBroadcast  = sendBroadcast
+
   /* ── Pipeline ── */
   const PIPELINE_STAGES = [
     { key: 'new',        label: 'Nuevo',       color: '#7c8899' },
