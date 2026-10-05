@@ -85,6 +85,9 @@ Deno.serve(async (_req: Request) => {
       content: m.content,
     }))
 
+    const orgSystemPrompt = botPromptMap[conv.organization_id] ??
+      'Eres un agente de WhatsApp. El cliente dejó de responder hace un día. Escribe UN mensaje breve y natural (máximo 2 líneas) para retomar la conversación. No suenes a plantilla.'
+
     const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
@@ -93,7 +96,7 @@ Deno.serve(async (_req: Request) => {
         messages: [
           {
             role: 'system',
-            content: 'Eres el agente de WhatsApp de Avaxon. El cliente dejó de responder hace un día. Escribe UN mensaje breve, cálido y natural (máximo 2 líneas) para retomar la conversación, basado en el contexto. No suenes a plantilla ni repitas literalmente lo último que dijiste.',
+            content: orgSystemPrompt + '\n\nEl cliente dejó de responder hace ~24h. Escribe UN mensaje breve y cálido (máximo 2 líneas) para retomar la conversación basándote en el contexto. No repitas literalmente lo último que dijiste.',
           },
           ...chatHistory,
         ],
@@ -108,11 +111,12 @@ Deno.serve(async (_req: Request) => {
 
     const toPhone     = (conv.contacts as any)?.phone
     const metaPhoneId = (conv.phone_numbers as any)?.phone_number_id
+    const clientToken = (conv.phone_numbers as any)?.whatsapp_accounts?.access_token ?? WA_TOKEN
     if (!toPhone || !metaPhoneId) continue
 
     const waRes = await fetch(`https://graph.facebook.com/v20.0/${metaPhoneId}/messages`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messaging_product: 'whatsapp',
         to:   toPhone,
