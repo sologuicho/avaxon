@@ -206,6 +206,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       .single()
     if (!newConv) return
     conversation_id = newConv.id
+    fireZapier(sb, organization_id, {
+      event:           'new_contact',
+      contact_name:    contactName ?? fromPhone,
+      contact_phone:   fromPhone,
+      conversation_id: newConv.id,
+      organization_id,
+    })
   }
 
   // ── 4. Procesar y guardar CADA mensaje entrante del payload ────────────────
