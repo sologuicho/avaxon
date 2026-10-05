@@ -3887,6 +3887,82 @@
   window.saveBotConfig  = saveBotConfig;
   window.setBotEnabled  = setBotEnabled;
 
+  // ── Bot tester ───────────────────────────────────────────────────────────
+  const botTest = { history: [], busy: false };
+
+  function botTestAppend(role, text) {
+    const empty = document.getElementById('bot-test-empty');
+    if (empty) empty.remove();
+    const box = document.getElementById('bot-test-messages');
+    const isBot = role === 'bot';
+    const el = document.createElement('div');
+    el.style.cssText = `display:flex;justify-content:${isBot ? 'flex-start' : 'flex-end'}`;
+    el.innerHTML = `<div style="max-width:72%;padding:9px 13px;border-radius:${isBot ? '4px 14px 14px 14px' : '14px 4px 14px 14px'};background:${isBot ? 'var(--card-bg)' : 'var(--accent)'};color:${isBot ? 'var(--text)' : '#fff'};font-size:13.5px;line-height:1.55;border:1px solid ${isBot ? 'var(--border)' : 'transparent'};white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>`;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+    return el;
+  }
+
+  async function sendBotTest() {
+    if (botTest.busy) return;
+    const input = document.getElementById('bot-test-input');
+    const btn   = document.getElementById('bot-test-send');
+    const msg   = input.value.trim();
+    if (!msg) return;
+
+    botTest.busy = true;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    input.value = '';
+    input.style.height = 'auto';
+    botTestAppend('user', msg);
+
+    // Typing indicator
+    const typingEl = botTestAppend('bot', '···');
+    typingEl.querySelector('div').style.opacity = '0.5';
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const orgId = state.currentOrgId || state.userOrgId;
+      const res = await fetch(`${EDGE_BASE}/test-bot`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: botTest.history, org_id: orgId }),
+      });
+      const data = await res.json();
+      typingEl.remove();
+      if (!res.ok) { botTestAppend('bot', '⚠️ ' + (data.error ?? 'Error al obtener respuesta')); return; }
+      botTestAppend('bot', data.reply);
+      botTest.history.push({ role: 'user', content: msg });
+      botTest.history.push({ role: 'assistant', content: data.reply });
+    } catch (e) {
+      typingEl.remove();
+      botTestAppend('bot', '⚠️ Error de red: ' + e.message);
+    } finally {
+      botTest.busy = false;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-paper-plane"></i>';
+      input.focus();
+    }
+  }
+
+  function clearBotTest() {
+    botTest.history = [];
+    botTest.busy    = false;
+    const box = document.getElementById('bot-test-messages');
+    box.innerHTML = `<div id="bot-test-empty" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 0;color:var(--text-dim);flex-direction:column;gap:8px;text-align:center">
+      <i class="fab fa-whatsapp" style="font-size:28px;opacity:.25"></i>
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Escribe un mensaje para probar tu agente</span>
+    </div>`;
+  }
+
+  document.getElementById('bot-test-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBotTest(); }
+  });
+
+  window.sendBotTest  = sendBotTest;
+  window.clearBotTest = clearBotTest;
+
   // ── Cuenta ───────────────────────────────────────────────────────────────
   async function loadCuenta() {
     const orgId = state.currentOrgId || state.userOrgId;
