@@ -12,8 +12,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // seguimiento, last_message_at se actualiza a "ahora" y la conversación sale
 // de la ventana. El chequeo de "los últimos 2 mensajes ya son outbound" evita
 // seguir insistiendo si el cliente tampoco contesta al seguimiento.
-
-const AVAXON_ORG_ID = 'e30d23e7-b512-44c8-a0bf-23f102300198'
+//
+// Multi-tenant: opera sobre todas las orgs con bot_configs.enabled = true,
+// usando el access_token propio de cada cliente.
 
 Deno.serve(async (_req: Request) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -23,14 +24,31 @@ Deno.serve(async (_req: Request) => {
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY)
 
+  // Solo orgs con bot activo
+  const { data: activeBots } = await sb
+    .from('bot_configs')
+    .select('organization_id, system_prompt')
+    .eq('enabled', true)
+
+  const activeOrgIds = (activeBots ?? []).map(b => b.organization_id)
+  if (activeOrgIds.length === 0) {
+    return new Response(JSON.stringify({ ok: true, processed: 0, sent: 0 }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const botPromptMap: Record<string, string> = {}
+  ;(activeBots ?? []).forEach(b => { botPromptMap[b.organization_id] = b.system_prompt })
+
   const now         = Date.now()
   const windowStart = new Date(now - 48 * 60 * 60 * 1000).toISOString()
   const windowEnd   = new Date(now - 24 * 60 * 60 * 1000).toISOString()
 
   const { data: convs } = await sb
     .from('conversations')
-    .select('id, organization_id, contacts(phone), phone_numbers(phone_number_id)')
-    .eq('organization_id', AVAXON_ORG_ID)
+    .select('id, organization_id, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
+    .in('organization_id', activeOrgIds)
     .eq('status', 'open')
     .gte('last_message_at', windowStart)
     .lt('last_message_at', windowEnd)
