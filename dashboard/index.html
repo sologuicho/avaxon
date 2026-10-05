@@ -3564,13 +3564,13 @@
         sendLabel.textContent = 'Enviar'
         sendBtn.disabled = false
         bcState.busy = false
-        showToast('Error: ' + (d.error || 'desconocido'), true)
+        showToast('Error: ' + (d.error || 'desconocido'), 4000)
       }
     } catch (e) {
       sendLabel.textContent = 'Enviar'
       sendBtn.disabled = false
       bcState.busy = false
-      showToast('Error de red', true)
+      showToast('Error de red', 4000)
     }
   }
 
