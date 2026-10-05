@@ -1,12 +1,10 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// ── Reporte nocturno de Avaxon ──────────────────────────────────────────────
-// Cuenta la actividad de las últimas 24h y la manda por WhatsApp al número en
-// el secret REPORT_PHONE. Pensado para correr una vez al día vía cron (ver
-// supabase/config.toml). No requiere JWT porque solo cron/uso interno la llama.
-
-const AVAXON_ORG_ID = 'e30d23e7-b512-44c8-a0bf-23f102300198'
+// ── Reporte diario consolidado ───────────────────────────────────────────────
+// Itera sobre todas las orgs con bot activo, calcula métricas de las últimas
+// 24h y manda un resumen consolidado al número en REPORT_PHONE (Avaxon interno).
+// Corre una vez al día vía pg_cron. No requiere JWT.
 
 Deno.serve(async (_req: Request) => {
   const SUPABASE_URL       = Deno.env.get('SUPABASE_URL')!
@@ -16,34 +14,77 @@ Deno.serve(async (_req: Request) => {
   const REPORT_PHONE       = Deno.env.get('REPORT_PHONE')
 
   if (!REPORT_PHONE) {
-    console.error('REPORT_PHONE no está configurado — no se puede enviar el reporte')
+    console.error('REPORT_PHONE no configurado')
     return new Response(JSON.stringify({ error: 'REPORT_PHONE not set' }), { status: 500 })
   }
 
-  const sb = createClient(SUPABASE_URL, SERVICE_KEY)
+  const sb    = createClient(SUPABASE_URL, SERVICE_KEY)
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  const [convRes, leadsRes, citasRes] = await Promise.all([
-    sb.from('conversations').select('id', { count: 'exact', head: true })
-      .eq('organization_id', AVAXON_ORG_ID).gte('last_message_at', since),
-    sb.from('contacts').select('id', { count: 'exact', head: true })
-      .eq('organization_id', AVAXON_ORG_ID).eq('status', 'qualified').gte('created_at', since),
-    sb.from('appointments').select('id', { count: 'exact', head: true })
-      .eq('organization_id', AVAXON_ORG_ID).gte('created_at', since),
-  ])
+  // Orgs con bot activo
+  const { data: bots } = await sb
+    .from('bot_configs')
+    .select('organization_id')
+    .eq('enabled', true)
 
-  const conv  = convRes.count  ?? 0
-  const leads = leadsRes.count ?? 0
-  const citas = citasRes.count ?? 0
+  const orgIds = (bots ?? []).map(b => b.organization_id)
+  if (orgIds.length === 0) {
+    return new Response(JSON.stringify({ ok: true, orgs: 0 }), { status: 200 })
+  }
 
-  const text = `Resumen de hoy:\n· ${conv} conversaciones atendidas\n· ${leads} leads calificados\n· ${citas} citas agendadas\n\nReporte automático de Avaxon.`
+  // Nombres de orgs
+  const { data: orgs } = await sb
+    .from('organizations')
+    .select('id, name')
+    .in('id', orgIds)
+
+  const orgNameMap: Record<string, string> = {}
+  ;(orgs ?? []).forEach(o => { orgNameMap[o.id] = o.name })
+
+  // Métricas por org (paralelo)
+  const stats = await Promise.all(orgIds.map(async (orgId) => {
+    const [convRes, leadsRes, msgsRes] = await Promise.all([
+      sb.from('conversations').select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId).gte('last_message_at', since),
+      sb.from('contacts').select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId).eq('status', 'qualified').gte('created_at', since),
+      sb.from('messages').select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId).gte('created_at', since),
+    ])
+    return {
+      name:  orgNameMap[orgId] ?? orgId.slice(0, 8),
+      conv:  convRes.count  ?? 0,
+      leads: leadsRes.count ?? 0,
+      msgs:  msgsRes.count  ?? 0,
+    }
+  }))
+
+  // Totales
+  const totConv  = stats.reduce((s, r) => s + r.conv,  0)
+  const totLeads = stats.reduce((s, r) => s + r.leads, 0)
+  const totMsgs  = stats.reduce((s, r) => s + r.msgs,  0)
+
+  // Formato del mensaje
+  const date   = new Date().toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' })
+  const lines  = stats.map(r =>
+    `• ${r.name}: ${r.conv} convs, ${r.leads} leads, ${r.msgs} msgs`
+  ).join('\n')
+
+  const text = [
+    `📊 *Reporte Avaxon — ${date}*`,
+    '',
+    lines,
+    '',
+    `*Total:* ${totConv} convs · ${totLeads} leads · ${totMsgs} msgs`,
+    `*Clientes activos:* ${orgIds.length}`,
+  ].join('\n')
 
   const waRes = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_NUMBER_ID}/messages`, {
-    method: 'POST',
+    method:  'POST',
     headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messaging_product: 'whatsapp',
-      to: REPORT_PHONE,
+      to:   REPORT_PHONE,
       type: 'text',
       text: { body: text },
     }),
@@ -51,12 +92,12 @@ Deno.serve(async (_req: Request) => {
 
   const waData = await waRes.json()
   if (!waRes.ok) {
-    console.error('Error enviando el reporte diario:', waData)
-    return new Response(JSON.stringify({ error: waData }), { status: 500 })
+    console.error('Error enviando reporte diario:', waData)
+    return new Response(JSON.stringify({ error: waData }), { status: 502 })
   }
 
-  return new Response(JSON.stringify({ ok: true, conv, leads, citas }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return new Response(
+    JSON.stringify({ ok: true, orgs: orgIds.length, totConv, totLeads, totMsgs }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  )
 })
