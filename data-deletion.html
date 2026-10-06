@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eliminación de datos — Avaxon</title>
+  <meta name="description" content="Cómo solicitar la eliminación de tus datos personales procesados por Avaxon." />
+  <link rel="icon" type="image/jpeg" href="avaxon_favicon.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <style>
+    html, body { margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #475569; -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.75; }
+    * { box-sizing: border-box; }
+    a { color: #16a34a; text-decoration: none; }
+    a:hover { color: #15803d; }
+
+    .navlink { font-size: 15px; font-weight: 500; color: #64748b; }
+    .navlink:hover { color: #0f172a; }
+
+    .nav-toggle { display: none; width: 44px; height: 44px; flex-direction: column; justify-content: center; gap: 5px; padding: 0 11px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; }
+    .nav-mobile-panel { display: none; border-top: 1px solid #e2e8f0; padding: 10px 20px 22px; flex-direction: column; background: #fff; }
+    .nav-mobile-panel.is-open { display: flex; }
+    .nav-mobile-panel a { padding: 15px 0; border-bottom: 1px solid #f1f5f9; font-size: 16px; font-weight: 500; color: #334155; }
+
+    @media (max-width: 899px) {
+      .nav-links-wide { display: none !important; }
+      .nav-toggle { display: flex; }
+    }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 64px 24px 96px; }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 700; color: #0f172a;
+      margin-bottom: 8px; letter-spacing: -.02em;
+    }
+    .updated {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: #94a3b8; margin-bottom: 40px;
+    }
+    .intro {
+      font-size: 16px; color: #64748b;
+      margin-bottom: 48px; line-height: 1.7;
+      border-left: 3px solid #25D366;
+      padding-left: 16px;
+    }
+    h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 16px; font-weight: 600; color: #1e293b;
+      margin: 40px 0 10px; letter-spacing: -.01em;
+    }
+    p { font-size: 15px; color: #64748b; margin: 0 0 10px; }
+    li { font-size: 15px; color: #64748b; }
+    ul { padding-left: 20px; display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    strong { color: #334155; font-weight: 600; }
+
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 48px 0; }
+
+    .steps {
+      counter-reset: steps;
+      list-style: none;
+      padding-left: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .steps li {
+      counter-increment: steps;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(steps);
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: #dcfce7;
+      color: #16a34a;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px; font-weight: 700;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+
+    .contact-block {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px 28px;
+    }
+    .contact-block h2 { margin-top: 0; }
+
+    .footer-copy {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: #cbd5e1; margin-top: 56px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(248,250,252,.9); backdrop-filter: blur(14px); border-bottom: 1px solid #e2e8f0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 28px;">
+    <a href="/" style="display: flex; align-items: center; gap: 11px; text-decoration: none;">
+      <img src="avaxon_favicon.jpeg" alt="Avaxon" style="width: 30px; height: 30px; border-radius: 9px; object-fit: cover;">
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -.01em; color: #0f172a; text-transform: uppercase;">Avaxon</span>
+    </a>
+    <div style="flex: 1;"></div>
+    <nav class="nav-links-wide" style="display: flex; align-items: center; gap: 30px;">
+      <a class="navlink" href="/#agente">El agente</a>
+      <a class="navlink" href="/#proceso">Proceso</a>
+      <a class="navlink" href="/#panel">Panel</a>
+      <a class="navlink" href="/#precios">Precios</a>
+      <a href="/#contacto" style="padding: 11px 20px; border-radius: 12px; background: #25D366; color: #062513; font-weight: 700; font-size: 15px; text-decoration: none;">Agendar demo</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menú" aria-expanded="false" aria-controls="navMobilePanel">
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+    </button>
+  </div>
+  <nav class="nav-mobile-panel" id="navMobilePanel">
+    <a href="/#agente">El agente</a>
+    <a href="/#proceso">Proceso</a>
+    <a href="/#panel">Panel</a>
+    <a href="/#precios">Precios</a>
+    <a href="/#contacto" style="margin-top: 14px; padding: 15px; border-radius: 12px; background: #25D366; color: #062513; text-align: center; font-weight: 700; font-size: 16px; border-bottom: 0;">Agendar demo</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <h1>Eliminación de datos</h1>
+  <p class="updated">Última actualización: 5 de octubre de 2026</p>
+
+  <p class="intro">Tienes derecho a solicitar la eliminación de tus datos personales procesados por Avaxon. Esta página explica qué datos almacenamos, cuáles podemos eliminar y cómo hacer la solicitud.</p>
+
+  <h2>Qué datos almacenamos</h2>
+  <p>Cuando interactúas con un agente de WhatsApp operado por Avaxon, podemos almacenar:</p>
+  <ul>
+    <li><strong>Número de teléfono</strong> y nombre de perfil de WhatsApp.</li>
+    <li><strong>Historial de mensajes</strong> de la conversación con el agente.</li>
+    <li><strong>Datos de contacto</strong> derivados de la conversación (nombre, giro, intereses).</li>
+  </ul>
+  <p>Estos datos se almacenan en servidores seguros administrados por Supabase (Frankfurt, Alemania) y se utilizan únicamente para que el agente pueda responder de forma contextual y para que el negocio que contrató el servicio gestione su pipeline de clientes.</p>
+
+  <hr class="divider">
+
+  <h2>Cómo solicitar la eliminación</h2>
+  <ol class="steps">
+    <li>Envía un correo a <a href="mailto:hola@avaxon.lat"><strong>hola@avaxon.lat</strong></a> con el asunto <strong>"Solicitud de eliminación de datos"</strong>.</li>
+    <li>Incluye el número de teléfono de WhatsApp desde el que interactuaste con el agente (formato internacional, ej. <code>+52 899 123 4567</code>).</li>
+    <li>Recibirás una confirmación en un plazo máximo de <strong>30 días hábiles</strong>.</li>
+  </ol>
+
+  <h2>Qué eliminamos al recibir tu solicitud</h2>
+  <ul>
+    <li>El registro de tu contacto (nombre y número de teléfono) en nuestra base de datos.</li>
+    <li>El historial completo de mensajes de la conversación.</li>
+    <li>Cualquier dato de perfil o etiqueta asociados a tu número.</li>
+  </ul>
+
+  <h2>Qué no podemos eliminar</h2>
+  <ul>
+    <li>Copias de mensajes que Meta conserve en sus propios sistemas conforme a sus <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener">políticas de privacidad</a>.</li>
+    <li>Registros de facturación o actividad que debamos conservar por obligación legal.</li>
+  </ul>
+
+  <hr class="divider">
+
+  <div class="contact-block">
+    <h2>¿Tienes dudas?</h2>
+    <p>Puedes contactarnos directamente:</p>
+    <ul>
+      <li><strong>Correo:</strong> <a href="mailto:hola@avaxon.lat">hola@avaxon.lat</a></li>
+      <li><strong>Sitio web:</strong> <a href="https://avaxon.lat">avaxon.lat</a></li>
+    </ul>
+    <p style="margin-top: 14px;">También puedes revisar nuestra <a href="/privacy.html">Política de Privacidad</a> y nuestros <a href="/terms.html">Términos de Servicio</a> para más información.</p>
+  </div>
+
+  <p class="footer-copy">© 2026 Avaxon · Todos los derechos reservados</p>
+
+</div>
+
+<!-- FOOTER -->
+<footer style="background: #0f172a; padding: 32px 20px; text-align: center;">
+  <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 24px;">
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569;">© 2026 Avaxon</span>
+    <a href="/terms.html" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569; text-decoration: none;">Términos de servicio</a>
+    <a href="/privacy.html" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #475569; text-decoration: none;">Privacidad</a>
+    <a href="/data-deletion.html" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748b; text-decoration: none;">Eliminación de datos</a>
+  </div>
+</footer>
+
+<script>
+  const toggle = document.getElementById('navToggle');
+  const panel  = document.getElementById('navMobilePanel');
+  if (toggle && panel) {
+    toggle.addEventListener('click', () => {
+      const open = panel.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', open);
+    });
+  }
+</script>
+
+</body>
+</html>
