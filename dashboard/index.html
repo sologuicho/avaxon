@@ -4376,6 +4376,7 @@
       const company = obj['empresa'] || obj['company'] || obj['company_name'] || cols[0]
       if (!company) continue
       result.push({
+        organization_id: state.currentOrgId,
         company_name: company,
         contact_name: obj['contacto']  || obj['contact']  || null,
         phone:        obj['telefono']  || obj['teléfono'] || obj['phone'] || null,
