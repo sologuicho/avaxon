@@ -4343,6 +4343,7 @@
         plan:             key(obj, 'plan') || null,
         mrr:              mrr,
         industry:         key(obj, 'industria', 'industry', 'giro') || null,
+        city:             key(obj, 'ciudad', 'city', 'municipio') || null,
         notes:            key(obj, 'notas', 'notes', 'comentarios') || null,
       }
     }).filter(Boolean)
