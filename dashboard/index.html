@@ -2400,7 +2400,10 @@
     loadDashboard(orgId);
     loadIntegrations();
     const activeView = document.querySelector('.nav-item.active');
-    if (activeView?.dataset.view === 'calendario') loadCalendarMonth();
+    const view = activeView?.dataset.view;
+    if (view === 'calendario')  loadCalendarMonth();
+    if (view === 'crm')         loadCRM();
+    if (view === 'inventario')  loadInventario();
   }
 
   const KPI_COLORS = ['#5980a6', '#10b981', '#f59e0b', '#6366f1', '#ef4444'];
