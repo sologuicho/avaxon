@@ -5404,6 +5404,36 @@
     </div>
   </div>
 
+  <!-- ── Modal Google Sheets → Inventario ── -->
+  <div id="modal-inv-sheets" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 22px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">📊</span>
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--text)">Importar de Google Sheets</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:1px">Pega el enlace de tu hoja de cálculo</div>
+          </div>
+        </div>
+        <button onclick="invCloseSheetsModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px">×</button>
+      </div>
+      <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px">
+        <div style="padding:12px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          La hoja debe estar compartida como <strong style="color:var(--text)">"Cualquier persona con el enlace puede ver"</strong>. Las columnas se detectan automáticamente: <code style="font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--hover-bg);padding:1px 5px;border-radius:4px">nombre, precio, cantidad, status, categoria</code>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">URL de Google Sheets</label>
+          <input id="inv-sheets-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/…" onkeydown="if(event.key==='Enter') invImportFromSheets()" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div style="font-size:11.5px;color:var(--text-dim)">También puedes elegir la hoja si tiene varias: <input id="inv-sheets-gid" type="text" placeholder="gid (opcional)" style="width:80px;padding:4px 8px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;font-size:11.5px;color:var(--text);font-family:'JetBrains Mono',monospace;margin-left:4px;outline:none" /></div>
+      </div>
+      <div style="display:flex;gap:10px;padding:14px 22px;border-top:1px solid var(--border)">
+        <button onclick="invCloseSheetsModal()" style="flex:1;padding:10px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
+        <button id="inv-sheets-btn" onclick="invImportFromSheets()" class="btn-primary" style="flex:2;padding:10px;font-size:13.5px">Importar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Modal Inventario ── -->
   <div id="modal-inv" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
