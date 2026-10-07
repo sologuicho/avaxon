@@ -3374,6 +3374,15 @@
   }
   window.copyWebhookUrl = copyWebhookUrl;
 
+  const VERIFY_TOKEN_VALUE = 'avaxon_meta_verify_2026';
+  function copyVerifyToken() {
+    navigator.clipboard.writeText(VERIFY_TOKEN_VALUE).then(() => {
+      const btn = document.querySelector('[onclick="copyVerifyToken()"]');
+      if (btn) { btn.innerHTML = '<i class="fa fa-check"></i>'; setTimeout(() => { btn.innerHTML = '<i class="fa fa-copy"></i>'; }, 1500); }
+    });
+  }
+  window.copyVerifyToken = copyVerifyToken;
+
   async function sendMessage() {
     const input = $('chat-input');
     const btn   = $('chat-send-btn');
