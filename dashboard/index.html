@@ -1678,7 +1678,10 @@
               </label>
               <label style="display:flex;flex-direction:column;gap:5px">
                 <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Verify token</span>
-                <input value="avaxon_wh_2026" readonly style="padding:9px 11px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text);outline:none"/>
+                <div style="display:flex;gap:6px">
+                  <input id="wa-verify-token" value="••••••••••••••••" readonly style="flex:1;padding:9px 11px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text-muted);outline:none"/>
+                  <button onclick="copyVerifyToken()" style="padding:9px 13px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:12px;flex-shrink:0" title="Copiar token"><i class="fa fa-copy"></i></button>
+                </div>
               </label>
             </div>
           </div>
