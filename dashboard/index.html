@@ -3764,22 +3764,63 @@
     invCloseModal(); showToast('Producto eliminado'); await loadInventario()
   }
 
-  async function invImportCSV(event) {
+  // ── Dropdowns ──
+  function invToggleDropdown(which) {
+    const imp = $('inv-drop-import')
+    const exp = $('inv-drop-export')
+    if (which === 'import') {
+      imp.style.display = imp.style.display === 'none' ? 'block' : 'none'
+      if (exp) exp.style.display = 'none'
+    } else {
+      exp.style.display = exp.style.display === 'none' ? 'block' : 'none'
+      if (imp) imp.style.display = 'none'
+    }
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#inv-import-wrap')) { const el = $('inv-drop-import'); if (el) el.style.display = 'none' }
+    if (!e.target.closest('#inv-export-wrap')) { const el = $('inv-drop-export'); if (el) el.style.display = 'none' }
+  })
+
+  // ── Importar archivo (CSV o Excel) ──
+  async function invImportFile(event) {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
-    const text  = await file.text()
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
-    if (lines.length < 2) { showToast('CSV vacío o sin datos', 3000); return }
+    let rows = []
+    const ext = file.name.split('.').pop().toLowerCase()
+
+    if (ext === 'csv') {
+      const text  = await file.text()
+      rows = invParseCSVText(text)
+    } else {
+      // Excel via SheetJS
+      if (!window.XLSX) { showToast('La librería Excel no cargó. Recarga la página.', 4000); return }
+      const buf  = await file.arrayBuffer()
+      const wb   = XLSX.read(buf, { type: 'array' })
+      const ws   = wb.Sheets[wb.SheetNames[0]]
+      const data = XLSX.utils.sheet_to_json(ws, { defval: '' })
+      rows = invNormalizeRows(data)
+    }
+
+    if (!rows.length) { showToast('No se encontraron filas válidas', 3000); return }
+    const { error } = await sb.from('products').insert(rows)
+    if (error) { showToast('Error al importar: ' + error.message, 4000); return }
+    showToast(`${rows.length} producto(s) importados`)
+    await loadInventario()
+  }
+
+  function invParseCSVText(text) {
+    const lines   = text.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length < 2) return []
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
-    const col = h => headers.indexOf(h)
-    const rows = []
+    const col     = h => headers.indexOf(h)
+    const result  = []
     for (let i = 1; i < lines.length; i++) {
-      const c = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+      const c    = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
       const name = c[col('nombre')] || c[col('name')] || c[0]
       if (!name) continue
       const qty = c[col('cantidad')] || c[col('quantity')]
-      rows.push({
+      result.push({
         organization_id: state.currentOrgId,
         name,
         price:    parseFloat(c[col('precio')] || c[col('price')]) || null,
@@ -3788,21 +3829,134 @@
         category: c[col('categoria')] || c[col('category')] || null,
       })
     }
-    if (!rows.length) { showToast('No hay filas válidas en el CSV', 3000); return }
+    return result
+  }
+
+  function invNormalizeRows(data) {
+    const key = (obj, ...keys) => {
+      for (const k of keys) {
+        const found = Object.keys(obj).find(ok => ok.toLowerCase().trim() === k)
+        if (found !== undefined) return String(obj[found] ?? '').trim()
+      }
+      return ''
+    }
+    return data.map(obj => {
+      const name = key(obj, 'nombre', 'name', 'producto', 'product')
+      if (!name) return null
+      const qty = key(obj, 'cantidad', 'quantity', 'stock', 'existencia')
+      return {
+        organization_id: state.currentOrgId,
+        name,
+        price:    parseFloat(key(obj, 'precio', 'price')) || null,
+        quantity: qty !== '' ? parseInt(qty) : null,
+        status:   key(obj, 'status', 'estado') || 'disponible',
+        category: key(obj, 'categoria', 'category', 'categoría') || null,
+        description: key(obj, 'descripcion', 'description', 'notas', 'notes') || null,
+      }
+    }).filter(Boolean)
+  }
+
+  // ── Importar de Google Sheets ──
+  function invOpenSheetsModal() {
+    const m = $('modal-inv-sheets')
+    if (m) { $('inv-sheets-url').value = ''; m.style.display = 'flex'; setTimeout(() => $('inv-sheets-url').focus(), 80) }
+  }
+  function invCloseSheetsModal() {
+    const m = $('modal-inv-sheets'); if (m) m.style.display = 'none'
+  }
+
+  async function invImportFromSheets() {
+    const raw = ($('inv-sheets-url').value || '').trim()
+    if (!raw) { $('inv-sheets-url').focus(); return }
+    const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
+    if (!match) { showToast('URL inválida. Asegúrate de pegar el link completo de Google Sheets.', 4000); return }
+    const sheetId = match[1]
+    const gid     = ($('inv-sheets-gid').value || '').trim()
+    const url     = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gid ? '&gid=' + gid : ''}`
+
+    const btn = $('inv-sheets-btn')
+    btn.disabled = true; btn.textContent = 'Importando…'
+
+    let text
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('No se pudo acceder a la hoja (' + res.status + '). Verifica que sea pública.')
+      text = await res.text()
+    } catch (e) {
+      showToast(e.message || 'Error al acceder a la hoja', 4000)
+      btn.disabled = false; btn.textContent = 'Importar'
+      return
+    }
+
+    const rows = invParseCSVText(text)
+    btn.disabled = false; btn.textContent = 'Importar'
+
+    if (!rows.length) { showToast('No se encontraron filas válidas. Revisa los encabezados.', 4000); return }
     const { error } = await sb.from('products').insert(rows)
     if (error) { showToast('Error al importar: ' + error.message, 4000); return }
-    showToast(`${rows.length} producto(s) importados`)
+    invCloseSheetsModal()
+    showToast(`${rows.length} producto(s) importados de Google Sheets`)
     await loadInventario()
   }
 
-  window.loadInventario   = loadInventario
-  window.invFilter        = invFilter
-  window.invSearch        = invSearch
-  window.invOpenModal     = invOpenModal
-  window.invCloseModal    = invCloseModal
-  window.invSaveProduct   = invSaveProduct
-  window.invDeleteProduct = invDeleteProduct
-  window.invImportCSV     = invImportCSV
+  // ── Exportar ──
+  function invExport(format) {
+    const d = $('inv-drop-export'); if (d) d.style.display = 'none'
+    if (!invData.length) { showToast('No hay productos para exportar', 3000); return }
+
+    const rows = invData.map(p => ({
+      nombre:    p.name       || '',
+      precio:    p.price      ?? '',
+      cantidad:  p.quantity   ?? '',
+      status:    p.status     || '',
+      categoria: p.category   || '',
+      notas:     p.description || '',
+    }))
+
+    const ts = new Date().toISOString().slice(0, 10)
+
+    if (format === 'json') {
+      invDownload(`inventario_${ts}.json`, JSON.stringify(invData, null, 2), 'application/json')
+      return
+    }
+
+    if (format === 'csv') {
+      const headers = ['nombre','precio','cantidad','status','categoria','notas']
+      const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(','))].join('\n')
+      invDownload(`inventario_${ts}.csv`, csv, 'text/csv')
+      return
+    }
+
+    if (format === 'xlsx') {
+      if (!window.XLSX) { showToast('La librería Excel no cargó. Recarga la página.', 4000); return }
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventario')
+      XLSX.writeFile(wb, `inventario_${ts}.xlsx`)
+    }
+  }
+
+  function invDownload(filename, content, mime) {
+    const a   = document.createElement('a')
+    a.href    = URL.createObjectURL(new Blob([content], { type: mime }))
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  window.loadInventario       = loadInventario
+  window.invFilter            = invFilter
+  window.invSearch            = invSearch
+  window.invOpenModal         = invOpenModal
+  window.invCloseModal        = invCloseModal
+  window.invSaveProduct       = invSaveProduct
+  window.invDeleteProduct     = invDeleteProduct
+  window.invImportFile        = invImportFile
+  window.invToggleDropdown    = invToggleDropdown
+  window.invOpenSheetsModal   = invOpenSheetsModal
+  window.invCloseSheetsModal  = invCloseSheetsModal
+  window.invImportFromSheets  = invImportFromSheets
+  window.invExport            = invExport
 
   // ── Broadcast ────────────────────────────────────────────────────────────
   const bcState = { filter: 'all', busy: false }
