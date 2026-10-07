@@ -1899,12 +1899,41 @@
               <div class="view-header-sub" id="inv-stats-bar">Cargando…</div>
             </div>
           </div>
-          <div class="view-header-actions" style="gap:8px">
-            <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              CSV
-              <input type="file" id="inv-file-input" accept=".csv" style="display:none" onchange="invImportCSV(event)" />
-            </label>
+          <div class="view-header-actions" style="gap:8px;position:relative">
+
+            <!-- Importar dropdown -->
+            <div style="position:relative" id="inv-import-wrap">
+              <button onclick="invToggleDropdown('import')" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Importar
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="inv-drop-import" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.3);z-index:200;min-width:190px;overflow:hidden">
+                <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--text);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background='transparent'">
+                  <span style="font-size:15px">📄</span> CSV o Excel (.xlsx)
+                  <input type="file" id="inv-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="invImportFile(event)" />
+                </label>
+                <div style="height:1px;background:var(--border);margin:0 10px"></div>
+                <button onclick="invToggleDropdown('import');invOpenSheetsModal()" style="display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--text);cursor:pointer;background:transparent;border:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;text-align:left" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background='transparent'">
+                  <span style="font-size:15px">📊</span> Google Sheets
+                </button>
+              </div>
+            </div>
+
+            <!-- Exportar dropdown -->
+            <div style="position:relative" id="inv-export-wrap">
+              <button onclick="invToggleDropdown('export')" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Exportar
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="inv-drop-export" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.3);z-index:200;min-width:160px;overflow:hidden">
+                <button onclick="invExport('csv')"  style="display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--text);cursor:pointer;background:transparent;border:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;text-align:left" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background='transparent'"><span style="font-size:15px">📄</span> CSV</button>
+                <button onclick="invExport('xlsx')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--text);cursor:pointer;background:transparent;border:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;text-align:left" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background='transparent'"><span style="font-size:15px">📊</span> Excel (.xlsx)</button>
+                <button onclick="invExport('json')" style="display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px;color:var(--text);cursor:pointer;background:transparent;border:none;width:100%;font-family:'Plus Jakarta Sans',sans-serif;text-align:left" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background='transparent'"><span style="font-size:15px">🗂</span> JSON</button>
+              </div>
+            </div>
+
             <button onclick="invOpenModal()" class="btn-primary" style="display:flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Agregar
