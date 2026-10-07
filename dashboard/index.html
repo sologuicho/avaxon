@@ -4279,6 +4279,26 @@
     if (modal) modal.style.display = 'none'
   }
 
+  function openCRMQR(id) {
+    const client = crmData.find(c => c.id === id)
+    if (!client?.phone) return
+    const phone = client.phone.replace(/\D/g, '')
+    const telUri = 'tel:+' + phone
+
+    $('crm-qr-name').textContent  = client.company_name || client.contact_name || phone
+    $('crm-qr-phone').textContent = client.phone
+
+    const canvas = $('crm-qr-canvas')
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+    QRCode.toCanvas(canvas, telUri, { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
+
+    $('modal-crm-qr').style.display = 'flex'
+  }
+
+  function closeCRMQR() {
+    $('modal-crm-qr').style.display = 'none'
+  }
+
   async function saveCRMClient() {
     const company = ($('crm-f-company').value || '').trim()
     if (!company) { $('crm-f-company').focus(); return }
