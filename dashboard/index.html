@@ -4851,6 +4851,87 @@
   </div>
 
   <!-- ── Modal de bienvenida (onboarding) ───────────────────────────────── -->
+  <!-- ── Modal CRM add/edit ── -->
+  <div id="modal-crm" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:540px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);margin:auto">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:36px;height:36px;background:rgba(34,197,94,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          </div>
+          <div id="crm-modal-title" style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Nuevo cliente</div>
+        </div>
+        <button onclick="closeCRMModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px">×</button>
+      </div>
+
+      <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="crm-edit-id" />
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="grid-column:1/-1">
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Empresa *</label>
+            <input id="crm-f-company" type="text" placeholder="Nombre del negocio" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Contacto</label>
+            <input id="crm-f-contact" type="text" placeholder="Nombre y apellido" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Teléfono</label>
+            <input id="crm-f-phone" type="tel" placeholder="+52 899 000 0000" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+            <input id="crm-f-email" type="email" placeholder="correo@ejemplo.com" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Status</label>
+            <select id="crm-f-status" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;cursor:pointer" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <option value="prospecto">Prospecto</option>
+              <option value="negociacion">Negociación</option>
+              <option value="activo">Activo</option>
+              <option value="pausado">Pausado</option>
+              <option value="churned">Churned</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Plan</label>
+            <select id="crm-f-plan" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;cursor:pointer" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <option value="">Sin definir</option>
+              <option value="mostrador">Mostrador — $2,990</option>
+              <option value="sucursal">Sucursal — $4,990</option>
+              <option value="cadena">Cadena — $10,990</option>
+              <option value="enterprise">Enterprise — $20,000+</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">MRR (MXN)</label>
+            <input id="crm-f-mrr" type="number" min="0" placeholder="0" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Industria</label>
+            <input id="crm-f-industry" type="text" placeholder="Ej: Clínica dental" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Próximo seguimiento</label>
+            <input id="crm-f-followup" type="date" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:6px">Notas</label>
+            <textarea id="crm-f-notes" rows="3" placeholder="Contexto, objeciones, próximos pasos…" style="width:100%;resize:vertical;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;line-height:1.5" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:0 24px 20px;display:flex;gap:10px">
+        <button id="crm-delete-btn" onclick="deleteCRMClient()" style="display:none;padding:11px 16px;background:transparent;border:1.5px solid rgba(239,68,68,.35);border-radius:12px;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Eliminar</button>
+        <button onclick="closeCRMModal()" style="flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
+        <button id="crm-save-btn" onclick="saveCRMClient()" class="btn-primary" style="flex:2;padding:11px;font-size:13.5px">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Modal Broadcast ── -->
   <div id="modal-broadcast" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
