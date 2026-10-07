@@ -422,12 +422,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
     const sendAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
     const reminderText = `⏰ *Recordatorio — Avaxon*\n\n${leadName} todavía espera respuesta para agendar su diagnóstico gratuito.\n\n*WhatsApp:* wa.me/${fromPhone}\n\n¡No pierdas este lead! 🎯`
-    await sb.from('reminders').insert({
+    const { error: reminderErr } = await sb.from('reminders').insert({
       send_at:         sendAt,
       to_phone:        AVAXON_PHONE,
       message:         reminderText,
       phone_number_id: phoneNumberId,
-    }).catch(() => {})
+    })
+    if (reminderErr) console.error('reminder insert error:', reminderErr.message)
 
     fireZapier(sb, organization_id, {
       event:           'lead_qualified',
