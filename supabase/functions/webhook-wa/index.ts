@@ -358,7 +358,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     aiParsed = { text: rawReply }
   }
 
-  const replyText    = aiParsed.text ?? rawReply
+  const replyText    = (aiParsed.text ?? rawReply)
+    .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
+    .replace(/~~([^~\n]+)~~/g, '~$1~')
+    .replace(/^#{1,6}\s+/gm, '')
   const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3)
   const notifyOwner  = aiParsed.notify_owner === true
 
