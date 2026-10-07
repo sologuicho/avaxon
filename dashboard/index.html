@@ -4279,20 +4279,23 @@
     if (modal) modal.style.display = 'none'
   }
 
-  function openCRMQR(id) {
+  async function openCRMQR(id) {
     const client = crmData.find(c => c.id === id)
     if (!client?.phone) return
-    const phone = client.phone.replace(/\D/g, '')
+    const phone  = client.phone.replace(/\D/g, '')
     const telUri = 'tel:+' + phone
 
     $('crm-qr-name').textContent  = client.company_name || client.contact_name || phone
     $('crm-qr-phone').textContent = client.phone
-
-    const canvas = $('crm-qr-canvas')
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
-    QRCode.toCanvas(canvas, telUri, { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
-
+    $('crm-qr-img').src = ''
     $('modal-crm-qr').style.display = 'flex'
+
+    try {
+      const dataUrl = await QRCode.toDataURL(telUri, { width: 220, margin: 2, color: { dark: '#0f172a', light: '#ffffff' } })
+      $('crm-qr-img').src = dataUrl
+    } catch(e) {
+      console.error('QR error:', e)
+    }
   }
 
   function closeCRMQR() {
