@@ -2064,6 +2064,155 @@
         </div>
       </div>
 
+      <!-- VIEW: Configuración -->
+      <div class="view" id="view-config">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(99,102,241,.12);color:#818cf8"><i class="fa fa-sliders" style="font-size:15px"></i></div>
+            <div>
+              <div class="view-header-title">Configuración</div>
+              <div class="view-header-sub">Plantillas, ejemplos de bot y ajustes del negocio</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:18px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content">
+          <button id="cfg-tab-plantillas" onclick="switchConfigTab('plantillas')" style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--accent);color:#062513;transition:all .15s">Plantillas</button>
+          <button id="cfg-tab-ejemplos"   onclick="switchConfigTab('ejemplos')"   style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">Ejemplos de bot</button>
+          <button id="cfg-tab-general"    onclick="switchConfigTab('general')"    style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">General</button>
+        </div>
+
+        <!-- Pane: Plantillas -->
+        <div id="cfg-pane-plantillas">
+          <div class="card bp">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Plantillas de mensajes</span>
+                <span id="cfg-tpl-count" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--hover-bg);padding:2px 8px;border-radius:6px">0</span>
+              </div>
+              <button onclick="openTemplateModal()" class="btn-primary" style="padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:7px"><i class="fa fa-plus"></i> Nueva plantilla</button>
+            </div>
+            <div id="cfg-templates-list"></div>
+            <div style="padding:12px 20px;background:rgba(99,102,241,.05);border-top:1px solid var(--border)">
+              <p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin:0"><i class="fa fa-circle-info" style="color:#818cf8;margin-right:5px"></i>Las plantillas <strong style="color:var(--text-muted)">Local</strong> solo se usan en este panel. Para enviarlas fuera de la ventana de 24h necesitas enviarlas a Meta para aprobación.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pane: Ejemplos -->
+        <div id="cfg-pane-ejemplos" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px">
+            <!-- Clínica -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🏥</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Clínica / Salud</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente virtual de una clínica médica. Tu rol es agendar citas, confirmar horarios, recordar al paciente llevar sus documentos...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una clínica médica. Tu rol es agendar citas, confirmar horarios, recordar al paciente llevar sus documentos y resolver dudas sobre servicios. Sé amable, empático y profesional. Nunca des diagnósticos médicos. Cuando el paciente quiera agendar, pide su nombre completo, fecha de nacimiento y motivo de consulta. Responde siempre en español y con formato limpio sin asteriscos.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Automotriz -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🚗</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Automotriz</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente virtual de una agencia de autos. Tu rol es presentar el catálogo, cotizar según modelo y versión, agendar pruebas de manejo...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una agencia de autos. Tu rol es presentar el catálogo de vehículos disponibles, cotizar según el modelo y versión, agendar pruebas de manejo y conectar al cliente con un ejecutivo de ventas cuando esté listo para negociar. Pregunta por el uso del vehículo (ciudad/carretera), presupuesto aproximado y si busca financiamiento. Responde en español, sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Inmobiliaria -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🏠</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Inmobiliaria</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente virtual de una inmobiliaria. Califica al cliente, presenta propiedades disponibles, agenda visitas y notifica al agente cuando el lead esté listo...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una inmobiliaria. Tu rol es presentar propiedades disponibles, calificar al cliente (compra/renta, presupuesto, zona de interés, número de recámaras), agendar visitas y notificar al agente cuando el lead esté listo. Sé consultivo y ayuda al cliente a entender el proceso. Responde en español con formato claro y sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Suplementos -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">💪</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Suplementos / Nutrición</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente virtual de una tienda de suplementos. Recomienda productos según el objetivo del cliente y guía al cliente al carrito de compra...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una tienda de suplementos deportivos. Tu rol es recomendar productos según el objetivo del cliente (volumen, definición, rendimiento, salud general), resolver dudas sobre ingredientes y dosis, y guiar al cliente al carrito de compra. No reemplazas a un nutriólogo. Responde en español, sin asteriscos dobles, de forma energética y motivadora.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Restaurante -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🍽️</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Restaurante / Food</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente de un restaurante. Comparte el menú, toma pedidos, confirma mesas y horarios, resuelve dudas sobre alérgenos...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de un restaurante. Tu rol es compartir el menú, tomar pedidos para entrega o recoger en local, confirmar disponibilidad de mesas y horarios, y resolver dudas sobre ingredientes y alérgenos. Sé amable y eficiente. Cuando el cliente haga un pedido, confirma cada ítem y el total antes de cerrar. Responde en español sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Educación -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🎓</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Educación / Escuela</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente de una institución educativa. Informa sobre programas, costos, becas y agenda visitas o entrevistas con prospectos...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una institución educativa. Tu rol es informar sobre los programas disponibles, requisitos de admisión, costos y becas, y agendar visitas o entrevistas. Sé paciente, claro y alentador. Cuando el prospecto esté interesado, captura: nombre, nivel educativo actual, programa de interés y datos de contacto. Responde en español sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Belleza -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">💅</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Belleza / Estética</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente de un salón de belleza. Muestra servicios y precios, agenda citas, confirma disponibilidad de estilistas y recuerda citas próximas...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de un salón de belleza o centro estético. Tu rol es mostrar los servicios disponibles con precios, agendar citas, confirmar disponibilidad de estilistas y recordar citas próximas. Cuando el cliente quiera agendar, pide: servicio deseado, fecha preferida y nombre. Sé cálido, profesional y detallista. Responde en español sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+            <!-- Servicios generales -->
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                <span style="font-size:24px">🔧</span>
+                <span style="font-size:14px;font-weight:700;color:var(--text)">Servicios Generales</span>
+              </div>
+              <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin:0 0 14px">Eres el asistente de una empresa de servicios. Califica la necesidad del cliente, informa sobre servicios, cotiza y agenda visita o llamada con el equipo...</p>
+              <button onclick="useExamplePrompt('Eres el asistente virtual de una empresa de servicios. Tu rol es calificar la necesidad del cliente, dar información sobre los servicios disponibles, cotizar cuando sea posible y agendar una visita o llamada con el equipo. Sé profesional y directo. Captura: tipo de servicio requerido, ubicación y disponibilidad de horario. Responde en español sin asteriscos dobles.')" style="width:100%;padding:8px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Usar en mi bot</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pane: General -->
+        <div id="cfg-pane-general" style="display:none;max-width:540px">
+          <div class="card bp" style="padding:24px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+              <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:13px"><i class="fa fa-building"></i></div>
+              <span style="font-size:15px;font-weight:700;color:var(--text)">Datos del negocio</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Nombre del negocio</label>
+                <input id="cfg-org-name" type="text" placeholder="Ej: Clínica San Rafael" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Industria</label>
+                <input id="cfg-org-industry" type="text" placeholder="Ej: Clínica dental, Agencia de autos…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+                <button onclick="saveOrgConfig()" class="btn-primary" style="padding:10px 22px;font-size:13.5px">Guardar cambios</button>
+                <span id="cfg-org-saved" style="font-size:13px;font-weight:600;color:var(--accent);opacity:0;transition:opacity .3s">✓ Guardado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="view" id="view-cuenta">
         <div class="view-header">
           <div class="view-header-left">
