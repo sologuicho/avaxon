@@ -4362,13 +4362,14 @@
       if (!company) continue
       result.push({
         company_name:  company,
-        contact_name:  obj['contacto'] || obj['contact'] || null,
-        phone:         obj['telefono'] || obj['teléfono'] || obj['phone'] || null,
-        email:         obj['email']    || obj['correo']   || null,
-        status:        obj['status']   || obj['estado']   || 'prospecto',
-        plan:          obj['plan']     || null,
+        contact_name:  obj['contacto']  || obj['contact']  || null,
+        phone:         obj['telefono']  || obj['teléfono'] || obj['phone'] || null,
+        email:         obj['email']     || obj['correo']   || null,
+        status:        obj['status']    || obj['estado']   || 'prospecto',
+        plan:          obj['plan']      || null,
         mrr:           parseFloat(obj['mrr'] || obj['mensualidad']) || 0,
         industry:      obj['industria'] || obj['industry'] || obj['giro'] || null,
+        city:          obj['ciudad']    || obj['city']     || obj['municipio'] || null,
         notes:         obj['notas']     || obj['notes']    || null,
       })
     }
