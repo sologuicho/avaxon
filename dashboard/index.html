@@ -3610,85 +3610,52 @@
 
   let invData      = []
   let invActiveTab = 'all'
-  let invModeTimer = null
 
   async function loadInventario() {
     const tbody = $('tbody-inv')
-    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
     const orgId = state.currentOrgId
     if (!orgId) return
-
-    const [prodRes, cfgRes] = await Promise.all([
-      sb.from('products').select('*').eq('organization_id', orgId).order('name'),
-      sb.from('bot_configs').select('inventory_config').eq('organization_id', orgId).maybeSingle(),
-    ])
-
-    invData = prodRes.data ?? []
-    renderInvKPIs(invData)
-    renderInvTable(invData)
-
-    const cfg = cfgRes.data?.inventory_config || {}
-    const modo = cfg.modo || 'distribuidor'
-    document.querySelectorAll('input[name="invModo"]').forEach(r => { r.checked = r.value === modo })
-    $('inv-modo-tiempo').value  = cfg.tiempo   || ''
-    $('inv-modo-anticipo').value = cfg.anticipo || ''
-    $('inv-modo-msg').value     = cfg.msg_stock || ''
-    $('inv-modo-qty').checked   = !!cfg.decir_cantidad
-    $('inv-modo-umbral').value  = cfg.umbral_bajo ?? 3
-    invUpdateModeLabels(modo)
-    invUpdatePreview()
-  }
-
-  function renderInvKPIs(data) {
-    const total     = data.length
-    const disp      = data.filter(p => p.status === 'disponible').length
-    const bajo      = data.filter(p => p.status === 'bajo_stock').length
-    const agotado   = data.filter(p => p.status === 'agotado').length
-    const kpis = [
-      { label: 'Total productos', value: total,   icon: 'fa-box',          color: '#818cf8', bg: 'rgba(129,140,248,.12)' },
-      { label: 'Disponibles',     value: disp,    icon: 'fa-check-circle', color: '#22c55e', bg: 'rgba(34,197,94,.12)'  },
-      { label: 'Bajo stock',      value: bajo,    icon: 'fa-exclamation-triangle', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
-      { label: 'Agotados',        value: agotado, icon: 'fa-times-circle', color: '#ef4444', bg: 'rgba(239,68,68,.12)'  },
-    ]
-    $('inv-kpis').innerHTML = kpis.map(k => `
-      <div class="card bp" style="padding:18px 20px">
-        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <div style="width:30px;height:30px;background:${k.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;color:${k.color};font-size:12px;flex-shrink:0"><i class="fa ${k.icon}"></i></div>
-          <span style="font-size:12px;color:var(--text-muted)">${k.label}</span>
-        </div>
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)">${k.value}</div>
-      </div>`).join('')
+    const { data } = await sb.from('products').select('*').eq('organization_id', orgId).order('name')
+    invData = data ?? []
+    const disp    = invData.filter(p => p.status === 'disponible').length
+    const alertas = invData.filter(p => p.status === 'bajo_stock' || p.status === 'agotado').length
+    const sb2 = $('inv-stats-bar')
+    if (sb2) sb2.textContent = `${invData.length} productos · ${disp} disponibles${alertas ? ` · ⚠ ${alertas} con alerta` : ''}`
+    invFilter(invActiveTab)
   }
 
   function renderInvTable(data) {
     const tbody = $('tbody-inv')
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Sin productos · Agrega uno con el botón de arriba o importa un CSV</td></tr>`
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Sin productos · Agrega uno o importa un CSV</td></tr>`
       return
     }
     tbody.innerHTML = data.map(p => {
       const st = INV_STATUS[p.status] ?? INV_STATUS.disponible
+      const qty = p.quantity ?? null
+      const qtyHtml = qty === null ? '<span style="color:var(--text-dim)">—</span>'
+        : qty === 0 ? '<span style="color:#ef4444;font-weight:700">0</span>'
+        : `<span style="color:${qty <= 3 ? '#f59e0b' : 'var(--text)'};font-weight:600">${qty}</span>`
       return `<tr style="cursor:pointer" onclick="invOpenModal('${p.id}')">
         <td>
           <div style="font-size:13.5px;font-weight:700;color:var(--text)">${p.name}</div>
-          ${p.description ? `<div style="font-size:11.5px;color:var(--text-dim);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.description}</div>` : ''}
+          ${p.category ? `<div style="font-size:11.5px;color:var(--text-dim)">${p.category}</div>` : ''}
         </td>
-        <td style="font-size:12.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">${p.sku || '—'}</td>
         <td style="text-align:right;font-size:13px;font-weight:600;color:var(--text)">${p.price != null ? '$' + Number(p.price).toLocaleString('es-MX') : '—'}</td>
-        <td style="text-align:center;font-size:13px;color:var(--text)">${p.quantity ?? '—'}</td>
+        <td style="text-align:center">${qtyHtml}</td>
         <td><span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;color:${st.color};background:${st.bg}">${st.label}</span></td>
-        <td style="font-size:12.5px;color:var(--text-muted)">${p.category || '—'}</td>
-        <td><button onclick="event.stopPropagation();invOpenModal('${p.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px" title="Editar"><i class="fa fa-pen"></i></button></td>
+        <td><button onclick="event.stopPropagation();invOpenModal('${p.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px"><i class="fa fa-pen"></i></button></td>
       </tr>`
     }).join('')
   }
 
   function invFilter(tab) {
     invActiveTab = tab
-    ;['all','disponible','bajo_stock','agotado'].forEach(t => {
-      const btn = $('inv-tab-' + (t === 'all' ? 'all' : t === 'disponible' ? 'disp' : t === 'bajo_stock' ? 'bajo' : 'agotado'))
-      if (btn) btn.classList.toggle('active', t === tab)
+    const tabMap = { all: 'all', disponible: 'disp', bajo_stock: 'bajo', agotado: 'agotado' }
+    Object.entries(tabMap).forEach(([k, id]) => {
+      const btn = $('inv-tab-' + id)
+      if (btn) btn.classList.toggle('active', k === tab)
     })
     const filtered = tab === 'all' ? invData : invData.filter(p => p.status === tab)
     renderInvTable(filtered)
@@ -3697,12 +3664,10 @@
   function invSearch(q) {
     if (!q.trim()) { invFilter(invActiveTab); return }
     const lq = q.toLowerCase()
-    const filtered = invData.filter(p =>
-      (p.name  || '').toLowerCase().includes(lq) ||
-      (p.sku   || '').toLowerCase().includes(lq) ||
+    renderInvTable(invData.filter(p =>
+      (p.name     || '').toLowerCase().includes(lq) ||
       (p.category || '').toLowerCase().includes(lq)
-    )
-    renderInvTable(filtered)
+    ))
   }
 
   function invOpenModal(id) {
@@ -3712,25 +3677,19 @@
     $('inv-modal-title').textContent = isEdit ? 'Editar producto' : 'Nuevo producto'
     $('inv-delete-btn').style.display = isEdit ? 'block' : 'none'
     $('inv-edit-id').value = id || ''
-
-    ;['name','sku','price','quantity','status','category','description'].forEach(f => {
-      const el = $('inv-f-' + f)
-      if (el) el.value = f === 'status' ? 'disponible' : ''
-    })
-
+    ;['name','price','quantity','category','notes'].forEach(f => { const el = $('inv-f-' + f); if (el) el.value = '' })
+    $('inv-f-status').value = 'disponible'
     if (isEdit) {
       const p = invData.find(x => x.id === id)
       if (p) {
-        $('inv-f-name').value        = p.name        || ''
-        $('inv-f-sku').value         = p.sku         || ''
-        $('inv-f-price').value       = p.price       ?? ''
-        $('inv-f-quantity').value    = p.quantity    ?? ''
-        $('inv-f-status').value      = p.status      || 'disponible'
-        $('inv-f-category').value    = p.category    || ''
-        $('inv-f-description').value = p.description || ''
+        $('inv-f-name').value     = p.name        || ''
+        $('inv-f-price').value    = p.price       ?? ''
+        $('inv-f-quantity').value = p.quantity    ?? ''
+        $('inv-f-status').value   = p.status      || 'disponible'
+        $('inv-f-category').value = p.category    || ''
+        $('inv-f-notes').value    = p.description || ''
       }
     }
-
     modal.style.display = 'flex'
     setTimeout(() => $('inv-f-name').focus(), 80)
   }
@@ -3743,35 +3702,24 @@
   async function invSaveProduct() {
     const name = ($('inv-f-name').value || '').trim()
     if (!name) { $('inv-f-name').focus(); return }
-
     const btn = $('inv-save-btn')
-    btn.disabled = true
-    btn.textContent = 'Guardando…'
-
+    btn.disabled = true; btn.textContent = 'Guardando…'
     const qty = $('inv-f-quantity').value !== '' ? parseInt($('inv-f-quantity').value) : null
     const payload = {
       organization_id: state.currentOrgId,
       name,
-      sku:         ($('inv-f-sku').value         || '').trim() || null,
       price:       $('inv-f-price').value !== '' ? parseFloat($('inv-f-price').value) : null,
       quantity:    qty,
-      status:       $('inv-f-status').value      || 'disponible',
-      category:    ($('inv-f-category').value    || '').trim() || null,
-      description: ($('inv-f-description').value || '').trim() || null,
-      updated_at:   new Date().toISOString(),
+      status:      $('inv-f-status').value || 'disponible',
+      category:    ($('inv-f-category').value || '').trim() || null,
+      description: ($('inv-f-notes').value    || '').trim() || null,
+      updated_at:  new Date().toISOString(),
     }
-
     const editId = $('inv-edit-id').value
     let error
-    if (editId) {
-      ;({ error } = await sb.from('products').update(payload).eq('id', editId))
-    } else {
-      ;({ error } = await sb.from('products').insert(payload))
-    }
-
-    btn.disabled = false
-    btn.textContent = 'Guardar'
-
+    if (editId) { ;({ error } = await sb.from('products').update(payload).eq('id', editId)) }
+    else        { ;({ error } = await sb.from('products').insert(payload)) }
+    btn.disabled = false; btn.textContent = 'Guardar'
     if (error) { showToast('Error: ' + error.message, 4000); return }
     invCloseModal()
     showToast(editId ? 'Producto actualizado' : 'Producto agregado')
@@ -3780,174 +3728,51 @@
 
   async function invDeleteProduct() {
     const id = $('inv-edit-id').value
-    if (!id) return
-    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return
+    if (!id || !confirm('¿Eliminar este producto?')) return
     const { error } = await sb.from('products').delete().eq('id', id)
     if (error) { showToast('Error: ' + error.message, 4000); return }
-    invCloseModal()
-    showToast('Producto eliminado')
-    await loadInventario()
-  }
-
-  function invProbe() {
-    const q = ($('inv-probe-q').value || '').trim().toLowerCase()
-    const res = $('inv-probe-res')
-    if (!q) { res.style.display = 'none'; return }
-
-    const matches = invData.filter(p =>
-      (p.name        || '').toLowerCase().includes(q) ||
-      (p.sku         || '').toLowerCase().includes(q) ||
-      (p.description || '').toLowerCase().includes(q) ||
-      (p.category    || '').toLowerCase().includes(q)
-    )
-
-    res.style.display = 'block'
-    if (!matches.length) {
-      const modo = (document.querySelector('input[name="invModo"]:checked') || {}).value || 'distribuidor'
-      const msgStock = ($('inv-modo-msg').value || '').trim()
-      const tiempo   = ($('inv-modo-tiempo').value || '').trim()
-      if (modo === 'fabricante') {
-        res.innerHTML = `<span style="color:var(--text-muted)">🏭 El agente diría: <em>"Ese producto lo fabricamos bajo pedido${tiempo ? '. Tiempo de entrega: ' + tiempo : ''}."</em></span>`
-      } else {
-        res.innerHTML = `<span style="color:var(--text-muted)">📭 El agente diría: <em>"${msgStock || 'Por el momento ese producto no está disponible, pero puedo avisarte cuando llegue.'}${tiempo ? ' Tiempo estimado: ' + tiempo + '.' : ''}"</em></span>`
-      }
-      return
-    }
-
-    const decirQty = $('inv-modo-qty').checked
-    const umbral   = parseInt($('inv-modo-umbral').value) || 3
-
-    res.innerHTML = matches.slice(0, 5).map(p => {
-      const st = INV_STATUS[p.status] ?? INV_STATUS.disponible
-      const qtyInfo = decirQty && p.quantity != null
-        ? (p.quantity <= umbral && p.quantity > 0
-          ? ` · <span style="color:#f59e0b">quedan ${p.quantity}</span>`
-          : p.quantity === 0
-            ? ` · <span style="color:#ef4444">sin existencia</span>`
-            : '')
-        : ''
-      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;color:${st.color};background:${st.bg}">${st.label}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--text)">${p.name}</span>
-        ${p.price != null ? `<span style="font-size:12px;color:var(--text-muted)">$${Number(p.price).toLocaleString('es-MX')}</span>` : ''}
-        ${qtyInfo}
-      </div>`
-    }).join('') + (matches.length > 5 ? `<div style="font-size:12px;color:var(--text-dim);padding-top:6px">…y ${matches.length - 5} más</div>` : '')
-  }
-
-  function invUpdateModeLabels(modo) {
-    const distLbl = $('inv-mode-dist-lbl')
-    const fabLbl  = $('inv-mode-fab-lbl')
-    if (!distLbl || !fabLbl) return
-    if (modo === 'distribuidor') {
-      distLbl.style.borderColor = 'var(--accent)'; distLbl.style.background = 'var(--accent-sub)'
-      fabLbl.style.borderColor  = 'var(--border)';  fabLbl.style.background  = 'transparent'
-    } else {
-      fabLbl.style.borderColor  = 'var(--accent)'; fabLbl.style.background = 'var(--accent-sub)'
-      distLbl.style.borderColor = 'var(--border)';  distLbl.style.background = 'transparent'
-    }
-  }
-
-  function invUpdatePreview() {
-    const modo     = (document.querySelector('input[name="invModo"]:checked') || {}).value || 'distribuidor'
-    const tiempo   = ($('inv-modo-tiempo').value    || '').trim()
-    const anticipo = ($('inv-modo-anticipo').value  || '').trim()
-    const msgStock = ($('inv-modo-msg').value       || '').trim()
-    const decirQty = $('inv-modo-qty')?.checked
-    const umbral   = parseInt($('inv-modo-umbral')?.value) || 3
-
-    const prev = $('inv-mode-preview')
-    if (!prev) return
-
-    let lines = []
-    if (modo === 'distribuidor') {
-      lines.push(`• Sin stock: <em>"${msgStock || 'Por el momento ese producto no está disponible, pero puedo avisarte cuando llegue.'}"</em>`)
-    } else {
-      lines.push(`• Sin stock: <em>"Ese producto lo fabricamos bajo pedido."</em>`)
-    }
-    if (tiempo)   lines.push(`• Tiempo de entrega: <em>"${tiempo}"</em>`)
-    if (anticipo) lines.push(`• Anticipo: <em>"${anticipo}"</em>`)
-    if (decirQty) lines.push(`• Dirá cantidades. Ej. si quedan ${umbral} o menos: <em>"quedan ${umbral} en existencia"</em>`)
-
-    prev.style.display = 'block'
-    prev.innerHTML = `<strong style="font-size:12px;color:var(--text)">Vista previa del comportamiento:</strong><br>${lines.join('<br>')}`
-  }
-
-  function invModeChanged() {
-    const modo = (document.querySelector('input[name="invModo"]:checked') || {}).value || 'distribuidor'
-    invUpdateModeLabels(modo)
-    invUpdatePreview()
-    clearTimeout(invModeTimer)
-    invModeTimer = setTimeout(() => invModeSave(), 1200)
-  }
-
-  async function invModeSave() {
-    const orgId = state.currentOrgId
-    if (!orgId) return
-    const modo     = (document.querySelector('input[name="invModo"]:checked') || {}).value || 'distribuidor'
-    const cfg = {
-      modo,
-      tiempo:          ($('inv-modo-tiempo').value    || '').trim() || null,
-      anticipo:        ($('inv-modo-anticipo').value  || '').trim() || null,
-      msg_stock:       ($('inv-modo-msg').value       || '').trim() || null,
-      decir_cantidad:  !!$('inv-modo-qty')?.checked,
-      umbral_bajo:     parseInt($('inv-modo-umbral')?.value) || 3,
-    }
-    const saved = $('inv-mode-saved')
-    if (saved) saved.textContent = 'Guardando…'
-    const { error } = await sb.from('bot_configs')
-      .update({ inventory_config: cfg })
-      .eq('organization_id', orgId)
-    if (saved) saved.textContent = error ? '⚠ Error' : '✓ Guardado'
-    setTimeout(() => { if (saved) saved.textContent = '' }, 2500)
+    invCloseModal(); showToast('Producto eliminado'); await loadInventario()
   }
 
   async function invImportCSV(event) {
     const file = event.target.files?.[0]
     if (!file) return
     event.target.value = ''
-    const text = await file.text()
+    const text  = await file.text()
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
-    if (lines.length < 2) { showToast('El CSV está vacío o sin datos', 3000); return }
-
+    if (lines.length < 2) { showToast('CSV vacío o sin datos', 3000); return }
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
-    const colIdx = h => headers.indexOf(h)
-
+    const col = h => headers.indexOf(h)
     const rows = []
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''))
-      const name = cols[colIdx('nombre')] || cols[colIdx('name')] || cols[0]
+      const c = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+      const name = c[col('nombre')] || c[col('name')] || c[0]
       if (!name) continue
-      const qty = cols[colIdx('cantidad')] || cols[colIdx('quantity')]
+      const qty = c[col('cantidad')] || c[col('quantity')]
       rows.push({
         organization_id: state.currentOrgId,
         name,
-        sku:         cols[colIdx('sku')]          || null,
-        price:       parseFloat(cols[colIdx('precio')] || cols[colIdx('price')]) || null,
-        quantity:    qty !== undefined && qty !== '' ? parseInt(qty) : null,
-        status:      cols[colIdx('status')]       || 'disponible',
-        category:    cols[colIdx('categoria')] || cols[colIdx('category')] || null,
-        description: cols[colIdx('descripcion')] || cols[colIdx('description')] || null,
+        price:    parseFloat(c[col('precio')] || c[col('price')]) || null,
+        quantity: qty !== undefined && qty !== '' ? parseInt(qty) : null,
+        status:   c[col('status')] || 'disponible',
+        category: c[col('categoria')] || c[col('category')] || null,
       })
     }
-
-    if (!rows.length) { showToast('No se encontraron filas válidas', 3000); return }
+    if (!rows.length) { showToast('No hay filas válidas en el CSV', 3000); return }
     const { error } = await sb.from('products').insert(rows)
     if (error) { showToast('Error al importar: ' + error.message, 4000); return }
     showToast(`${rows.length} producto(s) importados`)
     await loadInventario()
   }
 
-  window.loadInventario  = loadInventario
-  window.invFilter       = invFilter
-  window.invSearch       = invSearch
-  window.invOpenModal    = invOpenModal
-  window.invCloseModal   = invCloseModal
-  window.invSaveProduct  = invSaveProduct
+  window.loadInventario   = loadInventario
+  window.invFilter        = invFilter
+  window.invSearch        = invSearch
+  window.invOpenModal     = invOpenModal
+  window.invCloseModal    = invCloseModal
+  window.invSaveProduct   = invSaveProduct
   window.invDeleteProduct = invDeleteProduct
-  window.invProbe        = invProbe
-  window.invModeChanged  = invModeChanged
-  window.invImportCSV    = invImportCSV
+  window.invImportCSV     = invImportCSV
 
   // ── Broadcast ────────────────────────────────────────────────────────────
   const bcState = { filter: 'all', busy: false }
