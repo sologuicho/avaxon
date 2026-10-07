@@ -4439,16 +4439,17 @@
     const d = $('crm-drop-export'); if (d) d.style.display = 'none'
     if (!crmData.length) { showToast('No hay clientes para exportar', 3000); return }
     const rows = crmData.map(c => ({
-      empresa:    c.company_name    || '',
-      contacto:   c.contact_name   || '',
-      telefono:   c.phone          || '',
-      email:      c.email          || '',
-      status:     c.status         || '',
-      plan:       c.plan           || '',
-      mrr:        c.mrr            ?? 0,
-      industria:  c.industry       || '',
-      seguimiento: c.next_followup_at || '',
-      notas:      c.notes          || '',
+      empresa:     c.company_name      || '',
+      contacto:    c.contact_name      || '',
+      telefono:    c.phone             || '',
+      email:       c.email             || '',
+      ciudad:      c.city              || '',
+      status:      c.status            || '',
+      plan:        c.plan              || '',
+      mrr:         c.mrr               ?? 0,
+      industria:   c.industry          || '',
+      seguimiento: c.next_followup_at  || '',
+      notas:       c.notes             || '',
     }))
     const ts = new Date().toISOString().slice(0, 10)
     if (format === 'json') {
