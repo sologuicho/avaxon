@@ -4194,7 +4194,10 @@
         <td style="font-size:12.5px;color:var(--text-muted)">${CRM_PLAN_LABELS[c.plan] || '—'}</td>
         <td style="text-align:right;font-size:13px;font-weight:600;color:var(--text)">${c.mrr ? '$' + Number(c.mrr).toLocaleString('es-MX') : '—'}</td>
         <td>${followupHtml}</td>
-        <td><button onclick="event.stopPropagation();openCRMModal('${c.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px" title="Editar"><i class="fa fa-pen"></i></button></td>
+        <td style="white-space:nowrap">
+          ${c.phone ? `<button onclick="event.stopPropagation();openCRMQR('${c.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px" title="QR de contacto"><i class="fa fa-qrcode"></i></button>` : ''}
+          <button onclick="event.stopPropagation();openCRMModal('${c.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px" title="Editar"><i class="fa fa-pen"></i></button>
+        </td>
       </tr>`
     }).join('')
   }
