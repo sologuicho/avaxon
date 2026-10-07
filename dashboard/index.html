@@ -5600,6 +5600,62 @@
     </div>
   </div>
 
+  <!-- ── Modal Inventario ── -->
+  <div id="modal-inv" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:36px;height:36px;background:rgba(99,102,241,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:14px;flex-shrink:0"><i class="fa fa-box"></i></div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)" id="inv-modal-title">Nuevo producto</div>
+        </div>
+        <button onclick="invCloseModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px">×</button>
+      </div>
+      <input type="hidden" id="inv-edit-id" />
+      <div style="padding:20px 24px;display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow-y:auto">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="grid-column:1/-1">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Nombre del producto *</label>
+            <input id="inv-f-name" type="text" placeholder="Ej. Camisa Oxford Blanca" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">SKU</label>
+            <input id="inv-f-sku" type="text" placeholder="CAM-OXF-BL" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'JetBrains Mono',monospace;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Categoría</label>
+            <input id="inv-f-category" type="text" placeholder="Ropa, Electrónica…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Precio (MXN)</label>
+            <input id="inv-f-price" type="number" min="0" step="0.01" placeholder="299.00" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Cantidad en stock</label>
+            <input id="inv-f-quantity" type="number" min="0" step="1" placeholder="0" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Estado</label>
+            <select id="inv-f-status" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+              <option value="disponible">Disponible</option>
+              <option value="bajo_stock">Bajo stock</option>
+              <option value="agotado">Agotado</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1">
+            <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:5px">Descripción breve</label>
+            <input id="inv-f-description" type="text" placeholder="Detalle que el agente puede mencionar al cliente" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--border)">
+        <button id="inv-delete-btn" onclick="invDeleteProduct()" style="display:none;padding:11px 16px;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.3);border-radius:12px;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Eliminar</button>
+        <div style="flex:1"></div>
+        <button onclick="invCloseModal()" style="padding:11px 20px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
+        <button id="inv-save-btn" onclick="invSaveProduct()" class="btn-primary" style="padding:11px 24px;font-size:13.5px">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Modal Broadcast ── -->
   <div id="modal-broadcast" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
