@@ -2855,7 +2855,7 @@
         chatInput.placeholder = 'Ventana de 24 h cerrada — usa una plantilla';
         sendBtn.disabled = true;
       } else {
-        const minsLeft = Math.round((24 - hrsAgo) * 60);
+        const minsLeft = Math.min(24 * 60, Math.round((24 - Math.max(0, hrsAgo)) * 60));
         const label = minsLeft < 60
           ? `${minsLeft} min`
           : `${Math.floor(minsLeft / 60)}h ${minsLeft % 60}min`;
