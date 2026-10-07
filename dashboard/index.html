@@ -4322,6 +4322,12 @@
     if (!e.target.closest('#crm-export-wrap')) { const el = $('crm-drop-export'); if (el) el.style.display = 'none' }
   })
 
+  const CRM_VALID_STATUSES = new Set(['prospecto','negociacion','activo','pausado','churned'])
+  function crmSanitizeStatus(val) {
+    const v = (val || '').toLowerCase().trim()
+    return CRM_VALID_STATUSES.has(v) ? v : 'prospecto'
+  }
+
   function crmNormalizeRows(data) {
     const key = (obj, ...keys) => {
       for (const k of keys) {
@@ -4333,18 +4339,17 @@
     return data.map(obj => {
       const company = key(obj, 'empresa', 'company', 'company_name', 'nombre', 'name')
       if (!company) return null
-      const mrr = parseFloat(key(obj, 'mrr', 'mensualidad', 'monthly')) || 0
       return {
-        company_name:     company,
-        contact_name:     key(obj, 'contacto', 'contact', 'contact_name', 'nombre_contacto') || null,
-        phone:            key(obj, 'telefono', 'teléfono', 'phone', 'tel') || null,
-        email:            key(obj, 'email', 'correo') || null,
-        status:           key(obj, 'status', 'estado') || 'prospecto',
-        plan:             key(obj, 'plan') || null,
-        mrr:              mrr,
-        industry:         key(obj, 'industria', 'industry', 'giro') || null,
-        city:             key(obj, 'ciudad', 'city', 'municipio') || null,
-        notes:            key(obj, 'notas', 'notes', 'comentarios') || null,
+        company_name: company,
+        contact_name: key(obj, 'contacto', 'contact', 'contact_name', 'nombre_contacto') || null,
+        phone:        key(obj, 'telefono', 'teléfono', 'phone', 'tel') || null,
+        email:        key(obj, 'email', 'correo') || null,
+        status:       crmSanitizeStatus(key(obj, 'status', 'estado')),
+        plan:         key(obj, 'plan') || null,
+        mrr:          parseFloat(key(obj, 'mrr', 'mensualidad', 'monthly')) || 0,
+        industry:     key(obj, 'industria', 'industry', 'giro') || null,
+        city:         key(obj, 'ciudad', 'city', 'municipio', 'colonia', 'dirección', 'direccion') || null,
+        notes:        key(obj, 'notas', 'notes', 'comentarios') || null,
       }
     }).filter(Boolean)
   }
@@ -4355,22 +4360,22 @@
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
     const result  = []
     for (let i = 1; i < lines.length; i++) {
-      const cols    = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
-      const obj     = {}
+      const cols = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+      const obj  = {}
       headers.forEach((h, idx) => { obj[h] = cols[idx] || '' })
       const company = obj['empresa'] || obj['company'] || obj['company_name'] || cols[0]
       if (!company) continue
       result.push({
-        company_name:  company,
-        contact_name:  obj['contacto']  || obj['contact']  || null,
-        phone:         obj['telefono']  || obj['teléfono'] || obj['phone'] || null,
-        email:         obj['email']     || obj['correo']   || null,
-        status:        obj['status']    || obj['estado']   || 'prospecto',
-        plan:          obj['plan']      || null,
-        mrr:           parseFloat(obj['mrr'] || obj['mensualidad']) || 0,
-        industry:      obj['industria'] || obj['industry'] || obj['giro'] || null,
-        city:          obj['ciudad']    || obj['city']     || obj['municipio'] || null,
-        notes:         obj['notas']     || obj['notes']    || null,
+        company_name: company,
+        contact_name: obj['contacto']  || obj['contact']  || null,
+        phone:        obj['telefono']  || obj['teléfono'] || obj['phone'] || null,
+        email:        obj['email']     || obj['correo']   || null,
+        status:       crmSanitizeStatus(obj['status'] || obj['estado']),
+        plan:         obj['plan']      || null,
+        mrr:          parseFloat(obj['mrr'] || obj['mensualidad']) || 0,
+        industry:     obj['industria'] || obj['industry'] || obj['giro'] || null,
+        city:         obj['ciudad']    || obj['city']     || obj['municipio'] || obj['colonia'] || obj['dirección'] || obj['direccion'] || null,
+        notes:        obj['notas']     || obj['notes']    || null,
       })
     }
     return result
