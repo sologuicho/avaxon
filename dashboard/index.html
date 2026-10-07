@@ -4267,6 +4267,7 @@
     btn.textContent = 'Guardando…'
 
     const payload = {
+      organization_id:   state.currentOrgId,
       company_name:     company,
       contact_name:     ($('crm-f-contact').value  || '').trim() || null,
       phone:            ($('crm-f-phone').value    || '').trim() || null,
