@@ -4220,20 +4220,34 @@
     renderCRMTable(filtered)
   }
 
+  function crmSetStatus(val) {
+    $('crm-f-status').value = val
+    document.querySelectorAll('.crm-status-pill').forEach(btn => {
+      const active = btn.dataset.val === val
+      btn.style.background   = active ? btn.dataset.bg   : 'transparent'
+      btn.style.color        = active ? btn.dataset.color : 'var(--text-muted)'
+      btn.style.borderColor  = active ? btn.dataset.color : 'var(--border)'
+      btn.style.fontWeight   = active ? '700' : '500'
+    })
+  }
+
+  function crmAddFollowupDays(days) {
+    const base = $('crm-f-followup').value ? new Date($('crm-f-followup').value + 'T12:00:00') : new Date()
+    base.setDate(base.getDate() + days)
+    $('crm-f-followup').value = base.toISOString().slice(0, 10)
+  }
+
   function openCRMModal(id) {
     const modal = $('modal-crm')
     if (!modal) return
     const isEdit = !!id
-    $('crm-modal-title').textContent = isEdit ? 'Editar cliente' : 'Nuevo cliente'
+    $('crm-modal-title').textContent = isEdit ? 'Editar prospecto' : 'Nuevo prospecto'
     $('crm-delete-btn').style.display = isEdit ? 'block' : 'none'
     $('crm-edit-id').value = id || ''
 
-    const fields = ['company','contact','phone','email','status','plan','mrr','industry','city','followup','notes']
-    fields.forEach(f => {
-      const el = $('crm-f-' + f)
-      if (el) el.value = ''
-    })
-    $('crm-f-status').value = 'prospecto'
+    const fields = ['company','contact','phone','email','plan','mrr','industry','city','followup','notes']
+    fields.forEach(f => { const el = $('crm-f-' + f); if (el) el.value = '' })
+    crmSetStatus('prospecto')
 
     if (isEdit) {
       const client = crmData.find(c => c.id === id)
@@ -4242,13 +4256,13 @@
         $('crm-f-contact').value  = client.contact_name    || ''
         $('crm-f-phone').value    = client.phone           || ''
         $('crm-f-email').value    = client.email           || ''
-        $('crm-f-status').value   = client.status          || 'prospecto'
         $('crm-f-plan').value     = client.plan            || ''
         $('crm-f-mrr').value      = client.mrr             || ''
         $('crm-f-industry').value = client.industry        || ''
         $('crm-f-city').value     = client.city            || ''
         $('crm-f-followup').value = client.next_followup_at || ''
         $('crm-f-notes').value    = client.notes           || ''
+        crmSetStatus(client.status || 'prospecto')
       }
     }
 
