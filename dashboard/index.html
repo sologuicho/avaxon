@@ -4300,13 +4300,182 @@
     await loadCRM()
   }
 
-  window.loadCRM       = loadCRM
-  window.filterCRM     = filterCRM
-  window.onCRMSearch   = onCRMSearch
-  window.openCRMModal  = openCRMModal
-  window.closeCRMModal = closeCRMModal
-  window.saveCRMClient = saveCRMClient
-  window.deleteCRMClient = deleteCRMClient
+  // ── CRM Import/Export ────────────────────────────────────────────────────
+  function crmToggleDropdown(which) {
+    const imp = $('crm-drop-import')
+    const exp = $('crm-drop-export')
+    if (which === 'import') {
+      imp.style.display = imp.style.display === 'none' ? 'block' : 'none'
+      if (exp) exp.style.display = 'none'
+    } else {
+      exp.style.display = exp.style.display === 'none' ? 'block' : 'none'
+      if (imp) imp.style.display = 'none'
+    }
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#crm-import-wrap')) { const el = $('crm-drop-import'); if (el) el.style.display = 'none' }
+    if (!e.target.closest('#crm-export-wrap')) { const el = $('crm-drop-export'); if (el) el.style.display = 'none' }
+  })
+
+  function crmNormalizeRows(data) {
+    const key = (obj, ...keys) => {
+      for (const k of keys) {
+        const found = Object.keys(obj).find(ok => ok.toLowerCase().trim() === k)
+        if (found !== undefined) return String(obj[found] ?? '').trim()
+      }
+      return ''
+    }
+    return data.map(obj => {
+      const company = key(obj, 'empresa', 'company', 'company_name', 'nombre', 'name')
+      if (!company) return null
+      const mrr = parseFloat(key(obj, 'mrr', 'mensualidad', 'monthly')) || 0
+      return {
+        company_name:     company,
+        contact_name:     key(obj, 'contacto', 'contact', 'contact_name', 'nombre_contacto') || null,
+        phone:            key(obj, 'telefono', 'teléfono', 'phone', 'tel') || null,
+        email:            key(obj, 'email', 'correo') || null,
+        status:           key(obj, 'status', 'estado') || 'prospecto',
+        plan:             key(obj, 'plan') || null,
+        mrr:              mrr,
+        industry:         key(obj, 'industria', 'industry', 'giro') || null,
+        notes:            key(obj, 'notas', 'notes', 'comentarios') || null,
+      }
+    }).filter(Boolean)
+  }
+
+  function crmParseCSVText(text) {
+    const lines   = text.split('\n').map(l => l.trim()).filter(Boolean)
+    if (lines.length < 2) return []
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''))
+    const result  = []
+    for (let i = 1; i < lines.length; i++) {
+      const cols    = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+      const obj     = {}
+      headers.forEach((h, idx) => { obj[h] = cols[idx] || '' })
+      const company = obj['empresa'] || obj['company'] || obj['company_name'] || cols[0]
+      if (!company) continue
+      result.push({
+        company_name:  company,
+        contact_name:  obj['contacto'] || obj['contact'] || null,
+        phone:         obj['telefono'] || obj['teléfono'] || obj['phone'] || null,
+        email:         obj['email']    || obj['correo']   || null,
+        status:        obj['status']   || obj['estado']   || 'prospecto',
+        plan:          obj['plan']     || null,
+        mrr:           parseFloat(obj['mrr'] || obj['mensualidad']) || 0,
+        industry:      obj['industria'] || obj['industry'] || obj['giro'] || null,
+        notes:         obj['notas']     || obj['notes']    || null,
+      })
+    }
+    return result
+  }
+
+  async function crmImportFile(event) {
+    const file = event.target.files?.[0]
+    if (!file) return
+    event.target.value = ''
+    let rows = []
+    const ext = file.name.split('.').pop().toLowerCase()
+    if (ext === 'csv') {
+      rows = crmParseCSVText(await file.text())
+    } else {
+      if (!window.XLSX) { showToast('La librería Excel no cargó. Recarga la página.', 4000); return }
+      const wb   = XLSX.read(await file.arrayBuffer(), { type: 'array' })
+      const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' })
+      rows = crmNormalizeRows(data)
+    }
+    if (!rows.length) { showToast('No se encontraron filas válidas', 3000); return }
+    const { error } = await sb.from('crm_clients').insert(rows)
+    if (error) { showToast('Error al importar: ' + error.message, 4000); return }
+    showToast(`${rows.length} cliente(s) importados`)
+    await loadCRM()
+  }
+
+  function crmOpenSheetsModal() {
+    const m = $('modal-crm-sheets')
+    if (m) { $('crm-sheets-url').value = ''; m.style.display = 'flex'; setTimeout(() => $('crm-sheets-url').focus(), 80) }
+  }
+  function crmCloseSheetsModal() {
+    const m = $('modal-crm-sheets'); if (m) m.style.display = 'none'
+  }
+
+  async function crmImportFromSheets() {
+    const raw = ($('crm-sheets-url').value || '').trim()
+    if (!raw) { $('crm-sheets-url').focus(); return }
+    const match = raw.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/)
+    if (!match) { showToast('URL inválida. Pega el link completo de Google Sheets.', 4000); return }
+    const sheetId = match[1]
+    const gid     = ($('crm-sheets-gid').value || '').trim()
+    const url     = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv${gid ? '&gid=' + gid : ''}`
+    const btn     = $('crm-sheets-btn')
+    btn.disabled = true; btn.textContent = 'Importando…'
+    let text
+    try {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('No se pudo acceder (' + res.status + '). Verifica que la hoja sea pública.')
+      text = await res.text()
+    } catch (e) {
+      showToast(e.message || 'Error al acceder a la hoja', 4000)
+      btn.disabled = false; btn.textContent = 'Importar'
+      return
+    }
+    const rows = crmParseCSVText(text)
+    btn.disabled = false; btn.textContent = 'Importar'
+    if (!rows.length) { showToast('No se encontraron filas válidas. Revisa los encabezados.', 4000); return }
+    const { error } = await sb.from('crm_clients').insert(rows)
+    if (error) { showToast('Error: ' + error.message, 4000); return }
+    crmCloseSheetsModal()
+    showToast(`${rows.length} cliente(s) importados de Google Sheets`)
+    await loadCRM()
+  }
+
+  function crmExport(format) {
+    const d = $('crm-drop-export'); if (d) d.style.display = 'none'
+    if (!crmData.length) { showToast('No hay clientes para exportar', 3000); return }
+    const rows = crmData.map(c => ({
+      empresa:    c.company_name    || '',
+      contacto:   c.contact_name   || '',
+      telefono:   c.phone          || '',
+      email:      c.email          || '',
+      status:     c.status         || '',
+      plan:       c.plan           || '',
+      mrr:        c.mrr            ?? 0,
+      industria:  c.industry       || '',
+      seguimiento: c.next_followup_at || '',
+      notas:      c.notes          || '',
+    }))
+    const ts = new Date().toISOString().slice(0, 10)
+    if (format === 'json') {
+      invDownload(`crm_clientes_${ts}.json`, JSON.stringify(crmData, null, 2), 'application/json')
+      return
+    }
+    if (format === 'csv') {
+      const headers = Object.keys(rows[0])
+      const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(','))].join('\n')
+      invDownload(`crm_clientes_${ts}.csv`, csv, 'text/csv')
+      return
+    }
+    if (format === 'xlsx') {
+      if (!window.XLSX) { showToast('La librería Excel no cargó. Recarga la página.', 4000); return }
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'CRM')
+      XLSX.writeFile(wb, `crm_clientes_${ts}.xlsx`)
+    }
+  }
+
+  window.loadCRM            = loadCRM
+  window.filterCRM          = filterCRM
+  window.onCRMSearch        = onCRMSearch
+  window.openCRMModal       = openCRMModal
+  window.closeCRMModal      = closeCRMModal
+  window.saveCRMClient      = saveCRMClient
+  window.deleteCRMClient    = deleteCRMClient
+  window.crmToggleDropdown  = crmToggleDropdown
+  window.crmImportFile      = crmImportFile
+  window.crmOpenSheetsModal = crmOpenSheetsModal
+  window.crmCloseSheetsModal = crmCloseSheetsModal
+  window.crmImportFromSheets = crmImportFromSheets
+  window.crmExport          = crmExport
 
   /* ── Pipeline ── */
   const PIPELINE_STAGES = [
