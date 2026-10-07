@@ -471,6 +471,9 @@ Deno.serve(async (req: Request) => {
     const token     = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      // Mark all active phone numbers as webhook_verified
+      const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+      await sb.from('phone_numbers').update({ webhook_verified: true }).eq('status', 'active')
       return new Response(challenge, { status: 200 })
     }
     return new Response('Forbidden', { status: 403 })
