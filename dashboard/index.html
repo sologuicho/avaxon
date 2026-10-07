@@ -4216,7 +4216,7 @@
     $('crm-delete-btn').style.display = isEdit ? 'block' : 'none'
     $('crm-edit-id').value = id || ''
 
-    const fields = ['company','contact','phone','email','status','plan','mrr','industry','followup','notes']
+    const fields = ['company','contact','phone','email','status','plan','mrr','industry','city','followup','notes']
     fields.forEach(f => {
       const el = $('crm-f-' + f)
       if (el) el.value = ''
