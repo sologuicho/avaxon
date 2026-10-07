@@ -4203,7 +4203,8 @@
     const filtered = crmData.filter(c =>
       (c.company_name || '').toLowerCase().includes(lq) ||
       (c.contact_name || '').toLowerCase().includes(lq) ||
-      (c.email || '').toLowerCase().includes(lq)
+      (c.city         || '').toLowerCase().includes(lq) ||
+      (c.email        || '').toLowerCase().includes(lq)
     )
     renderCRMTable(filtered)
   }
