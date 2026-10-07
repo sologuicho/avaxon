@@ -4349,6 +4349,7 @@
       const company = key(obj, 'empresa', 'company', 'company_name', 'nombre', 'name')
       if (!company) return null
       return {
+        organization_id: state.currentOrgId,
         company_name: company,
         contact_name: key(obj, 'contacto', 'contact', 'contact_name', 'nombre_contacto') || null,
         phone:        key(obj, 'telefono', 'teléfono', 'phone', 'tel') || null,
