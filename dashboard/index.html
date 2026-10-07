@@ -1895,92 +1895,41 @@
             </div>
             <div>
               <div class="view-header-title">Inventario</div>
-              <div class="view-header-sub">Lo que tu agente consulta antes de decir "sí lo tenemos"</div>
+              <div class="view-header-sub" id="inv-stats-bar">Cargando…</div>
             </div>
           </div>
-          <div class="view-header-actions">
+          <div class="view-header-actions" style="gap:8px">
+            <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              CSV
+              <input type="file" id="inv-file-input" accept=".csv" style="display:none" onchange="invImportCSV(event)" />
+            </label>
             <button onclick="invOpenModal()" class="btn-primary" style="display:flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Agregar producto
+              Agregar
             </button>
           </div>
-        </div>
-
-        <!-- KPIs -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:18px" id="inv-kpis"></div>
-
-        <!-- Prueba como cliente -->
-        <div class="card bp" style="padding:18px 20px;margin-bottom:18px;background:linear-gradient(135deg,rgba(99,102,241,.06) 0%,rgba(34,197,94,.04) 100%)">
-          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div style="font-size:13.5px;font-weight:700;color:var(--text);margin-bottom:4px">🔎 Pruébalo como cliente</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Escribe lo que preguntaría un cliente — verás exactamente qué encuentra el agente en tu catálogo.</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <input id="inv-probe-q" type="text" placeholder="¿tienen este producto en existencia?" style="flex:1;min-width:200px;padding:9px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter') invProbe()" />
-            <button onclick="invProbe()" class="btn-primary" style="padding:9px 18px;font-size:13px;white-space:nowrap">Buscar</button>
-          </div>
-          <div id="inv-probe-res" style="margin-top:10px;font-size:13px;display:none"></div>
-        </div>
-
-        <!-- Cómo habla el agente de stock -->
-        <div class="card bp" style="padding:20px;margin-bottom:18px">
-          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:13.5px;font-weight:700;color:var(--text)">Cómo habla el agente de existencias</div>
-              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Lo que dice cuando algo no está en almacén</div>
-            </div>
-            <span id="inv-mode-saved" style="font-size:11.5px;color:var(--text-dim)"></span>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px" id="inv-mode-btns">
-            <label id="inv-mode-dist-lbl" style="display:flex;align-items:flex-start;gap:8px;padding:12px;border:1.5px solid var(--accent);background:var(--accent-sub);border-radius:12px;cursor:pointer">
-              <input type="radio" name="invModo" value="distribuidor" style="margin-top:3px;flex-shrink:0" onchange="invModeChanged()" checked />
-              <span><strong style="font-size:13px;color:var(--text)">Vendo lo que tengo</strong><br><span style="font-size:11.5px;color:var(--text-muted)">Sin stock = "agotado por ahora"; ofrece avisar cuando llegue.</span></span>
-            </label>
-            <label id="inv-mode-fab-lbl" style="display:flex;align-items:flex-start;gap:8px;padding:12px;border:1.5px solid var(--border);border-radius:12px;cursor:pointer">
-              <input type="radio" name="invModo" value="fabricante" style="margin-top:3px;flex-shrink:0" onchange="invModeChanged()" />
-              <span><strong style="font-size:13px;color:var(--text)">Fabrico / bajo pedido</strong><br><span style="font-size:11.5px;color:var(--text-muted)">Sin stock = "se fabrica"; nunca dice "no lo tenemos".</span></span>
-            </label>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
-            <input id="inv-modo-tiempo" type="text" placeholder="⏱ Tiempo de entrega (ej. 3–15 días)" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" oninput="invModeChanged()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
-            <input id="inv-modo-anticipo" type="text" placeholder="💳 Anticipo (ej. 50% por adelantado)" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" oninput="invModeChanged()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
-            <input id="inv-modo-msg" type="text" placeholder="🗣 Frase cuando no hay stock (opcional)" style="padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none" oninput="invModeChanged()" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
-          </div>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;font-size:12.5px;color:var(--text-muted)">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="inv-modo-qty" onchange="invModeChanged()" /> Decir cantidades exactas ("quedan 3")</label>
-            <label style="display:flex;align-items:center;gap:6px">Pocas piezas = <input id="inv-modo-umbral" type="number" min="1" max="50" value="3" style="width:52px;padding:3px 8px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text);text-align:center" oninput="invModeChanged()" /> o menos</label>
-          </div>
-          <div id="inv-mode-preview" style="margin-top:12px;padding:12px 14px;background:var(--hover-bg);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.7;display:none"></div>
         </div>
 
         <!-- Tabla de productos -->
         <div class="card bp" style="padding:0">
           <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">
-            <div class="conv-tabs" style="width:auto;min-width:260px">
-              <button id="inv-tab-all"       onclick="invFilter('all')"       class="conv-tab active">Todos</button>
-              <button id="inv-tab-disp"      onclick="invFilter('disponible')"  class="conv-tab">Disponibles</button>
-              <button id="inv-tab-bajo"      onclick="invFilter('bajo_stock')" class="conv-tab">Bajo stock</button>
-              <button id="inv-tab-agotado"   onclick="invFilter('agotado')"    class="conv-tab">Agotados</button>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border)">
+            <div class="conv-tabs" style="width:auto">
+              <button id="inv-tab-all"     onclick="invFilter('all')"        class="conv-tab active">Todos</button>
+              <button id="inv-tab-disp"    onclick="invFilter('disponible')" class="conv-tab">Disponibles</button>
+              <button id="inv-tab-bajo"    onclick="invFilter('bajo_stock')" class="conv-tab">Bajo stock</button>
+              <button id="inv-tab-agotado" onclick="invFilter('agotado')"    class="conv-tab">Agotados</button>
             </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input class="search-input" type="text" id="inv-search" placeholder="Buscar producto o SKU…" style="width:200px" oninput="invSearch(this.value)" />
-              <label style="display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer" title="Importar CSV">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Importar CSV
-                <input type="file" id="inv-file-input" accept=".csv" style="display:none" onchange="invImportCSV(event)" />
-              </label>
-            </div>
+            <input class="search-input" type="text" id="inv-search" placeholder="Buscar…" style="width:180px" oninput="invSearch(this.value)" />
           </div>
           <div class="table-wrap">
             <table>
               <thead><tr>
                 <th>Producto</th>
-                <th>SKU</th>
                 <th style="text-align:right">Precio</th>
-                <th style="text-align:center">Cantidad</th>
-                <th>Status</th>
-                <th>Categoría</th>
+                <th style="text-align:center">Stock</th>
+                <th>Estado</th>
                 <th></th>
               </tr></thead>
               <tbody id="tbody-inv"></tbody>
