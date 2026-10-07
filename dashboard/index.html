@@ -3648,6 +3648,213 @@
   window.setBcFilter    = setBcFilter
   window.sendBroadcast  = sendBroadcast
 
+  // ── CRM (super_admin only) ────────────────────────────────────────────────
+  const CRM_STATUS = {
+    prospecto:   { label: 'Prospecto',   color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
+    negociacion: { label: 'Negociación', color: '#3b82f6', bg: 'rgba(59,130,246,.12)'  },
+    activo:      { label: 'Activo',      color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
+    pausado:     { label: 'Pausado',     color: '#94a3b8', bg: 'rgba(148,163,184,.12)' },
+    churned:     { label: 'Churned',     color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
+  }
+  const CRM_PLAN_LABELS = {
+    mostrador:  'Mostrador',
+    sucursal:   'Sucursal',
+    cadena:     'Cadena',
+    enterprise: 'Enterprise',
+  }
+
+  let crmData       = []
+  let crmActiveTab  = 'all'
+
+  async function loadCRM() {
+    $('tbody-crm').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
+    const { data, error } = await sb
+      .from('crm_clients')
+      .select('*')
+      .order('next_followup_at', { ascending: true, nullsFirst: false })
+    if (error) { console.error('CRM load error:', error); return }
+    crmData = data ?? []
+    renderCRMKPIs(crmData)
+    renderCRMTable(crmData)
+  }
+
+  function renderCRMKPIs(data) {
+    const activos    = data.filter(c => c.status === 'activo')
+    const prospectos = data.filter(c => c.status === 'prospecto' || c.status === 'negociacion')
+    const mrr        = activos.reduce((s, c) => s + (c.mrr || 0), 0)
+    const today      = new Date().toISOString().slice(0, 10)
+    const followups  = data.filter(c => c.next_followup_at && c.next_followup_at <= today).length
+
+    const kpis = [
+      { label: 'MRR Total',          value: '$' + mrr.toLocaleString('es-MX'),    icon: 'fa-dollar-sign',  color: '#22c55e', bg: 'rgba(34,197,94,.10)'  },
+      { label: 'Clientes activos',   value: activos.length,                        icon: 'fa-check-circle', color: '#22c55e', bg: 'rgba(34,197,94,.10)'  },
+      { label: 'En pipeline',        value: prospectos.length,                     icon: 'fa-funnel-dollar',color: '#f59e0b', bg: 'rgba(245,158,11,.10)' },
+      { label: 'Seguimientos hoy',   value: followups,                             icon: 'fa-bell',         color: followups > 0 ? '#ef4444' : '#94a3b8', bg: followups > 0 ? 'rgba(239,68,68,.10)' : 'rgba(148,163,184,.10)' },
+    ]
+
+    $('crm-kpis').innerHTML = kpis.map(k => `
+      <div class="card bp" style="padding:18px 20px">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="width:30px;height:30px;background:${k.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;color:${k.color};font-size:12px;flex-shrink:0"><i class="fa ${k.icon}"></i></div>
+          <span style="font-size:12px;color:var(--text-muted)">${k.label}</span>
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text)">${k.value}</div>
+      </div>`).join('')
+  }
+
+  function renderCRMTable(data) {
+    const tbody = $('tbody-crm')
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Sin clientes registrados · Agrega uno con el botón de arriba</td></tr>`
+      return
+    }
+    const today = new Date().toISOString().slice(0, 10)
+    tbody.innerHTML = data.map(c => {
+      const st     = CRM_STATUS[c.status] ?? CRM_STATUS.prospecto
+      const isLate = c.next_followup_at && c.next_followup_at <= today
+      const followupHtml = c.next_followup_at
+        ? `<span style="font-size:12px;font-weight:600;color:${isLate ? '#ef4444' : 'var(--text-muted)'}">${isLate ? '⚑ ' : ''}${new Date(c.next_followup_at + 'T12:00:00').toLocaleDateString('es-MX', { day:'numeric', month:'short' })}</span>`
+        : `<span style="font-size:12px;color:var(--text-dim)">—</span>`
+      return `<tr style="cursor:pointer" onclick="openCRMModal('${c.id}')">
+        <td>
+          <div style="font-size:13.5px;font-weight:700;color:var(--text)">${c.company_name}</div>
+          ${c.industry ? `<div style="font-size:11.5px;color:var(--text-dim)">${c.industry}</div>` : ''}
+        </td>
+        <td style="font-size:13px;color:var(--text-muted)">${c.contact_name || '—'}</td>
+        <td style="font-size:13px;color:var(--text-muted)">${c.phone || '—'}</td>
+        <td><span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;color:${st.color};background:${st.bg}">${st.label}</span></td>
+        <td style="font-size:12.5px;color:var(--text-muted)">${CRM_PLAN_LABELS[c.plan] || '—'}</td>
+        <td style="text-align:right;font-size:13px;font-weight:600;color:var(--text)">${c.mrr ? '$' + Number(c.mrr).toLocaleString('es-MX') : '—'}</td>
+        <td>${followupHtml}</td>
+        <td><button onclick="event.stopPropagation();openCRMModal('${c.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:4px 8px" title="Editar"><i class="fa fa-pen"></i></button></td>
+      </tr>`
+    }).join('')
+  }
+
+  function filterCRM(tab) {
+    crmActiveTab = tab
+    ;['all','prospecto','negociacion','activo'].forEach(t => {
+      const btn = $('crm-tab-' + t)
+      if (btn) btn.classList.toggle('active', t === tab)
+    })
+    const filtered = tab === 'all' ? crmData : crmData.filter(c => c.status === tab)
+    renderCRMTable(filtered)
+  }
+
+  function onCRMSearch(q) {
+    if (!q.trim()) { filterCRM(crmActiveTab); return }
+    const lq = q.toLowerCase()
+    const filtered = crmData.filter(c =>
+      (c.company_name || '').toLowerCase().includes(lq) ||
+      (c.contact_name || '').toLowerCase().includes(lq) ||
+      (c.email || '').toLowerCase().includes(lq)
+    )
+    renderCRMTable(filtered)
+  }
+
+  function openCRMModal(id) {
+    const modal = $('modal-crm')
+    if (!modal) return
+    const isEdit = !!id
+    $('crm-modal-title').textContent = isEdit ? 'Editar cliente' : 'Nuevo cliente'
+    $('crm-delete-btn').style.display = isEdit ? 'block' : 'none'
+    $('crm-edit-id').value = id || ''
+
+    const fields = ['company','contact','phone','email','status','plan','mrr','industry','followup','notes']
+    fields.forEach(f => {
+      const el = $('crm-f-' + f)
+      if (el) el.value = ''
+    })
+    $('crm-f-status').value = 'prospecto'
+
+    if (isEdit) {
+      const client = crmData.find(c => c.id === id)
+      if (client) {
+        $('crm-f-company').value  = client.company_name    || ''
+        $('crm-f-contact').value  = client.contact_name    || ''
+        $('crm-f-phone').value    = client.phone           || ''
+        $('crm-f-email').value    = client.email           || ''
+        $('crm-f-status').value   = client.status          || 'prospecto'
+        $('crm-f-plan').value     = client.plan            || ''
+        $('crm-f-mrr').value      = client.mrr             || ''
+        $('crm-f-industry').value = client.industry        || ''
+        $('crm-f-followup').value = client.next_followup_at || ''
+        $('crm-f-notes').value    = client.notes           || ''
+      }
+    }
+
+    modal.style.display = 'flex'
+    setTimeout(() => $('crm-f-company').focus(), 80)
+  }
+
+  function closeCRMModal() {
+    const modal = $('modal-crm')
+    if (modal) modal.style.display = 'none'
+  }
+
+  async function saveCRMClient() {
+    const company = ($('crm-f-company').value || '').trim()
+    if (!company) { $('crm-f-company').focus(); return }
+
+    const btn = $('crm-save-btn')
+    btn.disabled = true
+    btn.textContent = 'Guardando…'
+
+    const payload = {
+      company_name:     company,
+      contact_name:     ($('crm-f-contact').value  || '').trim() || null,
+      phone:            ($('crm-f-phone').value    || '').trim() || null,
+      email:            ($('crm-f-email').value    || '').trim() || null,
+      status:            $('crm-f-status').value   || 'prospecto',
+      plan:              $('crm-f-plan').value      || null,
+      mrr:         parseFloat($('crm-f-mrr').value) || 0,
+      industry:         ($('crm-f-industry').value || '').trim() || null,
+      next_followup_at:  $('crm-f-followup').value || null,
+      notes:            ($('crm-f-notes').value    || '').trim() || null,
+      updated_at:        new Date().toISOString(),
+    }
+
+    const editId = $('crm-edit-id').value
+    let error
+
+    if (editId) {
+      ;({ error } = await sb.from('crm_clients').update(payload).eq('id', editId))
+    } else {
+      ;({ error } = await sb.from('crm_clients').insert(payload))
+    }
+
+    btn.disabled = false
+    btn.textContent = 'Guardar'
+
+    if (error) { showToast('Error: ' + error.message, 4000); return }
+
+    closeCRMModal()
+    showToast(editId ? 'Cliente actualizado' : 'Cliente agregado')
+    await loadCRM()
+  }
+
+  async function deleteCRMClient() {
+    const id = $('crm-edit-id').value
+    if (!id) return
+    if (!confirm('¿Eliminar este cliente del CRM? Esta acción no se puede deshacer.')) return
+
+    const { error } = await sb.from('crm_clients').delete().eq('id', id)
+    if (error) { showToast('Error: ' + error.message, 4000); return }
+
+    closeCRMModal()
+    showToast('Cliente eliminado')
+    await loadCRM()
+  }
+
+  window.loadCRM       = loadCRM
+  window.filterCRM     = filterCRM
+  window.onCRMSearch   = onCRMSearch
+  window.openCRMModal  = openCRMModal
+  window.closeCRMModal = closeCRMModal
+  window.saveCRMClient = saveCRMClient
+  window.deleteCRMClient = deleteCRMClient
+
   /* ── Pipeline ── */
   const PIPELINE_STAGES = [
     { key: 'new',        label: 'Nuevo',       color: '#7c8899' },
