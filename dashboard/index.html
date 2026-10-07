@@ -4121,10 +4121,18 @@
   let crmActiveTab  = 'all'
 
   async function loadCRM() {
-    $('tbody-crm').innerHTML = `<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
+    $('tbody-crm').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
+    const orgId = state.currentOrgId
+    if (!orgId) {
+      crmData = []
+      renderCRMKPIs([])
+      $('tbody-crm').innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Selecciona un cliente en el panel izquierdo para ver su CRM</td></tr>`
+      return
+    }
     const { data, error } = await sb
       .from('crm_clients')
       .select('*')
+      .eq('organization_id', orgId)
       .order('next_followup_at', { ascending: true, nullsFirst: false })
     if (error) { console.error('CRM load error:', error); return }
     crmData = data ?? []
