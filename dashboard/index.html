@@ -3676,6 +3676,7 @@
     state.userEmail = user.email;
     state.userId    = user.id;
     $('sidebar-email').textContent = user.email;
+    if ($('sidebar-user-name')) $('sidebar-user-name').textContent = user.email.split('@')[0];
 
     const userIni = initials(user.email || '?');
     $('sidebar-user-avatar').textContent = userIni;
