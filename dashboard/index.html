@@ -5150,6 +5150,7 @@
   function openCampaignWizard() {
     campState.wizData = { step: 1, editId: null, name: '', description: '', source: 'all', messageType: 'template', templateId: null, messageBody: '' }
     wizCsvRows = []
+    wizManualSelected = new Map()
     if ($('wiz-name'))        $('wiz-name').value        = ''
     if ($('wiz-description')) $('wiz-description').value = ''
     if ($('wiz-body'))        $('wiz-body').value        = ''
