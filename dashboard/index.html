@@ -3277,7 +3277,13 @@
   // ── Chat banner: bot/human mode + 24h window ─────────────────────────────
   const chatHumanConvs = new Set() // conv IDs where human has taken over
 
-  function renderChatBanner(lastInbound, convId) {
+  // Store assigned agent per conv so takeover/return can still access it
+  const convAssignedAgent = {}
+
+  function renderChatBanner(lastInbound, convId, assignedAgent) {
+    if (assignedAgent !== undefined) convAssignedAgent[convId] = assignedAgent
+    const agent     = convAssignedAgent[convId] ?? null
+
     const banner    = $('wa-window-banner')
     const bar       = $('chat-mode-bar')
     const labelEl   = $('chat-mode-label')
@@ -3294,7 +3300,7 @@
       return
     }
 
-    const hrsAgo    = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000
+    const hrsAgo     = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000
     const windowOpen = hrsAgo <= 24
     banner.classList.add('visible')
     bar.className = 'chat-mode-bar'
@@ -3317,6 +3323,7 @@
     const isHuman   = chatHumanConvs.has(convId)
 
     if (isHuman) {
+      // Current user manually took over
       bar.classList.add('human')
       labelEl.textContent   = 'Tú estás respondiendo'
       timerEl.textContent   = `ventana abierta ${timeLabel} más`
@@ -3324,7 +3331,17 @@
       chatInput.disabled    = false
       chatInput.placeholder = 'Escribe un mensaje…'
       sendBtn.disabled      = false
+    } else if (agent?.full_name) {
+      // Formally transferred to a human agent
+      bar.classList.add('transferred')
+      labelEl.textContent   = `Transferido a ${agent.full_name}`
+      timerEl.textContent   = `ventana libre ${timeLabel} más`
+      actionsEl.innerHTML   = `<button class="btn-mode" onclick="takeoverChat()">Tomar chat</button>`
+      chatInput.disabled    = true
+      chatInput.placeholder = `Chat asignado a ${agent.full_name} — pulsa "Tomar chat" para escribir`
+      sendBtn.disabled      = true
     } else {
+      // Bot is handling
       bar.classList.add('agent')
       labelEl.textContent   = 'Agente IA respondiendo'
       timerEl.textContent   = `ventana libre ${timeLabel} más`
