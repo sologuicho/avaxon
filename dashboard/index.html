@@ -3125,6 +3125,93 @@
   }
   window.closeConversacionMobile = closeConversacionMobile;
 
+  // ── WhatsApp direct warning modal ─────────────────────────────────────────
+  let _waDirectUrl = '';
+  const WA_SKIP_KEY = 'avx_wa_direct_skip';
+
+  $('chat-wa-btn').addEventListener('click', () => {
+    const link = $('chat-wa-btn').dataset.waUrl;
+    if (!link) return;
+    _waDirectUrl = link;
+    if (localStorage.getItem(WA_SKIP_KEY) === '1') {
+      window.open(_waDirectUrl, '_blank');
+    } else {
+      const modal = $('wa-direct-modal');
+      modal.style.display = 'flex';
+    }
+  });
+
+  function closeWaDirectModal() {
+    $('wa-direct-modal').style.display = 'none';
+    _waDirectUrl = '';
+  }
+  function confirmWaDirectOpen() {
+    if ($('wa-direct-no-show').checked) localStorage.setItem(WA_SKIP_KEY, '1');
+    $('wa-direct-modal').style.display = 'none';
+    if (_waDirectUrl) window.open(_waDirectUrl, '_blank');
+    _waDirectUrl = '';
+  }
+  window.closeWaDirectModal  = closeWaDirectModal;
+  window.confirmWaDirectOpen = confirmWaDirectOpen;
+
+  // ── Quick appointment modal ────────────────────────────────────────────────
+  let _qapt_contact_id   = null;
+  let _qapt_contact_name = '';
+
+  function openQuickAptModal() {
+    const conv = convState.all.find(c => c.id === convState.activeId);
+    _qapt_contact_id   = conv?.contacts?.id   || null;
+    _qapt_contact_name = conv?.contacts?.name || conv?.contacts?.phone || '';
+    // Pre-fill datetime to next hour
+    const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours() + 1);
+    const pad = n => String(n).padStart(2,'0');
+    $('qapt-datetime').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:00`;
+    $('qapt-title').value = '';
+    $('qapt-notes').value = '';
+    $('qapt-error').style.display = 'none';
+    $('quick-apt-modal').style.display = 'flex';
+  }
+
+  function closeQuickAptModal() {
+    $('quick-apt-modal').style.display = 'none';
+  }
+
+  async function saveQuickApt() {
+    const title = $('qapt-title').value.trim();
+    const dt    = $('qapt-datetime').value;
+    const notes = $('qapt-notes').value.trim();
+    const errEl = $('qapt-error');
+    const btn   = $('qapt-save-btn');
+    errEl.style.display = 'none';
+    if (!title) { errEl.textContent = 'El título es obligatorio.'; errEl.style.display = 'block'; return; }
+    if (!dt)    { errEl.textContent = 'Selecciona una fecha y hora.'; errEl.style.display = 'block'; return; }
+    const orgId = state.currentOrgId || state.userOrgId;
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { error } = await sb.from('appointments').insert({
+      organization_id: orgId,
+      contact_id:      _qapt_contact_id || undefined,
+      title,
+      scheduled_at:    new Date(dt).toISOString(),
+      notes:           notes || (_qapt_contact_name ? `Contacto: ${_qapt_contact_name}` : null),
+      status:          'scheduled',
+      created_by:      state.userId,
+    });
+    btn.disabled = false; btn.textContent = 'Guardar cita';
+    if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+    closeQuickAptModal();
+    // Refresh citas in panel
+    if (_qapt_contact_id) {
+      const { data: apts } = await sb.from('appointments').select('id,title,scheduled_at,status').eq('contact_id', _qapt_contact_id).order('scheduled_at', { ascending: false }).limit(3);
+      $('cpanel-apts').innerHTML = (apts && apts.length)
+        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid #f1f2f4"><div style="font-size:13px;font-weight:600;color:#1a2535">${a.title||'Cita'}</div><div style="font-size:11.5px;color:#8c939b">${fmtDate(a.scheduled_at)}</div></div>`).join('')
+        : '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
+    }
+  }
+
+  window.openQuickAptModal  = openQuickAptModal;
+  window.closeQuickAptModal = closeQuickAptModal;
+  window.saveQuickApt       = saveQuickApt;
+
   function parseMsgContent(raw, mediaType) {
     if (mediaType && mediaType !== 'text') return { text: `[${mediaType}]`, buttons: [] };
     const content = raw || '';
