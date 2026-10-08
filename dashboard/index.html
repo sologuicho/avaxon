@@ -5200,6 +5200,11 @@
     // Load templates for step 2
     await loadWizTemplates()
     setWizStep(2)
+    // Auto-select template when editing
+    if (campState.wizData.editId && campState.wizData.templateId) {
+      const sel = $('wiz-tpl-' + campState.wizData.templateId)
+      if (sel) sel.click()
+    }
   }
 
   function setWizSource(source) {
