@@ -5209,7 +5209,7 @@
 
   function setWizSource(source) {
     campState.wizData.source = source
-    const sources = ['all','new','qualified','active_24h','csv']
+    const sources = ['all','new','qualified','active_24h','csv','manual']
     sources.forEach(s => {
       const btn = $('wiz-src-' + s)
       if (!btn) return
@@ -5218,8 +5218,76 @@
       btn.style.background = active ? 'var(--accent-sub)'         : 'transparent'
       btn.style.color      = active ? 'var(--accent)'             : 'var(--text-muted)'
     })
-    const csvArea = $('wiz-csv-area')
-    if (csvArea) csvArea.style.display = source === 'csv' ? 'block' : 'none'
+    const csvArea    = $('wiz-csv-area')
+    const manualArea = $('wiz-manual-area')
+    if (csvArea)    csvArea.style.display    = source === 'csv'    ? 'block' : 'none'
+    if (manualArea) manualArea.style.display = source === 'manual' ? 'block' : 'none'
+    if (source === 'manual') loadWizContactsList()
+    fetchWizCount()
+  }
+
+  let wizManualSelected = new Map() // id → {id, phone, name}
+
+  async function loadWizContactsList(filter = '') {
+    const container = $('wiz-manual-list')
+    if (!container) return
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-dim);font-size:12.5px">Cargando…</div>'
+    const orgId = campOrgId()
+    let q = sb.from('contacts').select('id,phone,name,status').eq('organization_id', orgId).not('phone','is',null).order('name').limit(300)
+    if (filter.trim()) q = q.or(`name.ilike.%${filter.trim()}%,phone.ilike.%${filter.trim()}%`)
+    const { data } = await q
+    const contacts = data ?? []
+    if (!contacts.length) {
+      container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-dim);font-size:12.5px">Sin contactos encontrados</div>'
+      return
+    }
+    const STATUS_COLOR = { new:'#22c55e', qualified:'#3b82f6', active:'#f59e0b' }
+    container.innerHTML = contacts.map(c => {
+      const checked   = wizManualSelected.has(c.id)
+      const color     = STATUS_COLOR[c.status] || '#94a3b8'
+      const nameEsc   = (c.name || '').replace(/'/g,"\\'")
+      const phoneEsc  = (c.phone || '').replace(/'/g,"\\'")
+      return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer;border:1.5px solid ${checked ? 'var(--accent)' : 'transparent'};background:${checked ? 'var(--accent-sub)' : 'transparent'};transition:background .1s" id="wiz-mc-row-${c.id}" onmouseover="if(!wizManualSelected.has('${c.id}'))this.style.background='var(--hover-bg)'" onmouseout="if(!wizManualSelected.has('${c.id}'))this.style.background='transparent'">
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleWizContact('${c.id}','${phoneEsc}','${nameEsc}')" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name || <span style="color:var(--text-dim)">Sin nombre</span>}</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${c.phone}</div>
+        </div>
+        <span style="font-size:10.5px;font-weight:700;color:${color};flex-shrink:0">${c.status || ''}</span>
+      </label>`
+    }).join('')
+  }
+
+  function toggleWizContact(id, phone, name) {
+    if (wizManualSelected.has(id)) {
+      wizManualSelected.delete(id)
+    } else {
+      wizManualSelected.set(id, { id, phone, name })
+    }
+    const row = $('wiz-mc-row-' + id)
+    if (row) {
+      const sel = wizManualSelected.has(id)
+      row.style.border     = sel ? '1.5px solid var(--accent)' : '1.5px solid transparent'
+      row.style.background = sel ? 'var(--accent-sub)' : 'transparent'
+    }
+    fetchWizCount()
+  }
+
+  function selectAllWizContacts() {
+    document.querySelectorAll('#wiz-manual-list input[type="checkbox"]').forEach(cb => {
+      if (!cb.checked) cb.click()
+    })
+  }
+
+  function clearAllWizContacts() {
+    wizManualSelected.clear()
+    document.querySelectorAll('#wiz-manual-list input[type="checkbox"]').forEach(cb => {
+      if (cb.checked) {
+        cb.checked = false
+        const row = cb.closest('label')
+        if (row) { row.style.border = '1.5px solid transparent'; row.style.background = 'transparent' }
+      }
+    })
     fetchWizCount()
   }
 
