@@ -5409,6 +5409,7 @@
 
   async function saveCampaignDraft() {
     const wd = campState.wizData
+    if (wd.source === 'manual' && wizManualSelected.size === 0) { alert('Selecciona al menos un contacto.'); return }
     if (wd.messageType === 'template' && !wd.templateId) { alert('Selecciona una plantilla.'); return }
     if (wd.messageType === 'libre' && !($('wiz-body')?.value?.trim())) { alert('Escribe un mensaje.'); return }
     if (wd.messageType === 'libre') wd.messageBody = $('wiz-body').value.trim()
