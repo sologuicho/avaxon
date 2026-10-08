@@ -5197,7 +5197,8 @@
     const name     = ($('cfg-tpl-name').value || '').trim()
     const body     = ($('cfg-tpl-body').value || '').trim()
     if (!name || !body) return
-    const orgId    = state.currentOrgId || state.userOrgId
+    let orgId = state.currentOrgId || state.userOrgId
+    if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
     const payload  = {
       organization_id: orgId,
       name,
