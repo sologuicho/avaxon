@@ -4494,9 +4494,9 @@
     if (!container) return
     container.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:13px">Cargando plantillas…</div>'
     try {
-      const orgId = state.currentOrgId || state.userOrgId
+      const orgId = bcOrgId()
       if (!orgId) {
-        container.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Selecciona una organización primero.</div>'
+        container.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Selecciona un cliente primero.</div>'
         return
       }
       const { data, error } = await sb.from('message_templates').select('id,name,status,language,components').eq('organization_id', orgId).order('status')
