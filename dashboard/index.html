@@ -4384,20 +4384,25 @@
     setBcMode('libre')
     setBcFilterActive('all')
     if (!orgId && state.isSuperAdmin) {
-      // Populate inline org picker
-      const sel = $('bc-org-select')
-      sel.innerHTML = '<option value="">— Selecciona un cliente —</option>'
+      // Build org pill buttons
+      const container = $('bc-org-btns')
+      container.innerHTML = ''
       ;(state.allOrgs || []).forEach(org => {
-        const opt = document.createElement('option')
-        opt.value = org.id
-        opt.textContent = org.name
-        sel.appendChild(opt)
+        const btn = document.createElement('button')
+        btn.className = 'bc-org-btn'
+        btn.dataset.id = org.id
+        btn.textContent = org.name
+        btn.type = 'button'
+        btn.style.cssText = "padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;white-space:nowrap"
+        btn.addEventListener('click', () => bcPickOrg(org.id))
+        container.appendChild(btn)
       })
       $('bc-org-picker').style.display = 'flex'
-      $('bc-filter-btns').style.opacity = '.4'
+      bcState.pickedOrgId = null
+      $('bc-filter-btns').style.opacity = '.35'
       $('bc-filter-btns').style.pointerEvents = 'none'
       $('bc-send-btn').disabled = true
-      $('bc-count-line').textContent = 'Selecciona un cliente arriba ↑'
+      $('bc-count-line').textContent = '← elige cliente'
     } else {
       $('bc-org-picker').style.display = 'none'
       $('bc-filter-btns').style.opacity = '1'
