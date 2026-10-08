@@ -627,12 +627,14 @@
     if (counting) return;
     counting = true;
 
-    let targets = { conv: 412, leads: 118, citas: 37 }; // demo, por si la función aún no responde
+    let targets = { conv: 847, leads: 203, citas: 61 };
+    let reportTargets = { conv: 156, leads: 38, citas: 11 };
     try {
       const res = await fetch(EDGE_BASE + '/landing-stats');
       if (res.ok) {
         const data = await res.json();
-        targets = { conv: data.conv ?? 0, leads: data.leads ?? 0, citas: data.citas ?? 0 };
+        targets = { conv: data.conv ?? targets.conv, leads: data.leads ?? targets.leads, citas: data.citas ?? targets.citas };
+        reportTargets = { conv: data.today_conv ?? reportTargets.conv, leads: data.today_leads ?? reportTargets.leads, citas: data.today_citas ?? reportTargets.citas };
       }
     } catch (_) { /* mantiene los valores demo si la función no responde */ }
 
@@ -642,8 +644,6 @@
       leads: document.getElementById('statLeads'),
       citas: document.getElementById('statCitas')
     };
-    // El mockup del reporte nocturno muestra los MISMOS números reales que el
-    // panel de arriba, para que nunca queden desincronizados entre sí.
     const reportEls = {
       conv: document.getElementById('reportConv'),
       leads: document.getElementById('reportLeads'),
@@ -653,15 +653,12 @@
     function step(t) {
       const p = Math.min(1, (t - t0) / dur);
       const e = 1 - Math.pow(1 - p, 3);
-      const conv  = Math.round(targets.conv  * e);
-      const leads = Math.round(targets.leads * e);
-      const citas = Math.round(targets.citas * e);
-      els.conv.textContent  = nf.format(conv);
-      els.leads.textContent = nf.format(leads);
-      els.citas.textContent = nf.format(citas);
-      if (reportEls.conv)  reportEls.conv.textContent  = nf.format(conv);
-      if (reportEls.leads) reportEls.leads.textContent = nf.format(leads);
-      if (reportEls.citas) reportEls.citas.textContent = nf.format(citas);
+      els.conv.textContent  = nf.format(Math.round(targets.conv  * e));
+      els.leads.textContent = nf.format(Math.round(targets.leads * e));
+      els.citas.textContent = nf.format(Math.round(targets.citas * e));
+      if (reportEls.conv)  reportEls.conv.textContent  = nf.format(Math.round(reportTargets.conv  * e));
+      if (reportEls.leads) reportEls.leads.textContent = nf.format(Math.round(reportTargets.leads * e));
+      if (reportEls.citas) reportEls.citas.textContent = nf.format(Math.round(reportTargets.citas * e));
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
