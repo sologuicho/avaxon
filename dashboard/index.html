@@ -3735,99 +3735,288 @@
   });
 
   async function loadDashboard(orgId = null) {
-    $('kpi-grid').innerHTML = `<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div>Cargando datos…</div>`;
+    const kpisEl = $('dash-kpis')
+    if (kpisEl) kpisEl.innerHTML = `<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div>Cargando…</div>`
 
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const week7 = new Date(today); week7.setDate(week7.getDate() - 6);
-    const isAll = orgId === null;
+    const now    = new Date()
+    const today  = new Date(now); today.setHours(0,0,0,0)
+    const yest   = new Date(today); yest.setDate(yest.getDate() - 1)
+    const week7  = new Date(today); week7.setDate(week7.getDate() - 6)
+    const isAll  = orgId === null
 
-    function withOrg(query) {
-      return orgId ? query.eq('organization_id', orgId) : query;
-    }
+    function withOrg(q) { return orgId ? q.eq('organization_id', orgId) : q }
 
     try {
       const [
-        contactsCountRes,
-        convsOpenCountRes,
-        msgsTodayCountRes,
-        msgsCountRes,
-        orgsCountRes,
-        contactsRes,
-        msgsRes,
-        orgsRes,
+        msgsToday,
+        msgsYest,
+        contactsToday,
+        contactsYest,
+        convsOpen,
+        convsClosedToday,
+        msgs7d,
+        allContacts,
         phonesRes,
-        waAccountsRes,
-        leadsRes,
-        msgs7dRes,
+        orgsRes,
+        orgsCount,
+        recentMsgs,
       ] = await Promise.all([
-        withOrg(sb.from('contacts').select('*', { count:'exact', head:true })),
-        withOrg(sb.from('conversations').select('*', { count:'exact', head:true }).eq('status','open')),
-        withOrg(sb.from('messages').select('*', { count:'exact', head:true }).gte('created_at', today.toISOString())),
-        withOrg(sb.from('messages').select('*', { count:'exact', head:true })),
-        sb.from('organizations').select('*', { count:'exact', head:true }),
-        withOrg(sb.from('contacts').select('id,name,phone,status,tags,last_seen_at').order('created_at',{ascending:false}).limit(6)),
-        withOrg(sb.from('messages').select('id,direction,content,media_type,created_at,conversations(contacts(name,phone))').order('created_at',{ascending:false}).limit(10)),
-        sb.from('organizations').select('id,name,industry,status,plan_id,trial_ends_at,created_at').order('created_at',{ascending:false}),
-        withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
-        withOrg(sb.from('whatsapp_accounts').select('id,waba_id,business_name,status')),
-        withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at',{ascending:false}).limit(50)),
+        // Messages today by direction
+        withOrg(sb.from('messages').select('direction').gte('created_at', today.toISOString())),
+        // Messages yesterday by direction
+        withOrg(sb.from('messages').select('direction').gte('created_at', yest.toISOString()).lt('created_at', today.toISOString())),
+        // New contacts today
+        withOrg(sb.from('contacts').select('*',{count:'exact',head:true}).gte('created_at', today.toISOString())),
+        // New contacts yesterday
+        withOrg(sb.from('contacts').select('*',{count:'exact',head:true}).gte('created_at', yest.toISOString()).lt('created_at', today.toISOString())),
+        // Open conversations
+        withOrg(sb.from('conversations').select('*',{count:'exact',head:true}).eq('status','open')),
+        // Conversations closed today
+        withOrg(sb.from('conversations').select('*',{count:'exact',head:true}).eq('status','closed').gte('updated_at', today.toISOString())),
+        // Messages last 7 days for chart
         withOrg(sb.from('messages').select('direction,created_at').gte('created_at', week7.toISOString())),
-      ]);
+        // All contacts for pipeline
+        withOrg(sb.from('contacts').select('id,name,phone,status,last_seen_at').order('created_at',{ascending:false}).limit(500)),
+        // Phone numbers
+        withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
+        // Orgs (super admin)
+        sb.from('organizations').select('id,name,industry,status,plan_id,trial_ends_at,created_at').order('created_at',{ascending:false}),
+        sb.from('organizations').select('*',{count:'exact',head:true}),
+        // Recent messages for unanswered detection
+        withOrg(sb.from('messages').select('direction,conversation_id,created_at,conversations(id,status,contacts(name,phone))').eq('conversations.status','open').order('created_at',{ascending:false}).limit(200)),
+      ])
 
-      // Build 7-day chart data
-      const dayMap = {};
-      const dayKeys = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today); d.setDate(d.getDate() - i);
-        const k = d.toISOString().slice(0, 10);
-        const label = d.toLocaleDateString('es-MX', { weekday: 'short' }).slice(0, 3);
-        dayMap[k] = { sent: 0, recv: 0, label };
-        dayKeys.push(k);
+      // ── Compute KPI values ──────────────────────────────────────────────────
+      const todayMsgs = msgsToday.data ?? []
+      const yesterMsgs = msgsYest.data ?? []
+      const inboundToday   = todayMsgs.filter(m => m.direction === 'inbound').length
+      const outboundToday  = todayMsgs.filter(m => m.direction === 'outbound').length
+      const inboundYest    = yesterMsgs.filter(m => m.direction === 'inbound').length
+      const outboundYest   = yesterMsgs.filter(m => m.direction === 'outbound').length
+      const newHoy         = contactsToday.count ?? 0
+      const newAyer        = contactsYest.count  ?? 0
+      const openConvs      = convsOpen.count     ?? 0
+      const closedToday    = convsClosedToday.count ?? 0
+
+      function delta(cur, prev) {
+        if (prev === 0) return cur > 0 ? `▲ ${cur}` : '—'
+        const diff = cur - prev
+        if (diff === 0) return '= igual que ayer'
+        return diff > 0 ? `▲ ${diff} vs ayer` : `▼ ${Math.abs(diff)} vs ayer`
       }
-      (msgs7dRes.data || []).forEach(m => {
-        const k = m.created_at?.slice(0, 10);
-        if (dayMap[k]) {
-          if (m.direction === 'outbound') dayMap[k].sent++;
-          else dayMap[k].recv++;
-        }
-      });
-      buildMsgChart(dayKeys.map(k => dayMap[k]));
+      function deltaClass(cur, prev) {
+        if (cur > prev) return 'up'
+        if (cur < prev) return 'down'
+        return 'muted'
+      }
 
-      const todayMsgs = msgsTodayCountRes.count ?? 0;
-      const kpis = [];
+      // ── KPIs ────────────────────────────────────────────────────────────────
+      const kpis = []
       if (isAll && state.isSuperAdmin) {
-        kpis.push({ label:'Organizaciones', value: orgsCountRes.count ?? 0, foot: 'Clientes registrados' });
+        kpis.push({ label:'Clientes', value: orgsCount.count ?? 0, foot:'Organizaciones activas', icon:'fa-building', color:'#6366f1', iconBg:'rgba(99,102,241,.12)' })
       }
       kpis.push(
-        { label:'Contactos', value: contactsCountRes.count ?? 0, foot: 'Total en la base de datos' },
-        { label:'Conv. abiertas', value: convsOpenCountRes.count ?? 0, foot: 'En este momento' },
-        { label:'Mensajes hoy', value: todayMsgs, foot: new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'short' }) },
-        { label:'Mensajes totales', value: msgsCountRes.count ?? 0, foot: 'Acumulados' },
-      );
-      buildKpiGrid(kpis);
+        { label:'Recibidos hoy', value: inboundToday, trend: delta(inboundToday, inboundYest), trendClass: deltaClass(inboundToday, inboundYest), foot:'Mensajes de clientes', icon:'fa-arrow-down-left', color:'#22c55e', iconBg:'var(--accent-sub)' },
+        { label:'Bot envió hoy', value: outboundToday, trend: delta(outboundToday, outboundYest), trendClass: deltaClass(outboundToday, outboundYest), foot:'Respuestas del agente', icon:'fa-robot', color:'#3b82f6', iconBg:'rgba(59,130,246,.12)' },
+        { label:'Nuevos hoy', value: newHoy, trend: delta(newHoy, newAyer), trendClass: deltaClass(newHoy, newAyer), foot:'Contactos registrados', icon:'fa-user-plus', color:'#f59e0b', iconBg:'rgba(245,158,11,.12)' },
+        { label:'Abiertas ahora', value: openConvs, foot: closedToday > 0 ? `${closedToday} resueltas hoy` : 'Conversaciones activas', icon:'fa-comments', color:'#a78bfa', iconBg:'rgba(167,139,250,.12)' },
+      )
+      renderDashKpis(kpis)
 
-      $('topbar-time').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+      // ── Chart 7 días ────────────────────────────────────────────────────────
+      const dayMap = {}, dayKeys = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today); d.setDate(d.getDate() - i)
+        const k = d.toISOString().slice(0,10)
+        const label = d.toLocaleDateString('es-MX',{weekday:'short'}).slice(0,3)
+        dayMap[k] = { sent:0, recv:0, label }
+        dayKeys.push(k)
+      }
+      ;(msgs7d.data ?? []).forEach(m => {
+        const k = m.created_at?.slice(0,10)
+        if (dayMap[k]) { m.direction === 'outbound' ? dayMap[k].sent++ : dayMap[k].recv++ }
+      })
+      buildMsgChart(dayKeys.map(k => dayMap[k]))
 
-      renderWaNumberCard(phonesRes.data);
-      renderContactsInicio(contactsRes.data, contactsCountRes.count);
-      renderMsgsInicio(msgsRes.data, msgsCountRes.count);
+      // ── Calidad del agente ──────────────────────────────────────────────────
+      const phone      = (phonesRes.data ?? [])[0]
+      const totalToday = todayMsgs.length
+      const ratio      = totalToday > 0 ? Math.round((outboundToday / totalToday) * 100) : null
+      renderAgenteCalidad({ phone, ratio, closedToday, outboundToday, inboundToday })
 
+      // ── Pipeline ────────────────────────────────────────────────────────────
+      const contacts = allContacts.data ?? []
+      renderDashPipeline(contacts)
+
+      // ── Sin respuesta ───────────────────────────────────────────────────────
+      // Find open conversations whose last message was inbound
+      const convLastMsg = {}
+      ;(recentMsgs.data ?? []).forEach(m => {
+        if (!m.conversation_id || !m.conversations) return
+        if (!convLastMsg[m.conversation_id]) convLastMsg[m.conversation_id] = m
+      })
+      const needsReply = Object.values(convLastMsg)
+        .filter(m => m.direction === 'inbound')
+        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        .slice(0, 8)
+      renderSinRespuesta(needsReply)
+
+      // ── Orgs (super admin) ──────────────────────────────────────────────────
       if (isAll && state.isSuperAdmin) {
-        renderOrgsTable(orgsRes.data, orgsCountRes.count);
+        renderOrgsTable(orgsRes.data, orgsCount.count)
       } else {
-        $('orgs-section').style.display = 'none';
+        $('orgs-section').style.display = 'none'
       }
 
-      state.allContacts = leadsRes.data || [];
-      renderLeads(state.allContacts);
-      $('leads-search').value = '';
+      // Keep allContacts for leads view
+      state.allContacts = contacts
+      const leadsSearch = $('leads-search')
+      if (leadsSearch) leadsSearch.value = ''
+      renderLeads(contacts)
+      renderConexiones(phonesRes.data)
 
-      renderConexiones(phonesRes.data);
+      // Fecha en header
+      const fechaEl = $('dash-fecha')
+      if (fechaEl) fechaEl.textContent = now.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'})
+      $('topbar-time').textContent = 'Actualizado ' + now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})
 
     } catch (err) {
-      console.error('Error cargando datos:', err);
-      $('kpi-grid').innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px">Error al cargar datos. Intenta actualizar.</div>`;
+      console.error('loadDashboard error:', err)
+      const el = $('dash-kpis')
+      if (el) el.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px">Error al cargar datos. Intenta actualizar.</div>`
     }
+  }
+
+  function renderDashKpis(kpis) {
+    const el = $('dash-kpis')
+    if (!el) return
+    el.innerHTML = kpis.map(k => `
+      <div class="kpi-card bp" style="position:relative;overflow:hidden">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+          <div style="width:34px;height:34px;border-radius:10px;background:${k.iconBg};display:flex;align-items:center;justify-content:center;color:${k.color};font-size:14px"><i class="fa ${k.icon}"></i></div>
+          ${k.trend ? `<span class="kpi-trend ${k.trendClass || 'muted'}" style="font-size:11px">${k.trend}</span>` : ''}
+        </div>
+        <div style="font-size:30px;font-weight:800;color:var(--text);letter-spacing:-.02em;font-family:'Barlow Condensed',sans-serif;line-height:1">${typeof k.value === 'number' ? k.value.toLocaleString('es-MX') : k.value}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin:4px 0 2px">${k.label}</div>
+        ${k.foot ? `<div style="font-size:11.5px;color:var(--text-dim)">${k.foot}</div>` : ''}
+      </div>
+    `).join('')
+  }
+
+  function renderAgenteCalidad({ phone, ratio, closedToday, outboundToday, inboundToday }) {
+    const el = $('dash-agente-rows')
+    if (!el) return
+
+    const waStatus = phone?.status ?? 'unknown'
+    const quality  = phone?.quality_rating ?? 'UNKNOWN'
+    const qualityColor = quality === 'GREEN' ? '#22c55e' : quality === 'YELLOW' ? '#f59e0b' : quality === 'RED' ? '#f87171' : '#94a3b8'
+    const qualityIcon  = quality === 'GREEN' ? 'fa-circle-check' : quality === 'YELLOW' ? 'fa-triangle-exclamation' : quality === 'RED' ? 'fa-circle-xmark' : 'fa-circle-question'
+    const waColor = waStatus === 'active' ? '#22c55e' : '#f87171'
+    const waLabel = waStatus === 'active' ? 'Conectado' : waStatus === 'unknown' ? 'Sin número' : waStatus
+
+    const row = (icon, iconColor, label, value, hint = '') => `
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(${iconColor},0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fa ${icon}" style="font-size:12px;color:rgb(${iconColor})"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;color:var(--text-muted);font-weight:500">${label}</div>
+          ${hint ? `<div style="font-size:11px;color:var(--text-dim)">${hint}</div>` : ''}
+        </div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);white-space:nowrap">${value}</div>
+      </div>`
+
+    const ratioVal  = ratio !== null ? `${ratio}%` : '—'
+    const ratioHint = ratio !== null ? `${outboundToday} bot / ${inboundToday} recibidos` : 'Sin mensajes hoy'
+    const ratioColor = ratio === null ? '148,163,184' : ratio >= 70 ? '34,197,94' : ratio >= 40 ? '245,158,11' : '248,113,113'
+    const ratioIcon  = ratio === null ? 'fa-minus' : ratio >= 70 ? 'fa-check' : 'fa-exclamation'
+
+    el.innerHTML = [
+      row('fa-signal',    '34,197,94',       'Estado del número', `<span style="color:${waColor};font-weight:700">${waLabel}</span>`, phone?.display_phone_number ?? ''),
+      row(qualityIcon,    quality === 'GREEN' ? '34,197,94' : quality === 'YELLOW' ? '245,158,11' : '248,113,113', 'Calidad Meta',  `<span style="color:${qualityColor};font-weight:700">${quality}</span>`, 'Calificación de la API'),
+      row(ratioIcon,      ratioColor,        'Cobertura hoy',    ratioVal, ratioHint),
+      row('fa-circle-check', '99,102,241',   'Resueltas hoy',    closedToday.toLocaleString('es-MX'), 'Conversaciones cerradas'),
+    ].join('')
+  }
+
+  function renderDashPipeline(contacts) {
+    const el = $('dash-pipeline')
+    if (!el) return
+    const statuses = [
+      { key:'new',       label:'Nuevos',      color:'#22c55e' },
+      { key:'qualified', label:'Calificados', color:'#3b82f6' },
+      { key:'active',    label:'Activos',     color:'#f59e0b' },
+      { key:'inactive',  label:'Inactivos',   color:'#94a3b8' },
+      { key:'closed',    label:'Cerrados',    color:'#475569' },
+    ]
+    const total = contacts.length || 1
+    const counts = {}
+    contacts.forEach(c => { counts[c.status] = (counts[c.status] || 0) + 1 })
+
+    const rows = statuses.filter(s => (counts[s.key] || 0) > 0)
+    if (!rows.length) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:8px 0">Sin contactos todavía</div>'
+      return
+    }
+    el.innerHTML = rows.map(s => {
+      const n   = counts[s.key] || 0
+      const pct = Math.round((n / total) * 100)
+      return `
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+            <span style="font-size:12.5px;font-weight:600;color:var(--text)">${s.label}</span>
+            <span style="font-size:12px;color:var(--text-muted)">${n.toLocaleString('es-MX')} <span style="color:var(--text-dim);font-weight:400">(${pct}%)</span></span>
+          </div>
+          <div style="height:7px;border-radius:99px;background:var(--hover-bg);overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${s.color};border-radius:99px;transition:width .4s"></div>
+          </div>
+        </div>`
+    }).join('')
+
+    // Total below
+    el.innerHTML += `<div style="padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+      <span style="font-size:12px;color:var(--text-dim)">Total en base</span>
+      <span style="font-size:14px;font-weight:800;color:var(--text);font-family:'Barlow Condensed',sans-serif">${contacts.length.toLocaleString('es-MX')}</span>
+    </div>`
+  }
+
+  function renderSinRespuesta(msgs) {
+    const listEl   = $('dash-sinresp-list')
+    const countEl  = $('dash-sinresp-count')
+    if (!listEl) return
+
+    if (countEl) countEl.textContent = msgs.length > 0 ? `${msgs.length}` : ''
+
+    if (!msgs.length) {
+      listEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:12px 0;color:var(--text-dim);font-size:13px"><i class="fa fa-circle-check" style="color:#22c55e"></i> Todo atendido</div>`
+      return
+    }
+    listEl.innerHTML = msgs.map(m => {
+      const contact = m.conversations?.contacts
+      const name    = contact?.name || contact?.phone || 'Desconocido'
+      const phone   = contact?.phone || ''
+      const ago     = timeAgo(m.created_at)
+      const initls  = initials(name)
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--hover-bg);cursor:pointer" onclick="switchView('inbox')" title="Ir a inbox">
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(248,113,113,.15);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f87171;flex-shrink:0">${initls}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${maskPhone(phone)}</div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#f87171;white-space:nowrap">${ago}</div>
+      </div>`
+    }).join('')
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '—'
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000)
+    if (diff < 1)  return 'ahora'
+    if (diff < 60) return `${diff}m`
+    const h = Math.floor(diff / 60)
+    if (h < 24) return `${h}h`
+    return `${Math.floor(h / 24)}d`
   }
 
   $('refresh-btn').addEventListener('click', () => loadDashboard(state.currentOrgId));
