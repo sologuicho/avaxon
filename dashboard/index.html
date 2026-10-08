@@ -7928,10 +7928,15 @@
       <!-- Body scrollable -->
       <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
 
-        <!-- Selector de cliente (solo super_admin sin org activa) -->
-        <div id="bc-org-picker" style="display:none;flex-direction:column;gap:8px">
-          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">¿Para qué cliente?</div>
-          <div id="bc-org-btns" style="display:flex;flex-wrap:wrap;gap:7px"></div>
+        <!-- Aviso tenant isolation (solo super_admin sin org activa) -->
+        <div id="bc-org-picker" style="display:none;flex-direction:column;gap:8px;padding:14px 16px;background:rgba(245,158,11,.07);border:1.5px solid rgba(245,158,11,.25);border-radius:12px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <i class="fa fa-triangle-exclamation" style="color:#f59e0b;font-size:15px;margin-top:1px;flex-shrink:0"></i>
+              <div style="font-size:13px;color:var(--text-muted);line-height:1.5">Selecciona un cliente desde el menú superior ↑ para usar Envíos rápidos</div>
+            </div>
+            <button onclick="closeBroadcast()" style="background:none;border:none;color:var(--text-dim);font-size:18px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0">×</button>
+          </div>
         </div>
 
         <!-- Modo: Mensaje libre / Plantilla -->
