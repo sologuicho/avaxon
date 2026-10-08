@@ -5099,7 +5099,8 @@
   const TEMPLATE_CAT_LABELS = { MARKETING: 'Marketing', UTILITY: 'Utilidad', AUTHENTICATION: 'Autenticación' }
 
   async function loadTemplates() {
-    const orgId = state.currentOrgId || state.userOrgId
+    let orgId = state.currentOrgId || state.userOrgId
+    if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
     if (!orgId) { $('cfg-templates-list').innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">Selecciona un cliente primero</div>'; return }
     const { data } = await sb.from('message_templates').select('*').eq('organization_id', orgId).order('created_at', { ascending: false })
     configTemplates = data ?? []
