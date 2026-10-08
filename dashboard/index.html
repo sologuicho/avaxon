@@ -6583,7 +6583,7 @@
     </div>
   </div>
 
-  <!-- ── Modal Broadcast ── -->
+  <!-- ── Modal Envíos rápidos ── -->
   <div id="modal-broadcast" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
 
@@ -6592,7 +6592,7 @@
         <div style="display:flex;align-items:center;gap:11px">
           <div style="width:36px;height:36px;background:rgba(34,197,94,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;flex-shrink:0"><i class="fa fa-bullhorn"></i></div>
           <div>
-            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Enviar broadcast</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Envíos rápidos</div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:1px">Mensaje masivo por WhatsApp</div>
           </div>
         </div>
@@ -6601,6 +6601,12 @@
 
       <!-- Body -->
       <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+
+        <!-- Aviso sin org seleccionada (solo super_admin) -->
+        <div id="bc-no-org-warn" style="display:none;align-items:center;gap:10px;padding:12px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px">
+          <i class="fa fa-triangle-exclamation" style="color:#f59e0b;font-size:14px;flex-shrink:0"></i>
+          <span style="font-size:12.5px;color:var(--text-muted);line-height:1.4">Selecciona una <strong style="color:var(--text)">organización</strong> en el menú superior antes de enviar.</span>
+        </div>
 
         <!-- Filtro de destinatarios -->
         <div>
