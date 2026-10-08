@@ -3296,6 +3296,103 @@
   }
   window.openConversacion = openConversacion;
 
+  // ── Chat banner: bot/human mode + 24h window ─────────────────────────────
+  const chatHumanConvs = new Set() // conv IDs where human has taken over
+
+  function renderChatBanner(lastInbound, convId) {
+    const banner     = $('wa-window-banner')
+    const agentBar   = $('chat-agent-bar')
+    const humanBar   = $('chat-human-bar')
+    const windowBar  = $('chat-window-bar')
+    const closedBar  = $('chat-closed-bar')
+    const chatInput  = $('chat-input')
+    const sendBtn    = $('chat-send-btn')
+
+    // Hide all sub-bars first
+    agentBar.style.display  = 'none'
+    humanBar.style.display  = 'none'
+    windowBar.style.display = 'none'
+    closedBar.style.display = 'none'
+
+    const isHuman = chatHumanConvs.has(convId)
+
+    if (!lastInbound) {
+      // No client message yet — no window needed, just enable input
+      banner.classList.remove('visible')
+      chatInput.disabled    = false
+      chatInput.placeholder = 'Escribe un mensaje…'
+      sendBtn.disabled      = false
+      return
+    }
+
+    const msgsAgo  = Date.now() - new Date(lastInbound.created_at).getTime()
+    const hrsAgo   = msgsAgo / 3600000
+    const windowOpen = hrsAgo <= 24
+
+    banner.classList.add('visible')
+
+    if (!windowOpen) {
+      // Window closed — locked to templates
+      closedBar.style.display = 'flex'
+      chatInput.disabled      = true
+      chatInput.placeholder   = 'Ventana cerrada — usa una plantilla aprobada'
+      sendBtn.disabled        = true
+      return
+    }
+
+    // Window is open — compute remaining time
+    const minsLeft = Math.round((24 - hrsAgo) * 60)
+    const hLeft    = Math.floor(minsLeft / 60)
+    const mLeft    = minsLeft % 60
+    const timeLabel = hLeft > 0 ? `${hLeft}h ${mLeft}min` : `${mLeft}min`
+
+    // Show 24h remaining pill in both bars
+    $('wa-window-text').innerHTML = `Quedan <strong>${timeLabel}</strong> · después solo plantillas aprobadas`
+    windowBar.style.display = 'flex'
+
+    if (isHuman) {
+      humanBar.style.display  = 'flex'
+      chatInput.disabled      = false
+      chatInput.placeholder   = 'Escribe un mensaje…'
+      sendBtn.disabled        = false
+    } else {
+      agentBar.style.display  = 'flex'
+      const timerEl = $('chat-window-timer')
+      if (timerEl) timerEl.textContent = `${timeLabel} restantes · después solo plantillas aprobadas`
+      chatInput.disabled      = true
+      chatInput.placeholder   = 'El agente está respondiendo — pulsa "Escribir yo" para tomar el control'
+      sendBtn.disabled        = true
+    }
+  }
+
+  function takeoverChat() {
+    const convId = convState.activeId
+    if (!convId) return
+    chatHumanConvs.add(convId)
+    // Reload banner state using last known inbound
+    const msgs = document.querySelectorAll('.msg-row.inbound')
+    // Re-read from messages already rendered to get timestamp
+    // Use the stored last inbound time from the dataset we already have
+    const lastInboundEl = Array.from(document.querySelectorAll('.msg-bubble[data-dir="inbound"]')).at(-1)
+    const ts = lastInboundEl?.dataset.ts
+    const fakeInbound = ts ? { created_at: ts } : { created_at: new Date(Date.now() - 60000).toISOString() }
+    renderChatBanner(fakeInbound, convId)
+    $('chat-input').focus()
+  }
+
+  function returnBotChat() {
+    const convId = convState.activeId
+    if (!convId) return
+    chatHumanConvs.delete(convId)
+    const lastInboundEl = Array.from(document.querySelectorAll('.msg-bubble[data-dir="inbound"]')).at(-1)
+    const ts = lastInboundEl?.dataset.ts
+    const fakeInbound = ts ? { created_at: ts } : null
+    renderChatBanner(fakeInbound, convId)
+  }
+
+  window.takeoverChat   = takeoverChat
+  window.returnBotChat  = returnBotChat
+
   // Móvil: botón "volver" del hilo regresa a la lista de conversaciones.
   function closeConversacionMobile() {
     document.querySelector('.conv-panel')?.classList.remove('chat-active');
