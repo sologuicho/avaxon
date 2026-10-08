@@ -5460,6 +5460,24 @@
       await sb.from('campaigns').update({ total_contacts: wizCsvRows.length }).eq('id', camp.id)
     }
 
+    // Si es selección manual, insertar los contactos seleccionados
+    if (wd.source === 'manual' && wizManualSelected.size > 0) {
+      if (wd.editId) await sb.from('campaign_contacts').delete().eq('campaign_id', wd.editId)
+      const selected = Array.from(wizManualSelected.values())
+      const ccRows = selected.map(c => ({
+        campaign_id:     camp.id,
+        organization_id: orgId,
+        contact_id:      c.id,
+        phone:           c.phone,
+        name:            c.name || null,
+        status:          'pending',
+      }))
+      for (let i = 0; i < ccRows.length; i += 200) {
+        await sb.from('campaign_contacts').insert(ccRows.slice(i, i + 200))
+      }
+      await sb.from('campaigns').update({ total_contacts: selected.length }).eq('id', camp.id)
+    }
+
     closeCampaignWizard()
     if (btn) { btn.disabled = false }
     await loadCampanas()
