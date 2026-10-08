@@ -4413,14 +4413,13 @@
   }
 
   function bcPickOrg(orgId) {
-    if (!orgId) {
-      $('bc-filter-btns').style.opacity = '.4'
-      $('bc-filter-btns').style.pointerEvents = 'none'
-      $('bc-send-btn').disabled = true
-      $('bc-count-line').textContent = 'Selecciona un cliente arriba ↑'
-      return
-    }
     bcState.pickedOrgId = orgId
+    document.querySelectorAll('.bc-org-btn').forEach(btn => {
+      const sel = btn.dataset.id === orgId
+      btn.style.border     = sel ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
+      btn.style.background = sel ? 'var(--accent-sub)' : 'transparent'
+      btn.style.color      = sel ? 'var(--accent)' : 'var(--text-muted)'
+    })
     $('bc-filter-btns').style.opacity = '1'
     $('bc-filter-btns').style.pointerEvents = 'auto'
     $('bc-send-btn').disabled = false
