@@ -2697,6 +2697,7 @@
     try { localStorage.setItem('avx_last_view', name); } catch(e) {}
     if (name === 'calendario')    { loadCalendarMonth(); updateGcalUI(); }
     if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
+    if (name === 'leads')          loadLeads();
     if (name === 'pipeline')       loadPipeline();
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
