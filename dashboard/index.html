@@ -3903,7 +3903,7 @@
         // Messages last 7 days for chart
         withOrg(sb.from('messages').select('direction,created_at').gte('created_at', week7.toISOString())),
         // All contacts for pipeline
-        withOrg(sb.from('contacts').select('id,name,phone,status,last_seen_at').order('created_at',{ascending:false}).limit(500)),
+        withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at',{ascending:false}).limit(500)),
         // Phone numbers
         withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
         // Orgs (super admin)
