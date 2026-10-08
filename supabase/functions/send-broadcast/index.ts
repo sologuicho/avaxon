@@ -42,10 +42,12 @@ Deno.serve(async (req: Request) => {
     .single()
 
   let body: {
-    message: string
-    filter:  'all' | 'new' | 'qualified' | 'active_24h'
-    org_id?: string
-    preview?: boolean
+    message?:           string
+    template_name?:     string
+    template_language?: string
+    filter:             'all' | 'new' | 'qualified' | 'active_24h'
+    org_id?:            string
+    preview?:           boolean
   }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
@@ -53,8 +55,9 @@ Deno.serve(async (req: Request) => {
   if (profile?.role === 'super_admin' && body.org_id) orgId = body.org_id
   if (!orgId) return json({ error: 'No se encontró organización' }, 404)
 
-  const { message, filter = 'all', preview = false } = body
-  if (!preview && !message?.trim()) return json({ error: 'message es requerido' }, 422)
+  const { message, template_name, template_language = 'es_MX', filter = 'all', preview = false } = body
+  const isTemplate = !!template_name?.trim()
+  if (!preview && !isTemplate && !message?.trim()) return json({ error: 'message o template_name es requerido' }, 422)
 
   // Obtener contactos según filtro
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
