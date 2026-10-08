@@ -3277,24 +3277,15 @@
   const chatHumanConvs = new Set() // conv IDs where human has taken over
 
   function renderChatBanner(lastInbound, convId) {
-    const banner     = $('wa-window-banner')
-    const agentBar   = $('chat-agent-bar')
-    const humanBar   = $('chat-human-bar')
-    const windowBar  = $('chat-window-bar')
-    const closedBar  = $('chat-closed-bar')
-    const chatInput  = $('chat-input')
-    const sendBtn    = $('chat-send-btn')
-
-    // Hide all sub-bars first
-    agentBar.style.display  = 'none'
-    humanBar.style.display  = 'none'
-    windowBar.style.display = 'none'
-    closedBar.style.display = 'none'
-
-    const isHuman = chatHumanConvs.has(convId)
+    const banner    = $('wa-window-banner')
+    const bar       = $('chat-mode-bar')
+    const labelEl   = $('chat-mode-label')
+    const timerEl   = $('chat-mode-timer')
+    const actionsEl = $('chat-mode-actions')
+    const chatInput = $('chat-input')
+    const sendBtn   = $('chat-send-btn')
 
     if (!lastInbound) {
-      // No client message yet — no window needed, just enable input
       banner.classList.remove('visible')
       chatInput.disabled    = false
       chatInput.placeholder = 'Escribe un mensaje…'
@@ -3302,43 +3293,44 @@
       return
     }
 
-    const msgsAgo  = Date.now() - new Date(lastInbound.created_at).getTime()
-    const hrsAgo   = msgsAgo / 3600000
+    const hrsAgo    = (Date.now() - new Date(lastInbound.created_at).getTime()) / 3600000
     const windowOpen = hrsAgo <= 24
-
     banner.classList.add('visible')
+    bar.className = 'chat-mode-bar'
 
     if (!windowOpen) {
-      // Window closed — locked to templates
-      closedBar.style.display = 'flex'
-      chatInput.disabled      = true
-      chatInput.placeholder   = 'Ventana cerrada — usa una plantilla aprobada'
-      sendBtn.disabled        = true
+      bar.classList.add('closed')
+      labelEl.textContent   = 'Ventana de 24h cerrada'
+      timerEl.innerHTML     = 'Solo puedes usar <a onclick="alert(\'Próximamente: plantillas de mensajes\')">plantillas aprobadas</a>'
+      actionsEl.innerHTML   = ''
+      chatInput.disabled    = true
+      chatInput.placeholder = 'Ventana cerrada — usa una plantilla aprobada'
+      sendBtn.disabled      = true
       return
     }
 
-    // Window is open — compute remaining time
-    const minsLeft = Math.round((24 - hrsAgo) * 60)
-    const hLeft    = Math.floor(minsLeft / 60)
-    const mLeft    = minsLeft % 60
+    const minsLeft  = Math.round((24 - hrsAgo) * 60)
+    const hLeft     = Math.floor(minsLeft / 60)
+    const mLeft     = minsLeft % 60
     const timeLabel = hLeft > 0 ? `${hLeft}h ${mLeft}min` : `${mLeft}min`
-
-    // Show 24h remaining pill in both bars
-    $('wa-window-text').innerHTML = `Quedan <strong>${timeLabel}</strong> · después solo plantillas aprobadas`
-    windowBar.style.display = 'flex'
+    const isHuman   = chatHumanConvs.has(convId)
 
     if (isHuman) {
-      humanBar.style.display  = 'flex'
-      chatInput.disabled      = false
-      chatInput.placeholder   = 'Escribe un mensaje…'
-      sendBtn.disabled        = false
+      bar.classList.add('human')
+      labelEl.textContent   = 'Tú estás respondiendo'
+      timerEl.textContent   = `ventana abierta ${timeLabel} más`
+      actionsEl.innerHTML   = `<button class="btn-mode" onclick="returnBotChat()">Volver al agente</button>`
+      chatInput.disabled    = false
+      chatInput.placeholder = 'Escribe un mensaje…'
+      sendBtn.disabled      = false
     } else {
-      agentBar.style.display  = 'flex'
-      const timerEl = $('chat-window-timer')
-      if (timerEl) timerEl.textContent = `${timeLabel} restantes · después solo plantillas aprobadas`
-      chatInput.disabled      = true
-      chatInput.placeholder   = 'El agente está respondiendo — pulsa "Escribir yo" para tomar el control'
-      sendBtn.disabled        = true
+      bar.classList.add('agent')
+      labelEl.textContent   = 'Agente IA respondiendo'
+      timerEl.textContent   = `ventana libre ${timeLabel} más`
+      actionsEl.innerHTML   = `<button class="btn-mode" onclick="takeoverChat()">Escribir yo</button>`
+      chatInput.disabled    = true
+      chatInput.placeholder = 'Pulsa "Escribir yo" para tomar el control…'
+      sendBtn.disabled      = true
     }
   }
 
