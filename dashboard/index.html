@@ -6784,7 +6784,10 @@
           <div>
             <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Mensaje</div>
             <textarea id="bc-message" placeholder="Escribe el mensaje que recibirán todos los contactos seleccionados…" rows="5" style="width:100%;resize:vertical;padding:12px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.55;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-            <div id="bc-char-count" style="font-size:11px;color:var(--text-dim);text-align:right;margin-top:4px">0 / 4096</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+              <div id="bc-msg-error" style="display:none;font-size:12px;color:#f87171;font-weight:600">Escribe un mensaje antes de enviar</div>
+              <div id="bc-char-count" style="font-size:11px;color:var(--text-dim);margin-left:auto">0 / 4096</div>
+            </div>
           </div>
           <div style="display:flex;gap:9px;padding:10px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px">
             <i class="fa fa-clock" style="color:#f59e0b;margin-top:2px;flex-shrink:0;font-size:12px"></i>
