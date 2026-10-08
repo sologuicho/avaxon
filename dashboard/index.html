@@ -5148,7 +5148,7 @@
   let wizCsvRows = []
 
   function openCampaignWizard() {
-    campState.wizData = { step: 1, name: '', description: '', source: 'all', messageType: 'template', templateId: null, messageBody: '' }
+    campState.wizData = { step: 1, editId: null, name: '', description: '', source: 'all', messageType: 'template', templateId: null, messageBody: '' }
     wizCsvRows = []
     if ($('wiz-name'))        $('wiz-name').value        = ''
     if ($('wiz-description')) $('wiz-description').value = ''
@@ -5156,6 +5156,8 @@
     setWizStep(1)
     setWizSource('all')
     setWizMsgType('template')
+    const wizTitle = document.querySelector('#modal-camp-wizard h3')
+    if (wizTitle) wizTitle.textContent = 'Nueva campaña'
     $('modal-camp-wizard').style.display = 'flex'
     setTimeout(() => $('wiz-name')?.focus(), 80)
   }
