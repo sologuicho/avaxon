@@ -3085,6 +3085,15 @@
     $('cpanel-status').innerHTML  = statusPill(contact?.status);
     $('cpanel-tags').innerHTML    = renderTags(contact?.tags);
 
+    const profileBtn = $('cpanel-view-profile-btn');
+    if (profileBtn) {
+      profileBtn.onclick = () => {
+        switchView('leads');
+        const search = document.getElementById('leads-search');
+        if (search && contact?.name) { search.value = contact.name; search.dispatchEvent(new Event('input')); }
+      };
+    }
+
     // Appointments for this contact
     if (contact?.id) {
       const { data: apts } = await sb.from('appointments')
