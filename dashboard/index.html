@@ -5179,8 +5179,15 @@
     if (stepLabel) stepLabel.textContent = `Paso ${n} de 2`
     const nextBtn = $('wiz-next-btn')
     if (nextBtn) {
-      if (n === 2) { nextBtn.innerHTML = '<i class="fa fa-rocket"></i> Crear campaña'; nextBtn.onclick = saveCampaignDraft }
-      else         { nextBtn.innerHTML = 'Siguiente <i class="fa fa-arrow-right" style="font-size:11px"></i>'; nextBtn.onclick = wizNext }
+      if (n === 2) {
+        nextBtn.innerHTML = campState.wizData.editId
+          ? '<i class="fa fa-floppy-disk"></i> Guardar cambios'
+          : '<i class="fa fa-rocket"></i> Crear campaña'
+        nextBtn.onclick = saveCampaignDraft
+      } else {
+        nextBtn.innerHTML = 'Siguiente <i class="fa fa-arrow-right" style="font-size:11px"></i>'
+        nextBtn.onclick = wizNext
+      }
     }
   }
 
