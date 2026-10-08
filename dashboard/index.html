@@ -3657,6 +3657,21 @@
       });
     }
 
+    if (role === 'reviewer') {
+      state.isReviewer = true;
+      // Ocultar nav restringido
+      ['nav-config','nav-section-cuenta','nav-cuenta','nav-conexiones','nav-bot',
+       'nav-inventario','nav-crm','nav-section-crm','nav-admin-link'].forEach(id => {
+        const el = $(id); if (el) el.style.display = 'none';
+      });
+      // Banner read-only
+      const banner = document.createElement('div');
+      banner.id = 'reviewer-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#1e293b;border-bottom:1px solid #334155;padding:7px 20px;text-align:center;font-size:12px;font-family:\'JetBrains Mono\',monospace;color:#94a3b8;';
+      banner.innerHTML = '🔍 <strong style="color:#f8fafc">Vista de revisión — Solo lectura.</strong> Los botones de acción están deshabilitados.';
+      document.body.prepend(banner);
+    }
+
     // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
     if (!state.isSuperAdmin) {
       if (!profileData?.terms_accepted_at) {
