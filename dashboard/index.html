@@ -1044,7 +1044,7 @@
         <span class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
         </span>
-        Agente IA
+        <span id="nav-bot-label">Agente IA</span>
       </div>
       <div class="nav-item" id="nav-inventario" data-view="inventario">
         <span class="nav-dot"></span>
@@ -1082,6 +1082,13 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M6 8h4M6 12h8"/></svg>
         </span>
         Clientes
+      </div>
+      <div class="nav-item" id="nav-agent-requests" data-view="agent-requests" style="display:none">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </span>
+        Solicitudes de clientes
       </div>
     </nav>
 
@@ -1992,12 +1999,13 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
             </div>
             <div>
-              <div class="view-header-title">Agente IA</div>
-              <div class="view-header-sub">Configura la personalidad y comportamiento de tu bot</div>
+              <div class="view-header-title" id="bot-view-header-title">Agente IA</div>
+              <div class="view-header-sub" id="bot-view-header-sub">Configura la personalidad y comportamiento de tu bot</div>
             </div>
           </div>
         </div>
 
+        <div id="bot-admin-editor">
         <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
 
           <!-- Prompt editor -->
@@ -2114,7 +2122,139 @@
             </button>
           </div>
         </div>
+        </div><!-- /bot-admin-editor -->
 
+        <!-- ── Vista de cliente: Modificaciones a tu agente ────────────── -->
+        <div id="bot-client-view" style="display:none">
+          <div class="card bp" style="padding:18px 22px;margin-bottom:16px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <p style="font-size:13.5px;line-height:1.6;color:var(--text);margin:0">¿Cambió tu menú, tus precios, tus horarios o quieres que tu agente responda diferente? Mándanos tu solicitud y nuestro equipo la aplica. <strong>Incluido en tu plan.</strong></p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:15px;font-weight:700;margin-bottom:16px">Nueva solicitud</div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Tipo de solicitud</label>
+                  <select id="acr-type" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
+                    <option value="update_info">Actualizar información (menú, precios, productos, horarios)</option>
+                    <option value="change_tone">Cambiar cómo responde (tono, saludo, estilo)</option>
+                    <option value="add_faq">Agregar preguntas frecuentes</option>
+                    <option value="other">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Descripción</label>
+                  <textarea id="acr-description" rows="5" placeholder="Describe el cambio que necesitas…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Archivos adjuntos (PDF o imágenes, opcional)</label>
+                  <input id="acr-files" type="file" multiple accept="application/pdf,image/*" style="width:100%;font-size:12.5px;color:var(--text-muted)" />
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Prioridad</label>
+                  <select id="acr-priority" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
+                    <option value="normal">Normal</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+                <div id="acr-error" style="display:none;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+                <div>
+                  <button onclick="submitAgentRequest()" id="acr-submit-btn" class="btn-primary" style="padding:10px 22px;font-size:13.5px">Enviar solicitud</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="card bp" style="padding:18px 20px">
+                <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+                <div style="font-size:13px;font-weight:700;margin-bottom:10px">Estado del agente</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span id="acr-status-dot" style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
+                  <span id="acr-status-text" style="font-size:13px;font-weight:700">Activo</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Solo lectura — pídenos un cambio si necesitas pausarlo</div>
+              </div>
+              <div class="card bp" style="padding:18px 20px" id="acr-plan-benefit">
+                <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+                <div style="font-size:13px;font-weight:700;margin-bottom:6px">Incluido en tu plan</div>
+                <div style="font-size:12.5px;color:var(--text-muted);line-height:1.6">Modificaciones a tu agente incluidas: mándanos los cambios cuando quieras y nosotros lo actualizamos.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card bp" style="padding:0;margin-top:16px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:var(--text)">Mis solicitudes</div>
+            <div id="acr-list" style="display:flex;flex-direction:column"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Vista: Solicitudes de clientes (super_admin) ─────────────── -->
+      <div class="view" id="view-agent-requests">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(99,102,241,.12);color:#818cf8">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            </div>
+            <div>
+              <div class="view-header-title">Solicitudes de clientes</div>
+              <div class="view-header-sub">Cambios al agente pedidos por todas las orgs</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select id="aar-filter-status" onchange="loadAgentRequestsAdmin()" style="padding:8px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">
+            <option value="">Todos los estados</option>
+            <option value="received">Recibida</option>
+            <option value="in_progress">En proceso</option>
+            <option value="needs_info">Necesitamos más información</option>
+            <option value="completed">Completada</option>
+          </select>
+          <select id="aar-filter-org" onchange="loadAgentRequestsAdmin()" style="padding:8px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">
+            <option value="">Todos los clientes</option>
+          </select>
+        </div>
+
+        <div class="card bp" style="padding:0">
+          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+          <div id="aar-list" style="display:flex;flex-direction:column"></div>
+        </div>
+      </div>
+
+      <!-- Modal: Responder solicitud -->
+      <div id="aar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div style="font-size:17px;font-weight:700;color:var(--text)">Solicitud de <span id="aar-modal-org"></span></div>
+            <button onclick="closeAgentRequestModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:20px"><i class="fa fa-xmark"></i></button>
+          </div>
+          <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:4px" id="aar-modal-meta"></div>
+          <div style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:var(--page-bg);border-radius:10px" id="aar-modal-description"></div>
+          <div id="aar-modal-attachments" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+          <div style="margin-bottom:14px">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Estado</label>
+            <select id="aar-modal-status" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
+              <option value="received">Recibida</option>
+              <option value="in_progress">En proceso</option>
+              <option value="needs_info">Necesitamos más información</option>
+              <option value="completed">Completada</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Respuesta / comentario para el cliente</label>
+            <textarea id="aar-modal-response" rows="4" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:space-between;align-items:center">
+            <a href="#" id="aar-modal-editor-link" style="font-size:12.5px;color:var(--accent);font-weight:600">Abrir editor del prompt de esta org →</a>
+            <button onclick="saveAgentRequestResponse()" id="aar-modal-save-btn" class="btn-primary" style="padding:9px 20px;font-size:13.5px">Guardar</button>
+          </div>
+        </div>
       </div>
 
       <!-- ── Vista: Mi Cuenta ──────────────────────────────────────────── -->
@@ -2302,7 +2442,7 @@
         <!-- Tabs -->
         <div style="display:flex;gap:6px;margin-bottom:18px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content">
           <button id="cfg-tab-plantillas" onclick="switchConfigTab('plantillas')" style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--accent);color:#062513;transition:all .15s">Plantillas</button>
-          <button id="cfg-tab-ejemplos"   onclick="switchConfigTab('ejemplos')"   style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">Ejemplos de bot</button>
+          <button id="cfg-tab-ejemplos"   onclick="switchConfigTab('ejemplos')"   style="display:none;padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">Plantillas de agente</button>
           <button id="cfg-tab-general"    onclick="switchConfigTab('general')"    style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">General</button>
         </div>
 
@@ -2702,6 +2842,7 @@
     leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
     pipeline: 'Pipeline', asignacion: 'Asignación', campanas: 'Campañas',
     bot: 'Agente IA', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
+    'agent-requests': 'Solicitudes de clientes',
   };
 
   function switchView(name) {
@@ -2720,11 +2861,12 @@
     if (name === 'pipeline')       loadPipeline();
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
-    if (name === 'bot')            loadBotConfig();
+    if (name === 'bot')            { if (state.isSuperAdmin) loadBotConfig(); else loadAgentRequestsClient(); }
     if (name === 'cuenta')         loadCuenta();
     if (name === 'crm')            loadCRM();
     if (name === 'config')         loadConfig();
     if (name === 'campanas')       loadCampanas();
+    if (name === 'agent-requests') loadAgentRequestsAdmin();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -4388,6 +4530,24 @@
     state.userRole     = role;
     state.userOrgId    = profileData?.organization_id ?? null;
 
+    // Cambio de producto: los clientes ya no editan el prompt/modelo/tester
+    // directamente — solo mandan solicitudes de cambio, que Avaxon aplica.
+    // Esto es la puerta de UI; la seguridad real vive en RLS (bot_configs
+    // solo acepta UPDATE/INSERT de super_admin).
+    if (state.isSuperAdmin) {
+      $('nav-bot-label').textContent = 'Agente IA';
+      VIEW_TITLES.bot = 'Agente IA';
+      $('bot-admin-editor').style.display = '';
+      $('bot-client-view').style.display = 'none';
+      $('cfg-tab-ejemplos').style.display = '';
+      $('nav-agent-requests').style.display = 'flex';
+    } else {
+      $('nav-bot-label').textContent = 'Mi agente';
+      VIEW_TITLES.bot = 'Modificaciones a tu agente';
+      $('bot-admin-editor').style.display = 'none';
+      $('bot-client-view').style.display = '';
+    }
+
     if (role === 'agent') {
       ['nav-conexiones','nav-bot','nav-cuenta','nav-section-cuenta'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
@@ -4462,7 +4622,7 @@
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
-    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm'];
+    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','agent-requests'];
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     loadConversaciones();
     loadIntegrations();
@@ -4546,7 +4706,7 @@
   const TOUR_STEPS = [
     { target: 'view-conversaciones', nav: 'conversaciones', title: 'Tu inbox', body: 'Aquí llegan todos los mensajes de WhatsApp de tus clientes en tiempo real.' },
     { target: 'view-leads',          nav: 'leads',          title: 'Contactos',  body: 'Gestiona tu base de contactos, etiquétalos y filtra por estado.' },
-    { target: 'view-bot',            nav: 'bot',            title: 'Agente IA',  body: 'Configura el comportamiento y el prompt de tu agente de inteligencia artificial.' },
+    { target: 'view-bot',            nav: 'bot',            title: 'Mi agente',  body: '¿Quieres cambiar el menú, los precios o cómo responde tu agente? Mándanos la solicitud aquí — está incluido en tu plan.' },
     { target: 'view-conexiones',     nav: 'conexiones',     title: 'Conexiones', body: 'Conecta Google Calendar, Sheets, Stripe y más integraciones desde aquí.' },
   ];
   let tourStep = 0;
@@ -7193,6 +7353,253 @@
   window.saveBotConfig  = saveBotConfig;
   window.setBotEnabled  = setBotEnabled;
 
+  // ── Solicitudes de cambio al agente ──────────────────────────────────────
+  // Los clientes ya no editan el prompt directamente: mandan una solicitud
+  // (tipo, descripción, adjuntos, prioridad) y Avaxon la aplica. La fila se
+  // inserta con un id generado en el cliente para poder subir los adjuntos a
+  // su ruta final ANTES del insert — así nunca hace falta un UPDATE desde el
+  // cliente (RLS solo permite UPDATE a super_admin).
+  const ACR_TYPE_LABELS = {
+    update_info: 'Actualizar información',
+    change_tone: 'Cambiar cómo responde',
+    add_faq: 'Agregar preguntas frecuentes',
+    other: 'Otro',
+  };
+  const ACR_STATUS_LABELS = {
+    received:    { label: 'Recibida',                         color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+    in_progress: { label: 'En proceso',                        color: '#3b82f6', bg: 'rgba(59,130,246,.12)' },
+    needs_info:  { label: 'Necesitamos más información',       color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
+    completed:   { label: 'Completada',                        color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
+  };
+  const PLAN_RESPONSE_TIMES = {
+    mostrador: '48 horas hábiles', basic: '48 horas hábiles',
+    sucursal: '24 horas', pro: '24 horas',
+    cadena: 'el mismo día hábil', business: 'el mismo día hábil', enterprise: 'el mismo día hábil',
+  };
+
+  async function uploadAgentRequestFiles(orgId, requestId, files) {
+    const uploaded = [];
+    for (const file of files) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `${orgId}/${requestId}/${Date.now()}_${safeName}`;
+      const { error } = await sb.storage.from('agent-requests').upload(path, file);
+      if (!error) uploaded.push({ path, filename: file.name, size: file.size });
+    }
+    return uploaded;
+  }
+
+  async function submitAgentRequest() {
+    const type        = $('acr-type').value;
+    const description  = $('acr-description').value.trim();
+    const priority     = $('acr-priority').value;
+    const filesInput   = $('acr-files');
+    const errEl        = $('acr-error');
+    const btn          = $('acr-submit-btn');
+    errEl.style.display = 'none';
+
+    if (!description) { errEl.textContent = 'Describe el cambio que necesitas.'; errEl.style.display = 'block'; return; }
+    const orgId = getActiveOrgId();
+    if (!orgId) { errEl.textContent = 'Selecciona un cliente.'; errEl.style.display = 'block'; return; }
+
+    btn.disabled = true; btn.textContent = 'Enviando…';
+
+    const requestId = crypto.randomUUID();
+    const files = filesInput?.files ? Array.from(filesInput.files) : [];
+    let attachments = [];
+    if (files.length) {
+      btn.textContent = 'Subiendo archivos…';
+      attachments = await uploadAgentRequestFiles(orgId, requestId, files);
+    }
+
+    btn.textContent = 'Enviando…';
+    const { error } = await sb.from('agent_change_requests').insert({
+      id: requestId,
+      organization_id: orgId,
+      type, description, priority,
+      attachments,
+      created_by: state.userId,
+    });
+
+    btn.disabled = false; btn.textContent = 'Enviar solicitud';
+
+    if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+
+    // Aviso por WhatsApp a Avaxon — best-effort, no bloquea si falla.
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        fetch(EDGE_BASE + '/notify-agent-request', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: requestId }),
+        }).catch(() => {});
+      }
+    } catch (e) { /* no-op */ }
+
+    $('acr-description').value = '';
+    if (filesInput) filesInput.value = '';
+    $('acr-type').value = 'update_info';
+    $('acr-priority').value = 'normal';
+    showToast('Solicitud enviada — nuestro equipo la revisará pronto');
+    loadAgentRequestsClient();
+  }
+
+  function renderAgentRequestRow(r, opts = {}) {
+    const st = ACR_STATUS_LABELS[r.status] || ACR_STATUS_LABELS.received;
+    const d = new Date(r.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+    const urgentTag = r.priority === 'urgent' ? '<span style="font-size:10.5px;font-weight:700;color:#ef4444;margin-left:6px">URGENTE</span>' : '';
+    const orgLabel = opts.showOrg ? `<span style="font-size:12px;color:var(--text-muted);margin-right:8px">${opts.orgName || ''}</span>` : '';
+    const clickAttr = opts.clickable ? `onclick="openAgentRequestModal('${r.id}')" style="cursor:pointer"` : '';
+    return `<div ${clickAttr} style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;flex-wrap:wrap">
+          ${orgLabel}
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${ACR_TYPE_LABELS[r.type] || r.type}</span>
+          ${urgentTag}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--text-dim)">${d}</span>
+          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5">${r.description}</div>
+      ${r.response ? `<div style="font-size:12.5px;color:var(--text);background:var(--page-bg);padding:8px 10px;border-radius:8px;margin-top:2px"><strong>Avaxon:</strong> ${r.response}</div>` : ''}
+    </div>`;
+  }
+
+  async function loadAgentRequestsClient() {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+
+    const { data: bc } = await sb.from('bot_configs').select('enabled').eq('organization_id', orgId).maybeSingle();
+    const enabled = bc?.enabled !== false;
+    const dot = $('acr-status-dot'), txt = $('acr-status-text');
+    if (dot && txt) {
+      dot.style.background = enabled ? 'var(--accent)' : 'var(--text-dim)';
+      txt.textContent = enabled ? 'Activo' : 'Pausado';
+    }
+
+    const { data: org } = await sb.from('organizations').select('plan_id').eq('id', orgId).maybeSingle();
+    const respTime = PLAN_RESPONSE_TIMES[(org?.plan_id || '').toLowerCase()] || 'el tiempo indicado en tu plan';
+    const benefitEl = $('acr-plan-benefit');
+    if (benefitEl) {
+      benefitEl.querySelector('div:last-child').textContent =
+        `Modificaciones a tu agente incluidas: mándanos los cambios cuando quieras y nosotros lo actualizamos. Tiempo de respuesta de tu plan: ${respTime}.`;
+    }
+
+    const { data: reqs } = await sb.from('agent_change_requests')
+      .select('id,type,description,priority,status,response,created_at')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false });
+
+    const listEl = $('acr-list');
+    if (!reqs || !reqs.length) {
+      listEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">Aún no has enviado ninguna solicitud</div>';
+      return;
+    }
+    listEl.innerHTML = reqs.map(r => renderAgentRequestRow(r)).join('');
+  }
+
+  // ── Admin: Solicitudes de clientes (super_admin) ─────────────────────────
+  async function loadAgentRequestsAdmin() {
+    const orgSelect = $('aar-filter-org');
+    if (orgSelect && orgSelect.options.length <= 1) {
+      (state.allOrgs || []).forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id; opt.textContent = o.name;
+        orgSelect.appendChild(opt);
+      });
+    }
+
+    let q = sb.from('agent_change_requests')
+      .select('id,organization_id,type,description,priority,status,response,created_at,organizations(name)')
+      .order('created_at', { ascending: false });
+
+    const statusFilter = $('aar-filter-status')?.value;
+    const orgFilter = $('aar-filter-org')?.value;
+    if (statusFilter) q = q.eq('status', statusFilter);
+    if (orgFilter) q = q.eq('organization_id', orgFilter);
+
+    const { data: reqs } = await q;
+    const listEl = $('aar-list');
+    if (!reqs || !reqs.length) {
+      listEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">No hay solicitudes con estos filtros</div>';
+      return;
+    }
+    state._agentRequestsCache = reqs;
+    listEl.innerHTML = reqs.map(r => renderAgentRequestRow(r, {
+      showOrg: true, clickable: true, orgName: r.organizations?.name || '—',
+    })).join('');
+  }
+
+  async function openAgentRequestModal(id) {
+    const r = (state._agentRequestsCache || []).find(x => x.id === id);
+    if (!r) return;
+    state._agentRequestModalId = id;
+
+    $('aar-modal-org').textContent = r.organizations?.name || '—';
+    $('aar-modal-meta').textContent = `${ACR_TYPE_LABELS[r.type] || r.type} · ${r.priority === 'urgent' ? 'Urgente' : 'Normal'} · ${new Date(r.created_at).toLocaleString('es-MX')}`;
+    $('aar-modal-description').textContent = r.description;
+    $('aar-modal-status').value = r.status;
+    $('aar-modal-response').value = r.response || '';
+    $('aar-modal-editor-link').onclick = (e) => {
+      e.preventDefault();
+      selectOrg(r.organization_id);
+      closeAgentRequestModal();
+      switchView('bot');
+    };
+
+    const { data: full } = await sb.from('agent_change_requests').select('attachments').eq('id', id).maybeSingle();
+    const attachments = full?.attachments || [];
+    const attEl = $('aar-modal-attachments');
+    if (!attachments.length) {
+      attEl.innerHTML = '';
+    } else {
+      attEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">Adjuntos</div>';
+      for (const att of attachments) {
+        const { data: signed } = await sb.storage.from('agent-requests').createSignedUrl(att.path, 3600);
+        const link = document.createElement('a');
+        link.href = signed?.signedUrl || '#';
+        link.target = '_blank'; link.rel = 'noopener';
+        link.style.cssText = 'font-size:12.5px;color:var(--accent)';
+        link.textContent = '📎 ' + att.filename;
+        attEl.appendChild(link);
+      }
+    }
+
+    $('aar-modal').style.display = 'flex';
+  }
+
+  function closeAgentRequestModal() {
+    $('aar-modal').style.display = 'none';
+    state._agentRequestModalId = null;
+  }
+
+  async function saveAgentRequestResponse() {
+    const id = state._agentRequestModalId;
+    if (!id) return;
+    const status = $('aar-modal-status').value;
+    const response = $('aar-modal-response').value.trim();
+    const btn = $('aar-modal-save-btn');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { error } = await sb.from('agent_change_requests').update({
+      status, response: response || null,
+      responded_by: state.userId, responded_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', id);
+    btn.disabled = false; btn.textContent = 'Guardar';
+    if (error) { showToast('Error: ' + error.message, 4000); return; }
+    showToast('Solicitud actualizada');
+    closeAgentRequestModal();
+    loadAgentRequestsAdmin();
+  }
+
+  window.submitAgentRequest       = submitAgentRequest;
+  window.openAgentRequestModal    = openAgentRequestModal;
+  window.closeAgentRequestModal   = closeAgentRequestModal;
+  window.saveAgentRequestResponse = saveAgentRequestResponse;
+  window.loadAgentRequestsAdmin   = loadAgentRequestsAdmin;
+
   // ── Bot tester ───────────────────────────────────────────────────────────
   const botTest = { history: [], busy: false };
 
@@ -7860,6 +8267,27 @@
     }
   }
 
+  // Formatea una fecha como "08/10/2026 6:08 p.m." en la zona de la org —
+  // nunca ISO/UTC crudo en las filas que se mandan a Sheets.
+  function formatDateEsMX(iso, timeZone = getAppointmentTimezone()) {
+    if (!iso) return '';
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const p = fmt.formatToParts(new Date(iso)).reduce((acc, x) => { acc[x.type] = x.value; return acc; }, {});
+    let h = +p.hour;
+    const ampm = h >= 12 ? 'p.m.' : 'a.m.';
+    h = h % 12; if (h === 0) h = 12;
+    return `${p.day}/${p.month}/${p.year} ${h}:${p.minute} ${ampm}`;
+  }
+
+  // Orden de columnas de la hoja "Avaxon - Leads": Fecha, Nombre, Teléfono,
+  // Mensaje, Estado — cualquier fila que se mande a google-sheets-export debe
+  // respetar exactamente este orden.
+  const SHEET_COLUMNS = ['Fecha', 'Nombre', 'Teléfono', 'Mensaje', 'Estado'];
+
   // POST a la Edge Function google-sheets-export. Devuelve el resultado crudo
   // (ok/skipped/error) para que cada caller decida el mensaje a mostrar.
   async function callGoogleSheetsExport(rows) {
@@ -7921,8 +8349,9 @@
   async function testGoogleSheetsRow() {
     const btn = $('gsheets-test-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    // Orden: Fecha, Nombre, Teléfono, Mensaje, Estado.
     const result = await callGoogleSheetsExport([
-      ['Fila de prueba', new Date().toISOString(), 'Enviada desde el dashboard de Avaxon'],
+      [formatDateEsMX(new Date().toISOString()), 'Fila de prueba', '', 'Enviada desde el dashboard de Avaxon', ''],
     ]);
     if (btn) { btn.disabled = false; btn.textContent = 'Enviar fila de prueba'; }
     if (result?.skipped) {
@@ -7953,7 +8382,10 @@
       showToast('No hay leads para exportar');
       return;
     }
-    const rows = contacts.map(c => [c.name || '', c.phone || '', c.email || '', c.status || '', c.created_at || '']);
+    // Orden: Fecha, Nombre, Teléfono, Mensaje, Estado. Los contactos no
+    // guardan un "mensaje" propio (no hay un solo mensaje por lead), así que
+    // esa celda queda vacía — no se inventa un dato que no existe.
+    const rows = contacts.map(c => [formatDateEsMX(c.created_at), c.name || '', c.phone || '', '', c.status || '']);
     const result = await callGoogleSheetsExport(rows);
     if (btn) { btn.disabled = false; btn.textContent = 'Exportar leads ahora'; }
     if (result?.skipped) {
