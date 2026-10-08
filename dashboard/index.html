@@ -5103,6 +5103,47 @@
     campState.currentCampaignId ? closeCampaignDetail() : await loadCampanas()
   }
 
+  async function deleteCampaign(id) {
+    if (!confirm('¿Eliminar esta campaña? Se borrarán todos los datos de envío asociados.')) return
+    await sb.from('campaign_contacts').delete().eq('campaign_id', id)
+    const { error } = await sb.from('campaigns').delete().eq('id', id)
+    if (error) { alert('Error al eliminar: ' + error.message); return }
+    if (campState.currentCampaignId === id) closeCampaignDetail()
+    else await loadCampanas()
+  }
+
+  async function editCampaign(id) {
+    const { data: c } = await sb.from('campaigns').select('*').eq('id', id).single()
+    if (!c) return
+
+    campState.wizData = {
+      step:        1,
+      editId:      id,
+      name:        c.name        || '',
+      description: c.description || '',
+      source:      c.source_type || 'all',
+      messageType: c.message_type || 'template',
+      templateId:  c.template_id  || null,
+      messageBody: c.message_body || '',
+    }
+    wizCsvRows = []
+
+    if ($('wiz-name'))        $('wiz-name').value        = campState.wizData.name
+    if ($('wiz-description')) $('wiz-description').value = campState.wizData.description
+    if ($('wiz-body'))        $('wiz-body').value        = campState.wizData.messageBody
+
+    setWizStep(1)
+    setWizSource(campState.wizData.source)
+    setWizMsgType(campState.wizData.messageType)
+
+    // Update wizard title
+    const wizTitle = document.querySelector('#modal-camp-wizard h3')
+    if (wizTitle) wizTitle.textContent = 'Editar campaña'
+
+    $('modal-camp-wizard').style.display = 'flex'
+    setTimeout(() => $('wiz-name')?.focus(), 80)
+  }
+
   // ── Wizard de campaña ─────────────────────────────────────────────────────
   let wizCsvRows = []
 
