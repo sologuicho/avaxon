@@ -3034,8 +3034,9 @@
       toggleBtn.title   = conv?.status === 'open' ? 'Cerrar conversación' : 'Reabrir conversación';
       toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
     }
-    const waLink = $('chat-wa-link');
-    if (waLink && contact?.phone && !state.isReviewer) waLink.href = `https://wa.me/${contact.phone}`;
+    const waBtn = $('chat-wa-btn');
+    if (waBtn && contact?.phone && !state.isReviewer) waBtn.dataset.waUrl = `https://wa.me/${contact.phone.replace(/\D/g,'')}`;
+    else if (waBtn) delete waBtn.dataset.waUrl;
     $('chat-empty-state').style.display = 'none';
     $('chat-input-area').style.display  = state.isReviewer ? 'none' : 'flex';
     $('wa-window-banner').classList.remove('visible');
