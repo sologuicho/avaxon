@@ -3239,7 +3239,11 @@
 
     // 24h window check — last inbound message
     const lastInbound = (msgsData || []).filter(m => m.direction === 'inbound').at(-1);
-    const assignedAgent = conv?.profiles ?? null;
+    let assignedAgent = null;
+    if (conv?.assigned_to) {
+      const { data: agentProfile } = await sb.from('profiles').select('id, full_name').eq('id', conv.assigned_to).maybeSingle();
+      assignedAgent = agentProfile;
+    }
     renderChatBanner(lastInbound, convId, assignedAgent);
 
     // Contact panel
