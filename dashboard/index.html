@@ -2785,12 +2785,12 @@
   }
 
   function buildMsgChart(days) {
-    if (!days || !days.length) { $('msg-chart-wrap').style.display = 'none'; return; }
-    $('msg-chart-wrap').style.display = 'block';
+    const svg = $('msg-chart-svg'); if (!svg) return;
+    if (!days || !days.length) return;
     const sent = days.map(d => d.sent);
     const recv = days.map(d => d.recv);
     const maxV = Math.max(...sent, ...recv, 1);
-    const W = 760, top = 20, bot = 210, span = bot - top;
+    const W = 760, top = 16, bot = 185, span = bot - top;
     const n = days.length;
     const px = i => n === 1 ? 0 : (i / (n - 1)) * W;
     const py = v => bot - (v / maxV) * span;
