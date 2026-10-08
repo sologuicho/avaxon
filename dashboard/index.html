@@ -2986,18 +2986,22 @@
     const ini  = initials(name);
     if ($('chat-header-avatar')) $('chat-header-avatar').textContent = ini;
     $('chat-header-name').textContent  = name;
-    $('chat-header-phone').textContent = contact?.phone || '';
+    $('chat-header-phone').textContent = maskPhone(contact?.phone);
     $('chat-header-status').innerHTML  = statusPill(conv?.status);
     const toggleBtn = $('chat-btn-toggle');
-    toggleBtn.innerHTML = conv?.status === 'open'
-      ? '<i class="fa fa-check-circle"></i>'
-      : '<i class="fa fa-redo"></i>';
-    toggleBtn.title   = conv?.status === 'open' ? 'Cerrar conversación' : 'Reabrir conversación';
-    toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
+    if (state.isReviewer) {
+      toggleBtn.style.display = 'none';
+    } else {
+      toggleBtn.innerHTML = conv?.status === 'open'
+        ? '<i class="fa fa-check-circle"></i>'
+        : '<i class="fa fa-redo"></i>';
+      toggleBtn.title   = conv?.status === 'open' ? 'Cerrar conversación' : 'Reabrir conversación';
+      toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
+    }
     const waLink = $('chat-wa-link');
-    if (waLink && contact?.phone) waLink.href = `https://wa.me/${contact.phone}`;
+    if (waLink && contact?.phone && !state.isReviewer) waLink.href = `https://wa.me/${contact.phone}`;
     $('chat-empty-state').style.display = 'none';
-    $('chat-input-area').style.display  = 'flex';
+    $('chat-input-area').style.display  = state.isReviewer ? 'none' : 'flex';
     $('wa-window-banner').classList.remove('visible');
     document.querySelector('.conv-panel')?.classList.add('chat-active'); // móvil: pasa a vista de hilo
 
