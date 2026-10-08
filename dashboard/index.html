@@ -7921,6 +7921,76 @@
     </div>
   </div>
 
+  <!-- ── Modal Lead / Contacto ── -->
+  <div id="modal-lead" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+
+      <!-- Header with avatar + name -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:13px">
+          <div id="lead-avatar" style="width:40px;height:40px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:#3b82f6;flex-shrink:0">?</div>
+          <div>
+            <div id="lead-header-name" style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Contacto</div>
+            <div id="lead-header-phone" style="font-size:12px;color:var(--text-muted);margin-top:1px"></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <a id="lead-wa-btn" href="#" target="_blank" title="Abrir WhatsApp" style="width:34px;height:34px;background:rgba(37,211,102,.12);border:1.5px solid rgba(37,211,102,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#25D366;font-size:16px;text-decoration:none"><i class="fab fa-whatsapp"></i></a>
+          <button onclick="closeLeadModal()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:2px 6px">×</button>
+        </div>
+      </div>
+
+      <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px">
+        <input type="hidden" id="lead-edit-id" />
+        <input type="hidden" id="lead-f-status" value="new" />
+
+        <!-- Status pills -->
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px">Estado</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="lead-status-pill" data-val="new"       onclick="setLeadStatus('new')"       style="padding:6px 13px;border-radius:20px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12px;font-weight:600;cursor:pointer;color:var(--accent);font-family:'Plus Jakarta Sans',sans-serif">Nuevo</button>
+            <button class="lead-status-pill" data-val="qualified" onclick="setLeadStatus('qualified')" style="padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif">Calificado</button>
+            <button class="lead-status-pill" data-val="won"       onclick="setLeadStatus('won')"       style="padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif">Ganado</button>
+            <button class="lead-status-pill" data-val="lost"      onclick="setLeadStatus('lost')"      style="padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif">Perdido</button>
+          </div>
+        </div>
+
+        <!-- Fields -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="grid-column:1/-1">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Nombre</label>
+            <input id="lead-f-name" type="text" placeholder="Nombre del contacto" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Teléfono</label>
+            <input id="lead-f-phone" type="tel" readonly style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text-muted);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;cursor:not-allowed;opacity:.7" />
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Email</label>
+            <input id="lead-f-email" type="email" placeholder="correo@ejemplo.com" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+          <div style="grid-column:1/-1">
+            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Etiquetas <span style="font-weight:400;text-transform:none;letter-spacing:0">(separadas por coma)</span></label>
+            <input id="lead-f-tags" type="text" placeholder="vip, interesado, sin responder…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+          </div>
+        </div>
+
+        <!-- Meta info -->
+        <div style="display:flex;gap:24px;padding:10px 14px;background:var(--hover-bg);border-radius:10px">
+          <div><div style="font-size:11px;color:var(--text-dim);margin-bottom:2px">Última actividad</div><div id="lead-last-seen" style="font-size:12.5px;color:var(--text-muted);font-weight:500">—</div></div>
+          <div><div style="font-size:11px;color:var(--text-dim);margin-bottom:2px">Creado</div><div id="lead-created" style="font-size:12.5px;color:var(--text-muted);font-weight:500">—</div></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:0 24px 20px;display:flex;gap:10px">
+        <button onclick="deleteLeadContact()" style="padding:11px 14px;background:transparent;border:1.5px solid rgba(239,68,68,.35);border-radius:12px;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Eliminar</button>
+        <button onclick="closeLeadModal()" style="flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
+        <button id="lead-save-btn" onclick="saveLeadContact()" class="btn-primary" style="flex:2;padding:11px;font-size:13.5px">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Modal Google Sheets → Inventario ── -->
   <div id="modal-inv-sheets" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
