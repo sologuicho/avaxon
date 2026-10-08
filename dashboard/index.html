@@ -4461,7 +4461,7 @@
       const d = await res.json()
       if (d.ok) {
         closeBroadcast()
-        showToast(`Broadcast enviado: ${d.sent} enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
+        showToast(`Envío completado: ${d.sent} mensajes enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
       } else {
         sendLabel.textContent = 'Enviar'
         sendBtn.disabled = false
