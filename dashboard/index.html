@@ -2976,8 +2976,8 @@
     $('leads-count-all').textContent = all;
 
     const tbody = $('tbody-leads');
-    if (!data || !data.length) { tbody.innerHTML = emptyRow(6, 'Sin contactos todavía'); return; }
-    tbody.innerHTML = data.map(c => `<tr>
+    if (!data || !data.length) { tbody.innerHTML = emptyRow(7, 'Sin contactos todavía'); return; }
+    tbody.innerHTML = data.map(c => `<tr style="cursor:pointer" onclick="openLeadModal('${c.id}')">
       <td>
         <div class="contact-cell">
           <div class="avatar">${initials(c.name || c.phone)}</div>
@@ -2992,6 +2992,9 @@
       <td>${statusPill(c.status)}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.last_seen_at)}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.created_at)}</td>
+      <td style="width:40px">
+        <button onclick="event.stopPropagation();openLeadModal('${c.id}')" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;color:var(--text-muted);font-size:12px" title="Editar"><i class="fa fa-pen"></i></button>
+      </td>
     </tr>`).join('');
   }
 
