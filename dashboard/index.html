@@ -5932,6 +5932,54 @@
 
 })();
 </script>
+  <!-- Modal: Aviso WhatsApp directo -->
+  <div id="wa-direct-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:16px;width:100%;max-width:420px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.18)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(37,211,102,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fab fa-whatsapp" style="color:#25D366;font-size:20px"></i>
+        </div>
+        <div style="font-size:17px;font-weight:700;color:#1a2535">Aviso sobre mensajes directos</div>
+      </div>
+      <p style="font-size:14px;line-height:1.65;color:#5b636c;margin:0 0 10px">Si escribes al cliente directamente desde WhatsApp, <strong style="color:#1a2535">esos mensajes no aparecerán en el dashboard</strong>.</p>
+      <p style="font-size:14px;line-height:1.65;color:#5b636c;margin:0 0 20px">El dashboard solo registra mensajes enviados a través de la API de WhatsApp — es decir, los que envías desde el chat de aquí. Los mensajes directos desde tu teléfono quedan fuera del historial y el bot no los considera al responder.</p>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:#8c939b;cursor:pointer;margin-bottom:20px">
+        <input type="checkbox" id="wa-direct-no-show" style="width:15px;height:15px;accent-color:#5980a6">
+        No volver a mostrar este aviso
+      </label>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeWaDirectModal()" style="flex:1;padding:10px;border-radius:9px;border:1px solid #e6e7e9;background:#fff;font-size:13.5px;font-weight:600;color:#5b636c;cursor:pointer">Cancelar</button>
+        <button onclick="confirmWaDirectOpen()" style="flex:1;padding:10px;border-radius:9px;border:0;background:#25D366;color:#062513;font-size:13.5px;font-weight:700;cursor:pointer">Abrir WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Agendar cita rápida -->
+  <div id="quick-apt-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:16px;width:100%;max-width:400px;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.18)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div style="font-size:17px;font-weight:700;color:#1a2535">Agendar cita</div>
+        <button onclick="closeQuickAptModal()" style="background:none;border:none;cursor:pointer;color:#8c939b;font-size:18px;line-height:1">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#8c939b;text-transform:uppercase;letter-spacing:.06em">
+          Título / motivo
+          <input id="qapt-title" placeholder="Ej. Diagnóstico inicial" style="padding:10px 12px;border:1px solid #e6e7e9;border-radius:9px;font-size:13.5px;color:#1a2535;outline:none;font-family:Barlow,sans-serif" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#8c939b;text-transform:uppercase;letter-spacing:.06em">
+          Fecha y hora
+          <input id="qapt-datetime" type="datetime-local" style="padding:10px 12px;border:1px solid #e6e7e9;border-radius:9px;font-size:13.5px;color:#1a2535;outline:none;font-family:Barlow,sans-serif" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#8c939b;text-transform:uppercase;letter-spacing:.06em">
+          Notas (opcional)
+          <input id="qapt-notes" placeholder="Observaciones, recordatorios…" style="padding:10px 12px;border:1px solid #e6e7e9;border-radius:9px;font-size:13.5px;color:#1a2535;outline:none;font-family:Barlow,sans-serif" />
+        </label>
+        <div id="qapt-error" style="display:none;font-size:12.5px;color:#ef4444;padding:8px 12px;background:rgba(239,68,68,.06);border-radius:8px"></div>
+        <button id="qapt-save-btn" onclick="saveQuickApt()" style="padding:11px;border-radius:9px;border:0;background:#2c455d;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Guardar cita</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Integrations (Sheets / Stripe / Zapier) -->
   <div id="integ-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.25)">
