@@ -4850,6 +4850,8 @@
     if ($('camp-kpi-rate'))      $('camp-kpi-rate').textContent      = rate + '%'
   }
 
+  const CAMP_SOURCE_LABELS = { all:'Todos', new:'Nuevos', qualified:'Calificados', active_24h:'Activos 24h', csv:'CSV' }
+
   function renderCampaignList(campaigns) {
     const list  = $('camp-list')
     const empty = $('camp-empty')
@@ -4860,25 +4862,37 @@
       return
     }
     if (empty) empty.style.display = 'none'
+
     list.innerHTML = campaigns.map(c => {
       const st      = CAMP_STATUS[c.status] ?? CAMP_STATUS.draft
       const total   = c.total_contacts || 0
       const sent    = c.sent_count     || 0
       const pct     = total > 0 ? Math.round((sent / total) * 100) : 0
-      const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''
-      const typeIcon = c.message_type === 'template' ? '<i class="fa fa-rectangle-list" style="font-size:10px;margin-right:4px"></i>' : '<i class="fa fa-pen-to-square" style="font-size:10px;margin-right:4px"></i>'
-      const typeLbl  = c.message_type === 'template' ? 'Plantilla' : 'Mensaje libre'
-      return `<div class="card bp" style="padding:18px 20px;cursor:pointer;transition:border-color .15s" onclick="openCampaignDetail('${c.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      const dateStr = c.created_at
+        ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''
+      const srcLbl  = CAMP_SOURCE_LABELS[c.source_type] ?? c.source_type
+
+      // Primary action button
+      let primaryBtn = ''
+      if (c.status === 'draft')
+        primaryBtn = `<button onclick="event.stopPropagation();launchCampaign('${c.id}',this)" style="padding:6px 13px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap"><i class="fa fa-rocket" style="font-size:10px"></i> Lanzar</button>`
+      else if (c.status === 'running')
+        primaryBtn = `<button onclick="event.stopPropagation();pauseCampaign('${c.id}')" style="padding:6px 13px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap"><i class="fa fa-pause" style="font-size:10px"></i> Pausar</button>`
+      else if (c.status === 'paused')
+        primaryBtn = `<button onclick="event.stopPropagation();resumeCampaign('${c.id}')" style="padding:6px 13px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap"><i class="fa fa-play" style="font-size:10px"></i> Reanudar</button>`
+
+      return `<div class="card bp" style="padding:16px 20px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
         <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-        <div style="display:flex;align-items:flex-start;gap:14px">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0;cursor:pointer" onclick="openCampaignDetail('${c.id}')">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px">
               <span style="font-size:14px;font-weight:700;color:var(--text)">${c.name}</span>
               <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>
-              <span style="font-size:11px;color:var(--text-dim);background:var(--hover-bg);padding:2px 8px;border-radius:6px">${typeIcon}${typeLbl}</span>
+              <span style="font-size:11px;color:var(--text-dim);background:var(--hover-bg);padding:2px 8px;border-radius:6px">${c.message_type === 'template' ? '<i class="fa fa-rectangle-list" style="font-size:9px;margin-right:3px;opacity:.7"></i>Plantilla' : '<i class="fa fa-pen-to-square" style="font-size:9px;margin-right:3px;opacity:.7"></i>Libre'}</span>
+              <span style="font-size:11px;color:var(--text-dim);background:var(--hover-bg);padding:2px 8px;border-radius:6px"><i class="fa fa-users" style="font-size:9px;margin-right:3px;opacity:.7"></i>${srcLbl}</span>
             </div>
-            ${c.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:8px">${c.description}</div>` : ''}
-            <div style="margin-bottom:6px">
+            ${c.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${c.description}</div>` : ''}
+            <div style="margin-bottom:7px">
               <div style="display:flex;justify-content:space-between;margin-bottom:3px">
                 <span style="font-size:11.5px;color:var(--text-dim)">${sent.toLocaleString('es-MX')} / ${total.toLocaleString('es-MX')} enviados</span>
                 <span style="font-size:11.5px;font-weight:700;color:var(--accent)">${pct}%</span>
@@ -4887,18 +4901,22 @@
                 <div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#3b82f6);width:${pct}%"></div>
               </div>
             </div>
-            <div style="display:flex;gap:16px;flex-wrap:wrap">
-              <span style="font-size:11.5px;color:#34d399"><i class="fa fa-check-double" style="font-size:10px;margin-right:3px"></i>${(c.delivered_count||0).toLocaleString('es-MX')} entregados</span>
-              <span style="font-size:11.5px;color:#818cf8"><i class="fa fa-eye" style="font-size:10px;margin-right:3px"></i>${(c.read_count||0).toLocaleString('es-MX')} leídos</span>
-              <span style="font-size:11.5px;color:#f59e0b"><i class="fa fa-reply" style="font-size:10px;margin-right:3px"></i>${(c.responded_count||0).toLocaleString('es-MX')} respondieron</span>
-              ${c.failed_count ? `<span style="font-size:11.5px;color:#f87171"><i class="fa fa-xmark" style="font-size:10px;margin-right:3px"></i>${c.failed_count} fallidos</span>` : ''}
+            <div style="display:flex;gap:14px;flex-wrap:wrap">
+              <span style="font-size:11.5px;color:#34d399"><i class="fa fa-check-double" style="font-size:9px;margin-right:3px"></i>${(c.delivered_count||0).toLocaleString()} entregados</span>
+              <span style="font-size:11.5px;color:#818cf8"><i class="fa fa-eye" style="font-size:9px;margin-right:3px"></i>${(c.read_count||0).toLocaleString()} leídos</span>
+              <span style="font-size:11.5px;color:#f59e0b"><i class="fa fa-reply" style="font-size:9px;margin-right:3px"></i>${(c.responded_count||0).toLocaleString()} respondieron</span>
+              ${c.failed_count ? `<span style="font-size:11.5px;color:#f87171"><i class="fa fa-xmark" style="font-size:9px;margin-right:3px"></i>${c.failed_count} fallidos</span>` : ''}
             </div>
           </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:11.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${dateStr}</div>
-            ${c.status === 'running' ? `<button onclick="event.stopPropagation();pauseCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-pause" style="font-size:10px"></i> Pausar</button>` : ''}
-            ${c.status === 'paused' ? `<button onclick="event.stopPropagation();resumeCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-play" style="font-size:10px"></i> Reanudar</button>` : ''}
-            ${c.status === 'draft' ? `<button onclick="event.stopPropagation();launchCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-rocket" style="font-size:10px"></i> Lanzar</button>` : ''}
+          <!-- Acciones de la card -->
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0">
+            <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${dateStr}</div>
+            <div style="display:flex;gap:5px;align-items:center">
+              ${primaryBtn}
+              <button onclick="event.stopPropagation();editCampaign('${c.id}')" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Editar" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'"><i class="fa fa-pen"></i></button>
+              <button onclick="event.stopPropagation();deleteCampaign('${c.id}')" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Eliminar" onmouseover="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'"><i class="fa fa-trash"></i></button>
+              <button onclick="openCampaignDetail('${c.id}')" style="width:32px;height:32px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center" title="Ver detalle" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'"><i class="fa fa-arrow-right"></i></button>
+            </div>
           </div>
         </div>
       </div>`
