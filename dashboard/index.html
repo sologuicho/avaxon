@@ -5127,6 +5127,7 @@
       messageBody: c.message_body || '',
     }
     wizCsvRows = []
+    wizManualSelected = new Map()
 
     if ($('wiz-name'))        $('wiz-name').value        = campState.wizData.name
     if ($('wiz-description')) $('wiz-description').value = campState.wizData.description
