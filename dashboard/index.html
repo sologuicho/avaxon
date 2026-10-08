@@ -4976,7 +4976,7 @@
     $('camp-detail').style.display = 'none'
     $('camp-list-wrap').style.display = 'block'
     $('camp-kpis').style.display = 'grid'
-    document.querySelector('#view-campanas .view-header button').style.display = 'flex'
+    const nb = $('camp-nueva-btn'); if (nb) nb.style.display = 'flex'
     loadCampanas()
   }
 
