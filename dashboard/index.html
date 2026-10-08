@@ -7500,6 +7500,114 @@
     </div>
   </div>
 
+  <!-- MODAL: Wizard nueva campaña -->
+  <div id="modal-camp-wizard" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);max-height:92vh;display:flex;flex-direction:column">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:36px;height:36px;background:rgba(34,197,94,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;flex-shrink:0"><i class="fa fa-paper-plane"></i></div>
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--text)">Nueva campaña</div>
+            <div id="wiz-step-label" style="font-size:12px;color:var(--text-muted);margin-top:1px">Paso 1 de 2</div>
+          </div>
+        </div>
+        <button onclick="closeCampaignWizard()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:2px 6px">×</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="height:3px;background:var(--hover-bg);flex-shrink:0">
+        <div id="wiz-step-bar" style="height:100%;background:var(--accent);transition:width .3s ease;width:50%"></div>
+      </div>
+
+      <!-- Body scrollable -->
+      <div style="overflow-y:auto;flex:1">
+
+        <!-- Paso 1: Nombre + Destinatarios -->
+        <div id="wiz-pane-1" style="padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+          <!-- Nombre -->
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:6px">Nombre de la campaña *</label>
+            <input id="wiz-name" type="text" placeholder="Ej: Promo octubre 2026" style="width:100%;padding:11px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
+          <!-- Descripción -->
+          <div>
+            <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:6px">Descripción (opcional)</label>
+            <input id="wiz-description" type="text" placeholder="Descripción interna de la campaña" style="width:100%;padding:11px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          </div>
+          <!-- Destinatarios -->
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">Destinatarios</label>
+              <span id="wiz-count-label" style="font-size:12px;color:var(--text-muted)">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+              <button id="wiz-src-all"       onclick="setWizSource('all')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-users" style="font-size:11px;opacity:.8"></i> Todos los contactos</button>
+              <button id="wiz-src-new"       onclick="setWizSource('new')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-user-plus" style="font-size:11px;opacity:.8"></i> Nuevos</button>
+              <button id="wiz-src-qualified" onclick="setWizSource('qualified')" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-star" style="font-size:11px;opacity:.8"></i> Calificados</button>
+              <button id="wiz-src-active_24h" onclick="setWizSource('active_24h')" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-clock" style="font-size:11px;opacity:.8"></i> Activos 24h</button>
+              <button id="wiz-src-csv"       onclick="setWizSource('csv')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s;grid-column:span 2"><i class="fa fa-file-csv" style="font-size:11px;opacity:.8"></i> Subir CSV de contactos</button>
+            </div>
+            <!-- CSV upload area -->
+            <div id="wiz-csv-area" style="display:none;margin-top:10px">
+              <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;border:2px dashed var(--border);border-radius:12px;cursor:pointer;background:var(--hover-bg);transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                <i class="fa fa-upload" style="font-size:20px;color:var(--text-dim)"></i>
+                <span style="font-size:13px;color:var(--text-muted);font-weight:600">Haz clic para seleccionar un CSV</span>
+                <span style="font-size:11.5px;color:var(--text-dim)">Columnas recomendadas: nombre, telefono</span>
+                <input type="file" accept=".csv,text/csv" onchange="handleWizCsv(event)" style="display:none">
+              </label>
+              <div id="wiz-csv-info" style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paso 2: Mensaje -->
+        <div id="wiz-pane-2" style="padding:20px 24px;display:none;flex-direction:column;gap:14px">
+          <!-- Tabs tipo de mensaje -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button id="wiz-tab-tpl"   onclick="setWizMsgType('template')" style="padding:10px 12px;border-radius:12px;border:1.5px solid var(--accent);background:var(--accent-sub);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+              <i class="fa fa-rectangle-list" style="font-size:12px"></i> Plantilla aprobada
+            </button>
+            <button id="wiz-tab-libre" onclick="setWizMsgType('libre')"    style="padding:10px 12px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+              <i class="fa fa-pen-to-square" style="font-size:12px"></i> Mensaje libre
+            </button>
+          </div>
+
+          <!-- Panel: Plantilla -->
+          <div id="wiz-panel-tpl" style="display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">Selecciona una plantilla</div>
+            <div id="wiz-tpl-list" style="display:flex;flex-direction:column;gap:7px;max-height:220px;overflow-y:auto"></div>
+            <div id="wiz-tpl-preview" style="display:none;padding:12px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:12px">
+              <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Vista previa</div>
+              <div id="wiz-tpl-preview-text" style="font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap"></div>
+            </div>
+          </div>
+
+          <!-- Panel: Mensaje libre -->
+          <div id="wiz-panel-libre" style="display:none;flex-direction:column;gap:10px">
+            <div>
+              <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:6px">Mensaje</label>
+              <textarea id="wiz-body" rows="5" placeholder="Escribe el mensaje que recibirán todos los contactos…" style="width:100%;resize:vertical;padding:12px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.55;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            </div>
+            <div style="padding:10px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;font-size:12px;color:var(--text-muted);line-height:1.5;display:flex;gap:8px;align-items:flex-start">
+              <i class="fa fa-clock" style="color:#f59e0b;flex-shrink:0;margin-top:1px"></i>
+              <span><strong style="color:var(--text)">Ventana de 24h:</strong> Los mensajes libres solo llegan a contactos que hayan escrito en las últimas 24h. Para contactos fuera de esa ventana usa una plantilla aprobada.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid var(--border);flex-shrink:0">
+        <button onclick="campState.wizData.step===1?closeCampaignWizard():setWizStep(1)" style="flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Atrás</button>
+        <button id="wiz-next-btn" onclick="wizNext()" class="btn-primary" style="flex:2;padding:11px;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px">
+          Siguiente <i class="fa fa-arrow-right" style="font-size:11px"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-welcome" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
 
