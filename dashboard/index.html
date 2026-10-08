@@ -5008,6 +5008,9 @@
     const tbody = $('det-contacts-tbody')
     if (!tbody) return
 
+    const ccCount = $('det-contacts-count')
+    if (ccCount) ccCount.textContent = contacts?.length ? `(${contacts.length.toLocaleString('es-MX')})` : ''
+
     if (!contacts?.length) {
       tbody.innerHTML = '<tr><td colspan="5" style="padding:28px;text-align:center;color:var(--text-dim);font-size:13px">Sin contactos cargados aún</td></tr>'
       return
