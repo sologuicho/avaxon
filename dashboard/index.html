@@ -1058,13 +1058,20 @@
 
     <div class="sidebar-bottom">
       <div class="agent-status-widget">
-        <div class="agent-dot" id="agent-dot"></div>
-        <span class="agent-status-label" id="agent-status-label">Agente activo</span>
-        <button class="agent-toggle-btn" id="agent-toggle-btn">Pausar</button>
+        <div class="agent-status-widget-label">Estado del bot</div>
+        <div class="agent-status-row">
+          <div class="agent-dot" id="agent-dot"></div>
+          <span class="agent-status-label" id="agent-status-label">GPT-4o en línea</span>
+          <button class="agent-toggle-btn" id="agent-toggle-btn">Pausar</button>
+        </div>
+        <div class="agent-status-sub">Última sincronización 2 min</div>
       </div>
       <div class="sidebar-user">
         <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
-        <span class="sidebar-user-email" id="sidebar-email">—</span>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+          <div class="sidebar-user-email" id="sidebar-email">—</div>
+        </div>
         <button class="btn-signout" id="signout-btn">Salir</button>
       </div>
     </div>
