@@ -7250,7 +7250,8 @@
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { showToast('Tu sesión expiró, vuelve a iniciar sesión'); return; }
-      const resp = await fetch(SUPABASE_URL + '/functions/v1/google-oauth-start', {
+      const orgId = getActiveOrgId();
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/google-oauth-start?organization_id=' + encodeURIComponent(orgId), {
         headers: { Authorization: 'Bearer ' + session.access_token }
       });
       const data = await resp.json().catch(() => ({}));

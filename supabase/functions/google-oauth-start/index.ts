@@ -3,10 +3,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { signState } from '../_shared/google.ts'
 
 // ── Inicio del flujo de Google OAuth ─────────────────────────────────────────
-// Requiere el JWT del usuario logueado en el dashboard: resuelve su
-// organization_id y devuelve un `state` firmado (HMAC) que el frontend añade
-// a la URL de consentimiento de Google. Firmar aquí (server-side) es lo que
-// evita que el secret HMAC tenga que viajar al navegador.
+// Requiere el JWT del usuario logueado en el dashboard y devuelve un `state`
+// firmado (HMAC) que el frontend añade a la URL de consentimiento de Google.
+// Firmar aquí (server-side) es lo que evita que el secret HMAC tenga que
+// viajar al navegador.
+//
+// La org a conectar es ?organization_id=<id> (la seleccionada en el switcher
+// del dashboard) — no se asume que sea la del propio usuario, porque un
+// super_admin opera integrations en nombre de orgs cliente, no de la suya.
+// Si no viene el parámetro, cae a profile.organization_id (usuario normal).
+// super_admin puede apuntar a cualquier org; cualquier otro rol solo a la
+// suya propia.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -43,12 +50,19 @@ Deno.serve(async (req: Request) => {
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
   const { data: profile } = await adminClient
     .from('profiles')
-    .select('organization_id')
+    .select('organization_id, role')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile?.organization_id) return json({ error: 'Usuario sin organización' }, 422)
+  const url = new URL(req.url)
+  const requestedOrgId = url.searchParams.get('organization_id')
+  const organizationId = requestedOrgId || profile?.organization_id
 
-  const state = await signState(profile.organization_id, OAUTH_STATE_SECRET)
+  if (!organizationId) return json({ error: 'organization_id requerido' }, 422)
+  if (profile?.role !== 'super_admin' && organizationId !== profile?.organization_id) {
+    return json({ error: 'No autorizado para esta organización' }, 403)
+  }
+
+  const state = await signState(organizationId, OAUTH_STATE_SECRET)
   return json({ state })
 })
