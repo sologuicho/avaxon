@@ -4567,12 +4567,18 @@
     if (bcState.busy) return
     const sendBtn   = $('bc-send-btn')
     const sendLabel = $('bc-send-label')
+    const msgErr    = $('bc-msg-error')
 
     let payload = { filter: bcState.filter, org_id: bcOrgId() }
 
     if (bcState.mode === 'libre') {
       const msg = ($('bc-message').value || '').trim()
-      if (!msg) { $('bc-message').focus(); return }
+      if (!msg) {
+        if (msgErr) { msgErr.style.display = 'block'; setTimeout(() => { msgErr.style.display = 'none' }, 3000) }
+        $('bc-message').focus()
+        return
+      }
+      if (msgErr) msgErr.style.display = 'none'
       payload.message = msg
     } else {
       if (!bcState.selectedTemplateId) { showToast('Selecciona una plantilla primero', 3000); return }
@@ -4582,12 +4588,9 @@
       payload.template_language = tpl.language || 'es_MX'
     }
 
-    const countLine = $('bc-count-line').textContent
-    if (!confirm(`¿Confirmas el envío?\n\n${countLine}`)) return
-
     bcState.busy = true
     sendBtn.disabled = true
-    sendLabel.textContent = 'Enviando…'
+    sendLabel.innerHTML = '<i class="fa fa-spinner fa-spin" style="margin-right:6px"></i>Enviando…'
 
     try {
       const { data: { session } } = await sb.auth.getSession()
@@ -4599,18 +4602,21 @@
       const d = await res.json()
       if (d.ok) {
         closeBroadcast()
-        showToast(`Envío completado: ${d.sent} enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
+        const detail = d.sent > 0
+          ? `${d.sent} mensaje${d.sent !== 1 ? 's' : ''} enviado${d.sent !== 1 ? 's' : ''}${d.failed ? ` · ${d.failed} fallaron` : ''}`
+          : `0 enviados${d.failed ? ` · ${d.failed} fallaron` : ''} — verifica que el contacto tenga sesión activa de 24h`
+        showToast(detail, d.sent > 0 ? 3000 : 6000)
       } else {
         sendLabel.textContent = bcState.mode === 'libre' ? 'Enviar mensaje' : 'Enviar plantilla'
         sendBtn.disabled = false
         bcState.busy = false
-        showToast('Error: ' + (d.error || 'desconocido'), 4000)
+        showToast('Error: ' + (d.error || 'desconocido'), 5000)
       }
     } catch (e) {
       sendLabel.textContent = bcState.mode === 'libre' ? 'Enviar mensaje' : 'Enviar plantilla'
       sendBtn.disabled = false
       bcState.busy = false
-      showToast('Error de red', 4000)
+      showToast('Error de red — revisa la conexión', 4000)
     }
   }
 
