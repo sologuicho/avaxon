@@ -4519,8 +4519,8 @@
     bcState.selectedTemplateId = id
     document.querySelectorAll('.bc-tpl-card').forEach(card => {
       const sel = card.dataset.id === id
-      card.style.borderColor = sel ? 'var(--accent)' : 'var(--border)'
-      card.style.background  = sel ? 'var(--accent-sub)' : 'transparent'
+      card.style.border     = sel ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
+      card.style.background = sel ? 'var(--accent-sub)' : 'transparent'
     })
     const tpl = bcState.templates.find(t => t.id === id)
     if (tpl) {
