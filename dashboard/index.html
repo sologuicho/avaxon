@@ -1199,23 +1199,14 @@
 
       <!-- VIEW: Conversaciones -->
       <div class="view" id="view-conversaciones">
-        <div class="view-header">
-          <div class="view-header-left">
-            <div class="view-header-icon" style="background:color-mix(in srgb,#22c55e 12%,transparent);color:#16a34a"><i class="fab fa-whatsapp"></i></div>
-            <div>
-              <div class="view-header-title">Conversaciones</div>
-              <div class="view-header-sub">Inbox de WhatsApp — responde y gestiona chats</div>
-            </div>
-          </div>
-        </div>
         <div class="conv-panel">
 
-          <!-- Left sidebar: conversation list -->
+          <!-- Col 1: Inbox list (330px) -->
           <div class="conv-sidebar">
             <div class="conv-sidebar-top">
               <!-- Search -->
-              <input id="conv-search" placeholder="Buscar contacto…" class="search-input" style="padding-left:10px;background-image:none" />
-              <!-- Status tabs -->
+              <input id="conv-search" placeholder="Buscar contacto o mensaje…" class="search-input" style="padding-left:10px;background-image:none" />
+              <!-- Status tabs (Todas / Bot / Humano) -->
               <div class="conv-tabs">
                 <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    class="conv-tab active">Todas</button>
                 <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   class="conv-tab">Abiertas</button>
@@ -1248,62 +1239,66 @@
             </div>
           </div>
 
-          <!-- Center: chat area -->
+          <!-- Col 2: Chat area -->
           <div class="chat-area">
             <!-- Empty state (shown when no conversation selected) -->
-            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;background:#f8fafc">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:16px;color:var(--text-dim)">
-                <div style="width:64px;height:64px;background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:50%;display:flex;align-items:center;justify-content:center">
-                  <i class="fab fa-whatsapp" style="font-size:32px;color:var(--accent);opacity:.7"></i>
+            <div id="chat-empty-state" style="flex:1;display:flex;align-items:center;justify-content:center;background:#fafbfc">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:16px;color:#8c939b">
+                <div style="width:64px;height:64px;background:rgba(89,128,166,.12);border-radius:50%;display:flex;align-items:center;justify-content:center">
+                  <i class="fab fa-whatsapp" style="font-size:32px;color:#5980a6;opacity:.7"></i>
                 </div>
                 <div style="text-align:center">
-                  <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Selecciona una conversación</div>
-                  <div style="font-size:12px;color:var(--text-dim)">Elige un chat de la lista para comenzar</div>
+                  <div style="font-size:14px;font-weight:600;color:#1a2535;margin-bottom:4px">Selecciona una conversación</div>
+                  <div style="font-size:12px;color:#8c939b">Elige un chat de la lista para comenzar</div>
                 </div>
               </div>
             </div>
             <!-- Active conversation (hidden until one is selected) -->
             <div id="chat-input-area" style="display:none;flex-direction:column;flex:1;min-height:0">
-              <div class="chat-header">
-                <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
+              <!-- Chat header -->
+              <div class="chat-header" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f2;background:#fff;flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
                   <button class="chat-icon-btn chat-back-btn" id="chat-back-btn" title="Volver a la lista" onclick="closeConversacionMobile()">
                     <i class="fa fa-arrow-left"></i>
                   </button>
-                  <div id="chat-header-avatar" style="width:36px;height:36px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;flex-shrink:0"></div>
-                  <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <span id="chat-header-name" style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
-                      <span id="chat-header-status"></span>
+                  <div id="chat-header-avatar" style="width:40px;height:40px;background:#eef6ff;color:#2c455d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;flex-shrink:0"></div>
+                  <div style="min-width:0">
+                    <div style="font-size:15.5px;font-weight:700;letter-spacing:-0.01em;color:#1a2535">
+                      <span id="chat-header-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
+                      <span id="chat-header-status" style="margin-left:8px"></span>
                     </div>
-                    <span id="chat-header-phone" style="font-size:11.5px;color:var(--text-muted)"></span>
+                    <div style="font-size:12.5px;color:#8c939b">
+                      <span id="chat-header-phone"></span>
+                      <span style="color:#8c939b"> · respondiendo el bot</span>
+                    </div>
                   </div>
                 </div>
-                <div class="chat-header-actions">
-                  <a id="chat-wa-link" href="#" target="_blank" class="chat-icon-btn wa" title="Abrir en WhatsApp">
-                    <i class="fab fa-whatsapp"></i>
+                <div class="chat-header-actions" style="display:flex;gap:8px">
+                  <a id="chat-wa-link" href="#" target="_blank" title="Abrir en WhatsApp" style="padding:8px 13px;border-radius:9px;border:1px solid #e6e7e9;background:#fff;font-size:13px;font-weight:600;color:#2c455d;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
                   </a>
-                  <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado">
+                  <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado" style="padding:8px 13px;width:auto;border-radius:9px;border:1px solid #e6e7e9;font-size:13px;font-weight:600;color:#2c455d">
                     <i class="fa fa-check-circle"></i>
                   </button>
-                  <button class="chat-icon-btn" id="chat-btn-info" title="Info del contacto" onclick="document.querySelector('.contact-panel').style.display=document.querySelector('.contact-panel').style.display==='none'?'flex':'none'">
-                    <i class="fa fa-info-circle"></i>
-                  </button>
+                  <button onclick="document.querySelector('.contact-panel').style.display=document.querySelector('.contact-panel').style.display==='none'?'flex':'none'" style="padding:8px 16px;border-radius:9px;border:0;background:#2c455d;color:#fff;font-size:13px;font-weight:600;cursor:pointer" id="chat-btn-info" title="Info del contacto">Ver contacto</button>
                 </div>
               </div>
-              <div id="chat-messages" class="chat-messages"></div>
+              <!-- Messages -->
+              <div id="chat-messages" class="chat-messages" style="background:#fafbfc"></div>
               <!-- WhatsApp 24h window warning -->
               <div class="wa-window-banner" id="wa-window-banner">
                 <i class="fa fa-clock"></i>
                 <span id="wa-window-text">Han pasado más de 24 h desde el último mensaje del cliente. Solo puedes responder con una <a onclick="alert('Próximamente: plantillas de mensajes')">plantilla aprobada</a>.</span>
               </div>
-              <div class="chat-input-bar">
+              <!-- Input bar -->
+              <div class="chat-input-bar" style="padding:12px 14px;border-top:1px solid #eef0f2;background:#fff">
                 <button class="chat-input-icon" title="Adjuntar archivo" onclick="alert('Próximamente: adjuntar archivos')">
                   <i class="fa fa-paperclip"></i>
                 </button>
                 <button class="chat-input-icon" title="Usar plantilla" onclick="alert('Próximamente: plantillas de mensajes')">
                   <i class="fa fa-file-alt"></i>
                 </button>
-                <textarea id="chat-input" rows="1" placeholder="Escribe un mensaje…"></textarea>
+                <textarea id="chat-input" rows="1" placeholder="Escribe para intervenir — el bot se pausa 30 min…"></textarea>
                 <button id="chat-send-btn" class="chat-send-round" title="Enviar">
                   <i class="fa fa-paper-plane"></i>
                 </button>
@@ -1311,12 +1306,27 @@
             </div>
           </div>
 
-          <!-- Right: contact panel -->
+          <!-- Col 3: Lead detail panel (260px) -->
           <div class="contact-panel">
             <div class="cpanel-mobile-close" onclick="document.querySelector('.contact-panel').style.display='none'">
               <i class="fa fa-arrow-left"></i> Cerrar
             </div>
-            <div id="cpanel-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-dim);height:100%;text-align:center">
+
+            <!-- Lead qualification (static/decorative) -->
+            <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8c939b">Calificación del lead</div>
+              <div style="display:flex;align-items:flex-end;gap:8px;margin-top:4px">
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:46px;font-weight:700;line-height:0.9;color:#1a2535">86</div>
+                <span style="padding:3px 9px;border-radius:7px;background:#10b981;color:#fff;font-size:12px;font-weight:700;margin-bottom:6px">Caliente</span>
+              </div>
+              <div style="height:7px;border-radius:99px;background:#eef0f2;margin-top:12px;overflow:hidden">
+                <div style="width:86%;height:100%;background:#10b981;border-radius:99px"></div>
+              </div>
+              <div style="font-size:12.5px;color:#8c939b;margin-top:8px">Intención de compra detectada por GPT-4o en 3 mensajes.</div>
+            </div>
+
+            <!-- Captured data -->
+            <div id="cpanel-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8c939b;text-align:center">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
               <span style="font-size:12.5px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Info del contacto</span>
             </div>
@@ -1324,9 +1334,9 @@
               <div>
                 <div class="cpanel-section-title">Contacto</div>
                 <div style="display:flex;flex-direction:column;gap:5px">
-                  <div style="font-size:15px;font-weight:700;color:var(--text)" id="cpanel-name"></div>
-                  <div style="font-size:13px;color:var(--accent)" id="cpanel-phone"></div>
-                  <div style="font-size:12.5px;color:var(--text-muted)" id="cpanel-email"></div>
+                  <div style="font-size:15px;font-weight:700;color:#1a2535" id="cpanel-name"></div>
+                  <div style="font-size:13px;color:#5980a6" id="cpanel-phone"></div>
+                  <div style="font-size:12.5px;color:#8c939b" id="cpanel-email"></div>
                   <div style="margin-top:4px" id="cpanel-status"></div>
                 </div>
               </div>
@@ -1338,6 +1348,26 @@
                 <div class="cpanel-section-title">Citas recientes</div>
                 <div id="cpanel-apts"></div>
               </div>
+            </div>
+
+            <!-- Datos capturados (static) -->
+            <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:12px">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8c939b">Datos capturados</div>
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Nombre</span><span style="font-weight:600;text-align:right" id="cpanel-lead-name">—</span></div>
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Teléfono</span><span style="font-weight:600;text-align:right" id="cpanel-lead-phone">—</span></div>
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Interés</span><span style="font-weight:600;text-align:right">Producto A</span></div>
+              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Presupuesto</span><span style="font-weight:600;text-align:right">$5,000–10,000</span></div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;padding-top:4px;border-top:1px solid #f1f2f4">
+                <span style="padding:2px 7px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;background:#10b981;color:#fff">Calificado</span>
+                <span style="padding:2px 7px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;background:#2c455d;color:#fff">Cita</span>
+              </div>
+            </div>
+
+            <!-- Acción sugerida (static dark card) -->
+            <div style="background:#1a2535;border-radius:13px;padding:18px;color:#e7edf4">
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#5980a6">Acción sugerida</div>
+              <div style="font-size:14px;font-weight:600;margin-top:8px;line-height:1.4">Confirmar cita y enviar recordatorio 2 h antes.</div>
+              <button onclick="alert('Próximamente')" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:0;background:#5980a6;color:#0e1b26;font-size:13.5px;font-weight:700;cursor:pointer">Agendar automáticamente</button>
             </div>
           </div>
 
