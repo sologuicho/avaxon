@@ -3707,6 +3707,17 @@
     showScreen('app');
     loadConversaciones();
     loadIntegrations();
+
+    if (state.isReviewer) {
+      // Deshabilitar botón Pausar/Reanudar agente
+      const toggleBtn = $('agent-toggle-btn');
+      if (toggleBtn) { toggleBtn.disabled = true; toggleBtn.style.opacity = '.35'; toggleBtn.style.cursor = 'not-allowed'; toggleBtn.title = 'No disponible en vista de revisión'; }
+      // Ocultar área de envío de mensajes
+      const chatInput = document.querySelector('.chat-input-bar');
+      if (chatInput) chatInput.style.display = 'none';
+      // Ocultar Broadcast en Leads
+      document.querySelectorAll('button[onclick="openBroadcast()"]').forEach(b => b.style.display = 'none');
+    }
   }
 
   function showTermsModal() {
