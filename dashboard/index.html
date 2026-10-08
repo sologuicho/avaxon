@@ -2507,6 +2507,7 @@
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
+    try { localStorage.setItem('avx_last_view', name); } catch(e) {}
     if (name === 'calendario')    { loadCalendarMonth(); updateGcalUI(); }
     if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
     if (name === 'pipeline')       loadPipeline();
