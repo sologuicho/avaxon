@@ -3847,6 +3847,20 @@
     renderLeads(filtered);
   });
 
+  async function loadLeads() {
+    const tbody = $('tbody-leads')
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)"><div class="spinner-light" style="margin:0 auto 8px"></div>Cargando contactos…</td></tr>`
+    const orgId = state.currentOrgId || state.userOrgId || null
+    let q = sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at', { ascending: false }).limit(1000)
+    if (orgId) q = q.eq('organization_id', orgId)
+    const { data, error } = await q
+    if (error) { if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#ef4444">Error al cargar contactos</td></tr>`; return }
+    state.allContacts = data || []
+    const leadsSearch = $('leads-search')
+    if (leadsSearch) leadsSearch.value = ''
+    renderLeads(state.allContacts)
+  }
+
   async function loadDashboard(orgId = null) {
     const kpisEl = $('dash-kpis')
     if (kpisEl) kpisEl.innerHTML = `<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div>Cargando…</div>`
