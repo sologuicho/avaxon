@@ -2374,6 +2374,13 @@
     }
   }
 
+  function maskPhone(phone) {
+    if (!phone) return '—'
+    if (!state.isReviewer) return phone
+    const d = phone.replace(/\D/g, '')
+    return d.length >= 4 ? '••• ••• ' + d.slice(-4) : '••••••'
+  }
+
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
