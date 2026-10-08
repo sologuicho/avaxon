@@ -4564,7 +4564,7 @@
     const sendBtn   = $('bc-send-btn')
     const sendLabel = $('bc-send-label')
 
-    let payload = { filter: bcState.filter, org_id: state.currentOrgId || state.userOrgId || undefined }
+    let payload = { filter: bcState.filter, org_id: bcOrgId() }
 
     if (bcState.mode === 'libre') {
       const msg = ($('bc-message').value || '').trim()
