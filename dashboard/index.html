@@ -3367,7 +3367,7 @@
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.add(convId)
-    renderChatBanner(getLastInboundFromDOM(), convId)
+    renderChatBanner(getLastInboundFromDOM(), convId, undefined)
     $('chat-input').focus()
   }
 
@@ -3375,7 +3375,7 @@
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.delete(convId)
-    renderChatBanner(getLastInboundFromDOM(), convId)
+    renderChatBanner(getLastInboundFromDOM(), convId, undefined)
   }
 
   window.takeoverChat   = takeoverChat
