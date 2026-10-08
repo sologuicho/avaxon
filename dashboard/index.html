@@ -3234,7 +3234,8 @@
 
     // 24h window check — last inbound message
     const lastInbound = (msgsData || []).filter(m => m.direction === 'inbound').at(-1);
-    renderChatBanner(lastInbound, convId);
+    const assignedAgent = conv?.profiles ?? null;
+    renderChatBanner(lastInbound, convId, assignedAgent);
 
     // Contact panel
     $('cpanel-empty').style.display   = 'none';
