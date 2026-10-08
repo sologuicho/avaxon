@@ -1306,68 +1306,39 @@
             </div>
           </div>
 
-          <!-- Col 3: Lead detail panel (260px) -->
+          <!-- Col 3: Contact detail panel -->
           <div class="contact-panel">
             <div class="cpanel-mobile-close" onclick="document.querySelector('.contact-panel').style.display='none'">
               <i class="fa fa-arrow-left"></i> Cerrar
             </div>
 
-            <!-- Lead qualification (static/decorative) -->
-            <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8c939b">Calificación del lead</div>
-              <div style="display:flex;align-items:flex-end;gap:8px;margin-top:4px">
-                <div style="font-family:'Barlow Condensed',sans-serif;font-size:46px;font-weight:700;line-height:0.9;color:#1a2535">86</div>
-                <span style="padding:3px 9px;border-radius:7px;background:#10b981;color:#fff;font-size:12px;font-weight:700;margin-bottom:6px">Caliente</span>
-              </div>
-              <div style="height:7px;border-radius:99px;background:#eef0f2;margin-top:12px;overflow:hidden">
-                <div style="width:86%;height:100%;background:#10b981;border-radius:99px"></div>
-              </div>
-              <div style="font-size:12.5px;color:#8c939b;margin-top:8px">Intención de compra detectada por GPT-4o en 3 mensajes.</div>
+            <div id="cpanel-empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8c939b;text-align:center;padding:32px 0">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+              <span style="font-size:12.5px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Selecciona una conversación</span>
             </div>
 
-            <!-- Captured data -->
-            <div id="cpanel-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#8c939b;text-align:center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".4"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-              <span style="font-size:12.5px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Info del contacto</span>
-            </div>
             <div id="cpanel-content" style="display:none;flex-direction:column;gap:14px">
-              <div>
+              <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:10px">
                 <div class="cpanel-section-title">Contacto</div>
                 <div style="display:flex;flex-direction:column;gap:5px">
                   <div style="font-size:15px;font-weight:700;color:#1a2535" id="cpanel-name"></div>
                   <div style="font-size:13px;color:#5980a6" id="cpanel-phone"></div>
                   <div style="font-size:12.5px;color:#8c939b" id="cpanel-email"></div>
-                  <div style="margin-top:4px" id="cpanel-status"></div>
+                  <div style="margin-top:2px" id="cpanel-status"></div>
                 </div>
               </div>
-              <div>
+
+              <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
                 <div class="cpanel-section-title">Etiquetas</div>
                 <div id="cpanel-tags"></div>
               </div>
-              <div>
+
+              <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
                 <div class="cpanel-section-title">Citas recientes</div>
                 <div id="cpanel-apts"></div>
               </div>
-            </div>
 
-            <!-- Datos capturados (static) -->
-            <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:12px">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#8c939b">Datos capturados</div>
-              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Nombre</span><span style="font-weight:600;text-align:right" id="cpanel-lead-name">—</span></div>
-              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Teléfono</span><span style="font-weight:600;text-align:right" id="cpanel-lead-phone">—</span></div>
-              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Interés</span><span style="font-weight:600;text-align:right">Producto A</span></div>
-              <div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><span style="color:#8c939b">Presupuesto</span><span style="font-weight:600;text-align:right">$5,000–10,000</span></div>
-              <div style="display:flex;gap:5px;flex-wrap:wrap;padding-top:4px;border-top:1px solid #f1f2f4">
-                <span style="padding:2px 7px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;background:#10b981;color:#fff">Calificado</span>
-                <span style="padding:2px 7px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;background:#2c455d;color:#fff">Cita</span>
-              </div>
-            </div>
-
-            <!-- Acción sugerida (static dark card) -->
-            <div style="background:#1a2535;border-radius:13px;padding:18px;color:#e7edf4">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11.5px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#5980a6">Acción sugerida</div>
-              <div style="font-size:14px;font-weight:600;margin-top:8px;line-height:1.4">Confirmar cita y enviar recordatorio 2 h antes.</div>
-              <button onclick="alert('Próximamente')" style="margin-top:14px;width:100%;padding:10px;border-radius:9px;border:0;background:#5980a6;color:#0e1b26;font-size:13.5px;font-weight:700;cursor:pointer">Agendar automáticamente</button>
+              <button id="cpanel-view-profile-btn" style="width:100%;padding:10px;border-radius:9px;border:1px solid #e6e7e9;background:#fff;color:#2c455d;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Ver perfil completo</button>
             </div>
           </div>
 
