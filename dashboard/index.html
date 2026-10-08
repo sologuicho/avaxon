@@ -4372,6 +4372,11 @@
   const bcState = { filter: 'all', busy: false }
 
   function openBroadcast() {
+    const orgId = state.currentOrgId || state.userOrgId
+    if (!orgId) {
+      showToast('Selecciona un cliente en el panel izquierdo antes de hacer un broadcast', 3500)
+      return
+    }
     const modal = $('modal-broadcast')
     if (!modal) return
     $('bc-message').value = ''
