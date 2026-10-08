@@ -2755,6 +2755,11 @@
     $('org-dropdown').classList.remove('open');
   });
 
+  const ORG_STORAGE_KEY = 'avx_last_org_id';
+
+  // El label del switcher y la lista del dropdown se derivan SIEMPRE de
+  // state.currentOrgId + state.allOrgs aquí mismo — nunca se pasan por
+  // separado, así no pueden quedar desincronizados entre sí.
   function buildOrgDropdown() {
     const dd = $('org-dropdown');
     const allItem = buildDropdownItem(null, '★', 'Todos los clientes', state.currentOrgId === null);
@@ -2764,6 +2769,10 @@
       const item = buildDropdownItem(org.id, initials(org.name), org.name, state.currentOrgId === org.id, org.status);
       dd.appendChild(item);
     });
+
+    const current = state.currentOrgId ? state.allOrgs.find(o => o.id === state.currentOrgId) : null;
+    $('org-switcher-name').textContent = current ? current.name : 'Todos los clientes';
+    $('org-switcher-icon').textContent = current ? initials(current.name) : '★';
   }
 
   function buildDropdownItem(orgId, iconText, label, active, status) {
@@ -2776,18 +2785,28 @@
     `;
     el.addEventListener('click', e => {
       e.stopPropagation();
-      selectOrg(orgId, label, iconText);
+      selectOrg(orgId);
       $('org-switcher-btn').classList.remove('open');
       $('org-dropdown').classList.remove('open');
     });
     return el;
   }
 
-  function selectOrg(orgId, name, iconText) {
+  // Aplica la org activa (state + label/dropdown + localStorage) SIN disparar
+  // la recarga de datos — lo usa el bootstrap, que ya recarga por su cuenta.
+  function applyOrgSelection(orgId) {
     state.currentOrgId = orgId;
-    $('org-switcher-name').textContent = name;
-    $('org-switcher-icon').textContent = iconText;
+    try {
+      if (orgId) localStorage.setItem(ORG_STORAGE_KEY, orgId);
+      else localStorage.removeItem(ORG_STORAGE_KEY);
+    } catch (e) {}
     buildOrgDropdown();
+  }
+
+  // Punto de entrada cuando el usuario elige una org del dropdown: aplica +
+  // recarga todo lo que depende de la org activa.
+  function selectOrg(orgId) {
+    applyOrgSelection(orgId);
     loadDashboard(orgId);
     loadIntegrations();
     const activeView = document.querySelector('.nav-item.active');
@@ -4332,9 +4351,21 @@
       $('nav-crm').style.display = 'flex';
       const { data: orgs } = await sb.from('organizations').select('id,name,status').order('name');
       state.allOrgs = orgs || [];
-      state.currentOrgId = null;
-      buildOrgDropdown();
-      await loadDashboard(null);
+
+      // Resolver la org inicial: si hay una sola, se auto-selecciona; si no,
+      // se intenta restaurar la última elegida (localStorage); si ninguna
+      // aplica, queda explícitamente en "Todos los clientes" (null) — nunca
+      // se deja el label mostrando algo distinto de lo que hay en el state.
+      let initialOrgId = null;
+      if (state.allOrgs.length === 1) {
+        initialOrgId = state.allOrgs[0].id;
+      } else if (state.allOrgs.length > 1) {
+        let savedOrgId = null;
+        try { savedOrgId = localStorage.getItem(ORG_STORAGE_KEY); } catch (e) {}
+        if (savedOrgId && state.allOrgs.some(o => o.id === savedOrgId)) initialOrgId = savedOrgId;
+      }
+      applyOrgSelection(initialOrgId);
+      await loadDashboard(initialOrgId);
     } else {
       const orgId = state.userOrgId;
       state.currentOrgId = orgId;
