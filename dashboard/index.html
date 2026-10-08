@@ -1310,10 +1310,36 @@
               </div>
               <!-- Messages -->
               <div id="chat-messages" class="chat-messages" style="background:#fafbfc"></div>
-              <!-- WhatsApp 24h window warning -->
+              <!-- Bot / Human / 24h banner area -->
               <div class="wa-window-banner" id="wa-window-banner">
-                <i class="fa fa-clock"></i>
-                <span id="wa-window-text">Han pasado más de 24 h desde el último mensaje del cliente. Solo puedes responder con una <a onclick="alert('Próximamente: plantillas de mensajes')">plantilla aprobada</a>.</span>
+                <!-- Agent active bar (shown when bot is responding) -->
+                <div class="chat-agent-bar" id="chat-agent-bar" style="display:none">
+                  <div class="agent-icon"><i class="fa fa-robot"></i></div>
+                  <div class="agent-info">
+                    <div class="agent-title">El agente IA está respondiendo este chat</div>
+                    <div class="agent-sub" id="chat-window-timer">—</div>
+                  </div>
+                  <button class="btn-takeover" onclick="takeoverChat()">Escribir yo</button>
+                </div>
+                <!-- Human mode bar (shown after takeover) -->
+                <div class="chat-human-bar" id="chat-human-bar" style="display:none">
+                  <div class="human-icon"><i class="fa fa-user-pen"></i></div>
+                  <div class="agent-info">
+                    <div class="human-info">Tú estás respondiendo</div>
+                    <div class="human-sub">El agente IA está en pausa para este chat</div>
+                  </div>
+                  <button class="btn-return-bot" onclick="returnBotChat()">Volver al agente</button>
+                </div>
+                <!-- 24h window warning (time remaining) -->
+                <div class="chat-window-bar" id="chat-window-bar" style="display:none">
+                  <i class="fa fa-clock"></i>
+                  <span id="wa-window-text">Ventana de 24h activa</span>
+                </div>
+                <!-- 24h window closed -->
+                <div class="chat-closed-bar" id="chat-closed-bar" style="display:none">
+                  <i class="fa fa-lock"></i>
+                  <span>Ventana de 24 h cerrada — solo puedes usar <a onclick="alert('Próximamente: plantillas de mensajes')">plantillas aprobadas</a>.</span>
+                </div>
               </div>
               <!-- Input bar -->
               <div class="chat-input-bar" style="padding:12px 14px;border-top:1px solid #eef0f2;background:#fff">
