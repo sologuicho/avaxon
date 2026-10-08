@@ -5037,6 +5037,13 @@
     }
   }
 
+  async function retryCampaignFailed(id) {
+    if (!confirm('¿Reintentar envío a los contactos fallidos?')) return
+    await sb.from('campaign_contacts').update({ status: 'pending', error_msg: null }).eq('campaign_id', id).eq('status', 'failed')
+    await sb.from('campaigns').update({ status: 'draft', updated_at: new Date().toISOString() }).eq('id', id)
+    await refreshCampaignDetail()
+  }
+
   async function pauseCampaign(id) {
     await sb.from('campaigns').update({ status: 'paused', updated_at: new Date().toISOString() }).eq('id', id)
     campState.currentCampaignId ? await refreshCampaignDetail() : await loadCampanas()
