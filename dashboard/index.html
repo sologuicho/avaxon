@@ -4369,7 +4369,7 @@
   window.invExport            = invExport
 
   // ── Broadcast ────────────────────────────────────────────────────────────
-  const bcState = { filter: 'all', busy: false }
+  const bcState = { filter: 'all', busy: false, mode: 'libre', selectedTemplateId: null, templates: [] }
 
   function openBroadcast() {
     const modal = $('modal-broadcast')
@@ -4377,8 +4377,11 @@
     const orgId = state.currentOrgId || state.userOrgId
     $('bc-message').value = ''
     $('bc-char-count').textContent = '0 / 4096'
-    $('bc-send-label').textContent = 'Enviar'
+    $('bc-send-label').textContent = 'Enviar mensaje'
     $('bc-send-btn').disabled = false
+    bcState.selectedTemplateId = null
+    bcState.templates = []
+    setBcMode('libre')
     setBcFilterActive('all')
     if (!orgId && state.isSuperAdmin) {
       $('bc-no-org-warn').style.display = 'flex'
@@ -4399,6 +4402,29 @@
     const modal = $('modal-broadcast')
     if (modal) modal.style.display = 'none'
     bcState.busy = false
+  }
+
+  function setBcMode(mode) {
+    bcState.mode = mode
+    bcState.selectedTemplateId = null
+    const libreTab = $('bc-tab-libre')
+    const tplTab   = $('bc-tab-tpl')
+    const librePanel = $('bc-panel-libre')
+    const tplPanel   = $('bc-panel-tpl')
+    if (!libreTab) return
+    const active = 'border-color:var(--accent);background:var(--accent-sub);color:var(--accent)'
+    const idle   = 'border-color:var(--border);background:transparent;color:var(--text-muted)'
+    libreTab.style.cssText += ';' + (mode === 'libre' ? active : idle)
+    tplTab.style.cssText   += ';' + (mode === 'tpl'   ? active : idle)
+    librePanel.style.display = mode === 'libre' ? 'flex' : 'none'
+    tplPanel.style.display   = mode === 'tpl'   ? 'flex' : 'none'
+    const sendLabel = $('bc-send-label')
+    if (mode === 'libre') {
+      sendLabel.textContent = 'Enviar mensaje'
+    } else {
+      sendLabel.textContent = 'Enviar plantilla'
+      loadBcTemplates()
+    }
   }
 
   function setBcFilterActive(filter) {
@@ -4437,18 +4463,100 @@
     }
   }
 
+  async function loadBcTemplates() {
+    const container = $('bc-tpl-list')
+    if (!container) return
+    container.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:13px">Cargando plantillas…</div>'
+    try {
+      const orgId = state.currentOrgId || state.userOrgId
+      if (!orgId) {
+        container.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Selecciona una organización primero.</div>'
+        return
+      }
+      const { data, error } = await sb.from('message_templates').select('id,name,status,language,components').eq('organization_id', orgId).order('status')
+      if (error) throw error
+      bcState.templates = data || []
+      renderBcTemplates()
+    } catch (e) {
+      $('bc-tpl-list').innerHTML = '<div style="color:#f87171;font-size:13px">Error al cargar plantillas.</div>'
+    }
+  }
+
+  const BC_STATUS_LABELS = { approved: 'Aprobada', pending: 'Pendiente', rejected: 'Rechazada', local: 'Sin enviar a Meta' }
+  const BC_STATUS_COLORS = {
+    approved: 'background:rgba(34,197,94,.12);color:#22c55e;border:1px solid rgba(34,197,94,.25)',
+    pending:  'background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.25)',
+    rejected: 'background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2)',
+    local:    'background:rgba(148,163,184,.1);color:var(--text-dim);border:1px solid var(--border)',
+  }
+
+  function renderBcTemplates() {
+    const container = $('bc-tpl-list')
+    if (!container) return
+    if (!bcState.templates.length) {
+      container.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:8px 0">No hay plantillas. Crea una en Configuración → Plantillas.</div>'
+      return
+    }
+    container.innerHTML = bcState.templates.map(t => {
+      const statusStyle = BC_STATUS_COLORS[t.status] || BC_STATUS_COLORS.local
+      const label = BC_STATUS_LABELS[t.status] || t.status
+      const isApproved = t.status === 'approved'
+      const bodyComp = (t.components || []).find(c => c.type === 'BODY')
+      const preview  = bodyComp?.text ? bodyComp.text.slice(0, 80) + (bodyComp.text.length > 80 ? '…' : '') : ''
+      return `<div class="bc-tpl-card" data-id="${t.id}" onclick="selectBcTemplate('${t.id}')"
+        style="padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);cursor:${isApproved ? 'pointer' : 'default'};opacity:${isApproved ? '1' : '.55'};display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s;${isApproved ? '' : 'pointer-events:none'}">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span>
+          ${isApproved ? '<span style="font-size:10.5px;font-weight:700;background:rgba(34,197,94,.12);color:#22c55e;padding:2px 7px;border-radius:6px;letter-spacing:.03em">★ RECOMENDADA</span>' : ''}
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600;flex-shrink:0;${statusStyle}">${label}</span>
+        </div>
+        ${preview ? `<div style="font-size:12px;color:var(--text-dim);line-height:1.45">${preview}</div>` : ''}
+      </div>`
+    }).join('')
+  }
+
+  function selectBcTemplate(id) {
+    bcState.selectedTemplateId = id
+    document.querySelectorAll('.bc-tpl-card').forEach(card => {
+      const sel = card.dataset.id === id
+      card.style.borderColor = sel ? 'var(--accent)' : 'var(--border)'
+      card.style.background  = sel ? 'var(--accent-sub)' : 'transparent'
+    })
+    const tpl = bcState.templates.find(t => t.id === id)
+    if (tpl) {
+      const bodyComp = (tpl.components || []).find(c => c.type === 'BODY')
+      if (bodyComp?.text) {
+        $('bc-tpl-preview-text').textContent = bodyComp.text
+        $('bc-tpl-preview').style.display = 'block'
+      }
+    }
+    $('bc-send-btn').disabled = false
+  }
+
   async function sendBroadcast() {
     if (bcState.busy) return
-    const msg = ($('bc-message').value || '').trim()
-    if (!msg) { $('bc-message').focus(); return }
-
-    const countLine = $('bc-count-line').textContent
-    if (!confirm(`¿Confirmas enviar este mensaje?\n\n${countLine}`)) return
-
-    bcState.busy = true
     const sendBtn   = $('bc-send-btn')
     const sendLabel = $('bc-send-label')
-    sendBtn.disabled  = true
+
+    let payload = { filter: bcState.filter, org_id: state.currentOrgId || state.userOrgId || undefined }
+
+    if (bcState.mode === 'libre') {
+      const msg = ($('bc-message').value || '').trim()
+      if (!msg) { $('bc-message').focus(); return }
+      payload.message = msg
+    } else {
+      if (!bcState.selectedTemplateId) { showToast('Selecciona una plantilla primero', 3000); return }
+      const tpl = bcState.templates.find(t => t.id === bcState.selectedTemplateId)
+      if (!tpl) return
+      payload.template_name     = tpl.name
+      payload.template_language = tpl.language || 'es_MX'
+    }
+
+    const countLine = $('bc-count-line').textContent
+    if (!confirm(`¿Confirmas el envío?\n\n${countLine}`)) return
+
+    bcState.busy = true
+    sendBtn.disabled = true
     sendLabel.textContent = 'Enviando…'
 
     try {
@@ -4456,20 +4564,20 @@
       const res = await fetch(`${SUPABASE_URL}/functions/v1/send-broadcast`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ message: msg, filter: bcState.filter, org_id: state.currentOrgId || state.userOrgId || undefined }),
+        body: JSON.stringify(payload),
       })
       const d = await res.json()
       if (d.ok) {
         closeBroadcast()
-        showToast(`Envío completado: ${d.sent} mensajes enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
+        showToast(`Envío completado: ${d.sent} enviados${d.failed ? `, ${d.failed} fallaron` : ''}`)
       } else {
-        sendLabel.textContent = 'Enviar'
+        sendLabel.textContent = bcState.mode === 'libre' ? 'Enviar mensaje' : 'Enviar plantilla'
         sendBtn.disabled = false
         bcState.busy = false
         showToast('Error: ' + (d.error || 'desconocido'), 4000)
       }
     } catch (e) {
-      sendLabel.textContent = 'Enviar'
+      sendLabel.textContent = bcState.mode === 'libre' ? 'Enviar mensaje' : 'Enviar plantilla'
       sendBtn.disabled = false
       bcState.busy = false
       showToast('Error de red', 4000)
@@ -4484,10 +4592,12 @@
     })
   })
 
-  window.openBroadcast  = openBroadcast
-  window.closeBroadcast = closeBroadcast
-  window.setBcFilter    = setBcFilter
-  window.sendBroadcast  = sendBroadcast
+  window.openBroadcast      = openBroadcast
+  window.closeBroadcast     = closeBroadcast
+  window.setBcFilter        = setBcFilter
+  window.setBcMode          = setBcMode
+  window.sendBroadcast      = sendBroadcast
+  window.selectBcTemplate   = selectBcTemplate
 
   // ── CRM (super_admin only) ────────────────────────────────────────────────
   const CRM_STATUS = {
