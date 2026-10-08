@@ -5116,25 +5116,57 @@
       el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-dim);font-size:13px">Sin plantillas aún · Crea una con el botón de arriba</div>'
       return
     }
-    el.innerHTML = configTemplates.map(t => {
-      const st       = TEMPLATE_STATUS[t.status] ?? TEMPLATE_STATUS.local
+    const CAT_COLORS = {
+      MARKETING:      { color: '#818cf8', bg: 'rgba(129,140,248,.12)' },
+      UTILITY:        { color: '#38bdf8', bg: 'rgba(56,189,248,.12)'  },
+      AUTHENTICATION: { color: '#a78bfa', bg: 'rgba(167,139,250,.12)' },
+    }
+    el.innerHTML = '<div style="display:flex;flex-direction:column;gap:0">' + configTemplates.map(t => {
+      const st       = TEMPLATE_STATUS[t.status] ?? TEMPLATE_STATUS.DRAFT
+      const catColor = CAT_COLORS[t.category] ?? { color: '#64748b', bg: 'rgba(100,116,139,.12)' }
       const bodyText = t.components?.[0]?.text ?? '—'
-      return `<div style="display:flex;align-items:flex-start;gap:14px;padding:14px 20px;border-bottom:1px solid var(--border)">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-size:13.5px;font-weight:700;color:var(--text)">${t.name}</span>
-            <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>
-            <span style="font-size:11px;color:var(--text-dim);background:var(--hover-bg);padding:2px 8px;border-radius:6px">${TEMPLATE_CAT_LABELS[t.category] ?? t.category}</span>
-            <span style="font-size:11px;color:var(--text-dim)">${t.language ?? 'es_MX'}</span>
+      const vars     = t.components?.[0]?.variables ?? []
+      const useCase  = t.components?.[0]?.use_case ?? ''
+      const isDraft  = (t.status === 'DRAFT' || t.status === 'local')
+      const varChips = vars.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${vars.map(v => `<span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#818cf8;background:rgba(129,140,248,.1);padding:2px 7px;border-radius:5px">{{${v}}}</span>`).join('')}</div>` : ''
+      const submitBtn = isDraft
+        ? `<button onclick="submitTemplateForReview('${t.id}')" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap" title="Enviar a revisión de Meta"><i class="fa fa-paper-plane" style="font-size:11px"></i> Enviar a revisión</button>`
+        : ''
+      return `<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:0">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px">
+              <span style="font-size:13.5px;font-weight:700;color:var(--text)">${t.name}</span>
+              <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>
+              <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;color:${catColor.color};background:${catColor.bg}">${TEMPLATE_CAT_LABELS[t.category] ?? t.category}</span>
+              <span style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${t.language ?? 'es_MX'}</span>
+            </div>
+            <div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${bodyText}</div>
+            ${varChips}
+            ${useCase ? `<div style="margin-top:6px;font-size:11.5px;color:var(--text-dim);font-style:italic">${useCase}</div>` : ''}
           </div>
-          <div style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:500px">${bodyText}</div>
-        </div>
-        <div style="display:flex;gap:4px;flex-shrink:0">
-          <button onclick="openTemplateModal('${t.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:5px 9px" title="Editar"><i class="fa fa-pen"></i></button>
-          <button onclick="deleteTemplate('${t.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:5px 9px" title="Eliminar"><i class="fa fa-trash"></i></button>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-top:2px">
+            ${submitBtn}
+            <button onclick="openTemplateModal('${t.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:6px 9px;border-radius:7px" title="Editar" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'"><i class="fa fa-pen"></i></button>
+            <button onclick="deleteTemplate('${t.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:6px 9px;border-radius:7px" title="Eliminar" onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background='none'"><i class="fa fa-trash"></i></button>
+          </div>
         </div>
       </div>`
-    }).join('')
+    }).join('') + '</div>'
+  }
+
+  async function submitTemplateForReview(id) {
+    const btn = event.currentTarget
+    btn.disabled = true
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:11px"></i> Enviando…'
+    const { error } = await sb.from('message_templates').update({ status: 'PENDING', updated_at: new Date().toISOString() }).eq('id', id)
+    if (error) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="fa fa-paper-plane" style="font-size:11px"></i> Enviar a revisión'
+      alert('Error al actualizar: ' + error.message)
+      return
+    }
+    await loadTemplates()
   }
 
   function openTemplateModal(id) {
