@@ -4384,18 +4384,42 @@
     setBcMode('libre')
     setBcFilterActive('all')
     if (!orgId && state.isSuperAdmin) {
-      $('bc-no-org-warn').style.display = 'flex'
+      // Populate inline org picker
+      const sel = $('bc-org-select')
+      sel.innerHTML = '<option value="">— Selecciona un cliente —</option>'
+      ;(state.allOrgs || []).forEach(org => {
+        const opt = document.createElement('option')
+        opt.value = org.id
+        opt.textContent = org.name
+        sel.appendChild(opt)
+      })
+      $('bc-org-picker').style.display = 'flex'
       $('bc-filter-btns').style.opacity = '.4'
       $('bc-filter-btns').style.pointerEvents = 'none'
       $('bc-send-btn').disabled = true
-      $('bc-count-line').textContent = 'Selecciona una organización en el menú superior ↑'
+      $('bc-count-line').textContent = 'Selecciona un cliente arriba ↑'
     } else {
-      $('bc-no-org-warn').style.display = 'none'
+      $('bc-org-picker').style.display = 'none'
       $('bc-filter-btns').style.opacity = '1'
       $('bc-filter-btns').style.pointerEvents = 'auto'
       fetchBcCount()
     }
     modal.style.display = 'flex'
+  }
+
+  function bcPickOrg(orgId) {
+    if (!orgId) {
+      $('bc-filter-btns').style.opacity = '.4'
+      $('bc-filter-btns').style.pointerEvents = 'none'
+      $('bc-send-btn').disabled = true
+      $('bc-count-line').textContent = 'Selecciona un cliente arriba ↑'
+      return
+    }
+    bcState.pickedOrgId = orgId
+    $('bc-filter-btns').style.opacity = '1'
+    $('bc-filter-btns').style.pointerEvents = 'auto'
+    $('bc-send-btn').disabled = false
+    fetchBcCount()
   }
 
   function closeBroadcast() {
