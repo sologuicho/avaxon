@@ -4413,7 +4413,7 @@
           ${c.industry ? `<div style="font-size:11.5px;color:var(--text-dim)">${c.industry}</div>` : ''}
         </td>
         <td style="font-size:13px;color:var(--text-muted)">${c.contact_name || '—'}</td>
-        <td style="font-size:13px;color:var(--text-muted)">${c.phone || '—'}</td>
+        <td style="font-size:13px;color:var(--text-muted)">${maskPhone(c.phone)}</td>
         <td style="font-size:12.5px;color:var(--text-muted)">${c.city || '—'}</td>
         <td><span style="display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:700;color:${st.color};background:${st.bg}">${st.label}</span></td>
         <td style="font-size:12.5px;color:var(--text-muted)">${CRM_PLAN_LABELS[c.plan] || '—'}</td>
