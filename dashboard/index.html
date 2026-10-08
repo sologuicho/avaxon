@@ -3857,6 +3857,9 @@
       await loadDashboard(orgId);
     }
     showScreen('app');
+    const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
+    const _validViews = ['inicio','conversaciones','leads','pipeline','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm'];
+    if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     loadConversaciones();
     loadIntegrations();
 
