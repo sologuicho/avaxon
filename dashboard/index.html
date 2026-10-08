@@ -3502,13 +3502,13 @@
     return { text: content, buttons: [] };
   }
 
-  function buildMsgBubble(dir, text, buttons, time) {
+  function buildMsgBubble(dir, text, buttons, time, isoTs = '') {
     const btns = buttons.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">${buttons.map(b =>
           `<span style="display:inline-block;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;font-size:11.5px;font-weight:600;line-height:1.4">${b}</span>`
         ).join('')}</div>`
       : '';
-    return `<div class="msg-bubble ${dir}" data-dir="${dir}" data-ts="">${text}${btns}<span class="msg-time">${time}</span></div>`;
+    return `<div class="msg-bubble ${dir}" data-dir="${dir}" data-ts="${isoTs}">${text}${btns}<span class="msg-time">${time}</span></div>`;
   }
 
   function renderMessages(msgs) {
@@ -3525,7 +3525,7 @@
       const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
       const dir  = m.direction === 'outbound' ? 'outbound' : 'inbound';
       const { text, buttons } = parseMsgContent(m.content, m.media_type);
-      return `${sep}<div class="msg-row ${dir}">${buildMsgBubble(dir, text, buttons, time)}</div>`;
+      return `${sep}<div class="msg-row ${dir}">${buildMsgBubble(dir, text, buttons, time, m.created_at)}</div>`;
     }).join('');
     $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
   }
