@@ -4430,10 +4430,10 @@
   function setBcFilterActive(filter) {
     bcState.filter = filter
     document.querySelectorAll('.bc-filter-btn').forEach(btn => {
-      const active = btn.dataset.filter === filter
-      btn.style.borderColor  = active ? 'var(--accent)'  : 'var(--border)'
-      btn.style.background   = active ? 'var(--accent-sub)' : 'transparent'
-      btn.style.color        = active ? 'var(--accent)'  : 'var(--text-muted)'
+      const isActive = btn.dataset.filter === filter
+      btn.style.border     = isActive ? '1.5px solid var(--accent)'  : '1.5px solid var(--border)'
+      btn.style.background = isActive ? 'var(--accent-sub)' : 'transparent'
+      btn.style.color      = isActive ? 'var(--accent)'  : 'var(--text-muted)'
     })
   }
 
