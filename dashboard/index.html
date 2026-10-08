@@ -2764,7 +2764,7 @@
           </div>
         </div>
       </td>
-      <td style="font-size:13px;color:var(--text-muted)">${c.phone || '—'}</td>
+      <td style="font-size:13px;color:var(--text-muted)">${maskPhone(c.phone)}</td>
       <td>${renderTags(c.tags)}</td>
       <td>${statusPill(c.status)}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.last_seen_at)}</td>
