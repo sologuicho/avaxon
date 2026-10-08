@@ -13,7 +13,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script async defer crossorigin="anonymous" src="https://connect.facebook.net/es_LA/sdk.js"></script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -4335,6 +4334,7 @@
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     loadConversaciones();
     loadIntegrations();
+    handleGoogleOAuthRedirect();
 
     if (state.isReviewer) {
       // Deshabilitar botón Pausar/Reanudar agente
@@ -7136,12 +7136,10 @@
   window.showChangePasswordModal = showChangePasswordModal;
 
   // ── Integrations (Google Calendar, Sheets, Stripe, Zapier) ─────────────
-  const GOOGLE_CLIENT_ID = '515270819069-97u6k53oesn8tuohp8j2v0gforu11991.apps.googleusercontent.com';
-  const GCAL_SCOPE       = 'https://www.googleapis.com/auth/calendar';
-  const GSHEETS_SCOPE    = 'https://www.googleapis.com/auth/spreadsheets';
+  const GOOGLE_CLIENT_ID     = '515270819069-97u6k53oesn8tuohp8j2v0gforu11991.apps.googleusercontent.com';
+  const GOOGLE_REDIRECT_URI = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/google-oauth-callback';
+  const GOOGLE_OAUTH_SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
 
-  let gcalTokenClient    = null;
-  let gsheetsTokenClient = null;
   let integModalProvider = null;
 
   // ── Load integrations from DB ────────────────────────────────────────────
@@ -7187,26 +7185,55 @@
     return error;
   }
 
-  // ── Google Calendar ──────────────────────────────────────────────────────
-  function gcalInitTokenClient() {
-    if (!window.google?.accounts?.oauth2) return;
-    gcalTokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: GCAL_SCOPE,
-      callback: async (response) => {
-        if (response.error) { showToast('Error al conectar con Google: ' + response.error); return; }
-        let email = '—';
-        try {
-          const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: 'Bearer ' + response.access_token }
-          }).then(r => r.json());
-          email = info.email || '—';
-        } catch {}
-        await saveIntegrationToDB('google_calendar', 'connected', { access_token: response.access_token }, { email });
-        updateGcalUI();
-        showToast('Google Calendar conectado: ' + email);
+  // ── Google OAuth (Calendar + Sheets, una sola conexión) ──────────────────
+  // El flujo real es authorization-code server-side: este botón ya no abre un
+  // token client de Google Identity Services (eso nunca entrega refresh_token
+  // y expira en ~1h). En su lugar pide un `state` firmado (HMAC) a la Edge
+  // Function google-oauth-start y navega a la pantalla de consentimiento de
+  // Google; el intercambio de code→tokens y el guardado en `integrations`
+  // ocurre server-side en google-oauth-callback.
+  async function gcalConnect() {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { showToast('Tu sesión expiró, vuelve a iniciar sesión'); return; }
+      const resp = await fetch(SUPABASE_URL + '/functions/v1/google-oauth-start', {
+        headers: { Authorization: 'Bearer ' + session.access_token }
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.state) {
+        showToast('Error iniciando conexión con Google: ' + (data.error || resp.status));
+        return;
       }
-    });
+      const params = new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        response_type: 'code',
+        access_type: 'offline',
+        prompt: 'consent',
+        include_granted_scopes: 'true',
+        scope: GOOGLE_OAUTH_SCOPES,
+        state: data.state,
+      });
+      window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+    } catch (e) {
+      showToast('Error iniciando conexión con Google');
+    }
+  }
+
+  // Tras volver del callback: ?conexion=google_ok|google_error en la URL
+  function handleGoogleOAuthRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const conexion = params.get('conexion');
+    if (!conexion) return;
+    if (conexion === 'google_ok') {
+      showToast('Google conectado correctamente');
+      loadIntegrations();
+    } else if (conexion === 'google_error') {
+      showToast('No se pudo conectar con Google, intenta de nuevo', 4000);
+    }
+    params.delete('conexion');
+    const qs = params.toString();
+    history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
   }
 
   function updateGcalUI() {
@@ -7262,23 +7289,13 @@
     }
   }
 
-  function gcalConnect() {
-    if (!gcalTokenClient) {
-      // Retry init in case script loaded late
-      gcalInitTokenClient();
-    }
-    if (!gcalTokenClient) {
-      showToast('Google aún cargando, intenta de nuevo en un segundo');
-      return;
-    }
-    gcalTokenClient.requestAccessToken({ prompt: 'select_account' });
-  }
-
   async function gcalDisconnect() {
-    if (!confirm('¿Desconectar Google Calendar? Las citas ya creadas no se eliminarán.')) return;
+    if (!confirm('¿Desconectar Google? Esto desconecta Calendar y Sheets. Las citas ya creadas no se eliminarán.')) return;
     await saveIntegrationToDB('google_calendar', 'disconnected', null, null);
+    await saveIntegrationToDB('google_sheets', 'disconnected', null, null);
     updateGcalUI();
-    showToast('Google Calendar desconectado');
+    updateIntegPill('google_sheets', 'gsheets-integ-pill');
+    showToast('Google desconectado');
   }
 
   function navigateToGcalConexion() {
@@ -7287,16 +7304,6 @@
       const card = document.getElementById('gcal-conexion-card');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
-  }
-
-  // ── Google Sheets OAuth ──────────────────────────────────────────────────
-  function gsheetsInitTokenClient(callback) {
-    if (!window.google?.accounts?.oauth2) return null;
-    return google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: GSHEETS_SCOPE,
-      callback,
-    });
   }
 
   // ── Integration modal (Sheets / Stripe / Zapier) ─────────────────────────
@@ -7340,7 +7347,7 @@
       const sheetId = integ?.config?.spreadsheet_id || '';
       body.innerHTML = `
         <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
-          Se abrirá una ventana de Google para autorizar acceso. Después ingresa el ID de tu hoja.
+          Usa la misma cuenta de Google conectada en la tarjeta de Google Calendar. Solo falta el ID de tu hoja.
         </div>
         <label style="display:flex;flex-direction:column;gap:5px">
           <span style="font-size:13px;font-weight:600;color:var(--text)">ID de la hoja de cálculo</span>
@@ -7404,25 +7411,22 @@
       if (provider === 'google_sheets') {
         const sheetId = document.getElementById('im-sheet-id')?.value?.trim();
         if (!sheetId) { errEl.textContent = 'Ingresa el ID de la hoja'; errEl.style.display = 'block'; return; }
-        // Request OAuth for Sheets
-        gsheetsTokenClient = gsheetsInitTokenClient(async (response) => {
-          if (response.error) { errEl.textContent = 'Error Google: ' + response.error; errEl.style.display = 'block'; return; }
-          let email = '—';
-          try {
-            const info = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: 'Bearer ' + response.access_token }
-            }).then(r => r.json());
-            email = info.email || '—';
-          } catch {}
-          await saveIntegrationToDB('google_sheets', 'connected',
-            { access_token: response.access_token },
-            { spreadsheet_id: sheetId, email }
-          );
-          updateIntegPill('google_sheets', 'gsheets-integ-pill');
-          closeIntegModal();
-          showToast('Google Sheets conectado: ' + email);
-        });
-        gsheetsTokenClient?.requestAccessToken({ prompt: 'select_account' });
+        const gsheetsInteg = state.integrations?.['google_sheets'];
+        if (gsheetsInteg?.status !== 'connected') {
+          errEl.textContent = 'Primero conecta tu cuenta de Google desde la tarjeta de Google Calendar arriba';
+          errEl.style.display = 'block';
+          return;
+        }
+        const orgId = state.currentOrgId || state.userOrgId;
+        const newConfig = { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId };
+        const { error: sheetErr } = await sb.from('integrations')
+          .update({ config: newConfig, updated_at: new Date().toISOString() })
+          .eq('organization_id', orgId).eq('provider', 'google_sheets');
+        if (sheetErr) { errEl.textContent = 'Error al guardar: ' + sheetErr.message; errEl.style.display = 'block'; return; }
+        state.integrations['google_sheets'] = { ...gsheetsInteg, config: newConfig };
+        updateIntegPill('google_sheets', 'gsheets-integ-pill');
+        closeIntegModal();
+        showToast('Hoja de cálculo guardada');
 
       } else if (provider === 'stripe') {
         const pk = document.getElementById('im-stripe-pk')?.value?.trim();
@@ -7457,9 +7461,7 @@
     showToast('Integración desconectada');
   }
 
-  // Init when Google GIS script is ready
   window.addEventListener('load', () => {
-    gcalInitTokenClient();
     updateGcalUI();
   });
 
