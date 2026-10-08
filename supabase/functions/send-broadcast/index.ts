@@ -97,17 +97,30 @@ Deno.serve(async (req: Request) => {
   for (const contact of (contacts ?? [])) {
     if (!contact.phone) { failed++; continue }
 
+    const waPayload = isTemplate
+      ? {
+          messaging_product: 'whatsapp',
+          to:   contact.phone,
+          type: 'template',
+          template: {
+            name:     template_name!.trim(),
+            language: { code: template_language },
+            components: [],
+          },
+        }
+      : {
+          messaging_product: 'whatsapp',
+          to:   contact.phone,
+          type: 'text',
+          text: { body: message!.trim() },
+        }
+
     const waRes = await fetch(
       `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
       {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messaging_product: 'whatsapp',
-          to:   contact.phone,
-          type: 'text',
-          text: { body: message.trim() },
-        }),
+        body: JSON.stringify(waPayload),
       },
     )
 
