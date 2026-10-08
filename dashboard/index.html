@@ -1413,6 +1413,138 @@
         <div id="pipeline-board" style="display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:12px;align-items:start"></div>
       </div>
 
+      <!-- VIEW: Campañas -->
+      <div class="view" id="view-campanas">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(34,197,94,.1);color:var(--accent)"><i class="fa fa-paper-plane"></i></div>
+            <div>
+              <div class="view-header-title">Campañas de WhatsApp</div>
+              <div class="view-header-sub">Envíos masivos con plantillas aprobadas por Meta</div>
+            </div>
+          </div>
+          <button onclick="openCampaignWizard()" class="btn-primary" style="display:flex;align-items:center;gap:7px;padding:9px 18px;font-size:13px;flex-shrink:0"><i class="fa fa-plus"></i> Nueva campaña</button>
+        </div>
+
+        <!-- Métricas -->
+        <div id="camp-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px">
+          <div class="card bp" style="padding:16px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Campañas activas</div>
+            <div id="camp-kpi-active" style="font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--text)">—</div>
+          </div>
+          <div class="card bp" style="padding:16px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Total enviados</div>
+            <div id="camp-kpi-sent" style="font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:var(--text)">—</div>
+          </div>
+          <div class="card bp" style="padding:16px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Respondieron</div>
+            <div id="camp-kpi-responded" style="font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#22c55e">—</div>
+          </div>
+          <div class="card bp" style="padding:16px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tasa de respuesta</div>
+            <div id="camp-kpi-rate" style="font-size:26px;font-weight:700;font-family:'Space Grotesk',sans-serif;color:#f59e0b">—</div>
+          </div>
+        </div>
+
+        <!-- Lista de campañas -->
+        <div id="camp-list-wrap">
+          <div id="camp-list" style="display:flex;flex-direction:column;gap:10px"></div>
+          <div id="camp-empty" style="display:none">
+            <div class="card bp" style="padding:52px 24px;text-align:center">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="width:56px;height:56px;background:rgba(34,197,94,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:var(--accent)"><i class="fa fa-paper-plane"></i></div>
+              <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">Lanza tu primera campaña</div>
+              <div style="font-size:13px;color:var(--text-muted);max-width:360px;margin:0 auto 22px;line-height:1.6">Envía mensajes masivos a tus contactos usando plantillas aprobadas por Meta. Monitorea entregados, leídos y respondidos en tiempo real.</div>
+              <button onclick="openCampaignWizard()" class="btn-primary" style="padding:10px 22px;font-size:13px;display:inline-flex;align-items:center;gap:8px"><i class="fa fa-plus"></i> Crear campaña</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detalle de campaña (oculto por defecto) -->
+        <div id="camp-detail" style="display:none">
+          <button onclick="closeCampaignDetail()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;margin-bottom:16px;padding:4px 0" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa fa-arrow-left" style="font-size:11px"></i> Volver a campañas</button>
+
+          <!-- Header detalle -->
+          <div class="card bp" style="padding:22px 24px;margin-bottom:14px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+              <div>
+                <div style="font-size:18px;font-weight:700;color:var(--text);font-family:'Space Grotesk',sans-serif" id="det-name">—</div>
+                <div style="font-size:13px;color:var(--text-muted);margin-top:3px" id="det-desc"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+                  <span id="det-status-badge"></span>
+                  <span id="det-type-badge"></span>
+                  <span style="font-size:12px;color:var(--text-dim);font-family:'JetBrains Mono',monospace" id="det-date"></span>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0" id="det-actions"></div>
+            </div>
+            <!-- Barra de progreso -->
+            <div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;color:var(--text-muted)">Progreso: <strong id="det-progress-text" style="color:var(--text)">0 / 0</strong></span>
+              <span style="font-size:12px;font-weight:700;color:var(--accent)" id="det-progress-pct">0%</span>
+            </div>
+            <div style="height:8px;background:var(--hover-bg);border-radius:4px;overflow:hidden">
+              <div id="det-progress-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#3b82f6);transition:width .4s ease;width:0%"></div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px">
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:#60a5fa;font-family:'Space Grotesk',sans-serif" id="det-stat-total">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Total</div>
+            </div>
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:var(--accent);font-family:'Space Grotesk',sans-serif" id="det-stat-sent">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Enviados</div>
+            </div>
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:#34d399;font-family:'Space Grotesk',sans-serif" id="det-stat-delivered">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Entregados</div>
+            </div>
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:#818cf8;font-family:'Space Grotesk',sans-serif" id="det-stat-read">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Leídos</div>
+            </div>
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:#f59e0b;font-family:'Space Grotesk',sans-serif" id="det-stat-responded">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Respondieron</div>
+            </div>
+            <div class="card bp" style="padding:14px 16px;text-align:center"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:22px;font-weight:700;color:#f87171;font-family:'Space Grotesk',sans-serif" id="det-stat-failed">0</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Fallidos</div>
+            </div>
+          </div>
+
+          <!-- Tabla de contactos -->
+          <div class="card bp" style="overflow:hidden">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:13.5px;font-weight:700;color:var(--text)">Contactos de la campaña</span>
+              <button onclick="refreshCampaignDetail()" style="background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-dim)'"><i class="fa fa-rotate-right"></i> Actualizar</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+                <thead>
+                  <tr style="background:var(--hover-bg)">
+                    <th style="padding:10px 20px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Contacto</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Teléfono</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Estado</th>
+                    <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Enviado</th>
+                  </tr>
+                </thead>
+                <tbody id="det-contacts-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- VIEW: Calendario -->
       <div class="view" id="view-calendario">
         <div class="view-header">
