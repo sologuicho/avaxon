@@ -5298,6 +5298,10 @@
       countEl.textContent = wizCsvRows.length > 0 ? `${wizCsvRows.length} contactos del CSV` : 'Sin CSV cargado'
       return
     }
+    if (campState.wizData.source === 'manual') {
+      countEl.textContent = wizManualSelected.size > 0 ? `${wizManualSelected.size} seleccionado${wizManualSelected.size !== 1 ? 's' : ''}` : 'Ningún contacto seleccionado'
+      return
+    }
     countEl.textContent = 'Calculando…'
     try {
       const orgId = campOrgId()
