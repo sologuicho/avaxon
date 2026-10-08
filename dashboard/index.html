@@ -3478,7 +3478,7 @@
     if (!title) { errEl.textContent = 'El título es obligatorio.'; errEl.style.display = 'block'; return; }
     if (!dt)    { errEl.textContent = 'Selecciona una fecha y hora.'; errEl.style.display = 'block'; return; }
     btn.disabled = true; btn.textContent = 'Guardando…';
-    const { error } = await sb.from('appointments').insert({
+    const { data: newAppt, error } = await sb.from('appointments').insert({
       organization_id: _qapt_org_id,
       contact_id:      _qapt_contact_id || undefined,
       title,
@@ -3486,15 +3486,22 @@
       notes:           notes || (_qapt_contact_name ? `Contacto: ${_qapt_contact_name}` : null),
       status:          'scheduled',
       created_by:      state.userId,
-    });
-    btn.disabled = false; btn.textContent = 'Guardar cita';
-    if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+    }).select('id').single();
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Guardar cita';
+      errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return;
+    }
     sendZapierEvent('appointment_scheduled', {
       contact_id:   _qapt_contact_id,
       contact_name: _qapt_contact_name,
       title,
       scheduled_at: new Date(dt).toISOString(),
     });
+    if (newAppt?.id) {
+      btn.textContent = 'Sincronizando con Google…';
+      await syncAppointmentToGoogleCalendar(_qapt_org_id, newAppt.id);
+    }
+    btn.disabled = false; btn.textContent = 'Guardar cita';
     closeQuickAptModal();
     // Refresh citas in panel
     if (_qapt_contact_id) {
@@ -7645,6 +7652,32 @@
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  // Llama a la Edge Function google-calendar para crear el evento de una cita
+  // recién guardada (appointments.id) en el calendario primario de Google de
+  // la org, si está conectado. No es fire-and-forget: el usuario necesita
+  // saber si la sincronización falló, a diferencia de Zapier.
+  async function syncAppointmentToGoogleCalendar(organizationId, appointmentId) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const resp = await fetch(EDGE_BASE + '/google-calendar', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: organizationId, appointment_id: appointmentId }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.ok === false) {
+        if (!data.skipped) {
+          showToast('Cita guardada, pero no se sincronizó con Google Calendar: ' + (data.error || resp.status), 5000);
+        }
+      } else if (data.ok) {
+        showToast('Cita guardada y sincronizada con Google Calendar', 2500);
+      }
+    } catch (e) {
+      showToast('Cita guardada, pero no se pudo sincronizar con Google Calendar', 4000);
     }
   }
 
