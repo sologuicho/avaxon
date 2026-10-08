@@ -6695,10 +6695,10 @@
 
   <!-- ── Modal Envíos rápidos ── -->
   <div id="modal-broadcast" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px">
-    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:480px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5)">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:580px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);max-height:90vh;display:flex;flex-direction:column">
 
       <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
         <div style="display:flex;align-items:center;gap:11px">
           <div style="width:36px;height:36px;background:rgba(34,197,94,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;flex-shrink:0"><i class="fa fa-bullhorn"></i></div>
           <div>
@@ -6709,48 +6709,86 @@
         <button onclick="closeBroadcast()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px">×</button>
       </div>
 
-      <!-- Body -->
-      <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+      <!-- Body scrollable -->
+      <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
 
-        <!-- Aviso sin org seleccionada (solo super_admin) -->
+        <!-- Aviso sin org -->
         <div id="bc-no-org-warn" style="display:none;align-items:center;gap:10px;padding:12px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px">
           <i class="fa fa-triangle-exclamation" style="color:#f59e0b;font-size:14px;flex-shrink:0"></i>
           <span style="font-size:12.5px;color:var(--text-muted);line-height:1.4">Selecciona una <strong style="color:var(--text)">organización</strong> en el menú superior antes de enviar.</span>
         </div>
 
-        <!-- Filtro de destinatarios -->
+        <!-- Modo tabs -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button id="bc-tab-libre" onclick="setBcMode('libre')" style="padding:10px 12px;border-radius:12px;border:1.5px solid var(--accent);background:var(--accent-sub);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+            <i class="fa fa-pen-to-square" style="font-size:12px"></i> Mensaje libre
+          </button>
+          <button id="bc-tab-tpl" onclick="setBcMode('tpl')" style="padding:10px 12px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+            <i class="fa fa-rectangle-list" style="font-size:12px"></i> Plantilla aprobada
+          </button>
+        </div>
+
+        <!-- Destinatarios (siempre visible) -->
         <div>
-          <div style="font-size:12.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase">Destinatarios</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="bc-filter-btns">
-            <button class="bc-filter-btn active" data-filter="all"       onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Todos los contactos</button>
-            <button class="bc-filter-btn"        data-filter="new"       onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo nuevos</button>
-            <button class="bc-filter-btn"        data-filter="qualified" onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo calificados</button>
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Destinatarios</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="bc-filter-btns">
+            <button class="bc-filter-btn active" data-filter="all"        onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Todos los contactos</button>
+            <button class="bc-filter-btn"        data-filter="new"        onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo nuevos</button>
+            <button class="bc-filter-btn"        data-filter="qualified"  onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo calificados</button>
             <button class="bc-filter-btn"        data-filter="active_24h" onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Activos últimas 24h</button>
           </div>
-          <div id="bc-count-line" style="font-size:12px;color:var(--text-muted);margin-top:8px">Calculando destinatarios…</div>
+          <div id="bc-count-line" style="font-size:12px;color:var(--text-muted);margin-top:7px">Calculando destinatarios…</div>
         </div>
 
-        <!-- Mensaje -->
-        <div>
-          <div style="font-size:12.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase">Mensaje</div>
-          <textarea id="bc-message" placeholder="Escribe el mensaje que recibirán todos los contactos seleccionados…" rows="5" style="width:100%;resize:vertical;padding:12px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.55;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-          <div id="bc-char-count" style="font-size:11px;color:var(--text-dim);text-align:right;margin-top:4px">0 / 4096</div>
+        <!-- Panel: Mensaje libre -->
+        <div id="bc-panel-libre" style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Mensaje</div>
+            <textarea id="bc-message" placeholder="Escribe el mensaje que recibirán todos los contactos seleccionados…" rows="5" style="width:100%;resize:vertical;padding:12px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;line-height:1.55;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            <div id="bc-char-count" style="font-size:11px;color:var(--text-dim);text-align:right;margin-top:4px">0 / 4096</div>
+          </div>
+          <div style="display:flex;gap:9px;padding:10px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px">
+            <i class="fa fa-clock" style="color:#f59e0b;margin-top:2px;flex-shrink:0;font-size:12px"></i>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.5"><strong style="color:var(--text)">Ventana de 24h:</strong> WhatsApp solo permite mensajes de texto libre a contactos que hayan escrito en las últimas 24 horas. Para contactos fuera de esa ventana, usa una <strong style="color:var(--text)">plantilla aprobada</strong>.</div>
+          </div>
         </div>
 
-        <!-- Aviso WhatsApp -->
-        <div style="display:flex;gap:9px;padding:10px 12px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px">
-          <i class="fa fa-circle-info" style="color:#f59e0b;margin-top:2px;flex-shrink:0;font-size:13px"></i>
-          <div style="font-size:12px;color:var(--text-muted);line-height:1.5">Solo se entregarán mensajes a contactos que hayan escrito en las últimas <strong style="color:var(--text)">24 horas</strong>. Fuera de esa ventana, WhatsApp bloquea el envío.</div>
+        <!-- Panel: Plantilla -->
+        <div id="bc-panel-tpl" style="display:none;flex-direction:column;gap:12px">
+          <!-- Lista plantillas -->
+          <div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Selecciona una plantilla</div>
+            <div id="bc-tpl-list" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto">
+              <div style="text-align:center;padding:20px 0;color:var(--text-dim);font-size:13px">Cargando plantillas…</div>
+            </div>
+          </div>
+
+          <!-- Preview de plantilla seleccionada -->
+          <div id="bc-tpl-preview" style="display:none;padding:12px 14px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase">Vista previa del mensaje</div>
+            <div id="bc-tpl-preview-text" style="font-size:13px;color:var(--text);line-height:1.55;white-space:pre-wrap"></div>
+          </div>
+
+          <!-- Info aprobación Meta -->
+          <div style="padding:12px 14px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:12px;display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:12px;font-weight:700;color:#818cf8;display:flex;align-items:center;gap:6px"><i class="fa fa-circle-info" style="font-size:11px"></i> ¿Qué necesita una plantilla para aprobarse?</div>
+            <ul style="margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px">
+              <li style="font-size:12px;color:var(--text-muted);line-height:1.4"><strong style="color:var(--text)">Nombre en minúsculas</strong> con guiones bajos, sin espacios (ej. <code style="font-size:11px;background:var(--input-bg);padding:1px 4px;border-radius:4px">bienvenida_cliente</code>).</li>
+              <li style="font-size:12px;color:var(--text-muted);line-height:1.4"><strong style="color:var(--text)">Sin lenguaje promocional</strong> en categorías UTILITY o AUTHENTICATION — reserva ese tono para MARKETING.</li>
+              <li style="font-size:12px;color:var(--text-muted);line-height:1.4"><strong style="color:var(--text)">Variables con formato correcto:</strong> usa <code style="font-size:11px;background:var(--input-bg);padding:1px 4px;border-radius:4px">{{1}}</code>, <code style="font-size:11px;background:var(--input-bg);padding:1px 4px;border-radius:4px">{{2}}</code> — nunca <code style="font-size:11px;background:var(--input-bg);padding:1px 4px;border-radius:4px">[nombre]</code>.</li>
+              <li style="font-size:12px;color:var(--text-muted);line-height:1.4"><strong style="color:var(--text)">Enviada desde Meta Business Manager</strong> — las plantillas con estado "Sin enviar a Meta" aún no existen en los servidores de Meta; créalas en <em>WhatsApp Manager → Plantillas de mensaje</em>.</li>
+            </ul>
+          </div>
         </div>
 
       </div>
 
       <!-- Footer -->
-      <div style="padding:0 24px 20px;display:flex;gap:10px;align-items:center">
+      <div style="padding:14px 24px 18px;display:flex;gap:10px;align-items:center;border-top:1px solid var(--border);flex-shrink:0">
         <button onclick="closeBroadcast()" style="flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
         <button id="bc-send-btn" onclick="sendBroadcast()" class="btn-primary" style="flex:2;padding:11px;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px">
           <i class="fa fa-paper-plane"></i>
-          <span id="bc-send-label">Enviar</span>
+          <span id="bc-send-label">Enviar mensaje</span>
         </button>
       </div>
     </div>
