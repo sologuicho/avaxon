@@ -7154,10 +7154,33 @@
 
   let integModalProvider = null;
 
+  // Única fuente de verdad para "la org actual": el selector de super_admin
+  // (state.currentOrgId, null = "Todos los clientes") si existe, si no la org
+  // del propio usuario. Null significa "ninguna org concreta seleccionada".
+  function getActiveOrgId() {
+    return state.currentOrgId || state.userOrgId || null;
+  }
+
+  // true cuando no hay una org concreta para operar sobre integrations
+  // (super_admin viendo "Todos los clientes"). Conectar/editar no tiene
+  // sentido sin una org destino.
+  function isIntegrationsOrgBlocked() {
+    return !getActiveOrgId();
+  }
+
   // ── Load integrations from DB ────────────────────────────────────────────
   async function loadIntegrations() {
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) return;
+    const orgId = getActiveOrgId();
+    if (!orgId) {
+      // "Todos los clientes": no hay org destino, no se puede mostrar estado
+      // de conexión real. Se limpia para no arrastrar datos de otra org.
+      state.integrations = {};
+      updateGcalUI();
+      updateIntegPill('google_sheets', 'gsheets-integ-pill');
+      updateIntegPill('stripe',        'stripe-integ-pill');
+      updateIntegPill('zapier',        'zapier-integ-pill');
+      return;
+    }
     const { data } = await sb.from('integrations').select('provider,status,config,connected_at').eq('organization_id', orgId);
     state.integrations = {};
     (data || []).forEach(r => { state.integrations[r.provider] = r; });
@@ -7178,23 +7201,41 @@
     }
   }
 
-  async function saveIntegrationToDB(provider, status, credentials, config) {
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) return;
-    const { error } = await sb.from('integrations').upsert({
-      organization_id: orgId,
-      provider,
-      status,
-      credentials: credentials ?? null,
-      config: config ?? null,
-      connected_at: status === 'connected' ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'organization_id,provider' });
-    if (!error) {
-      if (!state.integrations) state.integrations = {};
-      state.integrations[provider] = { provider, status, config, connected_at: new Date().toISOString() };
+  // Única puerta de salida hacia la Edge Function integration-save — todo
+  // guardado/desconexión de integrations pasa por aquí (la BD ya no acepta
+  // insert/update directo del cliente, ver RLS).
+  async function callIntegrationSave(payload) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return { error: 'Tu sesión expiró, vuelve a iniciar sesión' };
+      const resp = await fetch(EDGE_BASE + '/integration-save', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) return { error: data.error || ('Error ' + resp.status) };
+      return data;
+    } catch (e) {
+      return { error: 'Error de red guardando la integración' };
     }
-    return error;
+  }
+
+  async function saveIntegrationToDB(provider, status, credentials, config) {
+    const orgId = getActiveOrgId();
+    if (!orgId) return 'Selecciona un cliente';
+    const payload = status === 'disconnected'
+      ? { organization_id: orgId, provider, action: 'disconnect' }
+      : { organization_id: orgId, provider, action: 'connect', credentials, config };
+    const result = await callIntegrationSave(payload);
+    if (result.error) return result.error;
+    if (!state.integrations) state.integrations = {};
+    state.integrations[provider] = {
+      provider, status,
+      config: status === 'disconnected' ? null : config,
+      connected_at: status === 'disconnected' ? null : new Date().toISOString(),
+    };
+    return null;
   }
 
   // ── Google OAuth (Calendar + Sheets, una sola conexión) ──────────────────
@@ -7205,6 +7246,7 @@
   // Google; el intercambio de code→tokens y el guardado en `integrations`
   // ocurre server-side en google-oauth-callback.
   async function gcalConnect() {
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente para conectar'); return; }
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { showToast('Tu sesión expiró, vuelve a iniciar sesión'); return; }
@@ -7282,13 +7324,23 @@
       if (bannerSub)   bannerSub.textContent   = 'Cuenta: ' + email + ' · Las citas se sincronizan automáticamente';
       if (bannerBtn)   { bannerBtn.className = 'gcal-banner-btn ok'; bannerBtn.textContent = 'Ver conexión'; bannerBtn.onclick = navigateToGcalConexion; }
     } else {
+      const orgBlocked = isIntegrationsOrgBlocked();
       if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado'; }
       if (integPill) { integPill.className = 'pill pill-amber no-dot'; integPill.textContent = 'No conectado'; }
       if (btn) {
-        btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google';
-        btn.onclick = gcalConnect;
-        btn.style.cssText = 'font-size:13px;padding:7px 16px';
-        btn.className = 'btn-primary';
+        if (orgBlocked) {
+          btn.innerHTML = 'Selecciona un cliente';
+          btn.onclick = null;
+          btn.disabled = true;
+          btn.style.cssText = 'font-size:13px;padding:7px 16px;opacity:.55;cursor:not-allowed';
+          btn.className = 'btn-primary';
+        } else {
+          btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google';
+          btn.onclick = gcalConnect;
+          btn.disabled = false;
+          btn.style.cssText = 'font-size:13px;padding:7px 16px';
+          btn.className = 'btn-primary';
+        }
       }
       if (detStatus)  { detStatus.textContent = 'Sin conexión'; detStatus.style.color = 'var(--text-muted)'; }
       if (detAccount) { detAccount.textContent = '—'; detAccount.style.color = 'var(--text-muted)'; }
@@ -7303,8 +7355,15 @@
 
   async function gcalDisconnect() {
     if (!confirm('¿Desconectar Google? Esto desconecta Calendar y Sheets. Las citas ya creadas no se eliminarán.')) return;
-    await saveIntegrationToDB('google_calendar', 'disconnected', null, null);
-    await saveIntegrationToDB('google_sheets', 'disconnected', null, null);
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente'); return; }
+    const orgId = getActiveOrgId();
+    const result = await callIntegrationSave({
+      organization_id: orgId, providers: ['google_calendar', 'google_sheets'], action: 'disconnect',
+    });
+    if (result.error) { showToast('Error al desconectar: ' + result.error, 4000); return; }
+    if (!state.integrations) state.integrations = {};
+    state.integrations['google_calendar'] = { provider: 'google_calendar', status: 'disconnected', config: null, connected_at: null };
+    state.integrations['google_sheets']   = { provider: 'google_sheets',   status: 'disconnected', config: null, connected_at: null };
     updateGcalUI();
     updateIntegPill('google_sheets', 'gsheets-integ-pill');
     showToast('Google desconectado');
@@ -7350,10 +7409,22 @@
 
     const disconnectBtn = document.getElementById('integ-modal-disconnect-btn');
     const saveBtn       = document.getElementById('integ-modal-save-btn');
+    const body = document.getElementById('integ-modal-body');
+
+    if (isIntegrationsOrgBlocked()) {
+      disconnectBtn.style.display = 'none';
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Selecciona un cliente';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:10px;font-size:13px;color:var(--text);line-height:1.6">
+          Selecciona un cliente específico en el menú de arriba (no "Todos los clientes") para conectar esta integración.
+        </div>`;
+      document.getElementById('integ-modal').style.display = 'flex';
+      return;
+    }
+    saveBtn.disabled = false;
     disconnectBtn.style.display = connected ? 'inline-flex' : 'none';
     saveBtn.textContent = connected ? 'Reconectar' : 'Conectar';
-
-    const body = document.getElementById('integ-modal-body');
 
     if (provider === 'google_sheets') {
       const sheetId = integ?.config?.spreadsheet_id || '';
@@ -7419,6 +7490,7 @@
   async function saveIntegModal() {
     const provider = integModalProvider;
     if (!provider) return;
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente para conectar'); return; }
     const errEl = document.getElementById('integ-modal-error');
     errEl.style.display = 'none';
     const saveBtn = document.getElementById('integ-modal-save-btn');
@@ -7435,13 +7507,14 @@
           errEl.style.display = 'block';
           return;
         }
-        const orgId = state.currentOrgId || state.userOrgId;
-        const newConfig = { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId };
-        const { error: sheetErr } = await sb.from('integrations')
-          .update({ config: newConfig, updated_at: new Date().toISOString() })
-          .eq('organization_id', orgId).eq('provider', 'google_sheets');
-        if (sheetErr) { errEl.textContent = 'Error al guardar: ' + sheetErr.message; errEl.style.display = 'block'; return; }
-        state.integrations['google_sheets'] = { ...gsheetsInteg, config: newConfig };
+        const orgId = getActiveOrgId();
+        if (!orgId) { errEl.textContent = 'Selecciona un cliente'; errEl.style.display = 'block'; return; }
+        const result = await callIntegrationSave({
+          organization_id: orgId, provider: 'google_sheets', action: 'update_config',
+          config: { spreadsheet_id: sheetId },
+        });
+        if (result.error) { errEl.textContent = 'Error al guardar: ' + result.error; errEl.style.display = 'block'; return; }
+        state.integrations['google_sheets'] = { ...gsheetsInteg, config: result.config || { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId } };
         updateIntegPill('google_sheets', 'gsheets-integ-pill');
         closeIntegModal();
         showToast('Hoja de cálculo guardada');
@@ -7450,7 +7523,8 @@
         const pk = document.getElementById('im-stripe-pk')?.value?.trim();
         const sk = document.getElementById('im-stripe-sk')?.value?.trim();
         if (!pk || !sk) { errEl.textContent = 'Ingresa ambas claves de Stripe'; errEl.style.display = 'block'; return; }
-        await saveIntegrationToDB('stripe', 'connected', { publishable_key: pk, secret_key: sk }, {});
+        const stripeErr = await saveIntegrationToDB('stripe', 'connected', { publishable_key: pk, secret_key: sk }, {});
+        if (stripeErr) { errEl.textContent = 'Error: ' + stripeErr; errEl.style.display = 'block'; return; }
         updateIntegPill('stripe', 'stripe-integ-pill');
         closeIntegModal();
         showToast('Stripe conectado correctamente');
@@ -7462,40 +7536,22 @@
           errEl.style.display = 'block';
           return;
         }
-        const orgId = state.currentOrgId || state.userOrgId;
-        const { data: existingZap } = await sb.from('integrations')
-          .select('credentials').eq('organization_id', orgId).eq('provider', 'zapier').maybeSingle();
-        const hasKey = !!existingZap?.credentials?.api_key_hash;
+        const orgId = getActiveOrgId();
+        if (!orgId) { errEl.textContent = 'Selecciona un cliente'; errEl.style.display = 'block'; return; }
 
-        let newApiKey = null;
-        let credentials = existingZap?.credentials ?? null;
-        if (!hasKey) {
-          newApiKey = 'avx_' + Array.from(crypto.getRandomValues(new Uint8Array(24)))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
-          const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newApiKey));
-          const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-          credentials = { api_key_hash: hashHex };
-        }
-
-        const { error: zapErr } = await sb.from('integrations').upsert({
-          organization_id: orgId,
-          provider: 'zapier',
-          status: 'connected',
-          credentials,
+        const result = await callIntegrationSave({
+          organization_id: orgId, provider: 'zapier', action: 'connect',
           config: { webhook_url: url },
-          connected_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'organization_id,provider' });
-
-        if (zapErr) { errEl.textContent = 'Error: ' + zapErr.message; errEl.style.display = 'block'; return; }
+        });
+        if (result.error) { errEl.textContent = 'Error: ' + result.error; errEl.style.display = 'block'; return; }
 
         if (!state.integrations) state.integrations = {};
         state.integrations['zapier'] = { provider: 'zapier', status: 'connected', config: { webhook_url: url }, connected_at: new Date().toISOString() };
         updateIntegPill('zapier', 'zapier-integ-pill');
         closeIntegModal();
 
-        if (newApiKey) {
-          showZapierApiKeyModal(newApiKey);
+        if (result.api_key) {
+          showZapierApiKeyModal(result.api_key);
         } else {
           showToast('Zapier actualizado correctamente');
         }
@@ -7509,7 +7565,9 @@
   async function disconnectIntegModal() {
     const provider = integModalProvider;
     if (!provider || !confirm('¿Desconectar esta integración?')) return;
-    await saveIntegrationToDB(provider, 'disconnected', null, null);
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente'); return; }
+    const err = await saveIntegrationToDB(provider, 'disconnected', null, null);
+    if (err) { showToast('Error al desconectar: ' + err, 4000); return; }
     const pillIds = { google_sheets: 'gsheets-integ-pill', stripe: 'stripe-integ-pill', zapier: 'zapier-integ-pill' };
     if (pillIds[provider]) updateIntegPill(provider, pillIds[provider]);
     closeIntegModal();
