@@ -3053,7 +3053,7 @@
     $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
 
     let q = sb.from('conversations')
-      .select('id, status, created_at, updated_at, assigned_to, profiles!conversations_assigned_to_fkey(id, full_name), contacts(id, name, phone, email, status, tags)')
+      .select('id, status, created_at, updated_at, assigned_to, contacts(id, name, phone, email, status, tags)')
       .order('updated_at', { ascending: false });
     if (orgId) q = q.eq('organization_id', orgId);
     const { data: convs } = await q;
