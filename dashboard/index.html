@@ -3730,6 +3730,11 @@
   }
 
   async function finishBootstrap(profileData) {
+    // Update sidebar user name with full_name if available
+    if (profileData?.full_name && $('sidebar-user-name')) {
+      $('sidebar-user-name').textContent = profileData.full_name;
+      $('sidebar-user-avatar').textContent = initials(profileData.full_name);
+    }
     if (state.isSuperAdmin) {
       $('org-switcher-wrap').style.display = 'block';
       $('nav-admin-link').style.display = 'flex';
