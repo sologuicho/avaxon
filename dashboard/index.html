@@ -6712,10 +6712,12 @@
       <!-- Body scrollable -->
       <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
 
-        <!-- Aviso sin org -->
-        <div id="bc-no-org-warn" style="display:none;align-items:center;gap:10px;padding:12px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px">
-          <i class="fa fa-triangle-exclamation" style="color:#f59e0b;font-size:14px;flex-shrink:0"></i>
-          <span style="font-size:12.5px;color:var(--text-muted);line-height:1.4">Selecciona una <strong style="color:var(--text)">organización</strong> en el menú superior antes de enviar.</span>
+        <!-- Selector de org para super_admin (cuando no hay org seleccionada) -->
+        <div id="bc-org-picker" style="display:none;flex-direction:column;gap:8px">
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">Cliente</div>
+          <select id="bc-org-select" onchange="bcPickOrg(this.value)" style="width:100%;padding:10px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer;appearance:auto">
+            <option value="">— Selecciona un cliente —</option>
+          </select>
         </div>
 
         <!-- Modo tabs -->
