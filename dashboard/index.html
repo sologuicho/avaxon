@@ -4890,7 +4890,7 @@
     $('camp-list-wrap').style.display = 'none'
     $('camp-detail').style.display = 'block'
     $('camp-kpis').style.display = 'none'
-    document.querySelector('#view-campanas .view-header button').style.display = 'none'
+    const nb = $('camp-nueva-btn'); if (nb) nb.style.display = 'none'
     await refreshCampaignDetail()
   }
 
