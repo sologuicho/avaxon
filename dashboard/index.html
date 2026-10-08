@@ -3190,10 +3190,9 @@
     errEl.style.display = 'none';
     if (!title) { errEl.textContent = 'El título es obligatorio.'; errEl.style.display = 'block'; return; }
     if (!dt)    { errEl.textContent = 'Selecciona una fecha y hora.'; errEl.style.display = 'block'; return; }
-    const orgId = state.currentOrgId || state.userOrgId;
     btn.disabled = true; btn.textContent = 'Guardando…';
     const { error } = await sb.from('appointments').insert({
-      organization_id: orgId,
+      organization_id: _qapt_org_id,
       contact_id:      _qapt_contact_id || undefined,
       title,
       scheduled_at:    new Date(dt).toISOString(),
