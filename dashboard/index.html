@@ -5000,7 +5000,7 @@
             <div class="avatar" style="width:26px;height:26px;font-size:11px;flex-shrink:0">${initials(c.name || c.phone)}</div>
             <div>
               <div class="pipeline-card-name">${c.name || '—'}</div>
-              <div class="pipeline-card-phone">${c.phone || ''}</div>
+              <div class="pipeline-card-phone">${maskPhone(c.phone)}</div>
             </div>
           </div>
           ${c.tags?.length ? `<div class="tags-wrap" style="margin-bottom:4px">${c.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}</div>` : ''}
