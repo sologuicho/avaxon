@@ -7808,6 +7808,15 @@
               </label>
               <div id="wiz-csv-info" style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600"></div>
             </div>
+            <!-- Manual contact picker -->
+            <div id="wiz-manual-area" style="display:none;margin-top:10px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <input id="wiz-manual-search" type="text" placeholder="Buscar por nombre o teléfono…" oninput="loadWizContactsList(this.value)" style="flex:1;padding:8px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:12.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                <button onclick="selectAllWizContacts()" title="Seleccionar todos" style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:11.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Todos</button>
+                <button onclick="clearAllWizContacts()" title="Limpiar selección" style="padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:11.5px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap" onmouseover="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">Limpiar</button>
+              </div>
+              <div id="wiz-manual-list" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;background:var(--input-bg)"></div>
+            </div>
           </div>
         </div>
 
