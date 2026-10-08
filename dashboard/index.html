@@ -263,44 +263,55 @@
     .nav-badge-blue  { background: #2c455d; color: #c3cedb; }
 
     /* Sidebar bottom */
-    .sidebar-bottom { padding: 12px 12px 18px; border-top: 1px solid var(--sidebar-border); flex-shrink: 0; }
+    .sidebar-bottom { padding: 0 18px 28px; flex-shrink: 0; margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
     .agent-status-widget {
-      display: flex; align-items: center; gap: 8px; padding: 9px 10px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid var(--sidebar-border); border-radius: 8px;
-      margin-bottom: 10px;
+      padding: 14px; border-radius: 11px;
+      background: #131c27;
+      border: 1px solid #26333f;
     }
+    .agent-status-widget-label {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: #6f8399;
+    }
+    .agent-status-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     .agent-dot {
-      width: 7px; height: 7px; background: var(--accent); border-radius: 50%;
+      width: 8px; height: 8px; background: #10b981; border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.22);
       flex-shrink: 0; animation: avx-pulse 2s ease-in-out infinite;
     }
-    .agent-dot.paused { background: var(--amber); animation: none; }
-    .agent-status-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600; color: var(--sidebar-muted); flex: 1; }
+    .agent-dot.paused { background: var(--amber); box-shadow: none; animation: none; }
+    .agent-status-label { font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600; color: #e7edf4; flex: 1; }
+    .agent-status-sub { color: #7f93a8; font-size: 12px; margin-top: 6px; }
     .agent-toggle-btn {
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
-      color: var(--accent); background: rgba(37,211,102,.10); border: 1px solid rgba(37,211,102,.20); border-radius: 8px; cursor: pointer; padding: 3px 8px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
+      color: #10b981; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); border-radius: 6px; cursor: pointer; padding: 3px 8px;
       transition: all .15s;
     }
-    .agent-toggle-btn:hover { background: rgba(37,211,102,.18); color: var(--accent-hover); }
-    .sidebar-user { display: flex; align-items: center; gap: 8px; }
+    .agent-toggle-btn:hover { background: rgba(16,185,129,.22); }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 8px 6px; }
     .sidebar-user-avatar {
-      width: 28px; height: 28px; background: var(--accent-800);
-      border-radius: 8px;
+      width: 30px; height: 30px; background: #5980a6;
+      border-radius: 99px;
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700;
-      color: #fff; flex-shrink: 0;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+      color: #0e1b26; flex-shrink: 0;
+    }
+    .sidebar-user-info { min-width: 0; flex: 1; }
+    .sidebar-user-name {
+      font-size: 13px; font-weight: 600; color: #e7edf4;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .sidebar-user-email {
-      flex: 1; font-size: 11px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--sidebar-dim);
+      font-size: 12px; color: #6f8399;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .btn-signout {
-      background: none; border: 1px solid var(--sidebar-border);
-      color: var(--sidebar-dim);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600;
+      background: none; border: 1px solid #1e2e40;
+      color: #4a6070;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
       border-radius: 6px;
       padding: 4px 8px; cursor: pointer; transition: all 0.15s;
-      white-space: nowrap; flex-shrink: 0;
+      white-space: nowrap; flex-shrink: 0; letter-spacing: 0.04em;
     }
     .btn-signout:hover { border-color: rgba(239,68,68,0.5); color: #ef4444; }
 
