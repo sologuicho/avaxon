@@ -1641,7 +1641,7 @@
               <div class="apt-empty">Selecciona un día para ver citas</div>
             </div>
             <div class="cal-form-wrap">
-              <div class="cal-form-title">Nueva cita</div>
+              <div class="cal-form-title" id="cal-form-title">Nueva cita</div>
               <div class="form-grid">
                 <input class="form-input-cal" type="text" id="cal-title" placeholder="Título de la cita" />
                 <input class="form-input-cal" type="text" id="cal-service" placeholder="Servicio (opcional)" />
@@ -2427,6 +2427,26 @@
                 <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Industria</label>
                 <input id="cfg-org-industry" type="text" placeholder="Ej: Clínica dental, Agencia de autos…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
               </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Zona horaria</label>
+                <select id="cfg-org-timezone" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+                  <option value="America/Matamoros">Matamoros / Reynosa / Nuevo Laredo (CT)</option>
+                  <option value="America/Mexico_City">Ciudad de México</option>
+                  <option value="America/Monterrey">Monterrey</option>
+                  <option value="America/Cancun">Cancún</option>
+                  <option value="America/Merida">Mérida</option>
+                  <option value="America/Chihuahua">Chihuahua</option>
+                  <option value="America/Hermosillo">Hermosillo</option>
+                  <option value="America/Mazatlan">Mazatlán</option>
+                  <option value="America/Tijuana">Tijuana</option>
+                  <option value="America/Bahia_Banderas">Bahía de Banderas</option>
+                  <option value="America/Chicago">Central (EE.UU.)</option>
+                  <option value="America/New_York">Este (EE.UU.)</option>
+                  <option value="America/Denver">Montaña (EE.UU.)</option>
+                  <option value="America/Los_Angeles">Pacífico (EE.UU.)</option>
+                </select>
+                <span style="font-size:11.5px;color:var(--text-dim);display:block;margin-top:5px">Se usa para interpretar la hora de las citas y para los eventos que se crean en Google Calendar</span>
+              </div>
               <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
                 <button onclick="saveOrgConfig()" class="btn-primary" style="padding:10px 22px;font-size:13.5px">Guardar cambios</button>
                 <span id="cfg-org-saved" style="font-size:13px;font-weight:600;color:var(--accent);opacity:0;transition:opacity .3s">✓ Guardado</span>
@@ -2809,6 +2829,7 @@
     applyOrgSelection(orgId);
     loadDashboard(orgId);
     loadIntegrations();
+    loadOrgTimezone(orgId);
     const activeView = document.querySelector('.nav-item.active');
     const view = activeView?.dataset.view;
     if (view === 'calendario')  loadCalendarMonth();
@@ -3443,15 +3464,25 @@
   window.confirmWaDirectOpen = confirmWaDirectOpen;
 
   // ── Zona horaria de citas (no depender del reloj/zona del navegador) ────────
-  const APPOINTMENT_TIMEZONE = 'America/Matamoros';
+  // Configurable por org (Configuración → General); America/Matamoros es solo
+  // el default hasta que se cargue organizations.timezone o si la org no
+  // definió una.
+  const APPOINTMENT_TIMEZONE_FALLBACK = 'America/Matamoros';
+  function getAppointmentTimezone() { return state.orgTimezone || APPOINTMENT_TIMEZONE_FALLBACK; }
 
-  // year/month(0-11)/day/hour/minute son hora de pared PENSADA en
-  // APPOINTMENT_TIMEZONE (lo que el usuario escribió/seleccionó) — devuelve el
-  // instante UTC real que le corresponde, sin importar en qué zona horaria
-  // esté configurado el navegador de quien usa el dashboard. Funciona
-  // calculando el offset real de esa zona en esa fecha vía Intl (resuelve DST
-  // correctamente) en vez de asumir el offset local del navegador.
-  function zonedWallTimeToUtcIso(year, month, day, hour, minute, timeZone = APPOINTMENT_TIMEZONE) {
+  async function loadOrgTimezone(orgId) {
+    if (!orgId) { state.orgTimezone = APPOINTMENT_TIMEZONE_FALLBACK; return; }
+    const { data } = await sb.from('organizations').select('timezone').eq('id', orgId).maybeSingle();
+    state.orgTimezone = data?.timezone || APPOINTMENT_TIMEZONE_FALLBACK;
+  }
+
+  // year/month(0-11)/day/hour/minute son hora de pared PENSADA en `timeZone`
+  // (lo que el usuario escribió/seleccionó) — devuelve el instante UTC real
+  // que le corresponde, sin importar en qué zona horaria esté configurado el
+  // navegador de quien usa el dashboard. Funciona calculando el offset real
+  // de esa zona en esa fecha vía Intl (resuelve DST correctamente) en vez de
+  // asumir el offset local del navegador.
+  function zonedWallTimeToUtcIso(year, month, day, hour, minute, timeZone = getAppointmentTimezone()) {
     const asUTC = Date.UTC(year, month, day, hour, minute, 0);
     const fmt = new Intl.DateTimeFormat('en-US', {
       timeZone, hourCycle: 'h23',
@@ -3465,12 +3496,29 @@
   }
 
   // Convierte el valor crudo de un <input type="datetime-local"> ("YYYY-MM-
-  // DDTHH:mm"), interpretándolo como hora de pared en APPOINTMENT_TIMEZONE.
-  function datetimeLocalToUtcIso(dtLocalStr, timeZone = APPOINTMENT_TIMEZONE) {
+  // DDTHH:mm"), interpretándolo como hora de pared en la zona de la org.
+  function datetimeLocalToUtcIso(dtLocalStr, timeZone = getAppointmentTimezone()) {
     const [datePart, timePart] = dtLocalStr.split('T');
     const [y, m, d] = datePart.split('-').map(Number);
     const [hh, mm] = (timePart || '00:00').split(':').map(Number);
     return zonedWallTimeToUtcIso(y, m - 1, d, hh, mm, timeZone);
+  }
+
+  // Inverso: dado un instante UTC guardado, devuelve sus componentes de hora
+  // de pared (año/mes 0-11/día/hora/minuto) tal como se ven en `timeZone` —
+  // para repoblar un formulario de edición sin pasar por el reloj local del
+  // navegador.
+  function utcIsoToZonedParts(iso, timeZone = getAppointmentTimezone()) {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone, hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit',
+    });
+    const parts = fmt.formatToParts(new Date(iso)).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+    return {
+      year: +parts.year, month: +parts.month - 1, day: +parts.day,
+      hour: +parts.hour, minute: +parts.minute,
+    };
   }
 
   // ── Quick appointment modal ────────────────────────────────────────────────
@@ -3531,7 +3579,7 @@
     });
     if (newAppt?.id) {
       btn.textContent = 'Sincronizando con Google…';
-      await syncAppointmentToGoogleCalendar(_qapt_org_id, newAppt.id);
+      await syncAppointmentWithGoogle(_qapt_org_id, newAppt.id, 'create');
     }
     btn.disabled = false; btn.textContent = 'Guardar cita';
     closeQuickAptModal();
@@ -4405,10 +4453,12 @@
       }
       applyOrgSelection(initialOrgId);
       await loadDashboard(initialOrgId);
+      await loadOrgTimezone(initialOrgId);
     } else {
       const orgId = state.userOrgId;
       state.currentOrgId = orgId;
       await loadDashboard(orgId);
+      await loadOrgTimezone(orgId);
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
@@ -4484,6 +4534,7 @@
     state.userOrgId = p?.organization_id ?? state.userOrgId;
     state.currentOrgId = state.userOrgId;
     await loadDashboard(state.currentOrgId);
+    await loadOrgTimezone(state.currentOrgId);
     loadConversaciones();
     loadIntegrations();
     if (!p?.onboarding_done_at) {
@@ -6570,10 +6621,11 @@
   async function loadOrgConfig() {
     const orgId = state.currentOrgId || state.userOrgId
     if (!orgId) return
-    const { data } = await sb.from('organizations').select('name,industry').eq('id', orgId).single()
+    const { data } = await sb.from('organizations').select('name,industry,timezone').eq('id', orgId).single()
     if (data) {
       if ($('cfg-org-name'))     $('cfg-org-name').value     = data.name     ?? ''
       if ($('cfg-org-industry')) $('cfg-org-industry').value = data.industry ?? ''
+      if ($('cfg-org-timezone')) $('cfg-org-timezone').value = data.timezone || APPOINTMENT_TIMEZONE_FALLBACK
     }
   }
 
@@ -6582,7 +6634,9 @@
     if (!orgId) return
     const name     = ($('cfg-org-name').value     || '').trim()
     const industry = ($('cfg-org-industry').value || '').trim()
-    await sb.from('organizations').update({ name, industry, updated_at: new Date().toISOString() }).eq('id', orgId)
+    const timezone = $('cfg-org-timezone').value || APPOINTMENT_TIMEZONE_FALLBACK
+    await sb.from('organizations').update({ name, industry, timezone, updated_at: new Date().toISOString() }).eq('id', orgId)
+    state.orgTimezone = timezone
     const msg = $('cfg-org-saved')
     if (msg) { msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 2000) }
   }
@@ -6792,6 +6846,7 @@
     month: new Date().getMonth(),
     selectedDate: new Date(),
     appointments: [],
+    editingId: null,
   };
 
   function calDateKey(d) {
@@ -6809,7 +6864,7 @@
     const end   = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
     let query = sb.from('appointments')
-      .select('id,title,service,scheduled_at,notes,status')
+      .select('id,title,service,scheduled_at,notes,status,organization_id')
       .gte('scheduled_at', start)
       .lte('scheduled_at', end)
       .order('scheduled_at', { ascending: true });
@@ -6895,7 +6950,7 @@
       const t   = new Date(a.scheduled_at).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
       const svc = a.service ? `<span style="font-size:11px;color:var(--text-muted)"> · ${a.service}</span>` : '';
       const cnt = a.notes   ? `<div class="apt-contact">${a.notes}</div>` : '';
-      return `<div class="apt-item">
+      return `<div class="apt-item" data-edit-id="${a.id}" style="cursor:pointer">
         <div class="apt-time">${t}</div>
         <div class="apt-body"><div class="apt-title">${a.title}${svc}</div>${cnt}</div>
         <button class="apt-del" data-id="${a.id}">✕</button>
@@ -6903,8 +6958,44 @@
     }).join('');
 
     box.querySelectorAll('.apt-del').forEach(btn => {
-      btn.addEventListener('click', () => deleteAppointment(btn.dataset.id));
+      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteAppointment(btn.dataset.id); });
     });
+    box.querySelectorAll('.apt-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const a = calView.appointments.find(x => x.id === el.dataset.editId);
+        if (a) startEditAppointment(a);
+      });
+    });
+  }
+
+  function startEditAppointment(a) {
+    calView.editingId = a.id;
+    const parts = utcIsoToZonedParts(a.scheduled_at);
+    const d = new Date(parts.year, parts.month, parts.day);
+    calView.selectedDate = d;
+    calView.year = parts.year; calView.month = parts.month;
+    renderCalGrid();
+    renderDayView(d);
+
+    $('cal-title').value   = a.title || '';
+    $('cal-service').value = a.service || '';
+    $('cal-contact').value = a.notes || '';
+    $('cal-time').value    = String(parts.hour).padStart(2,'0') + ':' + String(parts.minute).padStart(2,'0');
+    $('cal-form-error').style.display = 'none';
+    $('cal-form-title').innerHTML = 'Editar cita <a href="#" id="cal-cancel-edit" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-left:8px">Cancelar</a>';
+    $('cal-cancel-edit').addEventListener('click', (e) => { e.preventDefault(); cancelEditAppointment(); });
+    $('cal-add-btn').textContent = 'Guardar cambios';
+  }
+
+  function cancelEditAppointment() {
+    calView.editingId = null;
+    $('cal-title').value = '';
+    $('cal-service').value = '';
+    $('cal-contact').value = '';
+    $('cal-time').value = '10:00';
+    $('cal-form-error').style.display = 'none';
+    $('cal-form-title').textContent = 'Nueva cita';
+    $('cal-add-btn').textContent = '+ Agregar cita';
   }
 
   async function addAppointment() {
@@ -6914,6 +7005,7 @@
     const time    = $('cal-time').value || '10:00';
     const errEl   = $('cal-form-error');
     const btn     = $('cal-add-btn');
+    const editingId = calView.editingId;
 
     errEl.style.display = 'none';
     if (!title) {
@@ -6935,38 +7027,49 @@
     const sel = calView.selectedDate;
     const scheduledAtIso = zonedWallTimeToUtcIso(sel.getFullYear(), sel.getMonth(), sel.getDate(), hh, mm);
 
-    btn.disabled = true; btn.textContent = 'Guardando…';
+    btn.disabled = true; btn.textContent = editingId ? 'Guardando cambios…' : 'Guardando…';
 
-    const { data: newAppt, error } = await sb.from('appointments').insert({
-      organization_id: orgId,
+    const fields = {
       title,
       service: service || null,
       scheduled_at: scheduledAtIso,
       notes: contact || null,
-      created_by: state.userId,
-    }).select('id').single();
+    };
+
+    let apptId = editingId;
+    let error;
+    if (editingId) {
+      ({ error } = await sb.from('appointments').update(fields).eq('id', editingId));
+    } else {
+      const { data: newAppt, error: insErr } = await sb.from('appointments')
+        .insert({ organization_id: orgId, created_by: state.userId, ...fields })
+        .select('id').single();
+      error = insErr;
+      apptId = newAppt?.id;
+    }
 
     if (error) {
-      btn.disabled = false; btn.textContent = '+ Agregar cita';
+      btn.disabled = false; btn.textContent = editingId ? 'Guardar cambios' : '+ Agregar cita';
       errEl.textContent = 'Error: ' + error.message;
       errEl.style.display = 'block'; return;
     }
 
-    if (newAppt?.id) {
+    if (apptId) {
       btn.textContent = 'Sincronizando con Google…';
-      await syncAppointmentToGoogleCalendar(orgId, newAppt.id);
+      await syncAppointmentWithGoogle(orgId, apptId, editingId ? 'update' : 'create');
     }
-    btn.disabled = false; btn.textContent = '+ Agregar cita';
+    btn.disabled = false;
 
-    $('cal-title').value = '';
-    $('cal-service').value = '';
-    $('cal-contact').value = '';
-    $('cal-time').value = '10:00';
+    cancelEditAppointment();
     await loadCalendarMonth();
   }
 
   async function deleteAppointment(id) {
+    const a = calView.appointments.find(x => x.id === id);
+    const orgId = a?.organization_id || state.currentOrgId || state.userOrgId;
+    if (orgId) await syncAppointmentWithGoogle(orgId, id, 'delete');
     await sb.from('appointments').delete().eq('id', id);
+    if (calView.editingId === id) cancelEditAppointment();
     await loadCalendarMonth();
   }
 
@@ -7506,24 +7609,36 @@
       const sheetId = integ?.config?.spreadsheet_id || '';
       body.innerHTML = `
         <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
-          Usa la misma cuenta de Google conectada en la tarjeta de Google Calendar. Solo falta el ID de tu hoja.
+          Usa la misma cuenta de Google conectada en la tarjeta de Google Calendar. Google solo deja escribir en hojas que Avaxon haya creado — por eso la hoja se crea aquí en vez de pegar el ID de una existente.
         </div>
-        <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">ID de la hoja de cálculo</span>
-          <input id="im-sheet-id" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-            value="${sheetId}"
-            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-          <span style="font-size:11.5px;color:var(--text-dim)">Encuéntralo en la URL de tu Google Sheet: /spreadsheets/d/<strong>ID</strong>/edit</span>
-        </label>
-        ${connected && sheetId ? `
+        ${connected ? `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button type="button" onclick="createGoogleSheet()" id="gsheets-create-btn" class="btn-primary" style="font-size:13px;padding:9px 16px;align-self:flex-start">
+            <i class="fa fa-plus" style="font-size:11px;margin-right:5px"></i>Crear hoja automáticamente
+          </button>
+          <span id="gsheets-create-status" style="font-size:12px;color:var(--text-muted)"></span>
+        </div>` : `
+        <div style="padding:12px 14px;background:rgba(234,179,8,.08);border:1px solid rgba(234,179,8,.25);border-radius:10px;font-size:12.5px;color:var(--text)">
+          Conecta primero tu cuenta de Google desde la tarjeta de Google Calendar.
+        </div>`}
+        ${sheetId ? `
         <div style="display:flex;flex-direction:column;gap:8px;padding:10px 13px;background:var(--page-bg);border:1px solid var(--border);border-radius:10px">
-          <span style="font-size:11.5px;color:var(--text-dim);line-height:1.5">Google solo deja escribir en hojas creadas por Avaxon o elegidas con el picker de Drive — si tu hoja es una existente pegada por ID, estos envíos pueden fallar por permisos. El botón te dice si funcionó.</span>
+          <span style="font-size:12px;color:var(--text-muted)">Hoja activa: <a href="https://docs.google.com/spreadsheets/d/${sheetId}/edit" target="_blank" rel="noopener" style="color:var(--accent)">abrir en Google Sheets</a></span>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" onclick="testGoogleSheetsRow()" id="gsheets-test-btn" style="padding:7px 12px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Enviar fila de prueba</button>
             <button type="button" onclick="exportLeadsToGoogleSheets()" id="gsheets-export-btn" style="padding:7px 12px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Exportar leads ahora</button>
           </div>
-        </div>` : ''}`;
+        </div>` : ''}
+        <details ${sheetId ? '' : 'open'}>
+          <summary style="font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer">Opción avanzada: usar el ID de una hoja existente</summary>
+          <label style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
+            <span style="font-size:12.5px;color:var(--text-muted)">Solo funciona si esa hoja fue creada por Avaxon o compartida explícitamente con la cuenta conectada — si no, fallará con un error de permisos.</span>
+            <input id="im-sheet-id" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
+              value="${sheetId}"
+              style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          </label>
+        </details>`;
     } else if (provider === 'stripe') {
       body.innerHTML = `
         <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
@@ -7700,29 +7815,34 @@
     }
   }
 
-  // Llama a la Edge Function google-calendar para crear el evento de una cita
-  // recién guardada (appointments.id) en el calendario primario de Google de
-  // la org, si está conectado. No es fire-and-forget: el usuario necesita
-  // saber si la sincronización falló, a diferencia de Zapier.
-  async function syncAppointmentToGoogleCalendar(organizationId, appointmentId) {
+  // Llama a la Edge Function google-calendar para crear/actualizar/eliminar
+  // el evento de una cita en el calendario primario de Google de la org, si
+  // está conectado. No es fire-and-forget: el usuario necesita saber si la
+  // sincronización falló, a diferencia de Zapier.
+  const GCAL_SYNC_MESSAGES = {
+    create: { ok: 'Cita guardada y sincronizada con Google Calendar', fail: 'Cita guardada, pero no se sincronizó con Google Calendar' },
+    update: { ok: 'Cita actualizada y sincronizada con Google Calendar', fail: 'Cita actualizada, pero no se sincronizó con Google Calendar' },
+    delete: { ok: null, fail: 'Cita eliminada, pero no se pudo borrar el evento de Google Calendar' },
+  };
+
+  async function syncAppointmentWithGoogle(organizationId, appointmentId, action) {
+    const msgs = GCAL_SYNC_MESSAGES[action] || GCAL_SYNC_MESSAGES.create;
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) return;
       const resp = await fetch(EDGE_BASE + '/google-calendar', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organization_id: organizationId, appointment_id: appointmentId }),
+        body: JSON.stringify({ organization_id: organizationId, appointment_id: appointmentId, action }),
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok || data.ok === false) {
-        if (!data.skipped) {
-          showToast('Cita guardada, pero no se sincronizó con Google Calendar: ' + (data.error || resp.status), 5000);
-        }
-      } else if (data.ok) {
-        showToast('Cita guardada y sincronizada con Google Calendar', 2500);
+        if (!data.skipped) showToast(msgs.fail + ': ' + (data.error || resp.status), 5000);
+      } else if (data.ok && msgs.ok) {
+        showToast(msgs.ok, 2500);
       }
     } catch (e) {
-      showToast('Cita guardada, pero no se pudo sincronizar con Google Calendar', 4000);
+      showToast(msgs.fail, 4000);
     }
   }
 
@@ -7758,6 +7878,43 @@
       return data;
     } catch (e) {
       return { error: 'Error de red exportando a Sheets' };
+    }
+  }
+
+  // Crea "Avaxon - Leads" vía la Edge Function google-sheets-create (usa
+  // spreadsheets.create con el mismo token — por eso sí cae dentro del scope
+  // drive.file, a diferencia de pegar el ID de una hoja ya existente).
+  const SHEET_TITLE_DISPLAY = 'Avaxon - Leads';
+  async function createGoogleSheet() {
+    const btn = $('gsheets-create-btn');
+    const statusEl = $('gsheets-create-status');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:11px;margin-right:5px"></i>Creando…'; }
+    if (statusEl) statusEl.textContent = '';
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { showToast('Tu sesión expiró, vuelve a iniciar sesión'); return; }
+      const orgId = getActiveOrgId();
+      if (!orgId) { showToast('Selecciona un cliente'); return; }
+      const resp = await fetch(EDGE_BASE + '/google-sheets-create', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: orgId }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data.ok === false) {
+        showToast('No se pudo crear la hoja: ' + (data.error || resp.status), 5000);
+        return;
+      }
+      if (!state.integrations) state.integrations = {};
+      const prevConfig = state.integrations['google_sheets']?.config || {};
+      state.integrations['google_sheets'] = { ...(state.integrations['google_sheets'] || {}), status: 'connected', config: { ...prevConfig, spreadsheet_id: data.spreadsheet_id } };
+      showToast('Hoja creada: ' + SHEET_TITLE_DISPLAY);
+      openIntegModal('google_sheets');
+      if (data.url) window.open(data.url, '_blank', 'noopener');
+    } catch (e) {
+      showToast('Error creando la hoja');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-plus" style="font-size:11px;margin-right:5px"></i>Crear hoja automáticamente'; }
     }
   }
 
@@ -7824,6 +7981,7 @@
   window.copyZapierApiKey    = copyZapierApiKey;
   window.testZapierWebhook   = testZapierWebhook;
   window.testGoogleSheetsRow = testGoogleSheetsRow;
+  window.createGoogleSheet  = createGoogleSheet;
   window.exportLeadsToGoogleSheets = exportLeadsToGoogleSheets;
   window.loadDashboard       = loadDashboard;
   window.loadLeads           = loadLeads;
