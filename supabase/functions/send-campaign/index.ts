@@ -68,7 +68,7 @@ Deno.serve(async (req: Request) => {
   // Resolve contacts: if CSV campaign, use campaign_contacts; otherwise fetch from contacts table
   let contacts: { id?: string; phone: string; name?: string }[] = []
 
-  if (camp.source_type === 'csv') {
+  if (camp.source_type === 'csv' || camp.source_type === 'manual') {
     // Read pre-inserted campaign_contacts
     const { data: cc } = await adminSb
       .from('campaign_contacts')
