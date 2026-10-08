@@ -3365,18 +3365,17 @@
     }
   }
 
+  function getLastInboundFromDOM() {
+    const el = Array.from(document.querySelectorAll('.msg-bubble[data-dir="inbound"]')).at(-1)
+    const ts = el?.dataset.ts
+    return ts ? { created_at: ts } : null
+  }
+
   function takeoverChat() {
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.add(convId)
-    // Reload banner state using last known inbound
-    const msgs = document.querySelectorAll('.msg-row.inbound')
-    // Re-read from messages already rendered to get timestamp
-    // Use the stored last inbound time from the dataset we already have
-    const lastInboundEl = Array.from(document.querySelectorAll('.msg-bubble[data-dir="inbound"]')).at(-1)
-    const ts = lastInboundEl?.dataset.ts
-    const fakeInbound = ts ? { created_at: ts } : { created_at: new Date(Date.now() - 60000).toISOString() }
-    renderChatBanner(fakeInbound, convId)
+    renderChatBanner(getLastInboundFromDOM(), convId)
     $('chat-input').focus()
   }
 
@@ -3384,10 +3383,7 @@
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.delete(convId)
-    const lastInboundEl = Array.from(document.querySelectorAll('.msg-bubble[data-dir="inbound"]')).at(-1)
-    const ts = lastInboundEl?.dataset.ts
-    const fakeInbound = ts ? { created_at: ts } : null
-    renderChatBanner(fakeInbound, convId)
+    renderChatBanner(getLastInboundFromDOM(), convId)
   }
 
   window.takeoverChat   = takeoverChat
