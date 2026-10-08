@@ -4372,20 +4372,27 @@
   const bcState = { filter: 'all', busy: false }
 
   function openBroadcast() {
-    const orgId = state.currentOrgId || state.userOrgId
-    if (!orgId) {
-      showToast('Selecciona un cliente en el panel izquierdo antes de hacer un broadcast', 3500)
-      return
-    }
     const modal = $('modal-broadcast')
     if (!modal) return
+    const orgId = state.currentOrgId || state.userOrgId
     $('bc-message').value = ''
     $('bc-char-count').textContent = '0 / 4096'
     $('bc-send-label').textContent = 'Enviar'
     $('bc-send-btn').disabled = false
     setBcFilterActive('all')
+    if (!orgId && state.isSuperAdmin) {
+      $('bc-no-org-warn').style.display = 'flex'
+      $('bc-filter-btns').style.opacity = '.4'
+      $('bc-filter-btns').style.pointerEvents = 'none'
+      $('bc-send-btn').disabled = true
+      $('bc-count-line').textContent = 'Selecciona una organización en el menú superior ↑'
+    } else {
+      $('bc-no-org-warn').style.display = 'none'
+      $('bc-filter-btns').style.opacity = '1'
+      $('bc-filter-btns').style.pointerEvents = 'auto'
+      fetchBcCount()
+    }
     modal.style.display = 'flex'
-    fetchBcCount()
   }
 
   function closeBroadcast() {
