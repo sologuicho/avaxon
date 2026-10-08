@@ -4777,6 +4777,491 @@
   window.selectBcTemplate   = selectBcTemplate
   window.bcPickOrg          = bcPickOrg
 
+  // ── Campañas ──────────────────────────────────────────────────────────────
+  const CAMP_STATUS = {
+    draft:     { label: 'Borrador',   color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    running:   { label: 'En curso',   color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
+    paused:    { label: 'Pausada',    color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
+    completed: { label: 'Completada', color: '#818cf8', bg: 'rgba(129,140,248,.12)' },
+    cancelled: { label: 'Cancelada',  color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
+  }
+  const CAMP_CONTACT_STATUS = {
+    pending:   { label: 'Pendiente',  color: '#64748b' },
+    sent:      { label: 'Enviado',    color: '#22c55e' },
+    delivered: { label: 'Entregado',  color: '#34d399' },
+    read:      { label: 'Leído',      color: '#818cf8' },
+    responded: { label: 'Respondió',  color: '#f59e0b' },
+    failed:    { label: 'Fallido',    color: '#f87171' },
+    optout:    { label: 'Opt-out',    color: '#94a3b8' },
+  }
+
+  let campState = { currentCampaignId: null, allCampaigns: [], wizData: {}, csvData: null }
+
+  function campOrgId() {
+    let id = state.currentOrgId || state.userOrgId
+    if (!id && state.isSuperAdmin && state.allOrgs?.length) id = state.allOrgs[0].id
+    return id || null
+  }
+
+  async function loadCampanas() {
+    const orgId = campOrgId()
+    const list = $('camp-list')
+    const empty = $('camp-empty')
+    if (!orgId) {
+      if (list)  list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">Selecciona un cliente primero</div>'
+      if (empty) empty.style.display = 'none'
+      return
+    }
+    const { data } = await sb.from('campaigns').select('*').eq('organization_id', orgId).order('created_at', { ascending: false })
+    campState.allCampaigns = data ?? []
+    updateCampKpis(campState.allCampaigns)
+    renderCampaignList(campState.allCampaigns)
+  }
+
+  function updateCampKpis(campaigns) {
+    const active    = campaigns.filter(c => c.status === 'running').length
+    const sent      = campaigns.reduce((s, c) => s + (c.sent_count || 0), 0)
+    const responded = campaigns.reduce((s, c) => s + (c.responded_count || 0), 0)
+    const rate      = sent > 0 ? Math.round((responded / sent) * 100) : 0
+    const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : String(n)
+    if ($('camp-kpi-active'))    $('camp-kpi-active').textContent    = active
+    if ($('camp-kpi-sent'))      $('camp-kpi-sent').textContent      = fmt(sent)
+    if ($('camp-kpi-responded')) $('camp-kpi-responded').textContent = fmt(responded)
+    if ($('camp-kpi-rate'))      $('camp-kpi-rate').textContent      = rate + '%'
+  }
+
+  function renderCampaignList(campaigns) {
+    const list  = $('camp-list')
+    const empty = $('camp-empty')
+    if (!list) return
+    if (!campaigns.length) {
+      list.innerHTML = ''
+      if (empty) empty.style.display = 'block'
+      return
+    }
+    if (empty) empty.style.display = 'none'
+    list.innerHTML = campaigns.map(c => {
+      const st      = CAMP_STATUS[c.status] ?? CAMP_STATUS.draft
+      const total   = c.total_contacts || 0
+      const sent    = c.sent_count     || 0
+      const pct     = total > 0 ? Math.round((sent / total) * 100) : 0
+      const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''
+      const typeIcon = c.message_type === 'template' ? '<i class="fa fa-rectangle-list" style="font-size:10px;margin-right:4px"></i>' : '<i class="fa fa-pen-to-square" style="font-size:10px;margin-right:4px"></i>'
+      const typeLbl  = c.message_type === 'template' ? 'Plantilla' : 'Mensaje libre'
+      return `<div class="card bp" style="padding:18px 20px;cursor:pointer;transition:border-color .15s" onclick="openCampaignDetail('${c.id}')" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+        <div style="display:flex;align-items:flex-start;gap:14px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-size:14px;font-weight:700;color:var(--text)">${c.name}</span>
+              <span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>
+              <span style="font-size:11px;color:var(--text-dim);background:var(--hover-bg);padding:2px 8px;border-radius:6px">${typeIcon}${typeLbl}</span>
+            </div>
+            ${c.description ? `<div style="font-size:12.5px;color:var(--text-muted);margin-bottom:8px">${c.description}</div>` : ''}
+            <div style="margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                <span style="font-size:11.5px;color:var(--text-dim)">${sent.toLocaleString('es-MX')} / ${total.toLocaleString('es-MX')} enviados</span>
+                <span style="font-size:11.5px;font-weight:700;color:var(--accent)">${pct}%</span>
+              </div>
+              <div style="height:5px;background:var(--hover-bg);border-radius:3px;overflow:hidden">
+                <div style="height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),#3b82f6);width:${pct}%"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap">
+              <span style="font-size:11.5px;color:#34d399"><i class="fa fa-check-double" style="font-size:10px;margin-right:3px"></i>${(c.delivered_count||0).toLocaleString('es-MX')} entregados</span>
+              <span style="font-size:11.5px;color:#818cf8"><i class="fa fa-eye" style="font-size:10px;margin-right:3px"></i>${(c.read_count||0).toLocaleString('es-MX')} leídos</span>
+              <span style="font-size:11.5px;color:#f59e0b"><i class="fa fa-reply" style="font-size:10px;margin-right:3px"></i>${(c.responded_count||0).toLocaleString('es-MX')} respondieron</span>
+              ${c.failed_count ? `<span style="font-size:11.5px;color:#f87171"><i class="fa fa-xmark" style="font-size:10px;margin-right:3px"></i>${c.failed_count} fallidos</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:11.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${dateStr}</div>
+            ${c.status === 'running' ? `<button onclick="event.stopPropagation();pauseCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-pause" style="font-size:10px"></i> Pausar</button>` : ''}
+            ${c.status === 'paused' ? `<button onclick="event.stopPropagation();resumeCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-play" style="font-size:10px"></i> Reanudar</button>` : ''}
+            ${c.status === 'draft' ? `<button onclick="event.stopPropagation();launchCampaign('${c.id}')" style="margin-top:8px;padding:5px 12px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif"><i class="fa fa-rocket" style="font-size:10px"></i> Lanzar</button>` : ''}
+          </div>
+        </div>
+      </div>`
+    }).join('')
+  }
+
+  async function openCampaignDetail(id) {
+    campState.currentCampaignId = id
+    $('camp-list-wrap').style.display = 'none'
+    $('camp-detail').style.display = 'block'
+    $('camp-kpis').style.display = 'none'
+    document.querySelector('#view-campanas .view-header button').style.display = 'none'
+    await refreshCampaignDetail()
+  }
+
+  async function refreshCampaignDetail() {
+    const id = campState.currentCampaignId
+    if (!id) return
+    const { data: c } = await sb.from('campaigns').select('*').eq('id', id).single()
+    if (!c) return
+
+    const st    = CAMP_STATUS[c.status] ?? CAMP_STATUS.draft
+    const total = c.total_contacts || 0
+    const sent  = c.sent_count     || 0
+    const pct   = total > 0 ? Math.round((sent / total) * 100) : 0
+    const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : ''
+
+    $('det-name').textContent = c.name
+    $('det-desc').textContent = c.description ?? ''
+    $('det-status-badge').innerHTML  = `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>`
+    $('det-type-badge').innerHTML    = `<span style="font-size:12px;color:var(--text-dim);background:var(--hover-bg);padding:3px 9px;border-radius:6px">${c.message_type === 'template' ? '📋 Plantilla' : '✏️ Mensaje libre'}</span>`
+    $('det-date').textContent = dateStr
+    $('det-progress-text').textContent = `${sent.toLocaleString('es-MX')} / ${total.toLocaleString('es-MX')}`
+    $('det-progress-pct').textContent  = pct + '%'
+    $('det-progress-bar').style.width  = pct + '%'
+    $('det-stat-total').textContent     = total.toLocaleString('es-MX')
+    $('det-stat-sent').textContent      = sent.toLocaleString('es-MX')
+    $('det-stat-delivered').textContent = (c.delivered_count||0).toLocaleString('es-MX')
+    $('det-stat-read').textContent      = (c.read_count||0).toLocaleString('es-MX')
+    $('det-stat-responded').textContent = (c.responded_count||0).toLocaleString('es-MX')
+    $('det-stat-failed').textContent    = (c.failed_count||0).toLocaleString('es-MX')
+
+    // Action buttons
+    const actions = $('det-actions')
+    actions.innerHTML = ''
+    if (c.status === 'draft') {
+      const btn = document.createElement('button')
+      btn.className = 'btn-primary'
+      btn.style.cssText = 'padding:9px 18px;font-size:13px;display:flex;align-items:center;gap:6px'
+      btn.innerHTML = '<i class="fa fa-rocket"></i> Lanzar campaña'
+      btn.onclick = () => launchCampaign(id)
+      actions.appendChild(btn)
+    }
+    if (c.status === 'running') {
+      const btn = document.createElement('button')
+      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
+      btn.innerHTML = '<i class="fa fa-pause"></i> Pausar'
+      btn.onclick = () => pauseCampaign(id)
+      actions.appendChild(btn)
+    }
+    if (c.status === 'paused') {
+      const btn = document.createElement('button')
+      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
+      btn.innerHTML = '<i class="fa fa-play"></i> Reanudar'
+      btn.onclick = () => resumeCampaign(id)
+      actions.appendChild(btn)
+    }
+    if (['running','paused'].includes(c.status)) {
+      const btn = document.createElement('button')
+      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid #f87171;background:rgba(248,113,113,.08);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
+      btn.innerHTML = '<i class="fa fa-stop"></i> Cancelar'
+      btn.onclick = () => cancelCampaign(id)
+      actions.appendChild(btn)
+    }
+
+    // Contacts table
+    const { data: contacts } = await sb.from('campaign_contacts').select('*').eq('campaign_id', id).order('created_at').limit(200)
+    const tbody = $('det-contacts-tbody')
+    if (tbody) {
+      tbody.innerHTML = (contacts || []).map(cc => {
+        const cs  = CAMP_CONTACT_STATUS[cc.status] ?? CAMP_CONTACT_STATUS.pending
+        const ts  = cc.sent_at ? new Date(cc.sent_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'
+        return `<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 20px;color:var(--text);font-weight:500">${cc.name || '—'}</td>
+          <td style="padding:10px 16px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11.5px">${cc.phone}</td>
+          <td style="padding:10px 16px"><span style="font-size:11.5px;font-weight:600;color:${cs.color}">${cs.label}</span></td>
+          <td style="padding:10px 16px;color:var(--text-dim);font-size:11.5px">${ts}</td>
+        </tr>`
+      }).join('') || '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin contactos cargados aún</td></tr>'
+    }
+  }
+
+  function closeCampaignDetail() {
+    campState.currentCampaignId = null
+    $('camp-detail').style.display = 'none'
+    $('camp-list-wrap').style.display = 'block'
+    $('camp-kpis').style.display = 'grid'
+    document.querySelector('#view-campanas .view-header button').style.display = 'flex'
+    loadCampanas()
+  }
+
+  async function launchCampaign(id) {
+    if (!confirm('¿Lanzar la campaña ahora? Se enviarán mensajes a todos los contactos.')) return
+    const btn = event?.currentTarget
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:11px"></i> Lanzando…' }
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-campaign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ campaign_id: id }),
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Error al lanzar')
+      alert(`✓ Campaña lanzada: ${result.sent} enviados, ${result.failed} fallidos`)
+      if (campState.currentCampaignId) await refreshCampaignDetail()
+      else await loadCampanas()
+    } catch (err) {
+      alert('Error: ' + err.message)
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-rocket"></i> Lanzar campaña' }
+    }
+  }
+
+  async function pauseCampaign(id) {
+    await sb.from('campaigns').update({ status: 'paused', updated_at: new Date().toISOString() }).eq('id', id)
+    campState.currentCampaignId ? await refreshCampaignDetail() : await loadCampanas()
+  }
+
+  async function resumeCampaign(id) {
+    await sb.from('campaigns').update({ status: 'running', updated_at: new Date().toISOString() }).eq('id', id)
+    campState.currentCampaignId ? await refreshCampaignDetail() : await loadCampanas()
+  }
+
+  async function cancelCampaign(id) {
+    if (!confirm('¿Cancelar esta campaña? No se puede deshacer.')) return
+    await sb.from('campaigns').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', id)
+    campState.currentCampaignId ? closeCampaignDetail() : await loadCampanas()
+  }
+
+  // ── Wizard de campaña ─────────────────────────────────────────────────────
+  let wizCsvRows = []
+
+  function openCampaignWizard() {
+    campState.wizData = { step: 1, name: '', description: '', source: 'all', messageType: 'template', templateId: null, messageBody: '' }
+    wizCsvRows = []
+    if ($('wiz-name'))        $('wiz-name').value        = ''
+    if ($('wiz-description')) $('wiz-description').value = ''
+    if ($('wiz-body'))        $('wiz-body').value        = ''
+    setWizStep(1)
+    setWizSource('all')
+    setWizMsgType('template')
+    $('modal-camp-wizard').style.display = 'flex'
+    setTimeout(() => $('wiz-name')?.focus(), 80)
+  }
+
+  function closeCampaignWizard() {
+    const m = $('modal-camp-wizard')
+    if (m) m.style.display = 'none'
+  }
+
+  function setWizStep(n) {
+    campState.wizData.step = n
+    ;[1,2].forEach(i => {
+      const pane = $('wiz-pane-' + i)
+      if (pane) pane.style.display = i === n ? 'flex' : 'none'
+    })
+    const bar = $('wiz-step-bar')
+    if (bar) bar.style.width = (n === 1 ? '50%' : '100%')
+    const stepLabel = $('wiz-step-label')
+    if (stepLabel) stepLabel.textContent = `Paso ${n} de 2`
+    const nextBtn = $('wiz-next-btn')
+    if (nextBtn) {
+      if (n === 2) { nextBtn.innerHTML = '<i class="fa fa-rocket"></i> Crear campaña'; nextBtn.onclick = saveCampaignDraft }
+      else         { nextBtn.innerHTML = 'Siguiente <i class="fa fa-arrow-right" style="font-size:11px"></i>'; nextBtn.onclick = wizNext }
+    }
+  }
+
+  async function wizNext() {
+    const name = ($('wiz-name')?.value || '').trim()
+    if (!name) { $('wiz-name')?.focus(); return }
+    campState.wizData.name        = name
+    campState.wizData.description = ($('wiz-description')?.value || '').trim()
+    campState.wizData.source      = campState.wizData.source || 'all'
+    // Load templates for step 2
+    await loadWizTemplates()
+    setWizStep(2)
+  }
+
+  function setWizSource(source) {
+    campState.wizData.source = source
+    const sources = ['all','new','qualified','active_24h','csv']
+    sources.forEach(s => {
+      const btn = $('wiz-src-' + s)
+      if (!btn) return
+      const active = s === source
+      btn.style.border     = active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
+      btn.style.background = active ? 'var(--accent-sub)'         : 'transparent'
+      btn.style.color      = active ? 'var(--accent)'             : 'var(--text-muted)'
+    })
+    const csvArea = $('wiz-csv-area')
+    if (csvArea) csvArea.style.display = source === 'csv' ? 'block' : 'none'
+    fetchWizCount()
+  }
+
+  async function fetchWizCount() {
+    const countEl = $('wiz-count-label')
+    if (!countEl) return
+    if (campState.wizData.source === 'csv') {
+      countEl.textContent = wizCsvRows.length > 0 ? `${wizCsvRows.length} contactos del CSV` : 'Sin CSV cargado'
+      return
+    }
+    countEl.textContent = 'Calculando…'
+    try {
+      const orgId = campOrgId()
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-broadcast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ filter: campState.wizData.source, org_id: orgId, preview: true }),
+      })
+      const r = await res.json()
+      countEl.textContent = res.ok ? `${r.total} contactos` : 'Error al calcular'
+    } catch { countEl.textContent = 'Error al calcular' }
+  }
+
+  function setWizMsgType(type) {
+    campState.wizData.messageType = type
+    const tplBtn  = $('wiz-tab-tpl')
+    const libreBtn = $('wiz-tab-libre')
+    const tplPane  = $('wiz-panel-tpl')
+    const librePane = $('wiz-panel-libre')
+    const active = 'border-color:var(--accent);background:var(--accent-sub);color:var(--accent)'
+    const idle   = 'border-color:var(--border);background:transparent;color:var(--text-muted)'
+    if (tplBtn)   tplBtn.style.cssText   += ';' + (type === 'template' ? active : idle)
+    if (libreBtn) libreBtn.style.cssText  += ';' + (type === 'libre'    ? active : idle)
+    if (tplPane)  tplPane.style.display   = type === 'template' ? 'flex' : 'none'
+    if (librePane) librePane.style.display = type === 'libre'    ? 'flex' : 'none'
+  }
+
+  async function loadWizTemplates() {
+    const container = $('wiz-tpl-list')
+    if (!container) return
+    container.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text-dim);font-size:13px">Cargando…</div>'
+    const orgId = campOrgId()
+    const { data } = await sb.from('message_templates').select('id,name,status,components,language').eq('organization_id', orgId).order('status')
+    const templates = data ?? []
+    if (!templates.length) {
+      container.innerHTML = '<div style="padding:14px;color:var(--text-muted);font-size:13px">No hay plantillas. Crea una en Configuración → Plantillas.</div>'
+      return
+    }
+    container.innerHTML = templates.map(t => {
+      const bodyText = t.components?.[0]?.text ?? ''
+      const isApproved = t.status === 'APPROVED'
+      return `<div onclick="selectWizTemplate('${t.id}','${(t.name||'').replace(/'/g,"\\'")}','${(bodyText||'').replace(/'/g,"\\'").replace(/\n/g,'\\n')}')"
+        id="wiz-tpl-${t.id}"
+        style="padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .12s"
+        onmouseover="if(!this.classList.contains('wiz-tpl-sel'))this.style.borderColor='var(--accent)'"
+        onmouseout="if(!this.classList.contains('wiz-tpl-sel'))this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+          <span style="font-size:12.5px;font-weight:600;color:var(--text)">${t.name}</span>
+          <span style="font-size:10.5px;padding:1px 7px;border-radius:10px;font-weight:600;${isApproved ? 'color:#22c55e;background:rgba(34,197,94,.1)' : 'color:#f59e0b;background:rgba(245,158,11,.1)'}">${isApproved ? 'Aprobada' : t.status}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${bodyText}</div>
+      </div>`
+    }).join('')
+  }
+
+  function selectWizTemplate(id, name, bodyText) {
+    campState.wizData.templateId  = id
+    campState.wizData.messageBody = bodyText.replace(/\\n/g, '\n')
+    document.querySelectorAll('[id^="wiz-tpl-"]').forEach(el => {
+      el.classList.remove('wiz-tpl-sel')
+      el.style.border     = '1.5px solid var(--border)'
+      el.style.background = 'transparent'
+    })
+    const sel = $('wiz-tpl-' + id)
+    if (sel) {
+      sel.classList.add('wiz-tpl-sel')
+      sel.style.border     = '1.5px solid var(--accent)'
+      sel.style.background = 'var(--accent-sub)'
+    }
+    const preview = $('wiz-tpl-preview')
+    const previewText = $('wiz-tpl-preview-text')
+    if (preview && previewText) {
+      preview.style.display = 'block'
+      previewText.textContent = bodyText.replace(/\\n/g, '\n')
+    }
+  }
+
+  function handleWizCsv(event) {
+    const file = event.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = e => {
+      const text = e.target.result
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l)
+      if (lines.length < 2) { alert('El CSV está vacío o tiene solo una fila.'); return }
+      const delim = lines[0].includes(';') ? ';' : ','
+      const parse = l => l.split(delim).map(c => c.trim().replace(/^"|"$/g,''))
+      const headers = parse(lines[0])
+      const rows    = lines.slice(1).map(parse)
+
+      const nameIdx  = headers.findIndex(h => /nombre|name/i.test(h))
+      const phoneIdx = headers.findIndex(h => /tel|phone|cel/i.test(h))
+
+      wizCsvRows = rows.map(r => ({ name: nameIdx >= 0 ? r[nameIdx] : '', phone: phoneIdx >= 0 ? r[phoneIdx] : r[0] })).filter(r => r.phone)
+
+      const info = $('wiz-csv-info')
+      if (info) info.textContent = `✓ ${wizCsvRows.length} contactos cargados desde ${file.name}`
+      fetchWizCount()
+    }
+    reader.readAsText(file)
+  }
+
+  async function saveCampaignDraft() {
+    const wd = campState.wizData
+    if (wd.messageType === 'template' && !wd.templateId) { alert('Selecciona una plantilla.'); return }
+    if (wd.messageType === 'libre' && !($('wiz-body')?.value?.trim())) { alert('Escribe un mensaje.'); return }
+    if (wd.messageType === 'libre') wd.messageBody = $('wiz-body').value.trim()
+
+    const orgId = campOrgId()
+    const payload = {
+      organization_id: orgId,
+      name:         wd.name,
+      description:  wd.description || null,
+      status:       'draft',
+      message_type: wd.messageType,
+      message_body: wd.messageType === 'libre'    ? wd.messageBody : null,
+      template_id:  wd.messageType === 'template' ? wd.templateId  : null,
+      source_type:  wd.source,
+      updated_at:   new Date().toISOString(),
+    }
+
+    const btn = $('wiz-next-btn')
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando…' }
+
+    const { data: camp, error } = await sb.from('campaigns').insert(payload).select().single()
+    if (error) {
+      alert('Error: ' + error.message)
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-rocket"></i> Crear campaña' }
+      return
+    }
+
+    // Si hay CSV, insertar campaign_contacts
+    if (wd.source === 'csv' && wizCsvRows.length > 0) {
+      const ccRows = wizCsvRows.map(r => ({
+        campaign_id:     camp.id,
+        organization_id: orgId,
+        phone:           r.phone,
+        name:            r.name || null,
+        status:          'pending',
+      }))
+      // batch inserts de 200
+      for (let i = 0; i < ccRows.length; i += 200) {
+        await sb.from('campaign_contacts').insert(ccRows.slice(i, i + 200))
+      }
+      await sb.from('campaigns').update({ total_contacts: wizCsvRows.length }).eq('id', camp.id)
+    }
+
+    closeCampaignWizard()
+    if (btn) { btn.disabled = false }
+    await loadCampanas()
+    switchView('campanas')
+  }
+
+  window.openCampaignWizard    = openCampaignWizard
+  window.closeCampaignWizard   = closeCampaignWizard
+  window.setWizStep            = setWizStep
+  window.wizNext               = wizNext
+  window.setWizSource          = setWizSource
+  window.setWizMsgType         = setWizMsgType
+  window.selectWizTemplate     = selectWizTemplate
+  window.handleWizCsv          = handleWizCsv
+  window.saveCampaignDraft     = saveCampaignDraft
+  window.openCampaignDetail    = openCampaignDetail
+  window.closeCampaignDetail   = closeCampaignDetail
+  window.refreshCampaignDetail = refreshCampaignDetail
+  window.launchCampaign        = launchCampaign
+  window.pauseCampaign         = pauseCampaign
+  window.resumeCampaign        = resumeCampaign
+  window.cancelCampaign        = cancelCampaign
+  window.loadCampanas          = loadCampanas
+
   // ── CRM (super_admin only) ────────────────────────────────────────────────
   const CRM_STATUS = {
     prospecto:   { label: 'Prospecto',   color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
