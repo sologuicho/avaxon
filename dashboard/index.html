@@ -5343,15 +5343,24 @@
     const btn = $('wiz-next-btn')
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Guardando…' }
 
-    const { data: camp, error } = await sb.from('campaigns').insert(payload).select().single()
+    let camp, error
+    if (wd.editId) {
+      const { data: d, error: e } = await sb.from('campaigns').update(payload).eq('id', wd.editId).select().single()
+      camp = d; error = e
+    } else {
+      const { data: d, error: e } = await sb.from('campaigns').insert(payload).select().single()
+      camp = d; error = e
+    }
+
     if (error) {
       alert('Error: ' + error.message)
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-rocket"></i> Crear campaña' }
+      if (btn) { btn.disabled = false; btn.innerHTML = wd.editId ? '<i class="fa fa-floppy-disk"></i> Guardar cambios' : '<i class="fa fa-rocket"></i> Crear campaña' }
       return
     }
 
-    // Si hay CSV, insertar campaign_contacts
+    // Si hay CSV nuevo, reemplazar campaign_contacts
     if (wd.source === 'csv' && wizCsvRows.length > 0) {
+      if (wd.editId) await sb.from('campaign_contacts').delete().eq('campaign_id', wd.editId)
       const ccRows = wizCsvRows.map(r => ({
         campaign_id:     camp.id,
         organization_id: orgId,
@@ -5359,7 +5368,6 @@
         name:            r.name || null,
         status:          'pending',
       }))
-      // batch inserts de 200
       for (let i = 0; i < ccRows.length; i += 200) {
         await sb.from('campaign_contacts').insert(ccRows.slice(i, i + 200))
       }
