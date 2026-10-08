@@ -1329,12 +1329,18 @@
               </div>
 
               <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
-                <div class="cpanel-section-title">Etiquetas</div>
+                <div class="cpanel-section-title">Etiquetas del bot</div>
+                <div style="font-size:12px;color:#a7adb5;margin-top:-4px;margin-bottom:2px">Asignadas automáticamente según la conversación</div>
                 <div id="cpanel-tags"></div>
               </div>
 
               <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
-                <div class="cpanel-section-title">Citas recientes</div>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="cpanel-section-title" style="margin-bottom:0">Citas</div>
+                  <button onclick="openQuickAptModal()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid #e6e7e9;background:#fff;font-size:12px;font-weight:700;color:#2c455d;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em">
+                    <i class="fa fa-plus" style="font-size:10px"></i> Agendar
+                  </button>
+                </div>
                 <div id="cpanel-apts"></div>
               </div>
 
