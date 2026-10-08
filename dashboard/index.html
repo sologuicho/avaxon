@@ -5252,7 +5252,7 @@
       return `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;cursor:pointer;border:1.5px solid ${checked ? 'var(--accent)' : 'transparent'};background:${checked ? 'var(--accent-sub)' : 'transparent'};transition:background .1s" id="wiz-mc-row-${c.id}" onmouseover="if(!wizManualSelected.has('${c.id}'))this.style.background='var(--hover-bg)'" onmouseout="if(!wizManualSelected.has('${c.id}'))this.style.background='transparent'">
         <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleWizContact('${c.id}','${phoneEsc}','${nameEsc}')" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer">
         <div style="flex:1;min-width:0">
-          <div style="font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name || <span style="color:var(--text-dim)">Sin nombre</span>}</div>
+          <div style="font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name || '<span style="color:var(--text-dim)">Sin nombre</span>'}</div>
           <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${c.phone}</div>
         </div>
         <span style="font-size:10.5px;font-weight:700;color:${color};flex-shrink:0">${c.status || ''}</span>
