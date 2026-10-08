@@ -6211,6 +6211,96 @@
   window.loadCRM            = loadCRM
   window.filterCRM          = filterCRM
   window.onCRMSearch        = onCRMSearch
+
+  // ── Lead / Contact Modal ──────────────────────────────────────────────────
+  function openLeadModal(id) {
+    const contact = (state.allContacts || []).find(c => c.id === id)
+    if (!contact) return
+    $('lead-edit-id').value = id
+    $('lead-f-name').value  = contact.name  || ''
+    $('lead-f-phone').value = contact.phone || ''
+    $('lead-f-email').value = contact.email || ''
+    $('lead-f-tags').value  = (contact.tags || []).join(', ')
+    setLeadStatus(contact.status || 'new')
+    $('lead-last-seen').textContent = contact.last_seen_at ? fmtDate(contact.last_seen_at) : '—'
+    $('lead-created').textContent   = contact.created_at   ? fmtDate(contact.created_at)   : '—'
+    // WA quick link
+    const phone = (contact.phone || '').replace(/\D/g, '')
+    const waBtn = $('lead-wa-btn')
+    if (waBtn) {
+      waBtn.href              = phone ? `https://wa.me/${phone}` : '#'
+      waBtn.style.opacity     = phone ? '1' : '.4'
+      waBtn.style.pointerEvents = phone ? 'auto' : 'none'
+    }
+    // Header
+    const av = $('lead-avatar')
+    if (av) av.textContent = initials(contact.name || contact.phone)
+    const hn = $('lead-header-name')
+    if (hn) hn.textContent = contact.name || contact.phone || 'Contacto'
+    const hp = $('lead-header-phone')
+    if (hp) hp.textContent = maskPhone(contact.phone || '')
+    $('modal-lead').style.display = 'flex'
+  }
+
+  function setLeadStatus(val) {
+    $('lead-f-status').value = val
+    document.querySelectorAll('.lead-status-pill').forEach(btn => {
+      const active = btn.dataset.val === val
+      btn.style.border     = active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
+      btn.style.background = active ? 'var(--accent-sub)' : 'transparent'
+      btn.style.color      = active ? 'var(--accent)' : 'var(--text-muted)'
+    })
+  }
+
+  function closeLeadModal() {
+    $('modal-lead').style.display = 'none'
+  }
+
+  async function saveLeadContact() {
+    const id = $('lead-edit-id').value
+    if (!id) return
+    const saveBtn = $('lead-save-btn')
+    saveBtn.disabled = true
+    saveBtn.textContent = 'Guardando…'
+    const tagsRaw = ($('lead-f-tags').value || '').split(',').map(t => t.trim()).filter(Boolean)
+    const { error } = await sb.from('contacts').update({
+      name:   $('lead-f-name').value.trim() || null,
+      email:  $('lead-f-email').value.trim() || null,
+      status: $('lead-f-status').value,
+      tags:   tagsRaw.length ? tagsRaw : null,
+    }).eq('id', id)
+    saveBtn.disabled = false
+    saveBtn.textContent = 'Guardar cambios'
+    if (error) { showToast('Error al guardar', 4000); return }
+    const idx = (state.allContacts || []).findIndex(c => c.id === id)
+    if (idx >= 0) {
+      state.allContacts[idx].name   = $('lead-f-name').value.trim() || null
+      state.allContacts[idx].email  = $('lead-f-email').value.trim() || null
+      state.allContacts[idx].status = $('lead-f-status').value
+      state.allContacts[idx].tags   = tagsRaw.length ? tagsRaw : null
+    }
+    closeLeadModal()
+    renderLeads(state.allContacts)
+    showToast('Contacto actualizado')
+  }
+
+  async function deleteLeadContact() {
+    const id = $('lead-edit-id').value
+    if (!id) return
+    if (!confirm('¿Eliminar este contacto? Esta acción no se puede deshacer.')) return
+    const { error } = await sb.from('contacts').delete().eq('id', id)
+    if (error) { showToast('Error al eliminar', 4000); return }
+    state.allContacts = (state.allContacts || []).filter(c => c.id !== id)
+    closeLeadModal()
+    renderLeads(state.allContacts)
+    showToast('Contacto eliminado')
+  }
+
+  window.openLeadModal    = openLeadModal
+  window.setLeadStatus    = setLeadStatus
+  window.closeLeadModal   = closeLeadModal
+  window.saveLeadContact  = saveLeadContact
+  window.deleteLeadContact = deleteLeadContact
   // ── Configuración ──────────────────────────────────────────────────────────
   let configTab       = 'plantillas'
   let configTemplates = []
