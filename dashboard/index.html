@@ -4826,7 +4826,7 @@
   window.invExport            = invExport
 
   // ── Broadcast ────────────────────────────────────────────────────────────
-  const bcState = { filter: 'all', busy: false, mode: 'libre', selectedTemplateId: null, templates: [], pickedOrgId: null }
+  const bcState = { filter: 'all', busy: false, mode: 'libre', selectedTemplateId: null, templates: [] }
 
   function openBroadcast() {
     const modal = $('modal-broadcast')
@@ -4841,25 +4841,11 @@
     setBcMode('libre')
     setBcFilterActive('all')
     if (!orgId && state.isSuperAdmin) {
-      // Build org pill buttons
-      const container = $('bc-org-btns')
-      container.innerHTML = ''
-      ;(state.allOrgs || []).forEach(org => {
-        const btn = document.createElement('button')
-        btn.className = 'bc-org-btn'
-        btn.dataset.id = org.id
-        btn.textContent = org.name
-        btn.type = 'button'
-        btn.style.cssText = "padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s;white-space:nowrap"
-        btn.addEventListener('click', () => bcPickOrg(org.id))
-        container.appendChild(btn)
-      })
       $('bc-org-picker').style.display = 'flex'
-      bcState.pickedOrgId = null
       $('bc-filter-btns').style.opacity = '.35'
       $('bc-filter-btns').style.pointerEvents = 'none'
       $('bc-send-btn').disabled = true
-      $('bc-count-line').textContent = '← elige cliente'
+      $('bc-count-line').textContent = '—'
     } else {
       $('bc-org-picker').style.display = 'none'
       $('bc-filter-btns').style.opacity = '1'
@@ -4869,21 +4855,7 @@
     modal.style.display = 'flex'
   }
 
-  function bcPickOrg(orgId) {
-    bcState.pickedOrgId = orgId
-    document.querySelectorAll('.bc-org-btn').forEach(btn => {
-      const sel = btn.dataset.id === orgId
-      btn.style.border     = sel ? '1.5px solid var(--accent)' : '1.5px solid var(--border)'
-      btn.style.background = sel ? 'var(--accent-sub)' : 'transparent'
-      btn.style.color      = sel ? 'var(--accent)' : 'var(--text-muted)'
-    })
-    $('bc-filter-btns').style.opacity = '1'
-    $('bc-filter-btns').style.pointerEvents = 'auto'
-    $('bc-send-btn').disabled = false
-    fetchBcCount()
-  }
-
-  const bcOrgId = () => bcState.pickedOrgId || state.currentOrgId || state.userOrgId || undefined
+  const bcOrgId = () => state.currentOrgId || state.userOrgId || undefined
 
   function closeBroadcast() {
     const modal = $('modal-broadcast')
