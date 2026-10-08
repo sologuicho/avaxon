@@ -4900,75 +4900,110 @@
     const { data: c } = await sb.from('campaigns').select('*').eq('id', id).single()
     if (!c) return
 
-    const st    = CAMP_STATUS[c.status] ?? CAMP_STATUS.draft
-    const total = c.total_contacts || 0
-    const sent  = c.sent_count     || 0
-    const pct   = total > 0 ? Math.round((sent / total) * 100) : 0
-    const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : ''
+    const st      = CAMP_STATUS[c.status] ?? CAMP_STATUS.draft
+    const total   = c.total_contacts   || 0
+    const sent    = c.sent_count       || 0
+    const deliv   = c.delivered_count  || 0
+    const read    = c.read_count       || 0
+    const resp    = c.responded_count  || 0
+    const failed  = c.failed_count     || 0
+    const sentPct = total  > 0 ? Math.round((sent   / total) * 100) : 0
+    const respPct = sent   > 0 ? Math.round((resp   / sent)  * 100) : 0
+    const dateStr = c.created_at
+      ? new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+      : ''
 
+    // ── Header ──
     $('det-name').textContent = c.name
     $('det-desc').textContent = c.description ?? ''
-    $('det-status-badge').innerHTML  = `<span style="font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>`
-    $('det-type-badge').innerHTML    = `<span style="font-size:12px;color:var(--text-dim);background:var(--hover-bg);padding:3px 9px;border-radius:6px">${c.message_type === 'template' ? '📋 Plantilla' : '✏️ Mensaje libre'}</span>`
+    $('det-status-badge').innerHTML = `<span style="font-size:12px;font-weight:600;padding:3px 11px;border-radius:20px;color:${st.color};background:${st.bg}">${st.label}</span>`
+    $('det-type-badge').innerHTML   = `<span style="font-size:12px;color:var(--text-dim);background:var(--hover-bg);padding:3px 10px;border-radius:6px">${c.message_type === 'template' ? '<i class="fa fa-rectangle-list" style="margin-right:4px;opacity:.7"></i>Plantilla' : '<i class="fa fa-pen-to-square" style="margin-right:4px;opacity:.7"></i>Mensaje libre'}</span>`
     $('det-date').textContent = dateStr
-    $('det-progress-text').textContent = `${sent.toLocaleString('es-MX')} / ${total.toLocaleString('es-MX')}`
-    $('det-progress-pct').textContent  = pct + '%'
-    $('det-progress-bar').style.width  = pct + '%'
+
+    // ── Progreso ──
+    $('det-progress-text').textContent = `${sent.toLocaleString('es-MX')} / ${total.toLocaleString('es-MX')} enviados`
+    $('det-progress-pct').textContent  = sentPct + '%'
+    $('det-progress-bar').style.width  = sentPct + '%'
+
+    // ── Stats ──
     $('det-stat-total').textContent     = total.toLocaleString('es-MX')
     $('det-stat-sent').textContent      = sent.toLocaleString('es-MX')
-    $('det-stat-delivered').textContent = (c.delivered_count||0).toLocaleString('es-MX')
-    $('det-stat-read').textContent      = (c.read_count||0).toLocaleString('es-MX')
-    $('det-stat-responded').textContent = (c.responded_count||0).toLocaleString('es-MX')
-    $('det-stat-failed').textContent    = (c.failed_count||0).toLocaleString('es-MX')
+    $('det-stat-delivered').textContent = deliv.toLocaleString('es-MX')
+    $('det-stat-read').textContent      = read.toLocaleString('es-MX')
+    $('det-stat-responded').textContent = resp.toLocaleString('es-MX')
+    $('det-stat-failed').textContent    = failed.toLocaleString('es-MX')
 
-    // Action buttons
+    // Tasa de respuesta
+    const rateEl = $('det-resp-rate')
+    if (rateEl) rateEl.textContent = sent > 0 ? respPct + '%' : '—'
+
+    // ── Alerta de error si hay fallidos ──
+    const errAlert = $('det-error-alert')
+    if (errAlert) errAlert.style.display = failed > 0 ? 'flex' : 'none'
+
+    // ── Botones de acción ──
     const actions = $('det-actions')
     actions.innerHTML = ''
-    if (c.status === 'draft') {
-      const btn = document.createElement('button')
-      btn.className = 'btn-primary'
-      btn.style.cssText = 'padding:9px 18px;font-size:13px;display:flex;align-items:center;gap:6px'
-      btn.innerHTML = '<i class="fa fa-rocket"></i> Lanzar campaña'
-      btn.onclick = () => launchCampaign(id)
-      actions.appendChild(btn)
+    const mkBtn = (label, icon, style, fn) => {
+      const b = document.createElement('button')
+      b.style.cssText = `padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;gap:6px;${style}`
+      b.innerHTML = `<i class="fa fa-${icon}"></i> ${label}`
+      b.onclick = fn
+      actions.appendChild(b)
     }
-    if (c.status === 'running') {
-      const btn = document.createElement('button')
-      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
-      btn.innerHTML = '<i class="fa fa-pause"></i> Pausar'
-      btn.onclick = () => pauseCampaign(id)
-      actions.appendChild(btn)
-    }
-    if (c.status === 'paused') {
-      const btn = document.createElement('button')
-      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
-      btn.innerHTML = '<i class="fa fa-play"></i> Reanudar'
-      btn.onclick = () => resumeCampaign(id)
-      actions.appendChild(btn)
-    }
-    if (['running','paused'].includes(c.status)) {
-      const btn = document.createElement('button')
-      btn.style.cssText = 'padding:9px 14px;border-radius:10px;border:1.5px solid #f87171;background:rgba(248,113,113,.08);color:#f87171;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;display:flex;align-items:center;gap:6px'
-      btn.innerHTML = '<i class="fa fa-stop"></i> Cancelar'
-      btn.onclick = () => cancelCampaign(id)
-      actions.appendChild(btn)
+    if (c.status === 'draft')
+      actions.innerHTML = `<button class="btn-primary" onclick="launchCampaign('${id}')" style="padding:9px 18px;font-size:13px;display:flex;align-items:center;gap:6px"><i class="fa fa-rocket"></i> Lanzar campaña</button>`
+    if (c.status === 'running')
+      mkBtn('Pausar','pause','border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b',()=>pauseCampaign(id))
+    if (c.status === 'paused')
+      mkBtn('Reanudar','play','border:1.5px solid var(--accent);background:rgba(34,197,94,.08);color:var(--accent)',()=>resumeCampaign(id))
+    if (['running','paused'].includes(c.status))
+      mkBtn('Cancelar','stop','border:1.5px solid #f87171;background:rgba(248,113,113,.08);color:#f87171',()=>cancelCampaign(id))
+    if (failed > 0 && c.status !== 'running')
+      mkBtn('Reintentar fallidos','rotate-right','border:1.5px solid #818cf8;background:rgba(129,140,248,.08);color:#818cf8',()=>retryCampaignFailed(id))
+
+    // ── Tabla de contactos ──
+    const { data: contacts } = await sb.from('campaign_contacts')
+      .select('*').eq('campaign_id', id).order('created_at').limit(300)
+    const tbody = $('det-contacts-tbody')
+    if (!tbody) return
+
+    if (!contacts?.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="padding:28px;text-align:center;color:var(--text-dim);font-size:13px">Sin contactos cargados aún</td></tr>'
+      return
     }
 
-    // Contacts table
-    const { data: contacts } = await sb.from('campaign_contacts').select('*').eq('campaign_id', id).order('created_at').limit(200)
-    const tbody = $('det-contacts-tbody')
-    if (tbody) {
-      tbody.innerHTML = (contacts || []).map(cc => {
-        const cs  = CAMP_CONTACT_STATUS[cc.status] ?? CAMP_CONTACT_STATUS.pending
-        const ts  = cc.sent_at ? new Date(cc.sent_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'
-        return `<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:10px 20px;color:var(--text);font-weight:500">${cc.name || '—'}</td>
-          <td style="padding:10px 16px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11.5px">${cc.phone}</td>
-          <td style="padding:10px 16px"><span style="font-size:11.5px;font-weight:600;color:${cs.color}">${cs.label}</span></td>
-          <td style="padding:10px 16px;color:var(--text-dim);font-size:11.5px">${ts}</td>
-        </tr>`
-      }).join('') || '<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin contactos cargados aún</td></tr>'
-    }
+    tbody.innerHTML = contacts.map(cc => {
+      const cs  = CAMP_CONTACT_STATUS[cc.status] ?? CAMP_CONTACT_STATUS.pending
+      const ts  = cc.sent_at
+        ? new Date(cc.sent_at).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+        : '—'
+
+      // Parse error_msg — puede ser JSON de Meta o string
+      let errHtml = ''
+      if (cc.status === 'failed' && cc.error_msg) {
+        let errText = cc.error_msg
+        try {
+          const parsed = JSON.parse(cc.error_msg)
+          errText = parsed?.error?.message || parsed?.message || cc.error_msg
+        } catch {}
+        errHtml = `<div style="font-size:11px;color:#f87171;margin-top:3px;line-height:1.4;max-width:320px">${errText}</div>`
+      }
+
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 20px">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">${cc.name || '—'}</div>
+        </td>
+        <td style="padding:10px 16px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11.5px">${cc.phone}</td>
+        <td style="padding:10px 16px">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:${cs.color}">
+            <span style="width:6px;height:6px;border-radius:50%;background:${cs.color};flex-shrink:0"></span>${cs.label}
+          </span>
+          ${errHtml}
+        </td>
+        <td style="padding:10px 16px;color:var(--text-dim);font-size:11.5px">${ts}</td>
+      </tr>`
+    }).join('')
   }
 
   function closeCampaignDetail() {
