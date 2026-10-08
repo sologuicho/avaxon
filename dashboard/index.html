@@ -3163,6 +3163,9 @@
     const conv = convState.all.find(c => c.id === convState.activeId);
     _qapt_contact_id   = conv?.contacts?.id   || null;
     _qapt_contact_name = conv?.contacts?.name || conv?.contacts?.phone || '';
+    _qapt_org_id       = conv?.organization_id || state.currentOrgId || state.userOrgId;
+    const label = $('qapt-contact-label');
+    if (label) label.textContent = _qapt_contact_name ? `Para: ${_qapt_contact_name}` : '';
     // Pre-fill datetime to next hour
     const d = new Date(); d.setMinutes(0,0,0); d.setHours(d.getHours() + 1);
     const pad = n => String(n).padStart(2,'0');
