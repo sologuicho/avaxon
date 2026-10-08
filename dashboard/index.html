@@ -6739,15 +6739,13 @@
       <!-- Body scrollable -->
       <div style="padding:18px 24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
 
-        <!-- Selector de org para super_admin (cuando no hay org seleccionada) -->
+        <!-- Selector de cliente (solo super_admin sin org activa) -->
         <div id="bc-org-picker" style="display:none;flex-direction:column;gap:8px">
-          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">Cliente</div>
-          <select id="bc-org-select" onchange="bcPickOrg(this.value)" style="width:100%;padding:10px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer;appearance:auto">
-            <option value="">— Selecciona un cliente —</option>
-          </select>
+          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">¿Para qué cliente?</div>
+          <div id="bc-org-btns" style="display:flex;flex-wrap:wrap;gap:7px"></div>
         </div>
 
-        <!-- Modo tabs -->
+        <!-- Modo: Mensaje libre / Plantilla -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <button id="bc-tab-libre" onclick="setBcMode('libre')" style="padding:10px 12px;border-radius:12px;border:1.5px solid var(--accent);background:var(--accent-sub);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
             <i class="fa fa-pen-to-square" style="font-size:12px"></i> Mensaje libre
@@ -6757,16 +6755,18 @@
           </button>
         </div>
 
-        <!-- Destinatarios (siempre visible) -->
-        <div>
-          <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase">Destinatarios</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px" id="bc-filter-btns">
-            <button class="bc-filter-btn active" data-filter="all"        onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Todos los contactos</button>
-            <button class="bc-filter-btn"        data-filter="new"        onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo nuevos</button>
-            <button class="bc-filter-btn"        data-filter="qualified"  onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Solo calificados</button>
-            <button class="bc-filter-btn"        data-filter="active_24h" onclick="setBcFilter(this)" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left">Activos últimas 24h</button>
+        <!-- Destinatarios -->
+        <div id="bc-recipients-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase">Destinatarios</div>
+            <div id="bc-count-line" style="font-size:12px;color:var(--text-muted)">—</div>
           </div>
-          <div id="bc-count-line" style="font-size:12px;color:var(--text-muted);margin-top:7px">Calculando destinatarios…</div>
+          <div id="bc-filter-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+            <button class="bc-filter-btn" data-filter="all"        onclick="setBcFilter(this)" style="padding:9px 12px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px"><i class="fa fa-users" style="font-size:11px;opacity:.7"></i> Todos</button>
+            <button class="bc-filter-btn" data-filter="new"        onclick="setBcFilter(this)" style="padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px"><i class="fa fa-user-plus" style="font-size:11px;opacity:.7"></i> Nuevos</button>
+            <button class="bc-filter-btn" data-filter="qualified"  onclick="setBcFilter(this)" style="padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px"><i class="fa fa-star" style="font-size:11px;opacity:.7"></i> Calificados</button>
+            <button class="bc-filter-btn" data-filter="active_24h" onclick="setBcFilter(this)" style="padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px"><i class="fa fa-clock" style="font-size:11px;opacity:.7"></i> Activos 24h</button>
+          </div>
         </div>
 
         <!-- Panel: Mensaje libre -->
