@@ -4422,6 +4422,8 @@
     fetchBcCount()
   }
 
+  const bcOrgId = () => bcState.pickedOrgId || state.currentOrgId || state.userOrgId || undefined
+
   function closeBroadcast() {
     const modal = $('modal-broadcast')
     if (modal) modal.style.display = 'none'
