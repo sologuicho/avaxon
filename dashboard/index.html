@@ -3470,6 +3470,12 @@
     });
     btn.disabled = false; btn.textContent = 'Guardar cita';
     if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+    sendZapierEvent('appointment_scheduled', {
+      contact_id:   _qapt_contact_id,
+      contact_name: _qapt_contact_name,
+      title,
+      scheduled_at: new Date(dt).toISOString(),
+    });
     closeQuickAptModal();
     // Refresh citas in panel
     if (_qapt_contact_id) {
@@ -3544,6 +3550,12 @@
     await sb.from('conversations').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', convId);
     const conv = convState.all.find(c => c.id === convId);
     if (conv) conv.status = newStatus;
+    if (newStatus === 'closed') {
+      sendZapierEvent('conversation_closed', {
+        conversation_id: convId,
+        contact_name: conv?.contacts?.name || conv?.contacts?.phone || '',
+      });
+    }
     openConversacion(convId); // refresh panel
     applyConvFilters();
   }
@@ -7386,7 +7398,13 @@
             value="${webhookUrl}"
             style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-        </label>`;
+          <span style="font-size:11.5px;color:var(--text-dim)">Debe empezar con https://hooks.zapier.com/</span>
+        </label>
+        ${connected ? `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;background:var(--page-bg);border:1px solid var(--border);border-radius:10px">
+          <span style="font-size:12.5px;color:var(--text-muted)">Avaxon también puede recibir acciones desde Zapier con tu API key.</span>
+          <button type="button" onclick="testZapierWebhook()" id="zapier-test-btn" style="flex-shrink:0;padding:7px 12px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Enviar evento de prueba</button>
+        </div>` : ''}`;
     }
 
     const modal = document.getElementById('integ-modal');
@@ -7439,11 +7457,48 @@
 
       } else if (provider === 'zapier') {
         const url = document.getElementById('im-zapier-url')?.value?.trim();
-        if (!url || !url.startsWith('https://')) { errEl.textContent = 'Ingresa una URL válida de Zapier'; errEl.style.display = 'block'; return; }
-        await saveIntegrationToDB('zapier', 'connected', null, { webhook_url: url });
+        if (!url || !/^https:\/\/hooks\.zapier\.com\//.test(url)) {
+          errEl.textContent = 'Ingresa una URL válida de Zapier (debe empezar con https://hooks.zapier.com/)';
+          errEl.style.display = 'block';
+          return;
+        }
+        const orgId = state.currentOrgId || state.userOrgId;
+        const { data: existingZap } = await sb.from('integrations')
+          .select('credentials').eq('organization_id', orgId).eq('provider', 'zapier').maybeSingle();
+        const hasKey = !!existingZap?.credentials?.api_key_hash;
+
+        let newApiKey = null;
+        let credentials = existingZap?.credentials ?? null;
+        if (!hasKey) {
+          newApiKey = 'avx_' + Array.from(crypto.getRandomValues(new Uint8Array(24)))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
+          const hashBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(newApiKey));
+          const hashHex = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          credentials = { api_key_hash: hashHex };
+        }
+
+        const { error: zapErr } = await sb.from('integrations').upsert({
+          organization_id: orgId,
+          provider: 'zapier',
+          status: 'connected',
+          credentials,
+          config: { webhook_url: url },
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'organization_id,provider' });
+
+        if (zapErr) { errEl.textContent = 'Error: ' + zapErr.message; errEl.style.display = 'block'; return; }
+
+        if (!state.integrations) state.integrations = {};
+        state.integrations['zapier'] = { provider: 'zapier', status: 'connected', config: { webhook_url: url }, connected_at: new Date().toISOString() };
         updateIntegPill('zapier', 'zapier-integ-pill');
         closeIntegModal();
-        showToast('Zapier conectado correctamente');
+
+        if (newApiKey) {
+          showZapierApiKeyModal(newApiKey);
+        } else {
+          showToast('Zapier actualizado correctamente');
+        }
       }
     } finally {
       saveBtn.disabled = false;
@@ -7461,6 +7516,62 @@
     showToast('Integración desconectada');
   }
 
+  // ── Zapier: API key one-time reveal, eventos salientes, prueba ──────────
+  function showZapierApiKeyModal(key) {
+    $('zapier-key-value').textContent = key;
+    $('zapier-key-modal').style.display = 'flex';
+  }
+
+  function closeZapierKeyModal() {
+    $('zapier-key-modal').style.display = 'none';
+    $('zapier-key-value').textContent = '';
+  }
+
+  function copyZapierApiKey() {
+    const key = $('zapier-key-value').textContent;
+    if (!key) return;
+    navigator.clipboard.writeText(key).then(() => {
+      showToast('API key copiada');
+    }).catch(() => {
+      showToast('No se pudo copiar, selecciona y copia manualmente');
+    });
+  }
+
+  // POST a una Edge Function (nunca directo al webhook desde el navegador) que
+  // reenvía el evento al webhook de Zapier guardado para la org. Fire-and-forget:
+  // si falla, no debe interrumpir la acción del usuario que lo disparó.
+  async function sendZapierEvent(event, payload, { wait = false } = {}) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return null;
+      const orgId = state.currentOrgId || state.userOrgId;
+      const req = fetch(EDGE_BASE + '/zapier-event', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event, organization_id: orgId, payload: payload || {} }),
+      });
+      if (wait) return await req.then(r => r.json()).catch(() => null);
+      req.catch(() => {});
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function testZapierWebhook() {
+    const btn = $('zapier-test-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    const result = await sendZapierEvent('test', { message: 'Evento de prueba desde el dashboard de Avaxon' }, { wait: true });
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar evento de prueba'; }
+    if (result?.skipped) {
+      showToast('Zapier no está conectado');
+    } else if (result?.ok) {
+      showToast('Evento de prueba enviado a Zapier');
+    } else {
+      showToast('No se pudo enviar el evento: ' + (result?.error || 'error desconocido'), 4000);
+    }
+  }
+
   window.addEventListener('load', () => {
     updateGcalUI();
   });
@@ -7473,6 +7584,9 @@
   window.closeIntegModal     = closeIntegModal;
   window.saveIntegModal      = saveIntegModal;
   window.disconnectIntegModal = disconnectIntegModal;
+  window.closeZapierKeyModal = closeZapierKeyModal;
+  window.copyZapierApiKey    = copyZapierApiKey;
+  window.testZapierWebhook   = testZapierWebhook;
   window.loadDashboard       = loadDashboard;
   window.loadLeads           = loadLeads;
 
@@ -7559,6 +7673,26 @@
         <button onclick="closeIntegModal()" style="padding:10px 20px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Cancelar</button>
         <button id="integ-modal-disconnect-btn" onclick="disconnectIntegModal()" style="display:none;padding:10px 20px;border:1.5px solid var(--red);background:transparent;color:var(--red);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Desconectar</button>
         <button id="integ-modal-save-btn" onclick="saveIntegModal()" class="btn-primary">Conectar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: API key de Zapier (revelado único) -->
+  <div id="zapier-key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,74,0,.12);display:flex;align-items:center;justify-content:center;color:#ff4a00;font-size:16px;flex-shrink:0"><i class="fa fa-key"></i></div>
+        <div style="font-size:17px;font-weight:700;color:var(--text)">Tu API key de Zapier</div>
+      </div>
+      <p style="font-size:13px;line-height:1.6;color:var(--text-muted);margin:0 0 14px">
+        Guarda esta clave ahora — no se mostrará de nuevo. Úsala en tus Zaps (acciones hacia Avaxon) en el header <strong style="color:var(--text)">X-Avaxon-Key</strong>.
+      </p>
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:10px;margin-bottom:18px">
+        <code id="zapier-key-value" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);word-break:break-all"></code>
+        <button onclick="copyZapierApiKey()" style="flex-shrink:0;padding:7px 12px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer"><i class="fa fa-copy"></i> Copiar</button>
+      </div>
+      <div style="display:flex;justify-content:flex-end">
+        <button onclick="closeZapierKeyModal()" class="btn-primary">Listo</button>
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
+import { sendZapierEvent } from '../_shared/zapier.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -111,27 +112,6 @@ async function parseMessage(msg: any, token: string, openaiKey: string): Promise
   return { waMessageId: msg.id, content, mediaType, imageDataUrl, imageCaption }
 }
 
-async function fireZapier(
-  sb: ReturnType<typeof createClient>,
-  organization_id: string,
-  payload: Record<string, unknown>,
-): Promise<void> {
-  const { data: integ } = await sb
-    .from('integrations')
-    .select('config')
-    .eq('organization_id', organization_id)
-    .eq('provider', 'zapier')
-    .eq('status', 'connected')
-    .maybeSingle()
-  const url = (integ?.config as any)?.webhook_url
-  if (!url) return
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, timestamp: new Date().toISOString() }),
-  }).catch(() => {})
-}
-
 async function handleIncoming(body: any, env: Env): Promise<void> {
   const { WA_TOKEN, OPENAI_KEY, SUPABASE_URL, SERVICE_KEY } = env
 
@@ -206,12 +186,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       .single()
     if (!newConv) return
     conversation_id = newConv.id
-    fireZapier(sb, organization_id, {
-      event:           'new_contact',
+    sendZapierEvent(sb, organization_id, 'lead_created', {
       contact_name:    contactName ?? fromPhone,
       contact_phone:   fromPhone,
       conversation_id: newConv.id,
-      organization_id,
     })
   }
 
@@ -430,12 +408,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
     if (reminderErr) console.error('reminder insert error:', reminderErr.message)
 
-    fireZapier(sb, organization_id, {
-      event:           'lead_qualified',
+    sendZapierEvent(sb, organization_id, 'lead_qualified', {
       contact_name:    leadName,
       contact_phone:   fromPhone,
       conversation_id,
-      organization_id,
     })
   }
 
