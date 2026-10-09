@@ -4041,12 +4041,10 @@
 
       if (convState.activeId) {
         btn.textContent = 'Enviando por WhatsApp…';
-        const amountFmt = amount.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-        const text = `Aquí tienes tu link de pago por *${concept}* ($${amountFmt} MXN):\n${data.url}`;
         const sendRes = await fetch(EDGE_BASE + '/send-message', {
           method: 'POST',
           headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversation_id: convState.activeId, message: text }),
+          body: JSON.stringify({ conversation_id: convState.activeId, payment_id: data.payment_id }),
         });
         if (!sendRes.ok) {
           const sendData = await sendRes.json().catch(() => ({}));

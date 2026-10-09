@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avaxon</title>
+<style>
+  body { margin:0; font-family:-apple-system,system-ui,sans-serif; background:#fafafa; color:#111;
+         display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; box-sizing:border-box; }
+  .card { text-align:center; max-width:360px; }
+  a { color:#5b4cfd; }
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <p>Redirigiendo…</p>
+</div>
+<script>
+  // Ruta corta de pago: /p/<payment_id> → función pública `pay`, que
+  // resuelve el checkout_url real guardado en la tabla `payments` y
+  // redirige. GitHub Pages no soporta rutas dinámicas, así que este
+  // 404.html intercepta /p/<id> y hace el salto por JS.
+  (function () {
+    var m = location.pathname.match(/^\/p\/([A-Za-z0-9-]+)\/?$/);
+    if (m) {
+      location.replace('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/pay?id=' + encodeURIComponent(m[1]));
+      return;
+    }
+    document.getElementById('card').innerHTML =
+      '<p>Página no encontrada.</p><p><a href="/">Volver al inicio</a></p>';
+  })();
+</script>
+</body>
+</html>
