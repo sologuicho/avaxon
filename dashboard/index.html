@@ -872,6 +872,38 @@
         color: var(--text-muted); cursor: pointer; flex-shrink: 0;
       }
     }
+
+    /* ── Configuración → General: grid de cards a todo el ancho ──────────── */
+    .cfg-general-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 16px; align-items: start;
+    }
+    .cfg-field-label {
+      font-size: 11px; font-weight: 700; color: var(--text-muted);
+      letter-spacing: .06em; text-transform: uppercase; display: block; margin-bottom: 6px;
+    }
+    .cfg-field-input, .cfg-field-select, .cfg-field-textarea {
+      width: 100%; padding: 10px 13px; background: var(--input-bg);
+      border: 1.5px solid var(--border); border-radius: 10px; font-size: 13.5px;
+      color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif;
+      outline: none; box-sizing: border-box; transition: border-color .15s;
+    }
+    .cfg-field-input:focus, .cfg-field-select:focus, .cfg-field-textarea:focus { border-color: var(--accent); }
+    .cfg-field-textarea { resize: vertical; min-height: 70px; }
+    .cfg-hours-row {
+      display: grid; grid-template-columns: 90px 1fr 1fr auto; gap: 8px; align-items: center;
+      padding: 7px 0;
+    }
+    .cfg-save-bar {
+      position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px;
+      padding: 14px 4px; margin-top: 4px; background: var(--page-bg);
+      border-top: 1px solid var(--border);
+    }
+    @media (max-width: 720px) {
+      .cfg-general-grid { grid-template-columns: 1fr; }
+      .cfg-hours-row { grid-template-columns: 70px 1fr 1fr auto; }
+      .cfg-save-bar { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    }
   </style>
 </head>
 <body>
@@ -1122,6 +1154,10 @@
         <div class="topbar-h1" id="topbar-title">Inicio</div>
       </div>
       <div class="topbar-right">
+        <button id="view-as-client-btn" onclick="toggleViewAsClient()" style="display:none;border:1px solid var(--accent);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding:6px 13px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.15s">
+          <i class="fa fa-eye" style="font-size:11px"></i>
+          <span id="view-as-client-btn-label">Ver como cliente</span>
+        </button>
         <span class="topbar-time" id="topbar-time"></span>
         <button class="btn-refresh" id="refresh-btn" style="border:1px solid var(--border);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);padding:6px 13px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -2442,7 +2478,6 @@
         <!-- Tabs -->
         <div style="display:flex;gap:6px;margin-bottom:18px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content">
           <button id="cfg-tab-plantillas" onclick="switchConfigTab('plantillas')" style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--accent);color:#062513;transition:all .15s">Plantillas</button>
-          <button id="cfg-tab-ejemplos"   onclick="switchConfigTab('ejemplos')"   style="display:none;padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">Plantillas de agente</button>
           <button id="cfg-tab-general"    onclick="switchConfigTab('general')"    style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:transparent;color:var(--text-muted);transition:all .15s">General</button>
         </div>
 
@@ -2551,47 +2586,179 @@
         </div>
 
         <!-- Pane: General -->
-        <div id="cfg-pane-general" style="display:none;max-width:540px">
-          <div class="card bp" style="padding:24px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-              <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:13px"><i class="fa fa-building"></i></div>
-              <span style="font-size:15px;font-weight:700;color:var(--text)">Datos del negocio</span>
+        <div id="cfg-pane-general" style="display:none">
+          <div class="cfg-general-grid">
+
+            <!-- Perfil del negocio -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:13px"><i class="fa fa-building"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Perfil del negocio</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div id="cfg-logo-preview" style="width:64px;height:64px;border-radius:12px;background:var(--page-bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--text-dim);font-size:20px"><i class="fa fa-image"></i></div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <input id="cfg-logo-file" type="file" accept="image/*" style="font-size:12px;color:var(--text-muted)" onchange="uploadOrgLogo()" />
+                    <span id="cfg-logo-status" style="font-size:11.5px;color:var(--text-dim)"></span>
+                  </div>
+                </div>
+                <div>
+                  <label class="cfg-field-label">Nombre del negocio</label>
+                  <input id="cfg-org-name" type="text" class="cfg-field-input" placeholder="Ej: Clínica San Rafael" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">Industria</label>
+                  <select id="cfg-org-industry" class="cfg-field-select">
+                    <option value="">Selecciona una industria…</option>
+                    <option value="Restaurante">Restaurante</option>
+                    <option value="Salón de belleza / Centro estético">Salón de belleza / Centro estético</option>
+                    <option value="Agencia de autos">Agencia de autos</option>
+                    <option value="Clínica médica">Clínica médica</option>
+                    <option value="Clínica dental">Clínica dental</option>
+                    <option value="Taller mecánico">Taller mecánico</option>
+                    <option value="Empresa de servicios">Empresa de servicios</option>
+                    <option value="Inmobiliaria">Inmobiliaria</option>
+                    <option value="Institución educativa">Institución educativa</option>
+                    <option value="Tienda de suplementos">Tienda de suplementos</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="cfg-field-label">Descripción corta</label>
+                  <textarea id="cfg-org-description" class="cfg-field-textarea" rows="3" placeholder="En una línea, ¿qué hace tu negocio?"></textarea>
+                </div>
+              </div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:14px">
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Nombre del negocio</label>
-                <input id="cfg-org-name" type="text" placeholder="Ej: Clínica San Rafael" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+
+            <!-- Contacto -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="width:32px;height:32px;background:rgba(34,197,94,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-address-card"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Contacto</span>
               </div>
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Industria</label>
-                <input id="cfg-org-industry" type="text" placeholder="Ej: Clínica dental, Agencia de autos…" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
-              </div>
-              <div>
-                <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Zona horaria</label>
-                <select id="cfg-org-timezone" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-                  <option value="America/Matamoros">Matamoros / Reynosa / Nuevo Laredo (CT)</option>
-                  <option value="America/Mexico_City">Ciudad de México</option>
-                  <option value="America/Monterrey">Monterrey</option>
-                  <option value="America/Cancun">Cancún</option>
-                  <option value="America/Merida">Mérida</option>
-                  <option value="America/Chihuahua">Chihuahua</option>
-                  <option value="America/Hermosillo">Hermosillo</option>
-                  <option value="America/Mazatlan">Mazatlán</option>
-                  <option value="America/Tijuana">Tijuana</option>
-                  <option value="America/Bahia_Banderas">Bahía de Banderas</option>
-                  <option value="America/Chicago">Central (EE.UU.)</option>
-                  <option value="America/New_York">Este (EE.UU.)</option>
-                  <option value="America/Denver">Montaña (EE.UU.)</option>
-                  <option value="America/Los_Angeles">Pacífico (EE.UU.)</option>
-                </select>
-                <span style="font-size:11.5px;color:var(--text-dim);display:block;margin-top:5px">Se usa para interpretar la hora de las citas y para los eventos que se crean en Google Calendar</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
-                <button onclick="saveOrgConfig()" class="btn-primary" style="padding:10px 22px;font-size:13.5px">Guardar cambios</button>
-                <span id="cfg-org-saved" style="font-size:13px;font-weight:600;color:var(--accent);opacity:0;transition:opacity .3s">✓ Guardado</span>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <label class="cfg-field-label">Teléfono</label>
+                  <input id="cfg-contact-phone" type="text" class="cfg-field-input" placeholder="(899) 123 4567" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">WhatsApp del negocio</label>
+                  <input id="cfg-contact-whatsapp" type="text" class="cfg-field-input" placeholder="+52 899 123 4567" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">Correo</label>
+                  <input id="cfg-contact-email" type="email" class="cfg-field-input" placeholder="contacto@tunegocio.com" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">Sitio web</label>
+                  <input id="cfg-contact-website" type="url" class="cfg-field-input" placeholder="https://tunegocio.com" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">Dirección</label>
+                  <input id="cfg-contact-address" type="text" class="cfg-field-input" placeholder="Calle, número, colonia, ciudad" />
+                </div>
+                <div>
+                  <label class="cfg-field-label">Link de Google Maps</label>
+                  <input id="cfg-contact-maps" type="url" class="cfg-field-input" placeholder="https://maps.app.goo.gl/…" />
+                </div>
               </div>
             </div>
+
+            <!-- Horarios de atención -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                <div style="width:32px;height:32px;background:rgba(245,158,11,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#f59e0b;font-size:13px"><i class="fa fa-clock"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Horarios de atención</span>
+              </div>
+              <div id="cfg-hours-list"></div>
+            </div>
+
+            <!-- Redes sociales -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="width:32px;height:32px;background:rgba(59,130,246,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:13px"><i class="fa fa-share-nodes"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Redes sociales</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <label class="cfg-field-label"><i class="fab fa-facebook" style="margin-right:5px"></i>Facebook</label>
+                  <input id="cfg-social-facebook" type="url" class="cfg-field-input" placeholder="https://facebook.com/tunegocio" />
+                </div>
+                <div>
+                  <label class="cfg-field-label"><i class="fab fa-instagram" style="margin-right:5px"></i>Instagram</label>
+                  <input id="cfg-social-instagram" type="url" class="cfg-field-input" placeholder="https://instagram.com/tunegocio" />
+                </div>
+                <div>
+                  <label class="cfg-field-label"><i class="fab fa-tiktok" style="margin-right:5px"></i>TikTok</label>
+                  <input id="cfg-social-tiktok" type="url" class="cfg-field-input" placeholder="https://tiktok.com/@tunegocio" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Zona horaria e idioma -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="width:32px;height:32px;background:rgba(99,102,241,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#818cf8;font-size:13px"><i class="fa fa-globe"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Zona horaria e idioma</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div>
+                  <label class="cfg-field-label">Zona horaria</label>
+                  <select id="cfg-org-timezone" class="cfg-field-select">
+                    <option value="America/Matamoros">Matamoros / Reynosa / Nuevo Laredo (CT)</option>
+                    <option value="America/Mexico_City">Ciudad de México</option>
+                    <option value="America/Monterrey">Monterrey</option>
+                    <option value="America/Cancun">Cancún</option>
+                    <option value="America/Merida">Mérida</option>
+                    <option value="America/Chihuahua">Chihuahua</option>
+                    <option value="America/Hermosillo">Hermosillo</option>
+                    <option value="America/Mazatlan">Mazatlán</option>
+                    <option value="America/Tijuana">Tijuana</option>
+                    <option value="America/Bahia_Banderas">Bahía de Banderas</option>
+                    <option value="America/Chicago">Central (EE.UU.)</option>
+                    <option value="America/New_York">Este (EE.UU.)</option>
+                    <option value="America/Denver">Montaña (EE.UU.)</option>
+                    <option value="America/Los_Angeles">Pacífico (EE.UU.)</option>
+                  </select>
+                  <span style="font-size:11.5px;color:var(--text-dim);display:block;margin-top:5px">Se usa para las citas y los eventos de Google Calendar</span>
+                </div>
+                <div>
+                  <label class="cfg-field-label">Idioma</label>
+                  <select id="cfg-org-language" class="cfg-field-select">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mi plan (solo lectura) -->
+            <div class="card bp" style="padding:22px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+                <div style="width:32px;height:32px;background:rgba(34,197,94,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-crown"></i></div>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Mi plan</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Plan</span><span id="cfg-plan-name" style="font-weight:700">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Precio</span><span id="cfg-plan-price" style="font-weight:700">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Conversaciones este mes</span><span id="cfg-plan-usage" style="font-weight:700">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Renovación</span><span id="cfg-plan-renewal" style="font-weight:700">—</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0"><span style="color:var(--text-muted)">Modificaciones al agente</span><span id="cfg-plan-response" style="font-weight:700">—</span></div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="cfg-save-bar">
+            <button onclick="saveOrgConfig()" id="cfg-save-btn" class="btn-primary" style="padding:10px 22px;font-size:13.5px">Guardar cambios</button>
+            <span id="cfg-org-saved" style="font-size:13px;font-weight:600;color:var(--accent);opacity:0;transition:opacity .3s">✓ Guardado</span>
           </div>
         </div>
       </div>
@@ -2861,7 +3028,7 @@
     if (name === 'pipeline')       loadPipeline();
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
-    if (name === 'bot')            { if (state.isSuperAdmin) loadBotConfig(); else loadAgentRequestsClient(); }
+    if (name === 'bot')            { if (isEffectiveSuperAdmin()) loadBotConfig(); else loadAgentRequestsClient(); }
     if (name === 'cuenta')         loadCuenta();
     if (name === 'crm')            loadCRM();
     if (name === 'config')         loadConfig();
@@ -4510,6 +4677,61 @@
     window.location.href = '../index.html';
   });
 
+  // ── Rol efectivo + "Ver como cliente" ────────────────────────────────────
+  // state.isSuperAdmin es el rol REAL (lo que RLS respeta). state.viewAsClient
+  // es puramente cosmético — simula la UI de cliente para que un super_admin
+  // pueda revisarla sin cambiar de usuario; nunca reduce permisos reales.
+  function isEffectiveSuperAdmin() {
+    return state.isSuperAdmin && !state.viewAsClient;
+  }
+
+  // Única función que decide qué nav/vistas corresponden al rol efectivo —
+  // la llaman tanto el bootstrap inicial como el toggle "Ver como cliente",
+  // así nunca quedan desincronizados. Cada asignación es null-safe: un solo
+  // elemento faltante nunca puede abortar el resto de la función.
+  function setDisp(id, val) { const el = $(id); if (el) el.style.display = val; }
+
+  function applyRoleUI() {
+    const effAdmin = isEffectiveSuperAdmin();
+
+    setDisp('view-as-client-btn', state.isSuperAdmin ? 'flex' : 'none');
+    const vacLabel = $('view-as-client-btn-label');
+    if (vacLabel) vacLabel.textContent = state.viewAsClient ? 'Volver a vista admin' : 'Ver como cliente';
+    const vacBtn = $('view-as-client-btn');
+    if (vacBtn) vacBtn.style.background = state.viewAsClient ? 'var(--accent)' : 'transparent';
+    if (vacBtn) vacBtn.style.color = state.viewAsClient ? '#062513' : 'var(--accent)';
+
+    const navLabel = $('nav-bot-label');
+    if (navLabel) navLabel.textContent = effAdmin ? 'Agente IA' : 'Mi agente';
+    VIEW_TITLES.bot = effAdmin ? 'Agente IA' : 'Modificaciones a tu agente';
+    setDisp('bot-admin-editor', effAdmin ? '' : 'none');
+    setDisp('bot-client-view', effAdmin ? 'none' : '');
+    setDisp('nav-agent-requests', effAdmin ? 'flex' : 'none');
+
+    if (state.isSuperAdmin) {
+      // Estas ya las muestra finishBootstrap() para el rol real; el toggle
+      // solo las oculta temporalmente al simular vista de cliente.
+      setDisp('nav-admin-link', effAdmin ? 'flex' : 'none');
+      setDisp('nav-section-crm', effAdmin ? 'block' : 'none');
+      setDisp('nav-crm', effAdmin ? 'flex' : 'none');
+    }
+  }
+
+  function toggleViewAsClient() {
+    state.viewAsClient = !state.viewAsClient;
+    applyRoleUI();
+    // Si la vista activa ya no existe para el rol simulado, vuelve a un
+    // lugar seguro en vez de dejar contenido de admin visible a medias.
+    const activeView = document.querySelector('.nav-item.active')?.dataset.view;
+    if (!isEffectiveSuperAdmin() && (activeView === 'agent-requests' || activeView === 'crm')) {
+      switchView('inicio');
+    } else if (activeView === 'bot') {
+      switchView('bot');
+    }
+    showToast(state.viewAsClient ? 'Viendo el dashboard como lo ve un cliente' : 'Volviste a la vista de administrador');
+  }
+  window.toggleViewAsClient = toggleViewAsClient;
+
   async function bootstrap(user) {
     state.userEmail = user.email;
     state.userId    = user.id;
@@ -4530,23 +4752,7 @@
     state.userRole     = role;
     state.userOrgId    = profileData?.organization_id ?? null;
 
-    // Cambio de producto: los clientes ya no editan el prompt/modelo/tester
-    // directamente — solo mandan solicitudes de cambio, que Avaxon aplica.
-    // Esto es la puerta de UI; la seguridad real vive en RLS (bot_configs
-    // solo acepta UPDATE/INSERT de super_admin).
-    if (state.isSuperAdmin) {
-      $('nav-bot-label').textContent = 'Agente IA';
-      VIEW_TITLES.bot = 'Agente IA';
-      $('bot-admin-editor').style.display = '';
-      $('bot-client-view').style.display = 'none';
-      $('cfg-tab-ejemplos').style.display = '';
-      $('nav-agent-requests').style.display = 'flex';
-    } else {
-      $('nav-bot-label').textContent = 'Mi agente';
-      VIEW_TITLES.bot = 'Modificaciones a tu agente';
-      $('bot-admin-editor').style.display = 'none';
-      $('bot-client-view').style.display = '';
-    }
+    applyRoleUI();
 
     if (role === 'agent') {
       ['nav-conexiones','nav-bot','nav-cuenta','nav-section-cuenta'].forEach(id => {
@@ -6616,7 +6822,7 @@
 
   function switchConfigTab(tab) {
     configTab = tab
-    ;['plantillas','ejemplos','general'].forEach(t => {
+    ;['plantillas','general'].forEach(t => {
       const btn  = $('cfg-tab-' + t)
       const pane = $('cfg-pane-' + t)
       if (btn)  { btn.style.background = t === tab ? 'var(--accent)' : 'transparent'; btn.style.color = t === tab ? '#062513' : 'var(--text-muted)' }
@@ -6778,27 +6984,161 @@
     alert('✓ Prompt actualizado. Ve a Agente IA para revisarlo y ajustarlo.')
   }
 
+  const CFG_HOURS_DAYS = [
+    ['mon', 'Lunes'], ['tue', 'Martes'], ['wed', 'Miércoles'], ['thu', 'Jueves'],
+    ['fri', 'Viernes'], ['sat', 'Sábado'], ['sun', 'Domingo'],
+  ];
+
+  function renderHoursEditor(hours) {
+    const el = $('cfg-hours-list');
+    if (!el) return;
+    el.innerHTML = CFG_HOURS_DAYS.map(([key, label]) => {
+      const h = hours?.[key] || {};
+      const closed = !!h.closed;
+      return `<div class="cfg-hours-row">
+        <span style="font-size:13px;color:var(--text)">${label}</span>
+        <input type="time" id="cfg-hours-${key}-open" value="${h.open || '09:00'}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
+        <input type="time" id="cfg-hours-${key}-close" value="${h.close || '18:00'}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
+        <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted);white-space:nowrap;cursor:pointer">
+          <input type="checkbox" id="cfg-hours-${key}-closed" ${closed ? 'checked' : ''} onchange="toggleCfgHoursClosed('${key}')" /> Cerrado
+        </label>
+      </div>`;
+    }).join('');
+  }
+
+  function toggleCfgHoursClosed(key) {
+    const closed = $('cfg-hours-' + key + '-closed')?.checked;
+    const openEl = $('cfg-hours-' + key + '-open');
+    const closeEl = $('cfg-hours-' + key + '-close');
+    if (openEl) openEl.disabled = closed;
+    if (closeEl) closeEl.disabled = closed;
+  }
+  window.toggleCfgHoursClosed = toggleCfgHoursClosed;
+
+  function collectHoursFromForm() {
+    const hours = {};
+    CFG_HOURS_DAYS.forEach(([key]) => {
+      hours[key] = {
+        open: $('cfg-hours-' + key + '-open')?.value || '09:00',
+        close: $('cfg-hours-' + key + '-close')?.value || '18:00',
+        closed: !!$('cfg-hours-' + key + '-closed')?.checked,
+      };
+    });
+    return hours;
+  }
+
+  async function uploadOrgLogo() {
+    const fileInput = $('cfg-logo-file');
+    const file = fileInput?.files?.[0];
+    if (!file) return;
+    const orgId = getActiveOrgId();
+    if (!orgId) { showToast('Selecciona un cliente'); return; }
+    const statusEl = $('cfg-logo-status');
+    if (statusEl) statusEl.textContent = 'Subiendo…';
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${orgId}/logo_${Date.now()}_${safeName}`;
+    const { error } = await sb.storage.from('org-logos').upload(path, file, { upsert: true });
+    if (error) { if (statusEl) statusEl.textContent = 'Error: ' + error.message; return; }
+    const { data: pub } = sb.storage.from('org-logos').getPublicUrl(path);
+    const logoUrl = pub?.publicUrl;
+    await sb.from('organization_profile').upsert({ organization_id: orgId, logo_url: logoUrl, updated_at: new Date().toISOString() }, { onConflict: 'organization_id' });
+    const preview = $('cfg-logo-preview');
+    if (preview && logoUrl) preview.innerHTML = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover" />`;
+    if (statusEl) statusEl.textContent = 'Logo actualizado';
+  }
+  window.uploadOrgLogo = uploadOrgLogo;
+
   async function loadOrgConfig() {
-    const orgId = state.currentOrgId || state.userOrgId
-    if (!orgId) return
-    const { data } = await sb.from('organizations').select('name,industry,timezone').eq('id', orgId).single()
-    if (data) {
-      if ($('cfg-org-name'))     $('cfg-org-name').value     = data.name     ?? ''
-      if ($('cfg-org-industry')) $('cfg-org-industry').value = data.industry ?? ''
-      if ($('cfg-org-timezone')) $('cfg-org-timezone').value = data.timezone || APPOINTMENT_TIMEZONE_FALLBACK
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+
+    const { data: org } = await sb.from('organizations')
+      .select('name,industry,timezone,plan_id,created_at')
+      .eq('id', orgId).maybeSingle();
+    if (org) {
+      if ($('cfg-org-name'))     $('cfg-org-name').value     = org.name     ?? '';
+      if ($('cfg-org-industry')) $('cfg-org-industry').value = org.industry ?? '';
+      if ($('cfg-org-timezone')) $('cfg-org-timezone').value = org.timezone || APPOINTMENT_TIMEZONE_FALLBACK;
+    }
+
+    const { data: profile } = await sb.from('organization_profile').select('*').eq('organization_id', orgId).maybeSingle();
+    if ($('cfg-org-description')) $('cfg-org-description').value = profile?.description || '';
+    if ($('cfg-contact-phone'))    $('cfg-contact-phone').value    = profile?.phone || '';
+    if ($('cfg-contact-whatsapp')) $('cfg-contact-whatsapp').value = profile?.whatsapp || '';
+    if ($('cfg-contact-email'))    $('cfg-contact-email').value    = profile?.email || '';
+    if ($('cfg-contact-website'))  $('cfg-contact-website').value  = profile?.website || '';
+    if ($('cfg-contact-address'))  $('cfg-contact-address').value  = profile?.address || '';
+    if ($('cfg-contact-maps'))     $('cfg-contact-maps').value     = profile?.maps_url || '';
+    if ($('cfg-social-facebook'))  $('cfg-social-facebook').value  = profile?.social?.facebook || '';
+    if ($('cfg-social-instagram')) $('cfg-social-instagram').value = profile?.social?.instagram || '';
+    if ($('cfg-social-tiktok'))    $('cfg-social-tiktok').value    = profile?.social?.tiktok || '';
+    if ($('cfg-org-language'))     $('cfg-org-language').value     = profile?.language || 'es';
+    const preview = $('cfg-logo-preview');
+    if (preview) preview.innerHTML = profile?.logo_url ? `<img src="${profile.logo_url}" style="width:100%;height:100%;object-fit:cover" />` : '<i class="fa fa-image"></i>';
+    renderHoursEditor(profile?.hours);
+
+    // Mi plan (solo lectura)
+    const { data: plan } = org?.plan_id
+      ? await sb.from('plans').select('name,price_monthly').eq('id', org.plan_id).maybeSingle()
+      : { data: null };
+    if ($('cfg-plan-name'))  $('cfg-plan-name').textContent  = plan?.name || '—';
+    if ($('cfg-plan-price')) $('cfg-plan-price').textContent = plan?.price_monthly ? `$${Number(plan.price_monthly).toLocaleString('es-MX')}/mes` : '—';
+    if ($('cfg-plan-response')) $('cfg-plan-response').textContent = PLAN_RESPONSE_TIMES[org?.plan_id] || '—';
+    if ($('cfg-plan-renewal'))  $('cfg-plan-renewal').textContent  = '—'; // sin sistema de suscripción/facturación activo aún
+
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+    const { count: convCount } = await sb.from('conversations')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .gte('created_at', monthStart.toISOString());
+    const { data: planLimits } = org?.plan_id
+      ? await sb.from('plans').select('max_conversations').eq('id', org.plan_id).maybeSingle()
+      : { data: null };
+    if ($('cfg-plan-usage')) {
+      const limit = planLimits?.max_conversations;
+      $('cfg-plan-usage').textContent = (convCount ?? null) !== null
+        ? `${convCount} / ${limit != null ? limit : '—'}`
+        : '—';
     }
   }
 
   async function saveOrgConfig() {
-    const orgId = state.currentOrgId || state.userOrgId
-    if (!orgId) return
-    const name     = ($('cfg-org-name').value     || '').trim()
-    const industry = ($('cfg-org-industry').value || '').trim()
-    const timezone = $('cfg-org-timezone').value || APPOINTMENT_TIMEZONE_FALLBACK
-    await sb.from('organizations').update({ name, industry, timezone, updated_at: new Date().toISOString() }).eq('id', orgId)
-    state.orgTimezone = timezone
-    const msg = $('cfg-org-saved')
-    if (msg) { msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 2000) }
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const btn = $('cfg-save-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+
+    const name     = ($('cfg-org-name').value     || '').trim();
+    const industry = ($('cfg-org-industry').value || '').trim();
+    const timezone = $('cfg-org-timezone').value || APPOINTMENT_TIMEZONE_FALLBACK;
+    await sb.from('organizations').update({ name, industry, timezone, updated_at: new Date().toISOString() }).eq('id', orgId);
+    state.orgTimezone = timezone;
+
+    const profilePayload = {
+      organization_id: orgId,
+      description: ($('cfg-org-description').value || '').trim() || null,
+      phone:       ($('cfg-contact-phone').value    || '').trim() || null,
+      whatsapp:    ($('cfg-contact-whatsapp').value  || '').trim() || null,
+      email:       ($('cfg-contact-email').value     || '').trim() || null,
+      website:     ($('cfg-contact-website').value   || '').trim() || null,
+      address:     ($('cfg-contact-address').value   || '').trim() || null,
+      maps_url:    ($('cfg-contact-maps').value      || '').trim() || null,
+      social: {
+        facebook:  ($('cfg-social-facebook').value  || '').trim() || null,
+        instagram: ($('cfg-social-instagram').value || '').trim() || null,
+        tiktok:    ($('cfg-social-tiktok').value     || '').trim() || null,
+      },
+      hours: collectHoursFromForm(),
+      language: $('cfg-org-language').value || 'es',
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await sb.from('organization_profile').upsert(profilePayload, { onConflict: 'organization_id' });
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
+    if (error) { showToast('Error al guardar: ' + error.message, 4000); return; }
+
+    const msg = $('cfg-org-saved');
+    if (msg) { msg.style.opacity = '1'; setTimeout(() => msg.style.opacity = '0', 2000); }
   }
 
   window.switchConfigTab    = switchConfigTab

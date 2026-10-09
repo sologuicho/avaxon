@@ -112,6 +112,44 @@ async function parseMessage(msg: any, token: string, openaiKey: string): Promise
   return { waMessageId: msg.id, content, mediaType, imageDataUrl, imageCaption }
 }
 
+const DAY_LABELS: Record<string, string> = {
+  mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves',
+  fri: 'Viernes', sat: 'Sábado', sun: 'Domingo',
+}
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+
+// Arma un bloque de contexto a partir de organization_profile (Configuración
+// → General) para que el bot sepa teléfono/horarios/dirección reales sin
+// tener que editar el prompt cada vez que el cliente los cambia. Solo incluye
+// lo que el cliente de verdad llenó — nunca inventa datos vacíos.
+function buildBusinessContextBlock(profile: any): string {
+  if (!profile) return ''
+  const lines: string[] = []
+
+  if (profile.description) lines.push(`Descripción: ${profile.description}`)
+  if (profile.phone) lines.push(`Teléfono: ${profile.phone}`)
+  if (profile.whatsapp) lines.push(`WhatsApp: ${profile.whatsapp}`)
+  if (profile.email) lines.push(`Correo: ${profile.email}`)
+  if (profile.website) lines.push(`Sitio web: ${profile.website}`)
+  if (profile.address) lines.push(`Dirección: ${profile.address}`)
+  if (profile.maps_url) lines.push(`Ubicación en Google Maps: ${profile.maps_url}`)
+
+  const hours = profile.hours || {}
+  const hourLines = DAY_ORDER
+    .filter(day => hours[day])
+    .map(day => {
+      const h = hours[day]
+      return h.closed ? `${DAY_LABELS[day]}: cerrado` : `${DAY_LABELS[day]}: ${h.open}–${h.close}`
+    })
+  if (hourLines.length) {
+    lines.push('Horarios de atención:')
+    hourLines.forEach(l => lines.push(`- ${l}`))
+  }
+
+  if (!lines.length) return ''
+  return `INFORMACIÓN DEL NEGOCIO (de Configuración — usa esto para responder sobre contacto, ubicación y horarios; no inventes datos que no estén aquí):\n${lines.join('\n')}`
+}
+
 async function handleIncoming(body: any, env: Env): Promise<void> {
   const { WA_TOKEN, OPENAI_KEY, SUPABASE_URL, SERVICE_KEY } = env
 
@@ -255,6 +293,20 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!botConfig) return
 
+  // Contexto de negocio (Configuración → General): así cuando el cliente
+  // actualiza su horario o teléfono, el bot responde bien sin tocar el
+  // prompt a mano. Solo se incluyen los campos que el cliente sí llenó.
+  const { data: orgProfile } = await sb
+    .from('organization_profile')
+    .select('description, phone, whatsapp, email, website, address, maps_url, hours')
+    .eq('organization_id', organization_id)
+    .maybeSingle()
+
+  const businessContext = buildBusinessContextBlock(orgProfile)
+  const systemPrompt = businessContext
+    ? `${botConfig.system_prompt}\n\n${businessContext}`
+    : botConfig.system_prompt
+
   // ── 6. Debounce: esperar y ceder el turno si llegó algo más nuevo ──────────
   await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS))
 
@@ -317,7 +369,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       model:           'gpt-4o',
       response_format: { type: 'json_object' },
       messages: [
-        { role: 'system', content: botConfig.system_prompt },
+        { role: 'system', content: systemPrompt },
         ...chatHistory,
       ],
       max_tokens:  600,
