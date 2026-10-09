@@ -94,12 +94,12 @@ Deno.serve(async (req: Request) => {
     const returnUrl = `${CALLBACK_URL}?state=${encodeURIComponent(state)}`
     const refreshUrl = `${DASHBOARD_URL}?conexion=stripe_retry`
 
-    // ── Account Link v2 ─────────────────────────────────────────────────────
-    const accountLink = await stripeV2Fetch('/v2/core/account_links', STRIPE_SECRET_KEY, {
+    // ── Account Link v1 ─────────────────────────────────────────────────────
+    // /v2/core/account_links no existe — los account links siguen siendo v1.
+    const accountLink = await stripeFetch('/v1/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,
-        use_case: 'account_onboarding',
-        configuration: 'merchant',
+        type: 'account_onboarding',
         return_url: returnUrl,
         refresh_url: refreshUrl,
       },
