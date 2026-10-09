@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Account Link v1 ─────────────────────────────────────────────────────
     // /v2/core/account_links no existe — los account links siguen siendo v1.
-    const accountLink = await stripeFetch('/v1/account_links', STRIPE_SECRET_KEY, {
+    const accountLink = await stripeFetch('/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,
         type: 'account_onboarding',
