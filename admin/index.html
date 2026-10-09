@@ -775,6 +775,23 @@
         <span id="solicitudes-badge" style="display:none;margin-left:auto;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.6"></span>
       </div>
 
+      <div class="nav-item" data-view="agentes">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
+        </span>
+        Agentes
+      </div>
+
+      <div class="nav-item" data-view="solicitudes-clientes">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        </span>
+        Solicitudes de clientes
+        <span id="solicitudes-clientes-badge" style="display:none;margin-left:auto;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.6"></span>
+      </div>
+
       <hr class="nav-divider" />
 
       <div class="nav-back" onclick="window.location.href='../dashboard/'">
@@ -967,8 +984,117 @@
         </div>
       </div>
 
+      <!-- VISTA: AGENTES -->
+      <div class="view" id="view-agentes">
+        <div class="card" style="margin-bottom:16px;padding:18px 20px">
+          <label class="field-label">Organización</label>
+          <select class="field-input" id="agentes-org-select" style="max-width:420px" onchange="selectAgenteOrg(this.value)">
+            <option value="">Selecciona un cliente…</option>
+          </select>
+        </div>
+
+        <div id="agentes-editor" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;margin-bottom:16px">
+            <div class="card" style="padding:20px">
+              <div style="font-size:15px;font-weight:700;color:#1a2535;margin-bottom:14px">Personalidad del agente</div>
+              <textarea class="field-input" id="agentes-prompt" rows="12" style="font-family:'JetBrains Mono',monospace;font-size:12.5px;resize:vertical" placeholder="Eres el asistente virtual de…"></textarea>
+              <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                <button class="btn-primary" id="agentes-save-btn" onclick="saveAgenteConfig()">Guardar cambios</button>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="card" style="padding:16px 18px">
+                <div style="font-size:13px;font-weight:700;color:#1a2535;margin-bottom:10px">Estado del agente</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <label style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer" id="agentes-toggle-active" onclick="setAgenteEnabled(true)">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
+                    <span style="font-size:13px;font-weight:600">Activo</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:9px;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer" id="agentes-toggle-paused" onclick="setAgenteEnabled(false)">
+                    <span style="width:9px;height:9px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></span>
+                    <span style="font-size:13px;font-weight:600">Pausado</span>
+                  </label>
+                </div>
+              </div>
+              <div class="card" style="padding:16px 18px">
+                <div style="font-size:13px;font-weight:700;color:#1a2535;margin-bottom:10px">Modelo de IA</div>
+                <div style="font-size:13px;font-weight:600;color:#1a2535">GPT-4o</div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px">Único modelo disponible por ahora — el selector queda listo para cuando haya más de uno</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="padding:0">
+            <div style="padding:14px 20px;border-bottom:1px solid #e6e7e9;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:15px;font-weight:700;color:#1a2535">Probar agente</span>
+              <button class="btn-ghost" onclick="clearAgenteTest()">Limpiar</button>
+            </div>
+            <div id="agentes-test-messages" style="min-height:220px;max-height:380px;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+              <div id="agentes-test-empty" style="color:#a7adb5;font-size:12.5px;text-align:center;padding:30px 0">Escribe un mensaje para probar el agente de esta org</div>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid #e6e7e9;display:flex;gap:8px">
+              <input class="field-input" id="agentes-test-input" placeholder="Escribe como si fueras un cliente…" onkeydown="if(event.key==='Enter'){event.preventDefault();sendAgenteTest();}" />
+              <button class="btn-primary" id="agentes-test-send" onclick="sendAgenteTest()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VISTA: SOLICITUDES DE CLIENTES -->
+      <div class="view" id="view-solicitudes-clientes">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select class="field-input" id="src-filter-status" style="max-width:220px" onchange="loadSolicitudesClientes()">
+            <option value="">Todos los estados</option>
+            <option value="received">Recibida</option>
+            <option value="in_progress">En proceso</option>
+            <option value="needs_info">Necesitamos más información</option>
+            <option value="completed">Completada</option>
+          </select>
+          <select class="field-input" id="src-filter-org" style="max-width:260px" onchange="loadSolicitudesClientes()">
+            <option value="">Todos los clientes</option>
+          </select>
+        </div>
+        <div class="card" style="padding:0">
+          <div id="src-list"></div>
+        </div>
+      </div>
+
     </div>
   </main>
+</div>
+
+<!-- MODAL: RESPONDER SOLICITUD DE CLIENTE -->
+<div class="modal-backdrop" id="modal-src">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span class="modal-title" id="src-modal-org">Solicitud</span>
+      <button class="modal-close" data-close="modal-src">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-error" id="src-modal-error"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px" id="src-modal-meta"></div>
+      <div style="font-size:13.5px;color:#1a2535;line-height:1.6;margin-bottom:14px;padding:12px 14px;background:#f8fafc;border-radius:10px" id="src-modal-description"></div>
+      <div id="src-modal-attachments" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+      <div class="field-group">
+        <label class="field-label">Estado</label>
+        <select class="field-input" id="src-modal-status">
+          <option value="received">Recibida</option>
+          <option value="in_progress">En proceso</option>
+          <option value="needs_info">Necesitamos más información</option>
+          <option value="completed">Completada</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Respuesta / comentario para el cliente</label>
+        <textarea class="field-input" id="src-modal-response" rows="4"></textarea>
+      </div>
+      <a href="#" id="src-modal-editor-link" style="font-size:12.5px;color:var(--accent);font-weight:600">Abrir editor del prompt de esta org →</a>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-close="modal-src">Cancelar</button>
+      <button class="btn-primary" id="btn-guardar-src">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <!-- PAGE OVERLAY: NUEVO CLIENTE -->
@@ -1247,32 +1373,6 @@
   </div>
 </div>
 
-<!-- MODAL: BOT CONFIG -->
-<div class="modal-backdrop" id="modal-bot">
-  <div class="modal" style="max-width:580px">
-    <div class="modal-header">
-      <span class="modal-title" id="bot-modal-title">Bot</span>
-      <button class="modal-close" data-close="modal-bot">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-error" id="bot-modal-error"></div>
-      <div class="modal-success" id="bot-modal-success">Guardado correctamente.</div>
-      <div class="field-group" style="margin-bottom:16px">
-        <label class="field-label">System prompt</label>
-        <textarea class="field-input" id="bot-modal-prompt" rows="10" style="font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical" placeholder="Eres el asistente de…"></textarea>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <input type="checkbox" id="bot-modal-enabled" style="width:16px;height:16px;accent-color:var(--accent)">
-        <label for="bot-modal-enabled" class="field-label" style="margin:0;cursor:pointer">Bot activo</label>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-ghost" data-close="modal-bot">Cancelar</button>
-      <button class="btn-primary" id="btn-guardar-bot">Guardar</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL: ACTIVAR SOLICITUD -->
 <div class="modal-backdrop" id="modal-activar">
   <div class="modal" style="max-width:520px">
@@ -1322,7 +1422,10 @@
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const VIEW_TITLES = { overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes' };
+  const VIEW_TITLES = {
+    overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes',
+    agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes',
+  };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
   // ── Nuevo cliente state ──────────────────────────────────────────────────────
@@ -1418,6 +1521,14 @@
     if (name === 'clientes')    loadClientes();
     if (name === 'usuarios')    loadUsuarios();
     if (name === 'solicitudes') loadSolicitudes();
+    if (name === 'agentes')     loadAgentesOrgList();
+    if (name === 'solicitudes-clientes') loadSolicitudesClientes();
+  }
+  function switchViewWithOrg(name, orgId) {
+    switchView(name);
+    if (name === 'agentes' && orgId) {
+      setTimeout(() => { const sel = $('agentes-org-select'); if (sel) { sel.value = orgId; selectAgenteOrg(orgId); } }, 150);
+    }
   }
 
   // ── Render Nuevo Cliente ────────────────────────────────────────────────────
@@ -1634,9 +1745,23 @@
     $('sidebar-email').textContent = user.email;
     $('sidebar-user-avatar').textContent = initials(user.email || '?');
     showScreen('app');
-    loadOverview();
+
+    // Deep link desde el dashboard: ?view=agentes[&org=<id>] o ?view=solicitudes-clientes
+    const params = new URLSearchParams(window.location.search);
+    const deepView = params.get('view');
+    const deepOrg = params.get('org');
+    if (deepView && VIEW_TITLES[deepView]) {
+      switchViewWithOrg(deepView, deepOrg);
+    } else {
+      loadOverview();
+    }
+
     sb.from('onboarding_requests').select('id', { count: 'exact', head: true }).neq('status', 'activated').then(({ count }) => {
       const badge = $('solicitudes-badge');
+      if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
+    });
+    sb.from('agent_change_requests').select('id', { count: 'exact', head: true }).eq('status', 'received').then(({ count }) => {
+      const badge = $('solicitudes-clientes-badge');
       if (count > 0) { badge.textContent = count; badge.style.display = 'inline'; }
     });
   }
@@ -1768,7 +1893,7 @@
           <td style="font-size:12px;color:var(--text-muted)">${fmtDate(o.created_at)}</td>
           <td>
             <div class="actions-cell">
-              <button class="btn-ghost" onclick="openBotModal('${o.id}','${o.name.replace(/'/g,"\\'")}')" title="Editar prompt del bot">Bot</button>
+              <button class="btn-ghost" onclick="switchViewWithOrg('agentes','${o.id}')" title="Editar el agente de esta org">Agente</button>
               <button class="btn-ghost" onclick="openEditModal('${o.id}')">Editar</button>
               <button class="btn-danger" onclick="toggleOrgStatus('${o.id}','${o.status}')">${o.status === 'paused' ? 'Activar' : 'Pausar'}</button>
             </div>
@@ -2229,6 +2354,245 @@
         }).join('');
   }
 
+  // ── Agentes (editor de bot_configs, movido aquí desde el dashboard) ─────
+  const agentesState = { orgId: null };
+  const agenteTest = { history: [], busy: false };
+
+  async function loadAgentesOrgList() {
+    const sel = $('agentes-org-select');
+    if (sel.options.length <= 1) {
+      let orgs = state.orgsCache;
+      if (!orgs) {
+        const { data } = await sb.from('organizations').select('id,name').order('name');
+        orgs = data || [];
+        state.orgsCache = orgs;
+      }
+      orgs.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.id; opt.textContent = o.name;
+        sel.appendChild(opt);
+      });
+    }
+  }
+
+  async function selectAgenteOrg(orgId) {
+    agentesState.orgId = orgId || null;
+    $('agentes-org-select').value = orgId || '';
+    if (!orgId) { $('agentes-editor').style.display = 'none'; return; }
+    $('agentes-editor').style.display = 'block';
+    clearAgenteTest();
+
+    const { data } = await sb.from('bot_configs').select('system_prompt, enabled').eq('organization_id', orgId).maybeSingle();
+    $('agentes-prompt').value = data?.system_prompt ?? '';
+    updateAgenteToggleUI(data?.enabled !== false);
+  }
+  window.selectAgenteOrg = selectAgenteOrg;
+
+  function updateAgenteToggleUI(enabled) {
+    const activeEl = $('agentes-toggle-active');
+    const pausedEl = $('agentes-toggle-paused');
+    activeEl.style.borderColor = enabled ? 'var(--accent)' : 'var(--border)';
+    activeEl.style.background  = enabled ? 'rgba(34,197,94,.06)' : '';
+    pausedEl.style.borderColor = !enabled ? 'var(--red)' : 'var(--border)';
+    pausedEl.style.background  = !enabled ? 'rgba(239,68,68,.06)' : '';
+  }
+
+  async function setAgenteEnabled(enabled) {
+    if (!agentesState.orgId) return;
+    await sb.from('bot_configs').upsert({ organization_id: agentesState.orgId, enabled }, { onConflict: 'organization_id' });
+    updateAgenteToggleUI(enabled);
+    showToast(enabled ? 'Agente activado' : 'Agente pausado', 'success');
+  }
+  window.setAgenteEnabled = setAgenteEnabled;
+
+  async function saveAgenteConfig() {
+    if (!agentesState.orgId) return;
+    const prompt = $('agentes-prompt').value.trim();
+    if (!prompt) { showToast('El prompt no puede estar vacío', 'error'); return; }
+    const btn = $('agentes-save-btn');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { error } = await sb.from('bot_configs').upsert({
+      organization_id: agentesState.orgId, system_prompt: prompt,
+    }, { onConflict: 'organization_id' });
+    btn.disabled = false; btn.textContent = 'Guardar cambios';
+    showToast(error ? 'Error al guardar' : 'Cambios guardados', error ? 'error' : 'success');
+  }
+  window.saveAgenteConfig = saveAgenteConfig;
+
+  function agenteTestAppend(role, text) {
+    const empty = $('agentes-test-empty');
+    if (empty) empty.remove();
+    const box = $('agentes-test-messages');
+    const el = document.createElement('div');
+    el.style.cssText = `max-width:80%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;${
+      role === 'user'
+        ? 'align-self:flex-end;background:#2c455d;color:#fff;'
+        : 'align-self:flex-start;background:#f1f5f9;color:#1a2535;'
+    }`;
+    el.textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+    return el;
+  }
+
+  async function sendAgenteTest() {
+    if (agenteTest.busy || !agentesState.orgId) return;
+    const input = $('agentes-test-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    agenteTest.busy = true;
+    input.value = '';
+    agenteTestAppend('user', msg);
+    const typingEl = agenteTestAppend('bot', '···');
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const res = await fetch(`${EDGE_BASE}/test-bot`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: agenteTest.history, org_id: agentesState.orgId }),
+      });
+      const data = await res.json();
+      typingEl.remove();
+      if (!res.ok) { agenteTestAppend('bot', '⚠️ ' + (data.error ?? 'Error al obtener respuesta')); return; }
+      agenteTestAppend('bot', data.reply);
+      agenteTest.history.push({ role: 'user', content: msg });
+      agenteTest.history.push({ role: 'assistant', content: data.reply });
+    } catch (e) {
+      typingEl.remove();
+      agenteTestAppend('bot', '⚠️ Error de red: ' + e.message);
+    } finally {
+      agenteTest.busy = false;
+    }
+  }
+  window.sendAgenteTest = sendAgenteTest;
+
+  function clearAgenteTest() {
+    agenteTest.history = [];
+    agenteTest.busy = false;
+    const box = $('agentes-test-messages');
+    if (box) box.innerHTML = '<div id="agentes-test-empty" style="color:#a7adb5;font-size:12.5px;text-align:center;padding:30px 0">Escribe un mensaje para probar el agente de esta org</div>';
+  }
+  window.clearAgenteTest = clearAgenteTest;
+
+  // ── Solicitudes de clientes (agent_change_requests, movido aquí desde el dashboard) ──
+  const SRC_TYPE_LABELS = {
+    update_info: 'Actualizar información', change_tone: 'Cambiar cómo responde',
+    add_faq: 'Agregar preguntas frecuentes', other: 'Otro',
+  };
+  const SRC_STATUS_LABELS = {
+    received: ['pill-amber', 'Recibida'], in_progress: ['pill-accent', 'En proceso'],
+    needs_info: ['pill-red', 'Necesitamos más información'], completed: ['pill-green', 'Completada'],
+  };
+  let srcCache = [];
+  let srcModalId = null;
+
+  async function loadSolicitudesClientes() {
+    const orgSel = $('src-filter-org');
+    if (orgSel.options.length <= 1) {
+      let orgs = state.orgsCache;
+      if (!orgs) { const { data } = await sb.from('organizations').select('id,name').order('name'); orgs = data || []; state.orgsCache = orgs; }
+      orgs.forEach(o => { const opt = document.createElement('option'); opt.value = o.id; opt.textContent = o.name; orgSel.appendChild(opt); });
+    }
+
+    let q = sb.from('agent_change_requests')
+      .select('id,organization_id,type,description,priority,status,response,created_at,organizations(name)')
+      .order('created_at', { ascending: false });
+    const statusFilter = $('src-filter-status').value;
+    const orgFilter = $('src-filter-org').value;
+    if (statusFilter) q = q.eq('status', statusFilter);
+    if (orgFilter) q = q.eq('organization_id', orgFilter);
+
+    const { data, error } = await q;
+    const listEl = $('src-list');
+    if (error) { listEl.innerHTML = `<div style="padding:32px;color:var(--red)">${error.message}</div>`; return; }
+    srcCache = data || [];
+
+    const badge = $('solicitudes-clientes-badge');
+    const pendingCount = srcCache.filter(r => r.status === 'received').length;
+    if (pendingCount > 0) { badge.textContent = pendingCount; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
+
+    if (!srcCache.length) { listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📥</div>Sin solicitudes con estos filtros</div>'; return; }
+
+    listEl.innerHTML = srcCache.map(r => {
+      const [cls, label] = SRC_STATUS_LABELS[r.status] || SRC_STATUS_LABELS.received;
+      const urgente = r.priority === 'urgent' ? '<span style="font-size:10.5px;font-weight:700;color:#ef4444;margin-left:6px">URGENTE</span>' : '';
+      return `<div style="padding:14px 20px;border-bottom:1px solid #e6e7e9;display:flex;flex-direction:column;gap:6px;cursor:pointer" onclick="openSolicitudClienteModal('${r.id}')">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div>
+            <span style="font-size:12px;color:var(--text-muted);margin-right:8px">${r.organizations?.name || '—'}</span>
+            <span style="font-size:13px;font-weight:700;color:#1a2535">${SRC_TYPE_LABELS[r.type] || r.type}</span>
+            ${urgente}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text-dim)">${fmtDate(r.created_at)}</span>
+            <span class="pill ${cls} no-dot">${label}</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:var(--text-muted)">${r.description}</div>
+      </div>`;
+    }).join('');
+  }
+  window.loadSolicitudesClientes = loadSolicitudesClientes;
+
+  async function openSolicitudClienteModal(id) {
+    const r = srcCache.find(x => x.id === id);
+    if (!r) return;
+    srcModalId = id;
+    $('src-modal-org').textContent = r.organizations?.name || '—';
+    $('src-modal-meta').textContent = `${SRC_TYPE_LABELS[r.type] || r.type} · ${r.priority === 'urgent' ? 'Urgente' : 'Normal'} · ${new Date(r.created_at).toLocaleString('es-MX')}`;
+    $('src-modal-description').textContent = r.description;
+    $('src-modal-status').value = r.status;
+    $('src-modal-response').value = r.response || '';
+    $('src-modal-error').style.display = 'none';
+    $('src-modal-editor-link').onclick = (e) => {
+      e.preventDefault();
+      closeModal('modal-src');
+      switchViewWithOrg('agentes', r.organization_id);
+    };
+
+    const { data: full } = await sb.from('agent_change_requests').select('attachments').eq('id', id).maybeSingle();
+    const attachments = full?.attachments || [];
+    const attEl = $('src-modal-attachments');
+    attEl.innerHTML = '';
+    if (attachments.length) {
+      const title = document.createElement('div');
+      title.style.cssText = 'font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase';
+      title.textContent = 'Adjuntos';
+      attEl.appendChild(title);
+      for (const att of attachments) {
+        const { data: signed } = await sb.storage.from('agent-requests').createSignedUrl(att.path, 3600);
+        const link = document.createElement('a');
+        link.href = signed?.signedUrl || '#';
+        link.target = '_blank'; link.rel = 'noopener';
+        link.style.cssText = 'font-size:12.5px;color:var(--accent)';
+        link.textContent = '📎 ' + att.filename;
+        attEl.appendChild(link);
+      }
+    }
+
+    openModal('modal-src');
+  }
+  window.openSolicitudClienteModal = openSolicitudClienteModal;
+
+  $('btn-guardar-src').addEventListener('click', async () => {
+    if (!srcModalId) return;
+    const status = $('src-modal-status').value;
+    const response = $('src-modal-response').value.trim();
+    const btn = $('btn-guardar-src');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const { error } = await sb.from('agent_change_requests').update({
+      status, response: response || null,
+      responded_by: state.userId, responded_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', srcModalId);
+    btn.disabled = false; btn.textContent = 'Guardar';
+    if (error) { $('src-modal-error').textContent = error.message; $('src-modal-error').style.display = 'block'; return; }
+    closeModal('modal-src');
+    showToast('Solicitud actualizada', 'success');
+    loadSolicitudesClientes();
+  });
+
   function openActivarModal(requestId, bizName, phone, pnid, waba, email) {
     activarState.requestId = requestId;
     $('activar-modal-title').textContent = `Activar — ${bizName}`;
@@ -2361,53 +2725,8 @@
     backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.classList.remove('open'); });
   });
 
-  // ── Bot config modal ───────────────────────────────────────────────────
-  const botState = { orgId: null };
-
-  async function openBotModal(orgId, orgName) {
-    botState.orgId = orgId;
-    $('bot-modal-title').textContent = `Bot — ${orgName}`;
-    $('bot-modal-error').style.display = 'none';
-    $('bot-modal-success').style.display = 'none';
-    $('bot-modal-prompt').value = '';
-    $('bot-modal-enabled').checked = true;
-    $('btn-guardar-bot').disabled = false;
-
-    const { data } = await sb.from('bot_configs').select('system_prompt, enabled').eq('organization_id', orgId).single();
-    if (data) {
-      $('bot-modal-prompt').value   = data.system_prompt ?? '';
-      $('bot-modal-enabled').checked = data.enabled ?? true;
-    }
-    openModal('modal-bot');
-  }
-  window.openBotModal = openBotModal;
-
   $('btn-confirmar-activar').addEventListener('click', confirmarActivar);
   $('btn-reload-solicitudes').addEventListener('click', loadSolicitudes);
-
-  $('btn-guardar-bot').addEventListener('click', async () => {
-    $('bot-modal-error').style.display   = 'none';
-    $('bot-modal-success').style.display = 'none';
-    $('btn-guardar-bot').disabled = true;
-    $('btn-guardar-bot').textContent = 'Guardando…';
-
-    const { error } = await sb.from('bot_configs').upsert({
-      organization_id: botState.orgId,
-      system_prompt:   $('bot-modal-prompt').value.trim(),
-      enabled:         $('bot-modal-enabled').checked,
-    }, { onConflict: 'organization_id' });
-
-    $('btn-guardar-bot').disabled = false;
-    $('btn-guardar-bot').textContent = 'Guardar';
-
-    if (error) {
-      $('bot-modal-error').textContent = error.message;
-      $('bot-modal-error').style.display = 'block';
-    } else {
-      $('bot-modal-success').style.display = 'block';
-      setTimeout(() => { $('bot-modal-success').style.display = 'none'; }, 2500);
-    }
-  });
 
   $('hamburger-btn').addEventListener('click', () => {
     $('sidebar').classList.toggle('open');
