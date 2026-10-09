@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeFetch, stripeV2Fetch } from '../_shared/stripe.ts'
+import { stripeFetch } from '../_shared/stripe.ts'
 import { signState } from '../_shared/google.ts'
 
 // ── Inicia Stripe Connect v2 (merchant, dashboard full) ──────────────────────
