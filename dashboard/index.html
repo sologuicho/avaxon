@@ -8900,8 +8900,11 @@
           organization_id: orgId, provider: 'google_sheets', action: 'update_config',
           config: { spreadsheet_id: sheetId },
         });
-<<<<<<< HEAD
-        gsheetsTokenClient?.requestAccessToken({ prompt: 'select_account' });
+        if (result.error) { errEl.textContent = 'Error al guardar: ' + result.error; errEl.style.display = 'block'; return; }
+        state.integrations['google_sheets'] = { ...gsheetsInteg, config: result.config || { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId } };
+        updateIntegPill('google_sheets', 'gsheets-integ-pill');
+        closeIntegModal();
+        showToast('Hoja de cálculo guardada');
 
       } else if (provider === 'stripe') {
         const orgId = state.currentOrgId || state.userOrgId
@@ -8918,13 +8921,6 @@
           return
         }
         window.location.href = data.url
-=======
-        if (result.error) { errEl.textContent = 'Error al guardar: ' + result.error; errEl.style.display = 'block'; return; }
-        state.integrations['google_sheets'] = { ...gsheetsInteg, config: result.config || { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId } };
-        updateIntegPill('google_sheets', 'gsheets-integ-pill');
-        closeIntegModal();
-        showToast('Hoja de cálculo guardada');
->>>>>>> origin/main
 
       } else if (provider === 'zapier') {
         const url = document.getElementById('im-zapier-url')?.value?.trim();
