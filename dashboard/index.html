@@ -666,6 +666,17 @@
     #apt-detail-modal .apt-detail-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
     #apt-detail-modal .apt-detail-row:last-child { border-bottom: none; }
 
+    /* ── Pagos ─────────────────────────────────────────────────────────── */
+    .pago-row { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .pago-row:last-child { border-bottom: none; }
+    .pago-concept { font-size: 13.5px; font-weight: 700; color: var(--text); }
+    .pago-meta { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+    .pago-amount { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--text); margin-left: auto; }
+    @media (max-width: 640px) {
+      .pago-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+      .pago-amount { margin-left: 0; }
+    }
+
     /* ── Google Calendar status banner ── */
     .gcal-banner {
       display: flex; align-items: center; gap: 14px;
@@ -1172,6 +1183,13 @@
         </span>
         Inventario
       </div>
+      <div class="nav-item" id="nav-pagos" data-view="pagos">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        </span>
+        Pagos
+      </div>
       <div class="nav-item" id="nav-config" data-view="config">
         <span class="nav-dot"></span>
         <span class="nav-icon">
@@ -1504,6 +1522,16 @@
                   </button>
                 </div>
                 <div id="cpanel-apts"></div>
+              </div>
+
+              <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <div class="cpanel-section-title" style="margin-bottom:0">Pagos</div>
+                  <button onclick="openPaymentLinkModal()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid #e6e7e9;background:#fff;font-size:12px;font-weight:700;color:#2c455d;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em">
+                    <i class="fa fa-plus" style="font-size:10px"></i> Enviar link de pago
+                  </button>
+                </div>
+                <div id="cpanel-payments"></div>
               </div>
 
               <button id="cpanel-view-profile-btn" style="width:100%;padding:10px;border-radius:9px;border:1px solid #e6e7e9;background:#fff;color:#2c455d;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Ver perfil completo</button>
@@ -2046,6 +2074,41 @@
             </div>
           </div>
 
+          <!-- Stripe Connect -->
+          <div class="card bp" style="padding:0" id="stripe-conexion-card">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:44px;height:44px;background:#635bff;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:15px;font-weight:700;color:var(--text)">Stripe</div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Cobra pagos desde WhatsApp con un link de Stripe Checkout</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <span id="stripe-status-pill" class="pill pill-amber no-dot">No conectado</span>
+                <button id="stripe-connect-btn" class="btn-primary" onclick="stripeConnect()" style="font-size:13px;padding:7px 16px">
+                  <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe
+                </button>
+              </div>
+            </div>
+            <div id="stripe-testmode-banner" style="display:none;padding:9px 24px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.25);font-size:12px;color:#92700a;font-weight:600">
+              <i class="fa fa-flask" style="margin-right:6px"></i>Modo de prueba — los cobros no son reales (sk_test)
+            </div>
+            <div id="stripe-detail-panel" style="padding:18px 24px;display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:13px;color:var(--text-muted)">Estado</span>
+                <span id="stripe-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
+                <span style="font-size:13px;color:var(--text-muted)">Cuenta</span>
+                <span id="stripe-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">—</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Integraciones -->
           <div class="card bp" style="padding:0">
             <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
@@ -2094,7 +2157,7 @@
                 <div class="integ-name">Google Sheets</div>
                 <div class="integ-desc">Exporta tus leads a una hoja de cálculo cuando tú lo pidas</div>
               </div>
-              <div class="integ-card" style="cursor:pointer" onclick="openIntegModal('stripe')">
+              <div class="integ-card" style="cursor:pointer" onclick="switchView('conexiones')">
                 <div style="display:flex;align-items:center;justify-content:space-between">
                   <div class="integ-logo" style="background:#635bff">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>
@@ -2102,7 +2165,7 @@
                   <span class="pill pill-amber no-dot" id="stripe-integ-pill">No conectado</span>
                 </div>
                 <div class="integ-name">Stripe</div>
-                <div class="integ-desc">Guarda tus claves para cobros por WhatsApp — Próximamente</div>
+                <div class="integ-desc">Cobra pagos desde WhatsApp con Stripe Connect</div>
               </div>
               <div class="integ-card" style="cursor:pointer" onclick="openIntegModal('zapier')">
                 <div style="display:flex;align-items:center;justify-content:space-between">
@@ -2663,6 +2726,31 @@
         </div>
       </div>
 
+      <!-- VIEW: Pagos -->
+      <div class="view" id="view-pagos">
+        <div class="view-header">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(99,102,241,.12);color:#818cf8"><i class="fa fa-credit-card"></i></div>
+            <div>
+              <div class="view-header-title">Pagos</div>
+              <div class="view-header-sub">Cobros creados con Stripe</div>
+            </div>
+          </div>
+          <div class="view-header-actions">
+            <button class="btn-refresh" onclick="loadPagos()"><i class="fa fa-rotate-right" style="font-size:11px"></i> Actualizar</button>
+          </div>
+        </div>
+        <div id="pagos-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#10b981"></div><div><div class="kpi-label">Cobrado</div><div class="kpi-value" id="pagos-kpi-paid">—</div></div></div>
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#f59e0b"></div><div><div class="kpi-label">Pendiente</div><div class="kpi-value" id="pagos-kpi-pending">—</div></div></div>
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:var(--accent)"></div><div><div class="kpi-label">Total de cobros</div><div class="kpi-value" id="pagos-kpi-total">—</div></div></div>
+        </div>
+        <div class="card bp" style="padding:0">
+          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+          <div id="pagos-list" style="display:flex;flex-direction:column"></div>
+        </div>
+      </div>
+
       <!-- VIEW: Configuración -->
       <div class="view" id="view-config">
         <div class="view-header">
@@ -3158,9 +3246,9 @@
 
   function statusPill(status) {
     if (!status) return '<span class="pill pill-muted no-dot">—</span>';
-    const greenSet  = new Set(['active', 'open', 'bot', 'qualified', 'won', 'verified', 'connected']);
+    const greenSet  = new Set(['active', 'open', 'bot', 'qualified', 'won', 'verified', 'connected', 'paid']);
     const amberSet  = new Set(['new', 'contacted', 'pending', 'trial']);
-    const redSet    = new Set(['closed', 'suspended', 'cancelled', 'lost', 'inactive', 'failed']);
+    const redSet    = new Set(['closed', 'suspended', 'cancelled', 'lost', 'inactive', 'failed', 'expired']);
     let cls = 'pill-muted';
     if (greenSet.has(status))  cls = 'pill-green';
     if (amberSet.has(status))  cls = 'pill-amber';
@@ -3171,7 +3259,7 @@
       new:'Nuevo', contacted:'Contactado', qualified:'Calificado',
       won:'Ganado', lost:'Perdido', inactive:'Inactivo',
       pending:'Pendiente', trial:'Trial', verified:'Verificado',
-      connected:'Conectado',
+      connected:'Conectado', paid:'Pagado', expired:'Expirado',
     };
     return `<span class="pill ${cls}">${LABELS[status] ?? status}</span>`;
   }
@@ -3209,7 +3297,7 @@
     leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
     pipeline: 'Pipeline', asignacion: 'Asignación', campanas: 'Campañas',
     bot: 'Agente IA', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
-    'agent-requests': 'Solicitudes de clientes',
+    'agent-requests': 'Solicitudes de clientes', pagos: 'Pagos',
   };
 
   function switchView(name) {
@@ -3234,6 +3322,7 @@
     if (name === 'config')         loadConfig();
     if (name === 'campanas')       loadCampanas();
     if (name === 'agent-requests') loadAgentRequestsAdmin();
+    if (name === 'pagos')          loadPagos();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -3829,8 +3918,25 @@
             <div style="font-size:11.5px;color:var(--text-muted)">${fmtDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
           </div>`).join('')
         : '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
+
+      const { data: pays } = await sb.from('payments')
+        .select('id, concept, amount, status, created_at, checkout_url')
+        .eq('contact_id', contact.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      $('cpanel-payments').innerHTML = (pays && pays.length)
+        ? pays.map(p => {
+            const amountFmt = '$' + Number(p.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+            const link = p.status === 'pending' && p.checkout_url ? ` · <a href="${p.checkout_url}" target="_blank" rel="noopener">link</a>` : '';
+            return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-size:13px;font-weight:600;color:var(--text)">${p.concept} — ${amountFmt}</div>
+              <div style="font-size:11.5px;color:var(--text-muted)">${fmtDate(p.created_at)} · ${statusPill(p.status)}${link}</div>
+            </div>`;
+          }).join('')
+        : '<div style="font-size:12.5px;color:var(--text-dim)">Sin cobros registrados</div>';
     } else {
       $('cpanel-apts').innerHTML = '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
+      $('cpanel-payments').innerHTML = '<div style="font-size:12.5px;color:var(--text-dim)">Sin cobros registrados</div>';
     }
   }
   window.openConversacion = openConversacion;
@@ -4055,6 +4161,94 @@
   function closeQuickAptModal() {
     $('quick-apt-modal').style.display = 'none';
   }
+
+  // ── Enviar link de pago (Stripe) desde Conversaciones ────────────────────
+  let _plm_contact_id = null, _plm_contact_name = '', _plm_org_id = null;
+
+  function openPaymentLinkModal() {
+    const conv = convState.all.find(c => c.id === convState.activeId);
+    if (!conv) { showToast('Abre una conversación primero'); return; }
+    _plm_contact_id   = conv?.contacts?.id   || null;
+    _plm_contact_name = conv?.contacts?.name || conv?.contacts?.phone || '';
+    _plm_org_id       = conv?.organization_id || state.currentOrgId || state.userOrgId;
+
+    const integ = state.integrations?.['stripe'];
+    if (integ?.status !== 'connected') {
+      showToast('Conecta Stripe primero desde Conexiones', 4000);
+      return;
+    }
+
+    const label = $('plm-contact-label');
+    if (label) label.textContent = _plm_contact_name ? `Para: ${_plm_contact_name}` : '';
+    $('plm-concept').value = '';
+    $('plm-amount').value = '';
+    $('plm-error').style.display = 'none';
+    $('payment-link-modal').style.display = 'flex';
+  }
+  window.openPaymentLinkModal = openPaymentLinkModal;
+
+  function closePaymentLinkModal() {
+    $('payment-link-modal').style.display = 'none';
+  }
+  window.closePaymentLinkModal = closePaymentLinkModal;
+
+  async function sendPaymentLink() {
+    const concept = $('plm-concept').value.trim();
+    const amount  = parseFloat($('plm-amount').value);
+    const errEl   = $('plm-error');
+    const btn     = $('plm-send-btn');
+    errEl.style.display = 'none';
+
+    if (!concept) { errEl.textContent = 'El concepto es obligatorio.'; errEl.style.display = 'block'; return; }
+    if (!amount || amount <= 0) { errEl.textContent = 'Ingresa un monto válido.'; errEl.style.display = 'block'; return; }
+
+    btn.disabled = true; btn.textContent = 'Generando link…';
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { errEl.textContent = 'Tu sesión expiró.'; errEl.style.display = 'block'; return; }
+
+      const resp = await fetch(EDGE_BASE + '/stripe-payment-link', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: _plm_org_id, contact_id: _plm_contact_id, concept, amount }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.url) {
+        errEl.textContent = 'Error: ' + (data.error || resp.status);
+        errEl.style.display = 'block';
+        return;
+      }
+
+      if (convState.activeId) {
+        btn.textContent = 'Enviando por WhatsApp…';
+        const amountFmt = amount.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+        const text = `Aquí tienes tu link de pago por *${concept}* ($${amountFmt} MXN):\n${data.url}`;
+        const sendRes = await fetch(EDGE_BASE + '/send-message', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversation_id: convState.activeId, message: text }),
+        });
+        if (!sendRes.ok) {
+          const sendData = await sendRes.json().catch(() => ({}));
+          showToast('Link creado, pero no se pudo mandar por WhatsApp: ' + (sendData.error || sendRes.status), 5000);
+          closePaymentLinkModal();
+          loadPagos();
+          return;
+        }
+      }
+
+      showToast('Link de pago enviado por WhatsApp');
+      closePaymentLinkModal();
+      loadPagos();
+    } catch (e) {
+      errEl.textContent = 'Error de red al generar el link.';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Enviar por WhatsApp';
+    }
+  }
+  window.sendPaymentLink = sendPaymentLink;
 
   async function saveQuickApt() {
     const title = $('qapt-title').value.trim();
@@ -5028,7 +5222,7 @@
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
-    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','agent-requests'];
+    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','agent-requests','pagos'];
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     loadConversaciones();
     loadIntegrations();
@@ -8505,6 +8699,58 @@
   window.saveAgentRequestResponse = saveAgentRequestResponse;
   window.loadAgentRequestsAdmin   = loadAgentRequestsAdmin;
 
+  // ── Pagos (cobros de Stripe) ─────────────────────────────────────────────
+  const PAGO_STATUS_LABELS = {
+    pending: { label: 'Pendiente', color: '#f59e0b', bg: 'rgba(245,158,11,.12)' },
+    paid:    { label: 'Pagado',    color: '#10b981', bg: 'rgba(16,185,129,.12)' },
+    expired: { label: 'Expirado',  color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    cancelled: { label: 'Cancelado', color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+  };
+
+  async function loadPagos() {
+    const orgId = getActiveOrgId();
+    const listEl = $('pagos-list');
+    if (!orgId) { listEl.innerHTML = '<div class="apt-empty">Selecciona un cliente</div>'; return; }
+
+    let q = sb.from('payments')
+      .select('id,amount,concept,status,checkout_url,created_at,paid_at,contacts(name,phone)')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    const { data, error } = await q;
+
+    if (error) { listEl.innerHTML = `<div class="apt-empty">Error: ${error.message}</div>`; return; }
+
+    const pagos = data || [];
+    const paidTotal = pagos.filter(p => p.status === 'paid').reduce((s,p) => s + Number(p.amount), 0);
+    const pendingTotal = pagos.filter(p => p.status === 'pending').reduce((s,p) => s + Number(p.amount), 0);
+    $('pagos-kpi-paid').textContent = '$' + paidTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    $('pagos-kpi-pending').textContent = '$' + pendingTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    $('pagos-kpi-total').textContent = pagos.length;
+
+    if (!pagos.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros todavía</div>'; return; }
+
+    listEl.innerHTML = pagos.map(p => {
+      const st = PAGO_STATUS_LABELS[p.status] || PAGO_STATUS_LABELS.pending;
+      const amountFmt = '$' + Number(p.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' MXN';
+      const dateFmt = new Date(p.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+      const contactName = p.contacts?.name || p.contacts?.phone || '—';
+      const linkBtn = (p.status === 'pending' && p.checkout_url)
+        ? `<a href="${p.checkout_url}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);font-weight:600">Abrir link</a>`
+        : '';
+      return `<div class="pago-row">
+        <div>
+          <div class="pago-concept">${p.concept}</div>
+          <div class="pago-meta">${contactName} · ${dateFmt}</div>
+        </div>
+        <span class="apt-status-pill" style="color:${st.color};background:${st.bg}">${st.label}</span>
+        ${linkBtn}
+        <span class="pago-amount">${amountFmt}</span>
+      </div>`;
+    }).join('');
+  }
+  window.loadPagos = loadPagos;
+
   // ── Bot tester ───────────────────────────────────────────────────────────
   const botTest = { history: [], busy: false };
 
@@ -8666,6 +8912,7 @@
       // de conexión real. Se limpia para no arrastrar datos de otra org.
       state.integrations = {};
       updateGcalUI();
+      updateStripeUI();
       updateIntegPill('google_sheets', 'gsheets-integ-pill');
       updateIntegPill('stripe',        'stripe-integ-pill');
       updateIntegPill('zapier',        'zapier-integ-pill');
@@ -8675,6 +8922,7 @@
     state.integrations = {};
     (data || []).forEach(r => { state.integrations[r.provider] = r; });
     updateGcalUI();
+    updateStripeUI();
     updateIntegPill('google_sheets', 'gsheets-integ-pill');
     updateIntegPill('stripe',        'stripe-integ-pill');
     updateIntegPill('zapier',        'zapier-integ-pill');
@@ -8765,7 +9013,8 @@
     }
   }
 
-  // Tras volver del callback: ?conexion=google_ok|google_error en la URL
+  // Tras volver de un callback de conexión (Google o Stripe):
+  // ?conexion=google_ok|google_error|stripe_ok|stripe_pending|stripe_error en la URL
   function handleGoogleOAuthRedirect() {
     const params = new URLSearchParams(window.location.search);
     const conexion = params.get('conexion');
@@ -8775,6 +9024,16 @@
       loadIntegrations();
     } else if (conexion === 'google_error') {
       showToast('No se pudo conectar con Google, intenta de nuevo', 4000);
+    } else if (conexion === 'stripe_ok') {
+      showToast('Stripe conectado correctamente');
+      loadIntegrations();
+    } else if (conexion === 'stripe_pending') {
+      showToast('Falta completar la verificación de Stripe', 4000);
+      loadIntegrations();
+    } else if (conexion === 'stripe_error') {
+      showToast('No se pudo conectar con Stripe, intenta de nuevo', 4000);
+    } else if (conexion === 'stripe_retry') {
+      showToast('La verificación de Stripe no se completó, intenta de nuevo', 4000);
     }
     params.delete('conexion');
     const qs = params.toString();
@@ -8860,6 +9119,97 @@
     showToast('Google desconectado');
   }
 
+  // ── Stripe Connect ────────────────────────────────────────────────────────
+  async function stripeConnect() {
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente para conectar'); return; }
+    const btn = $('stripe-connect-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:11px;margin-right:5px"></i>Conectando…'; }
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { showToast('Tu sesión expiró, vuelve a iniciar sesión'); return; }
+      const orgId = getActiveOrgId();
+      const resp = await fetch(EDGE_BASE + '/stripe-connect-start', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: orgId }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || !data.url) {
+        showToast('Error iniciando conexión con Stripe: ' + (data.error || resp.status), 5000);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      showToast('Error iniciando conexión con Stripe');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe'; }
+    }
+  }
+  window.stripeConnect = stripeConnect;
+
+  async function stripeDisconnect() {
+    if (!confirm('¿Desconectar Stripe? Ya no podrás generar nuevos links de pago.')) return;
+    if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente'); return; }
+    const err = await saveIntegrationToDB('stripe', 'disconnected', null, null);
+    if (err) { showToast('Error al desconectar: ' + err, 4000); return; }
+    updateStripeUI();
+    updateIntegPill('stripe', 'stripe-integ-pill');
+    showToast('Stripe desconectado');
+  }
+  window.stripeDisconnect = stripeDisconnect;
+
+  function updateStripeUI() {
+    const integ     = state.integrations?.['stripe'];
+    const status    = integ?.status || 'disconnected';
+    const connected = status === 'connected';
+    const pending   = status === 'pending';
+    const email     = integ?.config?.email || '—';
+
+    const pill      = $('stripe-status-pill');
+    const integPill = $('stripe-integ-pill');
+    const btn       = $('stripe-connect-btn');
+    const detStatus = $('stripe-detail-status');
+    const detAccount= $('stripe-detail-account');
+    const testBanner= $('stripe-testmode-banner');
+
+    const testMode = !!integ?.config?.test_mode;
+    if (testBanner) testBanner.style.display = (connected || pending) && testMode ? 'block' : 'none';
+
+    if (connected) {
+      if (pill) { pill.className = 'pill pill-green no-dot'; pill.textContent = 'Conectado'; }
+      if (integPill) { integPill.className = 'pill pill-green no-dot'; integPill.textContent = 'Conectado'; }
+      if (btn) {
+        btn.innerHTML = '<i class="fa fa-unlink" style="font-size:11px;margin-right:5px"></i>Desconectar';
+        btn.onclick = stripeDisconnect;
+        btn.style.cssText = 'font-size:13px;padding:7px 16px;background:transparent;color:var(--red);border:1px solid var(--red);border-radius:8px;cursor:pointer;font-family:\'Plus Jakarta Sans\',sans-serif;font-weight:700;box-shadow:none';
+      }
+      if (detStatus)  { detStatus.textContent = 'Activo'; detStatus.style.color = 'var(--green)'; }
+      if (detAccount) { detAccount.textContent = email; detAccount.style.color = 'var(--text)'; }
+    } else if (pending) {
+      if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'Verificación pendiente'; }
+      if (integPill) { integPill.className = 'pill pill-amber no-dot'; integPill.textContent = 'Verificación pendiente'; }
+      if (btn) {
+        btn.innerHTML = '<i class="fa fa-triangle-exclamation" style="font-size:11px;margin-right:5px"></i>Terminar registro';
+        btn.onclick = stripeConnect;
+        btn.style.cssText = 'font-size:13px;padding:7px 16px';
+        btn.className = 'btn-primary';
+      }
+      if (detStatus)  { detStatus.textContent = 'Verificación pendiente'; detStatus.style.color = '#f59e0b'; }
+      if (detAccount) { detAccount.textContent = email; detAccount.style.color = 'var(--text)'; }
+    } else {
+      if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado'; }
+      if (integPill) { integPill.className = 'pill pill-amber no-dot'; integPill.textContent = 'No conectado'; }
+      if (btn) {
+        btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe';
+        btn.onclick = stripeConnect;
+        btn.style.cssText = 'font-size:13px;padding:7px 16px';
+        btn.className = 'btn-primary';
+      }
+      if (detStatus)  { detStatus.textContent = 'Sin conexión'; detStatus.style.color = 'var(--text-muted)'; }
+      if (detAccount) { detAccount.textContent = '—'; detAccount.style.color = 'var(--text-muted)'; }
+    }
+  }
+
   function navigateToGcalConexion() {
     switchView('conexiones');
     setTimeout(() => {
@@ -8874,11 +9224,6 @@
       title: 'Google Sheets',
       sub:   'Exportar leads y conversaciones',
       icon:  '<div style="width:40px;height:40px;border-radius:10px;background:#fff;border:1.5px solid #e5e7eb;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 48 48" width="26" height="26"><rect fill="#43A047" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M14 14h20v4H14zm0 6h20v4H14zm0 6h12v4H14z"/></svg></div>',
-    },
-    stripe: {
-      title: 'Stripe',
-      sub:   'Cobrar pagos desde WhatsApp',
-      icon:  '<div style="width:40px;height:40px;border-radius:10px;background:#635bff;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg></div>',
     },
     zapier: {
       title: 'Zapier',
@@ -8951,23 +9296,6 @@
               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
           </label>
         </details>`;
-    } else if (provider === 'stripe') {
-      body.innerHTML = `
-        <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
-          Encuentra tus claves en <strong style="color:var(--text)">dashboard.stripe.com → Developers → API Keys</strong>
-        </div>
-        <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">Publishable Key</span>
-          <input id="im-stripe-pk" type="text" placeholder="pk_live_..."
-            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">Secret Key <span style="font-weight:400;color:var(--text-muted)">(se guarda cifrado)</span></span>
-          <input id="im-stripe-sk" type="password" placeholder="sk_live_..."
-            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-        </label>`;
     } else if (provider === 'zapier') {
       const webhookUrl = integ?.config?.webhook_url || '';
       body.innerHTML = `
@@ -9030,16 +9358,6 @@
         closeIntegModal();
         showToast('Hoja de cálculo guardada');
 
-      } else if (provider === 'stripe') {
-        const pk = document.getElementById('im-stripe-pk')?.value?.trim();
-        const sk = document.getElementById('im-stripe-sk')?.value?.trim();
-        if (!pk || !sk) { errEl.textContent = 'Ingresa ambas claves de Stripe'; errEl.style.display = 'block'; return; }
-        const stripeErr = await saveIntegrationToDB('stripe', 'connected', { publishable_key: pk, secret_key: sk }, {});
-        if (stripeErr) { errEl.textContent = 'Error: ' + stripeErr; errEl.style.display = 'block'; return; }
-        updateIntegPill('stripe', 'stripe-integ-pill');
-        closeIntegModal();
-        showToast('Stripe conectado correctamente');
-
       } else if (provider === 'zapier') {
         const url = document.getElementById('im-zapier-url')?.value?.trim();
         if (!url || !/^https:\/\/hooks\.zapier\.com\//.test(url)) {
@@ -9079,7 +9397,7 @@
     if (isIntegrationsOrgBlocked()) { showToast('Selecciona un cliente'); return; }
     const err = await saveIntegrationToDB(provider, 'disconnected', null, null);
     if (err) { showToast('Error al desconectar: ' + err, 4000); return; }
-    const pillIds = { google_sheets: 'gsheets-integ-pill', stripe: 'stripe-integ-pill', zapier: 'zapier-integ-pill' };
+    const pillIds = { google_sheets: 'gsheets-integ-pill', zapier: 'zapier-integ-pill' };
     if (pillIds[provider]) updateIntegPill(provider, pillIds[provider]);
     closeIntegModal();
     showToast('Integración desconectada');
@@ -9383,6 +9701,39 @@
       <div style="display:flex;gap:10px;padding:0 24px 22px">
         <button onclick="closeQuickAptModal()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:600;color:#64748b;cursor:pointer;font-family:Barlow,sans-serif">Cancelar</button>
         <button id="qapt-save-btn" onclick="saveQuickApt()" style="flex:2;padding:11px;border-radius:10px;border:0;background:#2c455d;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Guardar cita</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Enviar link de pago -->
+  <div id="payment-link-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:2000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.22);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid #f1f5f9">
+        <div style="display:flex;align-items:center;gap:11px">
+          <div style="width:36px;height:36px;border-radius:10px;background:#eef6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fa fa-credit-card" style="color:#2c455d;font-size:15px"></i>
+          </div>
+          <div>
+            <div style="font-size:16px;font-weight:700;color:#1a2535;line-height:1.2">Enviar link de pago</div>
+            <div id="plm-contact-label" style="font-size:12px;color:#8c939b;margin-top:1px"></div>
+          </div>
+        </div>
+        <button onclick="closePaymentLinkModal()" style="width:30px;height:30px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#94a3b8;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Concepto</span>
+          <input id="plm-concept" placeholder="Ej. Consulta, Anticipo…" style="padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2535;outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='#5980a6'" onblur="this.style.borderColor='#e2e8f0'" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Monto (MXN)</span>
+          <input id="plm-amount" type="number" min="1" step="0.01" placeholder="500.00" style="padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2535;outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='#5980a6'" onblur="this.style.borderColor='#e2e8f0'" />
+        </label>
+        <div id="plm-error" style="display:none;font-size:12.5px;color:#ef4444;padding:9px 13px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:9px"></div>
+      </div>
+      <div style="display:flex;gap:10px;padding:0 24px 22px">
+        <button onclick="closePaymentLinkModal()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:600;color:#64748b;cursor:pointer;font-family:Barlow,sans-serif">Cancelar</button>
+        <button id="plm-send-btn" onclick="sendPaymentLink()" style="flex:2;padding:11px;border-radius:10px;border:0;background:#2c455d;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Enviar por WhatsApp</button>
       </div>
     </div>
   </div>
