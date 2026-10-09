@@ -38,6 +38,32 @@ function toFormUrlEncoded(obj: Record<string, unknown>, prefix = ''): string {
   return parts.filter(Boolean).join('&')
 }
 
+// Endpoints /v2/* de Stripe usan JSON (no form-urlencoded como v1) y no
+// llevan Stripe-Account (los cargos directos se siguen haciendo contra v1
+// Checkout Sessions con ese header; v2 aquí es solo para crear la cuenta).
+export async function stripeFetchV2(
+  path: string,
+  secretKey: string,
+  options: { method?: string; body?: Record<string, unknown> } = {},
+): Promise<any> {
+  const { method = 'POST', body } = options
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${secretKey}`,
+    'Stripe-Version': STRIPE_API_VERSION,
+    'Content-Type': 'application/json',
+  }
+  const res = await fetch(`https://api.stripe.com/v2${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new StripeApiError(data.error?.message || `Stripe API error ${res.status}`, res.status, data.error)
+  }
+  return data
+}
+
 export async function stripeFetch(
   path: string,
   secretKey: string,

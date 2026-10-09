@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeFetch } from '../_shared/stripe.ts'
+import { stripeFetch, stripeFetchV2 } from '../_shared/stripe.ts'
 import { signState } from '../_shared/google.ts' // helper genérico de HMAC state, no es específico de Google
 
 // ── Inicia Stripe Connect (cuentas Standard, cargos directos) ──────────────
@@ -69,11 +69,24 @@ Deno.serve(async (req: Request) => {
     let accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
 
     if (!accountId) {
-      const account = await stripeFetch('/accounts', STRIPE_SECRET_KEY, {
+      // Cuenta v2: el perfil de la plataforma en Stripe está configurado con
+      // Stripe como responsable de pérdidas/fees y dashboard completo de
+      // Stripe para la cuenta conectada — esto tiene que coincidir exactamente
+      // o la API rechaza la creación ("review the responsibilities..."). No
+      // se le pide a la cuenta de plataforma (application) responsabilidad
+      // sobre nada.
+      const account = await stripeFetchV2('/core/accounts', STRIPE_SECRET_KEY, {
         body: {
-          type: 'standard',
-          country: 'MX',
-          business_type: 'individual',
+          dashboard: 'full',
+          defaults: {
+            responsibilities: {
+              fees_collector: 'stripe',
+              losses_collector: 'stripe',
+            },
+          },
+          identity: {
+            country: 'mx',
+          },
         },
       })
       accountId = account.id
