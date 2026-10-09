@@ -1174,7 +1174,7 @@
         <span class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
         </span>
-        <span id="nav-bot-label">Agente IA</span>
+        <span id="nav-bot-label">Mi agente</span>
       </div>
       <div class="nav-item" id="nav-inventario" data-view="inventario">
         <span class="nav-dot"></span>
@@ -1205,6 +1205,7 @@
         </span>
         Mi cuenta
       </div>
+      <div class="nav-section-label" id="nav-section-interno" style="display:none">Avaxon (interno)</div>
       <div class="nav-item" id="nav-admin-link" style="display:none" onclick="window.location.href='../admin/'">
         <span class="nav-dot"></span>
         <span class="nav-icon">
@@ -1212,7 +1213,13 @@
         </span>
         Panel Admin
       </div>
-      <div class="nav-section-label" id="nav-section-crm" style="display:none">CRM</div>
+      <div class="nav-item" id="nav-admin-agentes" style="display:none" onclick="window.location.href='../admin/?view=agentes'">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
+        </span>
+        Agentes
+      </div>
       <div class="nav-item" id="nav-crm" data-view="crm" style="display:none">
         <span class="nav-dot"></span>
         <span class="nav-icon">
@@ -1220,7 +1227,7 @@
         </span>
         Clientes
       </div>
-      <div class="nav-item" id="nav-agent-requests" data-view="agent-requests" style="display:none">
+      <div class="nav-item" id="nav-admin-solicitudes" style="display:none" onclick="window.location.href='../admin/?view=solicitudes-clientes'">
         <span class="nav-dot"></span>
         <span class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -1259,10 +1266,6 @@
         <div class="topbar-h1" id="topbar-title">Inicio</div>
       </div>
       <div class="topbar-right">
-        <button id="view-as-client-btn" onclick="toggleViewAsClient()" style="display:none;border:1px solid var(--accent);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);padding:6px 13px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.15s">
-          <i class="fa fa-eye" style="font-size:11px"></i>
-          <span id="view-as-client-btn-label">Ver como cliente</span>
-        </button>
         <span class="topbar-time" id="topbar-time"></span>
         <button class="btn-refresh" id="refresh-btn" style="border:1px solid var(--border);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);padding:6px 13px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -2298,133 +2301,13 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="12" y1="16" x2="12" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
             </div>
             <div>
-              <div class="view-header-title" id="bot-view-header-title">Agente IA</div>
-              <div class="view-header-sub" id="bot-view-header-sub">Configura la personalidad y comportamiento de tu bot</div>
+              <div class="view-header-title" id="bot-view-header-title">Modificaciones a tu agente</div>
+              <div class="view-header-sub" id="bot-view-header-sub">Mándanos los cambios y nuestro equipo los aplica</div>
             </div>
           </div>
         </div>
 
-        <div id="bot-admin-editor">
-        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
-
-          <!-- Prompt editor -->
-          <div style="display:flex;flex-direction:column;gap:16px">
-            <div class="card bp" style="padding:20px">
-              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-                <div style="display:flex;align-items:center;gap:9px">
-                  <div style="width:32px;height:32px;background:rgba(34,197,94,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-pen-to-square"></i></div>
-                  <div>
-                    <div style="font-size:15px;font-weight:700">Personalidad del agente</div>
-                    <div style="font-size:12px;color:var(--text-muted)">Define cómo habla y qué sabe tu bot</div>
-                  </div>
-                </div>
-              </div>
-              <textarea id="bot-prompt-textarea"
-                style="width:100%;min-height:280px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13.5px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);line-height:1.7;resize:vertical;outline:none;transition:border-color .15s"
-                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-                placeholder="Eres el asistente virtual de [tu negocio]..."></textarea>
-              <div style="margin-top:10px;padding:10px 13px;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15);border-radius:9px;font-size:12.5px;color:#818cf8;line-height:1.55">
-                <strong>Tip:</strong> Incluye el nombre de tu negocio, los productos o servicios que ofreces, el tono de voz (formal / amigable) y qué hacer cuando el cliente quiere hablar con alguien.
-              </div>
-              <div style="display:flex;justify-content:flex-end;margin-top:14px">
-                <button id="bot-save-btn" onclick="saveBotConfig()" class="btn-primary">Guardar cambios</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sidebar config -->
-          <div style="display:flex;flex-direction:column;gap:12px">
-
-            <!-- Toggle estado -->
-            <div class="card bp" style="padding:18px 20px">
-              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="font-size:13px;font-weight:700;margin-bottom:14px">Estado del agente</div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;transition:all .15s" id="bot-toggle-active"
-                  onclick="setBotEnabled(true)">
-                  <span style="width:10px;height:10px;border-radius:50%;background:var(--accent);flex-shrink:0"></span>
-                  <div><div style="font-size:13px;font-weight:700">Activo</div><div style="font-size:11.5px;color:var(--text-muted)">Responde automáticamente</div></div>
-                </label>
-                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;transition:all .15s" id="bot-toggle-paused"
-                  onclick="setBotEnabled(false)">
-                  <span style="width:10px;height:10px;border-radius:50%;background:var(--text-dim);flex-shrink:0"></span>
-                  <div><div style="font-size:13px;font-weight:700">Pausado</div><div style="font-size:11.5px;color:var(--text-muted)">Los mensajes llegan pero no responde</div></div>
-                </label>
-              </div>
-            </div>
-
-            <!-- Modelo -->
-            <div class="card bp" style="padding:18px 20px">
-              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="font-size:13px;font-weight:700;margin-bottom:12px">Modelo de IA</div>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--page-bg);border:1.5px solid var(--border);border-radius:10px">
-                <div style="width:28px;height:28px;background:#000;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494z"/></svg>
-                </div>
-                <div>
-                  <div style="font-size:13px;font-weight:700">GPT-4o</div>
-                  <div style="font-size:11.5px;color:var(--text-muted)">OpenAI · Incluido en tu plan</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Estadísticas rápidas -->
-            <div class="card bp" style="padding:18px 20px">
-              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="font-size:13px;font-weight:700;margin-bottom:12px">Últimas 24 horas</div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;justify-content:space-between;font-size:13px">
-                  <span style="color:var(--text-muted)">Mensajes recibidos</span>
-                  <span id="bot-stat-recv" style="font-weight:700">—</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;font-size:13px">
-                  <span style="color:var(--text-muted)">Respuestas enviadas</span>
-                  <span id="bot-stat-sent" style="font-weight:700">—</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- ── Tester ─────────────────────────────────────────────────────── -->
-        <div class="card bp" style="padding:0;margin-top:16px" id="bot-tester-card">
-          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:32px;height:32px;background:rgba(34,197,94,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;flex-shrink:0">
-                <i class="fab fa-whatsapp"></i>
-              </div>
-              <div>
-                <div style="font-size:15px;font-weight:700;color:var(--text)">Probar agente</div>
-                <div style="font-size:12px;color:var(--text-muted)">Simula una conversación usando el prompt guardado</div>
-              </div>
-            </div>
-            <button onclick="clearBotTest()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">
-              <i class="fa fa-rotate-right" style="margin-right:5px;font-size:11px"></i>Limpiar
-            </button>
-          </div>
-          <div id="bot-test-messages" style="min-height:240px;max-height:400px;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px">
-            <div id="bot-test-empty" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 0;color:var(--text-dim);flex-direction:column;gap:8px;text-align:center">
-              <i class="fab fa-whatsapp" style="font-size:28px;opacity:.25"></i>
-              <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Escribe un mensaje para probar tu agente</span>
-            </div>
-          </div>
-          <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end">
-            <textarea id="bot-test-input" rows="1" placeholder="Escribe como si fueras un cliente…"
-              style="flex:1;resize:none;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;background:var(--page-bg);font-size:13.5px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);outline:none;line-height:1.5;overflow:hidden;transition:border-color .15s"
-              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
-              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
-            <button id="bot-test-send" onclick="sendBotTest()" class="chat-send-round" title="Enviar" style="flex-shrink:0">
-              <i class="fa fa-paper-plane"></i>
-            </button>
-          </div>
-        </div>
-        </div><!-- /bot-admin-editor -->
-
-        <!-- ── Vista de cliente: Modificaciones a tu agente ────────────── -->
-        <div id="bot-client-view" style="display:none">
+        <div id="bot-client-view">
           <div class="card bp" style="padding:18px 22px;margin-bottom:16px">
             <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
             <p style="font-size:13.5px;line-height:1.6;color:var(--text);margin:0">¿Cambió tu menú, tus precios, tus horarios o quieres que tu agente responda diferente? Mándanos tu solicitud y nuestro equipo la aplica. <strong>Incluido en tu plan.</strong></p>
@@ -2491,69 +2374,6 @@
           </div>
         </div>
 
-      </div>
-
-      <!-- ── Vista: Solicitudes de clientes (super_admin) ─────────────── -->
-      <div class="view" id="view-agent-requests">
-        <div class="view-header">
-          <div class="view-header-left">
-            <div class="view-header-icon" style="background:rgba(99,102,241,.12);color:#818cf8">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            </div>
-            <div>
-              <div class="view-header-title">Solicitudes de clientes</div>
-              <div class="view-header-sub">Cambios al agente pedidos por todas las orgs</div>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-          <select id="aar-filter-status" onchange="loadAgentRequestsAdmin()" style="padding:8px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">
-            <option value="">Todos los estados</option>
-            <option value="received">Recibida</option>
-            <option value="in_progress">En proceso</option>
-            <option value="needs_info">Necesitamos más información</option>
-            <option value="completed">Completada</option>
-          </select>
-          <select id="aar-filter-org" onchange="loadAgentRequestsAdmin()" style="padding:8px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">
-            <option value="">Todos los clientes</option>
-          </select>
-        </div>
-
-        <div class="card bp" style="padding:0">
-          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div id="aar-list" style="display:flex;flex-direction:column"></div>
-        </div>
-      </div>
-
-      <!-- Modal: Responder solicitud -->
-      <div id="aar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;align-items:center;justify-content:center;padding:20px">
-        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:560px;max-height:85vh;overflow-y:auto;padding:28px;box-shadow:0 24px 64px rgba(0,0,0,.25)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-            <div style="font-size:17px;font-weight:700;color:var(--text)">Solicitud de <span id="aar-modal-org"></span></div>
-            <button onclick="closeAgentRequestModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:20px"><i class="fa fa-xmark"></i></button>
-          </div>
-          <div style="font-size:12.5px;color:var(--text-dim);margin-bottom:4px" id="aar-modal-meta"></div>
-          <div style="font-size:13.5px;color:var(--text);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:var(--page-bg);border-radius:10px" id="aar-modal-description"></div>
-          <div id="aar-modal-attachments" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
-          <div style="margin-bottom:14px">
-            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Estado</label>
-            <select id="aar-modal-status" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
-              <option value="received">Recibida</option>
-              <option value="in_progress">En proceso</option>
-              <option value="needs_info">Necesitamos más información</option>
-              <option value="completed">Completada</option>
-            </select>
-          </div>
-          <div style="margin-bottom:16px">
-            <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Respuesta / comentario para el cliente</label>
-            <textarea id="aar-modal-response" rows="4" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;resize:vertical"></textarea>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:space-between;align-items:center">
-            <a href="#" id="aar-modal-editor-link" style="font-size:12.5px;color:var(--accent);font-weight:600">Abrir editor del prompt de esta org →</a>
-            <button onclick="saveAgentRequestResponse()" id="aar-modal-save-btn" class="btn-primary" style="padding:9px 20px;font-size:13.5px">Guardar</button>
-          </div>
-        </div>
       </div>
 
       <!-- ── Vista: Mi Cuenta ──────────────────────────────────────────── -->
@@ -3296,8 +3116,8 @@
     inicio:'Inicio', conversaciones:'Conversaciones',
     leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
     pipeline: 'Pipeline', asignacion: 'Asignación', campanas: 'Campañas',
-    bot: 'Agente IA', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
-    'agent-requests': 'Solicitudes de clientes', pagos: 'Pagos',
+    bot: 'Modificaciones a tu agente', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
+    pagos: 'Pagos',
   };
 
   function switchView(name) {
@@ -3316,12 +3136,11 @@
     if (name === 'pipeline')       loadPipeline();
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
-    if (name === 'bot')            { if (isEffectiveSuperAdmin()) loadBotConfig(); else loadAgentRequestsClient(); }
+    if (name === 'bot')            loadAgentRequestsClient();
     if (name === 'cuenta')         loadCuenta();
     if (name === 'crm')            loadCRM();
     if (name === 'config')         loadConfig();
     if (name === 'campanas')       loadCampanas();
-    if (name === 'agent-requests') loadAgentRequestsAdmin();
     if (name === 'pagos')          loadPagos();
   }
 
@@ -5071,61 +4890,6 @@
     window.location.href = '../index.html';
   });
 
-  // ── Rol efectivo + "Ver como cliente" ────────────────────────────────────
-  // state.isSuperAdmin es el rol REAL (lo que RLS respeta). state.viewAsClient
-  // es puramente cosmético — simula la UI de cliente para que un super_admin
-  // pueda revisarla sin cambiar de usuario; nunca reduce permisos reales.
-  function isEffectiveSuperAdmin() {
-    return state.isSuperAdmin && !state.viewAsClient;
-  }
-
-  // Única función que decide qué nav/vistas corresponden al rol efectivo —
-  // la llaman tanto el bootstrap inicial como el toggle "Ver como cliente",
-  // así nunca quedan desincronizados. Cada asignación es null-safe: un solo
-  // elemento faltante nunca puede abortar el resto de la función.
-  function setDisp(id, val) { const el = $(id); if (el) el.style.display = val; }
-
-  function applyRoleUI() {
-    const effAdmin = isEffectiveSuperAdmin();
-
-    setDisp('view-as-client-btn', state.isSuperAdmin ? 'flex' : 'none');
-    const vacLabel = $('view-as-client-btn-label');
-    if (vacLabel) vacLabel.textContent = state.viewAsClient ? 'Volver a vista admin' : 'Ver como cliente';
-    const vacBtn = $('view-as-client-btn');
-    if (vacBtn) vacBtn.style.background = state.viewAsClient ? 'var(--accent)' : 'transparent';
-    if (vacBtn) vacBtn.style.color = state.viewAsClient ? '#062513' : 'var(--accent)';
-
-    const navLabel = $('nav-bot-label');
-    if (navLabel) navLabel.textContent = effAdmin ? 'Agente IA' : 'Mi agente';
-    VIEW_TITLES.bot = effAdmin ? 'Agente IA' : 'Modificaciones a tu agente';
-    setDisp('bot-admin-editor', effAdmin ? '' : 'none');
-    setDisp('bot-client-view', effAdmin ? 'none' : '');
-    setDisp('nav-agent-requests', effAdmin ? 'flex' : 'none');
-
-    if (state.isSuperAdmin) {
-      // Estas ya las muestra finishBootstrap() para el rol real; el toggle
-      // solo las oculta temporalmente al simular vista de cliente.
-      setDisp('nav-admin-link', effAdmin ? 'flex' : 'none');
-      setDisp('nav-section-crm', effAdmin ? 'block' : 'none');
-      setDisp('nav-crm', effAdmin ? 'flex' : 'none');
-    }
-  }
-
-  function toggleViewAsClient() {
-    state.viewAsClient = !state.viewAsClient;
-    applyRoleUI();
-    // Si la vista activa ya no existe para el rol simulado, vuelve a un
-    // lugar seguro en vez de dejar contenido de admin visible a medias.
-    const activeView = document.querySelector('.nav-item.active')?.dataset.view;
-    if (!isEffectiveSuperAdmin() && (activeView === 'agent-requests' || activeView === 'crm')) {
-      switchView('inicio');
-    } else if (activeView === 'bot') {
-      switchView('bot');
-    }
-    showToast(state.viewAsClient ? 'Viendo el dashboard como lo ve un cliente' : 'Volviste a la vista de administrador');
-  }
-  window.toggleViewAsClient = toggleViewAsClient;
-
   async function bootstrap(user) {
     state.userEmail = user.email;
     state.userId    = user.id;
@@ -5146,8 +4910,6 @@
     state.userRole     = role;
     state.userOrgId    = profileData?.organization_id ?? null;
 
-    applyRoleUI();
-
     if (role === 'agent') {
       ['nav-conexiones','nav-bot','nav-cuenta','nav-section-cuenta'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
@@ -5158,7 +4920,7 @@
       state.isReviewer = true;
       // Ocultar nav restringido
       ['nav-config','nav-section-cuenta','nav-cuenta','nav-conexiones','nav-bot',
-       'nav-inventario','nav-crm','nav-section-crm','nav-admin-link'].forEach(id => {
+       'nav-inventario','nav-crm','nav-section-interno','nav-admin-link','nav-admin-agentes','nav-admin-solicitudes'].forEach(id => {
         const el = $(id); if (el) el.style.display = 'none';
       });
       // Banner read-only
@@ -5193,9 +4955,11 @@
     }
     if (state.isSuperAdmin) {
       $('org-switcher-wrap').style.display = 'block';
+      $('nav-section-interno').style.display = 'block';
       $('nav-admin-link').style.display = 'flex';
-      $('nav-section-crm').style.display = 'block';
+      $('nav-admin-agentes').style.display = 'flex';
       $('nav-crm').style.display = 'flex';
+      $('nav-admin-solicitudes').style.display = 'flex';
       const { data: orgs } = await sb.from('organizations').select('id,name,status').order('name');
       state.allOrgs = orgs || [];
 
@@ -5222,7 +4986,7 @@
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
-    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','agent-requests','pagos'];
+    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','pagos'];
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     loadConversaciones();
     loadIntegrations();
@@ -5393,12 +5157,6 @@
     const modal = $('modal-welcome');
     if (modal) modal.style.display = 'none';
     switchView(view);
-    if (view === 'bot') {
-      setTimeout(() => {
-        const card = $('bot-tester-card');
-        if (card && stepId === 'wstep-2') card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 250);
-    }
     // Mark onboarding done so we don't re-show on refresh
     if (state.userId) {
       sb.from('profiles').update({ onboarding_done_at: new Date().toISOString() }).eq('id', state.userId);
@@ -8384,72 +8142,6 @@
     }
   })();
 
-  // ── Bot config ───────────────────────────────────────────────────────────
-  async function loadBotConfig() {
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) return;
-
-    const { data } = await sb.from('bot_configs')
-      .select('enabled, system_prompt')
-      .eq('organization_id', orgId)
-      .maybeSingle();
-
-    const textarea = $('bot-prompt-textarea');
-    if (textarea) textarea.value = data?.system_prompt ?? '';
-
-    updateBotToggleUI(data?.enabled !== false);
-
-    // Stats: last 24h
-    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: msgs } = await sb.from('messages')
-      .select('direction')
-      .eq('organization_id', orgId)
-      .gte('created_at', since);
-
-    const recv = (msgs || []).filter(m => m.direction === 'inbound').length;
-    const sent = (msgs || []).filter(m => m.direction === 'outbound').length;
-    const statRecv = $('bot-stat-recv');
-    const statSent = $('bot-stat-sent');
-    if (statRecv) statRecv.textContent = recv;
-    if (statSent) statSent.textContent = sent;
-  }
-
-  function updateBotToggleUI(enabled) {
-    const activeEl  = $('bot-toggle-active');
-    const pausedEl  = $('bot-toggle-paused');
-    if (!activeEl || !pausedEl) return;
-    activeEl.style.borderColor  = enabled ? 'var(--accent)' : 'var(--border)';
-    activeEl.style.background   = enabled ? 'rgba(34,197,94,.06)' : '';
-    pausedEl.style.borderColor  = !enabled ? 'var(--red)' : 'var(--border)';
-    pausedEl.style.background   = !enabled ? 'rgba(239,68,68,.06)' : '';
-  }
-
-  async function setBotEnabled(enabled) {
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) return;
-    await sb.from('bot_configs').upsert({ organization_id: orgId, enabled }, { onConflict: 'organization_id' });
-    updateBotToggleUI(enabled);
-    showToast(enabled ? 'Agente activado' : 'Agente pausado');
-  }
-
-  async function saveBotConfig() {
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) return;
-    const prompt = $('bot-prompt-textarea')?.value?.trim();
-    if (!prompt) { showToast('El prompt no puede estar vacío'); return; }
-
-    const btn = $('bot-save-btn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
-
-    const { error } = await sb.from('bot_configs')
-      .upsert({ organization_id: orgId, system_prompt: prompt }, { onConflict: 'organization_id' });
-
-    if (btn) { btn.disabled = false; btn.textContent = 'Guardar cambios'; }
-    showToast(error ? 'Error al guardar' : 'Cambios guardados');
-  }
-  window.saveBotConfig  = saveBotConfig;
-  window.setBotEnabled  = setBotEnabled;
-
   // ── Solicitudes de cambio al agente ──────────────────────────────────────
   // Los clientes ya no editan el prompt directamente: mandan una solicitud
   // (tipo, descripción, adjuntos, prioridad) y Avaxon la aplica. La fila se
@@ -8543,16 +8235,13 @@
     loadAgentRequestsClient();
   }
 
-  function renderAgentRequestRow(r, opts = {}) {
+  function renderAgentRequestRow(r) {
     const st = ACR_STATUS_LABELS[r.status] || ACR_STATUS_LABELS.received;
     const d = new Date(r.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
     const urgentTag = r.priority === 'urgent' ? '<span style="font-size:10.5px;font-weight:700;color:#ef4444;margin-left:6px">URGENTE</span>' : '';
-    const orgLabel = opts.showOrg ? `<span style="font-size:12px;color:var(--text-muted);margin-right:8px">${opts.orgName || ''}</span>` : '';
-    const clickAttr = opts.clickable ? `onclick="openAgentRequestModal('${r.id}')" style="cursor:pointer"` : '';
-    return `<div ${clickAttr} style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px">
+    return `<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;flex-wrap:wrap">
-          ${orgLabel}
           <span style="font-size:13px;font-weight:700;color:var(--text)">${ACR_TYPE_LABELS[r.type] || r.type}</span>
           ${urgentTag}
         </div>
@@ -8599,105 +8288,7 @@
     listEl.innerHTML = reqs.map(r => renderAgentRequestRow(r)).join('');
   }
 
-  // ── Admin: Solicitudes de clientes (super_admin) ─────────────────────────
-  async function loadAgentRequestsAdmin() {
-    const orgSelect = $('aar-filter-org');
-    if (orgSelect && orgSelect.options.length <= 1) {
-      (state.allOrgs || []).forEach(o => {
-        const opt = document.createElement('option');
-        opt.value = o.id; opt.textContent = o.name;
-        orgSelect.appendChild(opt);
-      });
-    }
-
-    let q = sb.from('agent_change_requests')
-      .select('id,organization_id,type,description,priority,status,response,created_at,organizations(name)')
-      .order('created_at', { ascending: false });
-
-    const statusFilter = $('aar-filter-status')?.value;
-    const orgFilter = $('aar-filter-org')?.value;
-    if (statusFilter) q = q.eq('status', statusFilter);
-    if (orgFilter) q = q.eq('organization_id', orgFilter);
-
-    const { data: reqs } = await q;
-    const listEl = $('aar-list');
-    if (!reqs || !reqs.length) {
-      listEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">No hay solicitudes con estos filtros</div>';
-      return;
-    }
-    state._agentRequestsCache = reqs;
-    listEl.innerHTML = reqs.map(r => renderAgentRequestRow(r, {
-      showOrg: true, clickable: true, orgName: r.organizations?.name || '—',
-    })).join('');
-  }
-
-  async function openAgentRequestModal(id) {
-    const r = (state._agentRequestsCache || []).find(x => x.id === id);
-    if (!r) return;
-    state._agentRequestModalId = id;
-
-    $('aar-modal-org').textContent = r.organizations?.name || '—';
-    $('aar-modal-meta').textContent = `${ACR_TYPE_LABELS[r.type] || r.type} · ${r.priority === 'urgent' ? 'Urgente' : 'Normal'} · ${new Date(r.created_at).toLocaleString('es-MX')}`;
-    $('aar-modal-description').textContent = r.description;
-    $('aar-modal-status').value = r.status;
-    $('aar-modal-response').value = r.response || '';
-    $('aar-modal-editor-link').onclick = (e) => {
-      e.preventDefault();
-      selectOrg(r.organization_id);
-      closeAgentRequestModal();
-      switchView('bot');
-    };
-
-    const { data: full } = await sb.from('agent_change_requests').select('attachments').eq('id', id).maybeSingle();
-    const attachments = full?.attachments || [];
-    const attEl = $('aar-modal-attachments');
-    if (!attachments.length) {
-      attEl.innerHTML = '';
-    } else {
-      attEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase">Adjuntos</div>';
-      for (const att of attachments) {
-        const { data: signed } = await sb.storage.from('agent-requests').createSignedUrl(att.path, 3600);
-        const link = document.createElement('a');
-        link.href = signed?.signedUrl || '#';
-        link.target = '_blank'; link.rel = 'noopener';
-        link.style.cssText = 'font-size:12.5px;color:var(--accent)';
-        link.textContent = '📎 ' + att.filename;
-        attEl.appendChild(link);
-      }
-    }
-
-    $('aar-modal').style.display = 'flex';
-  }
-
-  function closeAgentRequestModal() {
-    $('aar-modal').style.display = 'none';
-    state._agentRequestModalId = null;
-  }
-
-  async function saveAgentRequestResponse() {
-    const id = state._agentRequestModalId;
-    if (!id) return;
-    const status = $('aar-modal-status').value;
-    const response = $('aar-modal-response').value.trim();
-    const btn = $('aar-modal-save-btn');
-    btn.disabled = true; btn.textContent = 'Guardando…';
-    const { error } = await sb.from('agent_change_requests').update({
-      status, response: response || null,
-      responded_by: state.userId, responded_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq('id', id);
-    btn.disabled = false; btn.textContent = 'Guardar';
-    if (error) { showToast('Error: ' + error.message, 4000); return; }
-    showToast('Solicitud actualizada');
-    closeAgentRequestModal();
-    loadAgentRequestsAdmin();
-  }
-
   window.submitAgentRequest       = submitAgentRequest;
-  window.openAgentRequestModal    = openAgentRequestModal;
-  window.closeAgentRequestModal   = closeAgentRequestModal;
-  window.saveAgentRequestResponse = saveAgentRequestResponse;
-  window.loadAgentRequestsAdmin   = loadAgentRequestsAdmin;
 
   // ── Pagos (cobros de Stripe) ─────────────────────────────────────────────
   const PAGO_STATUS_LABELS = {
@@ -8750,82 +8341,6 @@
     }).join('');
   }
   window.loadPagos = loadPagos;
-
-  // ── Bot tester ───────────────────────────────────────────────────────────
-  const botTest = { history: [], busy: false };
-
-  function botTestAppend(role, text) {
-    const empty = document.getElementById('bot-test-empty');
-    if (empty) empty.remove();
-    const box = document.getElementById('bot-test-messages');
-    const isBot = role === 'bot';
-    const el = document.createElement('div');
-    el.style.cssText = `display:flex;justify-content:${isBot ? 'flex-start' : 'flex-end'}`;
-    el.innerHTML = `<div style="max-width:72%;padding:9px 13px;border-radius:${isBot ? '4px 14px 14px 14px' : '14px 4px 14px 14px'};background:${isBot ? 'var(--card-bg)' : 'var(--accent)'};color:${isBot ? 'var(--text)' : '#fff'};font-size:13.5px;line-height:1.55;border:1px solid ${isBot ? 'var(--border)' : 'transparent'};white-space:pre-wrap">${text.replace(/</g,'&lt;')}</div>`;
-    box.appendChild(el);
-    box.scrollTop = box.scrollHeight;
-    return el;
-  }
-
-  async function sendBotTest() {
-    if (botTest.busy) return;
-    const input = document.getElementById('bot-test-input');
-    const btn   = document.getElementById('bot-test-send');
-    const msg   = input.value.trim();
-    if (!msg) return;
-
-    botTest.busy = true;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-    input.value = '';
-    input.style.height = 'auto';
-    botTestAppend('user', msg);
-
-    // Typing indicator
-    const typingEl = botTestAppend('bot', '···');
-    typingEl.querySelector('div').style.opacity = '0.5';
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      const orgId = state.currentOrgId || state.userOrgId;
-      const res = await fetch(`${EDGE_BASE}/test-bot`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history: botTest.history, org_id: orgId }),
-      });
-      const data = await res.json();
-      typingEl.remove();
-      if (!res.ok) { botTestAppend('bot', '⚠️ ' + (data.error ?? 'Error al obtener respuesta')); return; }
-      botTestAppend('bot', data.reply);
-      botTest.history.push({ role: 'user', content: msg });
-      botTest.history.push({ role: 'assistant', content: data.reply });
-    } catch (e) {
-      typingEl.remove();
-      botTestAppend('bot', '⚠️ Error de red: ' + e.message);
-    } finally {
-      botTest.busy = false;
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa fa-paper-plane"></i>';
-      input.focus();
-    }
-  }
-
-  function clearBotTest() {
-    botTest.history = [];
-    botTest.busy    = false;
-    const box = document.getElementById('bot-test-messages');
-    box.innerHTML = `<div id="bot-test-empty" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 0;color:var(--text-dim);flex-direction:column;gap:8px;text-align:center">
-      <i class="fab fa-whatsapp" style="font-size:28px;opacity:.25"></i>
-      <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Escribe un mensaje para probar tu agente</span>
-    </div>`;
-  }
-
-  document.getElementById('bot-test-input')?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBotTest(); }
-  });
-
-  window.sendBotTest  = sendBotTest;
-  window.clearBotTest = clearBotTest;
 
   // ── Cuenta ───────────────────────────────────────────────────────────────
   async function loadCuenta() {
@@ -10557,19 +10072,19 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/></svg>
           </div>
           <div style="flex:1;min-width:0">
-            <div class="wstep-title">Configura tu agente</div>
-            <div class="wstep-desc">Escribe el prompt que define cómo habla y qué sabe tu bot</div>
+            <div class="wstep-title">Pide cambios a tu agente</div>
+            <div class="wstep-desc">Dinos cómo quieres que hable o qué debe saber — nuestro equipo lo configura</div>
           </div>
           <i class="fa fa-chevron-right wstep-arrow"></i>
         </div>
 
-        <div class="welcome-step" id="wstep-2" onclick="welcomeGoTo('bot','wstep-2')">
+        <div class="welcome-step" id="wstep-2" onclick="welcomeGoTo('config','wstep-2')">
           <div class="wstep-icon" style="background:rgba(59,130,246,.1)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div style="flex:1;min-width:0">
-            <div class="wstep-title">Prueba tu agente</div>
-            <div class="wstep-desc">Simula una conversación real desde el panel para afinar las respuestas</div>
+            <div class="wstep-title">Completa el perfil de tu negocio</div>
+            <div class="wstep-desc">Agrega tu horario, contacto y redes — tu agente los usa para responder</div>
           </div>
           <i class="fa fa-chevron-right wstep-arrow"></i>
         </div>
