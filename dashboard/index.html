@@ -7351,22 +7351,28 @@
           <span style="font-size:11.5px;color:var(--text-dim)">Encuéntralo en la URL de tu Google Sheet: /spreadsheets/d/<strong>ID</strong>/edit</span>
         </label>`;
     } else if (provider === 'stripe') {
+      const stripeStatus = integ?.status
+      const chargesEnabled = integ?.config?.charges_enabled
+      const stripeEmail = integ?.config?.email || ''
       body.innerHTML = `
-        <div style="padding:12px 14px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
-          Encuentra tus claves en <strong style="color:var(--text)">dashboard.stripe.com → Developers → API Keys</strong>
+        <div style="padding:12px 14px;background:rgba(99,91,255,.07);border:1px solid rgba(99,91,255,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Al hacer clic en <strong style="color:var(--text)">Conectar</strong> serás redirigido a Stripe para completar el onboarding de tu cuenta. Stripe gestiona comisiones y protecciones directamente.
         </div>
-        <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">Publishable Key</span>
-          <input id="im-stripe-pk" type="text" placeholder="pk_live_..."
-            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">Secret Key <span style="font-weight:400;color:var(--text-muted)">(se guarda cifrado)</span></span>
-          <input id="im-stripe-sk" type="password" placeholder="sk_live_..."
-            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
-        </label>`;
+        ${stripeStatus === 'connected' ? `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:10px">
+            <i class="fa fa-circle-check" style="color:var(--accent);font-size:14px"></i>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Cuenta conectada</div>
+              ${stripeEmail ? `<div style="font-size:12px;color:var(--text-muted)">${stripeEmail}</div>` : ''}
+            </div>
+          </div>
+        ` : stripeStatus === 'pending' ? `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px">
+            <i class="fa fa-clock" style="color:#f59e0b;font-size:14px"></i>
+            <div style="font-size:13px;color:var(--text-muted)">Onboarding incompleto — haz clic en Conectar para retomarlo.</div>
+          </div>
+        ` : ''}
+      `;
     } else if (provider === 'zapier') {
       const webhookUrl = integ?.config?.webhook_url || '';
       body.innerHTML = `
