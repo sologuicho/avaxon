@@ -8381,7 +8381,8 @@
       const trialDays = $('cuenta-trial-days');
       const trialProg = $('cuenta-trial-progress');
 
-      if (planName) planName.textContent = sub?.plan_id === 'pro' ? 'Pro — $2,990/mes' : sub?.plan_id ?? 'Pro';
+      const PLAN_LABELS = { mostrador: 'Mostrador — $2,990/mes', sucursal: 'Sucursal — $4,990/mes', cadena: 'Cadena — $10,990/mes' }
+      if (planName) planName.textContent = PLAN_LABELS[sub?.plan_id] ?? sub?.plan_id ?? 'Sin plan';
 
       if (sub?.status === 'trialing') {
         const end       = new Date(sub.current_period_end);
