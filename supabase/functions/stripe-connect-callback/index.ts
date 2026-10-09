@@ -44,18 +44,17 @@ Deno.serve(async (req: Request) => {
     const accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
     if (!accountId) return redirect(`${DASHBOARD_URL}?conexion=stripe_error`)
 
-    // ── Verificar estado v2 ─────────────────────────────────────────────────
-    const account = await stripeV2Fetch(`/v2/core/accounts/${accountId}`, STRIPE_SECRET_KEY, { method: 'GET' })
-    const cardPaymentsStatus = account.configuration?.merchant?.capabilities?.card_payments?.status
-    const chargesEnabled = cardPaymentsStatus === 'active'
+    // ── Verificar estado v1 ─────────────────────────────────────────────────
+    const account = await stripeFetch(`/accounts/${accountId}`, STRIPE_SECRET_KEY, { method: 'GET' })
+    const chargesEnabled = account.charges_enabled === true
     const status = chargesEnabled ? 'connected' : 'pending'
 
     await sb.from('integrations').update({
       status,
       config: {
-        email: account.identity?.email || null,
+        email: account.email || null,
         charges_enabled: chargesEnabled,
-        card_payments_status: cardPaymentsStatus || null,
+        card_payments_status: chargesEnabled ? 'active' : 'pending',
         test_mode: STRIPE_SECRET_KEY.startsWith('sk_test_'),
       },
       connected_at: chargesEnabled ? new Date().toISOString() : null,
