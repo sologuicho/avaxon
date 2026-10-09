@@ -579,6 +579,93 @@
     .cal-form-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
     @media (max-width: 900px) { .cal-layout { grid-template-columns: 1fr; } }
 
+    /* ── Calendario v2: tabs, week/day grid, modales, time picker ────────── */
+    .cal-mode-tabs { display: flex; gap: 6px; }
+    .cal-mode-tab {
+      padding: 7px 16px; border-radius: 8px; border: 1.5px solid var(--border);
+      background: var(--card-bg); color: var(--text-muted); font-size: 12.5px; font-weight: 600;
+      cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all .13s;
+    }
+    .cal-mode-tab.active { background: var(--accent); color: #062513; border-color: var(--accent); }
+    .cal-day-count {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700;
+      color: #fff; background: var(--accent); border-radius: 8px; min-width: 14px; height: 14px;
+      display: none; align-items: center; justify-content: center; padding: 0 3px; line-height: 1;
+    }
+    .cal-day.has-apts .cal-day-count { display: flex; }
+    .cal-day.has-apts .cal-dot { display: none; }
+
+    .cal-grid-layout { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .cal-grid-layout { grid-template-columns: 1fr; } }
+
+    .cal-timegrid-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .cal-timegrid-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .cal-timegrid-scroll { max-height: 620px; overflow-y: auto; position: relative; }
+    .cal-timegrid { display: grid; grid-template-columns: 52px 1fr; }
+    .cal-timegrid-hours { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .cal-timegrid-hour-label { height: 48px; font-size: 10.5px; color: var(--text-dim); text-align: right; padding-right: 6px; font-family: 'Barlow Condensed', sans-serif; transform: translateY(-6px); }
+    .cal-timegrid-cols { display: grid; position: relative; }
+    .cal-timegrid-col { position: relative; border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent); min-height: 48px; }
+    .cal-timegrid-col:last-child { border-right: none; }
+    .cal-timegrid-col-header { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); padding: 8px 0; border-bottom: 1px solid var(--border); text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
+    .cal-timegrid-col-header.today { color: var(--accent); }
+    .cal-hourline { position: absolute; left: 0; right: 0; border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+    .cal-apt-block {
+      position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 4px 7px;
+      background: var(--accent-sub); border-left: 3px solid var(--accent); overflow: hidden;
+      cursor: pointer; font-size: 11px; line-height: 1.3; z-index: 2; transition: filter .1s;
+    }
+    .cal-apt-block:hover { filter: brightness(0.96); }
+    .cal-apt-block.status-confirmed { background: rgba(16,185,129,.12); border-left-color: #10b981; }
+    .cal-apt-block.status-cancelled { background: rgba(148,163,184,.14); border-left-color: #94a3b8; opacity: .6; text-decoration: line-through; }
+    .cal-apt-block-title { font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-apt-block-time { color: var(--text-muted); font-size: 10px; }
+
+    .apt-pencil { background: none; border: none; cursor: pointer; color: var(--text-dim); font-size: 11px; padding: 2px 5px; transition: color .12s; }
+    .apt-pencil:hover { color: var(--accent); }
+    .apt-status-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .apt-status-pill.pending   { color: #f59e0b; background: rgba(245,158,11,.12); }
+    .apt-status-pill.confirmed { color: #10b981; background: rgba(16,185,129,.12); }
+    .apt-status-pill.cancelled { color: #64748b; background: rgba(100,116,139,.12); }
+
+    /* Panel lateral en laptop, pantalla completa en teléfono */
+    .apt-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2100; }
+    .apt-modal-panel {
+      position: fixed; top: 0; right: 0; height: 100%; width: 440px; max-width: 100%;
+      background: var(--card-bg); box-shadow: -8px 0 32px rgba(0,0,0,.18);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    @media (max-width: 720px) {
+      .apt-modal-panel { width: 100%; }
+    }
+    .apt-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .apt-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+    .apt-modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
+
+    .cal-timeslot-list { max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; border: 1.5px solid var(--border); border-radius: 10px; padding: 6px; }
+    .cal-timeslot-btn {
+      padding: 8px 10px; border-radius: 7px; border: none; background: transparent; text-align: left;
+      font-size: 13px; color: var(--text); cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .cal-timeslot-btn:hover:not(:disabled) { background: var(--hover-bg); }
+    .cal-timeslot-btn.selected { background: var(--accent); color: #062513; font-weight: 700; }
+    .cal-timeslot-btn:disabled { color: var(--text-dim); background: var(--page-bg); cursor: not-allowed; text-decoration: line-through; }
+
+    .cal-duration-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cal-duration-chip {
+      padding: 6px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--card-bg);
+      font-size: 12px; font-weight: 600; color: var(--text-muted); cursor: pointer;
+    }
+    .cal-duration-chip.selected { background: var(--accent); color: #062513; border-color: var(--accent); }
+
+    .cal-contact-results { max-height: 160px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: 10px; margin-top: 4px; display: none; }
+    .cal-contact-result-item { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+    .cal-contact-result-item:last-child { border-bottom: none; }
+    .cal-contact-result-item:hover { background: var(--hover-bg); }
+
+    #apt-detail-modal .apt-detail-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    #apt-detail-modal .apt-detail-row:last-child { border-bottom: none; }
+
     /* ── Google Calendar status banner ── */
     .gcal-banner {
       display: flex; align-items: center; gap: 14px;
@@ -1646,6 +1733,14 @@
               <div class="view-header-sub">Citas y agenda del equipo</div>
             </div>
           </div>
+          <div class="view-header-actions" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="cal-mode-tabs" id="cal-mode-tabs">
+              <button class="cal-mode-tab active" data-mode="month" onclick="setCalMode('month')">Mes</button>
+              <button class="cal-mode-tab" data-mode="week" onclick="setCalMode('week')">Semana</button>
+              <button class="cal-mode-tab" data-mode="day" onclick="setCalMode('day')">Día</button>
+            </div>
+            <button class="btn-primary" style="font-size:13px;padding:9px 18px" onclick="openAptModal()"><i class="fa fa-plus" style="font-size:11px;margin-right:6px"></i>Nueva cita</button>
+          </div>
         </div>
         <!-- Google Calendar status banner -->
         <div id="gcal-cal-banner" class="gcal-banner not-connected">
@@ -1666,34 +1761,139 @@
           <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#f59e0b"></div><div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div class="kpi-label">Pendientes</div><div class="kpi-row"><div class="kpi-value" id="cal-kpi-pending">—</div></div></div><div class="kpi-icon" style="background:rgba(245,158,11,.12);color:#f59e0b;position:relative;top:0;right:0"><i class="fa fa-clock"></i></div></div></div>
           <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#6366f1"></div><div style="display:flex;align-items:flex-start;justify-content:space-between"><div><div class="kpi-label">Hoy</div><div class="kpi-row"><div class="kpi-value" id="cal-kpi-today">—</div></div></div><div class="kpi-icon" style="background:rgba(99,102,241,.12);color:#6366f1;position:relative;top:0;right:0"><i class="fa fa-star"></i></div></div></div>
         </div>
-        <div class="cal-layout">
-          <div class="cal-left">
-            <div class="cal-header">
-              <button class="cal-nav-btn" id="cal-prev">&#8249;</button>
-              <span class="cal-month-label" id="cal-month-label">—</span>
-              <button class="cal-nav-btn" id="cal-next">&#8250;</button>
-            </div>
-            <div class="cal-weekdays">
-              <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-            </div>
-            <div class="cal-grid" id="cal-grid"></div>
-          </div>
-          <div class="cal-right">
-            <div class="cal-day-header" id="cal-day-header">Selecciona un día</div>
-            <div class="cal-appointments" id="cal-appointments">
-              <div class="apt-empty">Selecciona un día para ver citas</div>
-            </div>
-            <div class="cal-form-wrap">
-              <div class="cal-form-title" id="cal-form-title">Nueva cita</div>
-              <div class="form-grid">
-                <input class="form-input-cal" type="text" id="cal-title" placeholder="Título de la cita" />
-                <input class="form-input-cal" type="text" id="cal-service" placeholder="Servicio (opcional)" />
-                <input class="form-input-cal" type="text" id="cal-contact" placeholder="Nombre del contacto" />
-                <input class="form-input-cal" type="time" id="cal-time" value="10:00" />
+
+        <div class="cal-grid-layout">
+          <div>
+            <!-- Mes -->
+            <div class="cal-layout" id="cal-mode-month" style="display:grid">
+              <div class="cal-left">
+                <div class="cal-header">
+                  <button class="cal-nav-btn" id="cal-prev">&#8249;</button>
+                  <span class="cal-month-label" id="cal-month-label">—</span>
+                  <button class="cal-nav-btn" id="cal-next">&#8250;</button>
+                </div>
+                <div class="cal-weekdays">
+                  <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+                </div>
+                <div class="cal-grid" id="cal-grid"></div>
               </div>
-              <button class="btn-add-apt" id="cal-add-btn">+ Agregar cita</button>
-              <div class="cal-form-error" id="cal-form-error"></div>
+              <div class="cal-right">
+                <div class="cal-day-header" id="cal-day-header">Selecciona un día</div>
+                <div class="cal-appointments" id="cal-appointments">
+                  <div class="apt-empty">Selecciona un día para ver citas</div>
+                </div>
+              </div>
             </div>
+
+            <!-- Semana / Día -->
+            <div class="cal-timegrid-wrap" id="cal-mode-timegrid" style="display:none">
+              <div class="cal-timegrid-header">
+                <button class="cal-nav-btn" id="cal-timegrid-prev">&#8249;</button>
+                <span class="cal-month-label" id="cal-timegrid-label">—</span>
+                <button class="cal-nav-btn" id="cal-timegrid-next">&#8250;</button>
+              </div>
+              <div class="cal-timegrid-scroll">
+                <div class="cal-timegrid">
+                  <div class="cal-timegrid-hours" id="cal-timegrid-hours"></div>
+                  <div class="cal-timegrid-cols" id="cal-timegrid-cols"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div class="card bp" style="padding:0">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--text)">Próximas citas</div>
+              <div id="cal-upcoming-list" style="padding:4px 16px"></div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-muted);cursor:pointer;padding:0 4px">
+              <input type="checkbox" id="cal-show-cancelled" onchange="refreshCalView()" /> Mostrar canceladas
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel: Nueva cita / Editar cita -->
+      <div class="apt-modal-overlay" id="apt-modal-overlay" onclick="closeAptModal(event)">
+        <div class="apt-modal-panel" onclick="event.stopPropagation()">
+          <div class="apt-modal-header">
+            <span style="font-size:16px;font-weight:700;color:var(--text)" id="apt-modal-title">Nueva cita</span>
+            <button onclick="closeAptModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:18px"><i class="fa fa-xmark"></i></button>
+          </div>
+          <div class="apt-modal-body">
+            <div>
+              <label class="cfg-field-label">Título</label>
+              <input id="apt-f-title" type="text" class="cfg-field-input" placeholder="Ej: Consulta, Corte de cabello…" />
+            </div>
+            <div style="position:relative">
+              <label class="cfg-field-label">Contacto</label>
+              <input id="apt-f-contact-search" type="text" class="cfg-field-input" placeholder="Buscar en Leads o escribir un nombre nuevo…" oninput="searchAptContact(this.value)" autocomplete="off" />
+              <div class="cal-contact-results" id="apt-contact-results"></div>
+              <input type="hidden" id="apt-f-contact-id" />
+            </div>
+            <div>
+              <label class="cfg-field-label">Servicio (opcional)</label>
+              <input id="apt-f-service" type="text" class="cfg-field-input" placeholder="Ej: Limpieza dental" />
+            </div>
+            <div>
+              <label class="cfg-field-label">Fecha</label>
+              <input id="apt-f-date" type="date" class="cfg-field-input" onchange="renderAptTimeSlots()" />
+            </div>
+            <div>
+              <label class="cfg-field-label">Duración</label>
+              <div class="cal-duration-chips" id="apt-duration-chips"></div>
+            </div>
+            <div>
+              <label class="cfg-field-label">Hora de inicio</label>
+              <div class="cal-timeslot-list" id="apt-timeslot-list"></div>
+              <div id="apt-conflict-warning" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:12px;color:#92700a"></div>
+            </div>
+            <div>
+              <label class="cfg-field-label">Estado</label>
+              <select id="apt-f-status" class="cfg-field-select">
+                <option value="pending">Pendiente</option>
+                <option value="confirmed">Confirmada</option>
+              </select>
+            </div>
+            <div>
+              <label class="cfg-field-label">Notas</label>
+              <textarea id="apt-f-notes" class="cfg-field-textarea" rows="3" placeholder="Observaciones…"></textarea>
+            </div>
+            <div id="apt-form-error" style="display:none;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+          </div>
+          <div class="apt-modal-footer">
+            <button onclick="closeAptModal()" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-weight:600;cursor:pointer">Cancelar</button>
+            <button onclick="saveAptModal()" id="apt-save-btn" class="btn-primary" style="flex:2">Guardar cita</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Detalle de cita -->
+      <div id="apt-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2100;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;padding:26px;box-shadow:0 24px 64px rgba(0,0,0,.25)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:17px;font-weight:700;color:var(--text)" id="apt-detail-title">—</span>
+            <button onclick="closeAptDetailModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:18px"><i class="fa fa-xmark"></i></button>
+          </div>
+          <div id="apt-detail-body"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+            <button onclick="editAptFromDetail()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-pen" style="font-size:11px;margin-right:5px"></i>Editar</button>
+            <button onclick="confirmAptFromDetail()" id="apt-detail-confirm-btn" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid #10b981;background:rgba(16,185,129,.08);color:#10b981;font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-check" style="font-size:11px;margin-right:5px"></i>Marcar confirmada</button>
+            <button onclick="rescheduleAptFromDetail()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-clock-rotate-left" style="font-size:11px;margin-right:5px"></i>Reagendar</button>
+            <button onclick="openAptCancelConfirm()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--red);background:transparent;color:var(--red);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-ban" style="font-size:11px;margin-right:5px"></i>Cancelar cita</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Confirmar cancelación -->
+      <div id="apt-cancel-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2200;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;padding:26px;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+          <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:10px">¿Cancelar esta cita?</div>
+          <p id="apt-cancel-text" style="font-size:13.5px;line-height:1.6;color:var(--text-muted);margin:0 0 20px"></p>
+          <div style="display:flex;gap:10px">
+            <button onclick="closeAptCancelConfirm()" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer">No, volver</button>
+            <button onclick="confirmCancelAppointment()" style="flex:1;padding:10px;border-radius:9px;border:none;background:var(--red);color:#fff;font-weight:700;cursor:pointer">Sí, cancelar</button>
           </div>
         </div>
       </div>
@@ -3022,7 +3222,7 @@
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
     try { localStorage.setItem('avx_last_view', name); } catch(e) {}
-    if (name === 'calendario')    { loadCalendarMonth(); updateGcalUI(); }
+    if (name === 'calendario')    { loadCalendarData(); updateGcalUI(); }
     if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
     if (name === 'leads')          loadLeads();
     if (name === 'pipeline')       loadPipeline();
@@ -3141,7 +3341,7 @@
     loadOrgTimezone(orgId);
     const activeView = document.querySelector('.nav-item.active');
     const view = activeView?.dataset.view;
-    if (view === 'calendario')  loadCalendarMonth();
+    if (view === 'calendario')  loadCalendarData();
     if (view === 'crm')         loadCRM();
     if (view === 'inventario')  loadInventario();
     if (view === 'config')      loadConfig();
@@ -7341,56 +7541,124 @@
   /* ── Calendar ── */
   const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+  const APT_DURATIONS = [15, 30, 45, 60, 90];
+  const APT_STATUS_LABELS = { pending: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada' };
+  const CAL_DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+  const GRID_START_HOUR = 7, GRID_END_HOUR = 21, HOUR_PX = 48;
+
   const calView = {
+    mode: window.innerWidth <= 720 ? 'day' : 'month',
     year:  new Date().getFullYear(),
     month: new Date().getMonth(),
     selectedDate: new Date(),
+    timegridDate: new Date(),
     appointments: [],
     editingId: null,
+    detailId: null,
+    showCancelled: false,
+    orgHours: null,
+    formDuration: 60,
+    formTime: null,
   };
 
   function calDateKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
+  function aptDateKey(iso) { return calDateKey(new Date(iso)); }
+  function timeToMinutes(hhmm) { const [h,m] = (hhmm||'00:00').split(':').map(Number); return h*60+(m||0); }
+  function formatTime12h(hh, mm) {
+    const ampm = hh >= 12 ? 'p.m.' : 'a.m.';
+    let h12 = hh % 12; if (h12 === 0) h12 = 12;
+    return `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+  }
+  function weekDatesFor(date) {
+    const d = new Date(date); d.setHours(0,0,0,0);
+    const dow = (d.getDay() + 6) % 7; // 0 = lunes
+    d.setDate(d.getDate() - dow);
+    return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate()+i); return x; });
+  }
+  function findAptById(id) { return calView.appointments.find(x => x.id === id) || null; }
 
-  function aptDateKey(iso) {
-    return calDateKey(new Date(iso));
+  function setCalMode(mode) {
+    calView.mode = mode;
+    loadCalendarData();
+  }
+  window.setCalMode = setCalMode;
+
+  async function loadOrgHoursForCal(orgId) {
+    if (!orgId) { calView.orgHours = null; return; }
+    if (calView._orgHoursOrgId === orgId && calView.orgHours) return;
+    const { data } = await sb.from('organization_profile').select('hours').eq('organization_id', orgId).maybeSingle();
+    calView.orgHours = data?.hours || null;
+    calView._orgHoursOrgId = orgId;
   }
 
-  async function loadCalendarMonth() {
-    const orgId = state.currentOrgId;
-    const { year, month } = calView;
-    const start = new Date(year, month, 1).toISOString();
-    const end   = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+  async function loadCalKpis(orgId) {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
+    let q = sb.from('appointments').select('status,scheduled_at')
+      .gte('scheduled_at', start.toISOString()).lte('scheduled_at', end.toISOString())
+      .neq('status', 'cancelled');
+    if (orgId) q = q.eq('organization_id', orgId);
+    const { data } = await q;
+    const apts = data || [];
+    const todayKey = calDateKey(now);
+    $('cal-kpi-total').textContent     = apts.length;
+    $('cal-kpi-confirmed').textContent = apts.filter(a => a.status === 'confirmed').length;
+    $('cal-kpi-pending').textContent   = apts.filter(a => !a.status || a.status === 'pending').length;
+    $('cal-kpi-today').textContent     = apts.filter(a => calDateKey(new Date(a.scheduled_at)) === todayKey).length;
+  }
+
+  async function loadCalendarData() {
+    const orgId = getActiveOrgId();
+
+    document.querySelectorAll('.cal-mode-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === calView.mode));
+    $('cal-mode-month').style.display    = calView.mode === 'month' ? 'grid' : 'none';
+    $('cal-mode-timegrid').style.display = calView.mode === 'month' ? 'none' : 'block';
+
+    let start, end;
+    if (calView.mode === 'month') {
+      start = new Date(calView.year, calView.month, 1);
+      end   = new Date(calView.year, calView.month + 1, 0, 23, 59, 59);
+    } else if (calView.mode === 'week') {
+      const days = weekDatesFor(calView.timegridDate);
+      start = new Date(days[0]); start.setHours(0,0,0,0);
+      end   = new Date(days[6]); end.setHours(23,59,59,999);
+    } else {
+      start = new Date(calView.timegridDate); start.setHours(0,0,0,0);
+      end   = new Date(calView.timegridDate); end.setHours(23,59,59,999);
+    }
 
     let query = sb.from('appointments')
-      .select('id,title,service,scheduled_at,notes,status,organization_id')
-      .gte('scheduled_at', start)
-      .lte('scheduled_at', end)
+      .select('id,title,service,scheduled_at,duration_minutes,notes,status,organization_id,contact_id,contact_name,google_event_id')
+      .gte('scheduled_at', start.toISOString())
+      .lte('scheduled_at', end.toISOString())
       .order('scheduled_at', { ascending: true });
-
     if (orgId) query = query.eq('organization_id', orgId);
 
     const { data } = await query;
     calView.appointments = data || [];
 
-    // Cal KPI cards
-    const apts    = calView.appointments;
-    const todayKey = calDateKey(new Date());
-    $('cal-kpi-total').textContent     = apts.length;
-    $('cal-kpi-confirmed').textContent = apts.filter(a => a.status === 'confirmed').length;
-    $('cal-kpi-pending').textContent   = apts.filter(a => !a.status || a.status === 'pending').length;
-    $('cal-kpi-today').textContent     = apts.filter(a => aptDateKey(a.scheduled_at) === todayKey).length;
+    await loadCalKpis(orgId);
 
-    renderCalGrid();
-    renderDayView(calView.selectedDate);
+    if (calView.mode === 'month') {
+      renderCalGrid();
+      renderDayView(calView.selectedDate);
+    } else {
+      renderTimeGrid();
+    }
+    renderUpcomingList(orgId);
   }
 
   function renderCalGrid() {
-    const { year, month, selectedDate, appointments } = calView;
+    const { year, month, selectedDate, appointments, showCancelled } = calView;
     $('cal-month-label').textContent = MONTHS_ES[month] + ' ' + year;
 
-    const aptDays   = new Set(appointments.map(a => aptDateKey(a.scheduled_at)));
+    const visible = appointments.filter(a => showCancelled || a.status !== 'cancelled');
+    const aptCounts = {};
+    visible.forEach(a => { const k = aptDateKey(a.scheduled_at); aptCounts[k] = (aptCounts[k]||0) + 1; });
+
     const today     = new Date();
     const todayKey  = calDateKey(today);
     const selKey    = selectedDate ? calDateKey(selectedDate) : '';
@@ -7412,7 +7680,8 @@
     const grid = $('cal-grid');
     grid.innerHTML = cells.map(c => {
       const dk   = c.y + '-' + String(c.m+1).padStart(2,'0') + '-' + String(c.day).padStart(2,'0');
-      const hasA = !c.other && aptDays.has(dk);
+      const count= !c.other ? (aptCounts[dk] || 0) : 0;
+      const hasA = count > 0;
       const isTd = !c.other && dk === todayKey;
       const isSel= dk === selKey;
       let cls = 'cal-day';
@@ -7421,7 +7690,7 @@
       else if (isTd) cls += ' today';
       if (hasA) cls += ' has-apts';
       const attr = c.other ? '' : `data-y="${c.y}" data-m="${c.m}" data-d="${c.day}"`;
-      return `<div class="${cls}" ${attr}><span>${c.day}</span><span class="cal-dot"></span></div>`;
+      return `<div class="${cls}" ${attr} title="${hasA ? count + ' cita(s)' : ''}"><span>${c.day}</span><span class="cal-dot"></span><span class="cal-day-count">${count}</span></div>`;
     }).join('');
 
     grid.querySelectorAll('.cal-day:not(.other-month)').forEach(el => {
@@ -7437,7 +7706,7 @@
   function renderDayView(date) {
     if (!date) return;
     const dk   = calDateKey(date);
-    const apts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dk);
+    const apts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dk && (calView.showCancelled || a.status !== 'cancelled'));
     const label = date.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
     $('cal-day-header').textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
@@ -7447,141 +7716,435 @@
       return;
     }
     box.innerHTML = apts.map(a => {
-      const t   = new Date(a.scheduled_at).toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+      const t   = new Date(a.scheduled_at).toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' });
       const svc = a.service ? `<span style="font-size:11px;color:var(--text-muted)"> · ${a.service}</span>` : '';
-      const cnt = a.notes   ? `<div class="apt-contact">${a.notes}</div>` : '';
-      return `<div class="apt-item" data-edit-id="${a.id}" style="cursor:pointer">
+      const cnt = a.contact_name ? `<div class="apt-contact">${a.contact_name}</div>` : '';
+      const st  = a.status || 'pending';
+      return `<div class="apt-item" style="cursor:pointer" onclick="openAptDetailModal('${a.id}')">
         <div class="apt-time">${t}</div>
         <div class="apt-body"><div class="apt-title">${a.title}${svc}</div>${cnt}</div>
-        <button class="apt-del" data-id="${a.id}">✕</button>
+        <span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span>
+        <button class="apt-pencil" onclick="event.stopPropagation();openAptModal('${a.id}')" title="Editar"><i class="fa fa-pen"></i></button>
+      </div>`;
+    }).join('');
+  }
+
+  function renderTimeGridHours() {
+    let html = '';
+    for (let h = GRID_START_HOUR; h <= GRID_END_HOUR; h++) html += `<div class="cal-timegrid-hour-label">${h}:00</div>`;
+    $('cal-timegrid-hours').innerHTML = html;
+  }
+
+  function renderTimeGrid() {
+    renderTimeGridHours();
+    const cols = calView.mode === 'week' ? weekDatesFor(calView.timegridDate) : [new Date(calView.timegridDate)];
+    const colsEl = $('cal-timegrid-cols');
+    colsEl.style.gridTemplateColumns = `repeat(${cols.length}, 1fr)`;
+    const todayKey = calDateKey(new Date());
+    const totalHeight = (GRID_END_HOUR - GRID_START_HOUR + 1) * HOUR_PX;
+
+    colsEl.innerHTML = cols.map(d => {
+      const dk = calDateKey(d);
+      const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dk && (calView.showCancelled || a.status !== 'cancelled'));
+      const hourLines = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR + 1 }, (_, i) => `<div class="cal-hourline" style="top:${i*HOUR_PX}px"></div>`).join('');
+      const blocks = dayApts.map(a => {
+        const dt = new Date(a.scheduled_at);
+        const startMin = dt.getHours()*60 + dt.getMinutes();
+        const dur = a.duration_minutes || 60;
+        const top = Math.max(0, (startMin - GRID_START_HOUR*60) / 60 * HOUR_PX);
+        const height = Math.max(20, dur / 60 * HOUR_PX - 2);
+        const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+        return `<div class="cal-apt-block status-${a.status||'pending'}" style="top:${top}px;height:${height}px" onclick="openAptDetailModal('${a.id}')" title="${a.title} · ${timeLabel}${a.contact_name ? ' · ' + a.contact_name : ''}">
+          <div class="cal-apt-block-title">${a.title}</div>
+          <div class="cal-apt-block-time">${timeLabel}</div>
+        </div>`;
+      }).join('');
+      const headerLabel = d.toLocaleDateString('es-MX', { weekday:'short', day:'numeric' });
+      return `<div>
+        <div class="cal-timegrid-col-header${dk===todayKey?' today':''}" style="position:sticky;top:0;background:var(--card-bg);z-index:3">${headerLabel}</div>
+        <div class="cal-timegrid-col" style="height:${totalHeight}px">${hourLines}${blocks}</div>
       </div>`;
     }).join('');
 
-    box.querySelectorAll('.apt-del').forEach(btn => {
-      btn.addEventListener('click', (e) => { e.stopPropagation(); deleteAppointment(btn.dataset.id); });
-    });
-    box.querySelectorAll('.apt-item').forEach(el => {
-      el.addEventListener('click', () => {
-        const a = calView.appointments.find(x => x.id === el.dataset.editId);
-        if (a) startEditAppointment(a);
+    const label = calView.mode === 'week'
+      ? `${cols[0].toLocaleDateString('es-MX',{day:'numeric',month:'short'})} – ${cols[6].toLocaleDateString('es-MX',{day:'numeric',month:'short'})}`
+      : calView.timegridDate.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+    $('cal-timegrid-label').textContent = label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  async function renderUpcomingList(orgId) {
+    let q = sb.from('appointments').select('id,title,scheduled_at,status,contact_name')
+      .neq('status', 'cancelled')
+      .gte('scheduled_at', new Date().toISOString())
+      .order('scheduled_at', { ascending: true })
+      .limit(5);
+    if (orgId) q = q.eq('organization_id', orgId);
+    const { data } = await q;
+    const el = $('cal-upcoming-list');
+    if (!data || !data.length) { el.innerHTML = '<div class="apt-empty">Sin próximas citas</div>'; return; }
+    el.innerHTML = data.map(a => {
+      const dt = new Date(a.scheduled_at);
+      const label = dt.toLocaleDateString('es-MX', { day:'numeric', month:'short' }) + ' · ' + formatTime12h(dt.getHours(), dt.getMinutes());
+      const st = a.status || 'pending';
+      return `<div class="apt-item" style="cursor:pointer" onclick="openAptDetailModal('${a.id}')">
+        <div class="apt-time" style="min-width:auto">${label}</div>
+        <div class="apt-body"><div class="apt-title">${a.title}</div>${a.contact_name ? `<div class="apt-contact">${a.contact_name}</div>` : ''}</div>
+        <span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function refreshCalView() {
+    calView.showCancelled = $('cal-show-cancelled').checked;
+    if (calView.mode === 'month') { renderCalGrid(); renderDayView(calView.selectedDate); }
+    else renderTimeGrid();
+  }
+  window.refreshCalView = refreshCalView;
+
+  // ── Modal crear/editar cita ───────────────────────────────────────────────
+  function renderAptDurationChips() {
+    const current = calView.formDuration || 60;
+    const isStandard = APT_DURATIONS.includes(current);
+    $('apt-duration-chips').innerHTML = APT_DURATIONS.map(d =>
+      `<button type="button" class="cal-duration-chip${d===current?' selected':''}" onclick="selectAptDuration(${d})">${d} min</button>`
+    ).join('') + `<button type="button" class="cal-duration-chip${!isStandard?' selected':''}" onclick="selectAptDurationCustom()">${!isStandard ? current + ' min' : 'Personalizada'}</button>`;
+  }
+  function selectAptDuration(d) { calView.formDuration = d; renderAptDurationChips(); renderAptTimeSlots(); }
+  window.selectAptDuration = selectAptDuration;
+  function selectAptDurationCustom() {
+    const v = prompt('Duración en minutos:', calView.formDuration || 60);
+    const n = parseInt(v, 10);
+    if (n > 0) { calView.formDuration = n; renderAptDurationChips(); renderAptTimeSlots(); }
+  }
+  window.selectAptDurationCustom = selectAptDurationCustom;
+
+  function renderAptTimeSlots() {
+    const dateStr = $('apt-f-date').value;
+    const listEl = $('apt-timeslot-list');
+    if (!dateStr) { listEl.innerHTML = '<div style="padding:10px;font-size:12.5px;color:var(--text-dim)">Selecciona una fecha</div>'; return; }
+
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dayKey = CAL_DAY_KEYS[new Date(y, m-1, d).getDay()];
+    const hoursCfg = calView.orgHours?.[dayKey];
+    const closed = !!hoursCfg?.closed;
+    const openMin  = (hoursCfg && !closed) ? timeToMinutes(hoursCfg.open)  : 8*60;
+    const closeMin = (hoursCfg && !closed) ? timeToMinutes(hoursCfg.close) : 20*60;
+
+    const duration = calView.formDuration || 60;
+    const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dateStr && a.status !== 'cancelled' && a.id !== calView.editingId);
+
+    const slots = [];
+    for (let min = 6*60; min <= 22*60; min += 30) slots.push(min);
+
+    listEl.innerHTML = slots.map(min => {
+      const hh = Math.floor(min/60), mm = min % 60;
+      const label = formatTime12h(hh, mm);
+      const outOfHours = closed || min < openMin || (min + duration) > closeMin;
+      const overlap = dayApts.some(a => {
+        const dt = new Date(a.scheduled_at);
+        const aStart = dt.getHours()*60 + dt.getMinutes();
+        const aEnd = aStart + (a.duration_minutes || 60);
+        return min < aEnd && (min + duration) > aStart;
       });
+      const selected = calView.formTime === min;
+      const suffix = outOfHours ? ' · Fuera de horario' : (overlap ? ' · Ocupado' : '');
+      return `<button type="button" class="cal-timeslot-btn${selected?' selected':''}" ${outOfHours?'disabled':''} onclick="selectAptTimeSlot(${min})">${label}${suffix}</button>`;
+    }).join('');
+
+    checkAptConflict();
+  }
+  window.renderAptTimeSlots = renderAptTimeSlots;
+
+  function selectAptTimeSlot(min) { calView.formTime = min; renderAptTimeSlots(); }
+  window.selectAptTimeSlot = selectAptTimeSlot;
+
+  function checkAptConflict() {
+    const warnEl = $('apt-conflict-warning');
+    const min = calView.formTime;
+    const dateStr = $('apt-f-date').value;
+    if (min == null || !dateStr) { warnEl.style.display = 'none'; return; }
+    const duration = calView.formDuration || 60;
+    const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dateStr && a.status !== 'cancelled' && a.id !== calView.editingId);
+    const conflict = dayApts.find(a => {
+      const dt = new Date(a.scheduled_at);
+      const aStart = dt.getHours()*60 + dt.getMinutes();
+      const aEnd = aStart + (a.duration_minutes || 60);
+      return min < aEnd && (min + duration) > aStart;
     });
+    if (conflict) {
+      warnEl.textContent = `⚠ Este horario choca con "${conflict.title}". Puedes guardarla igual, pero revisa que no se traslapen.`;
+      warnEl.style.display = 'block';
+    } else {
+      warnEl.style.display = 'none';
+    }
   }
 
-  function startEditAppointment(a) {
-    calView.editingId = a.id;
-    const parts = utcIsoToZonedParts(a.scheduled_at);
-    const d = new Date(parts.year, parts.month, parts.day);
-    calView.selectedDate = d;
-    calView.year = parts.year; calView.month = parts.month;
-    renderCalGrid();
-    renderDayView(d);
-
-    $('cal-title').value   = a.title || '';
-    $('cal-service').value = a.service || '';
-    $('cal-contact').value = a.notes || '';
-    $('cal-time').value    = String(parts.hour).padStart(2,'0') + ':' + String(parts.minute).padStart(2,'0');
-    $('cal-form-error').style.display = 'none';
-    $('cal-form-title').innerHTML = 'Editar cita <a href="#" id="cal-cancel-edit" style="font-size:12px;font-weight:600;color:var(--text-muted);margin-left:8px">Cancelar</a>';
-    $('cal-cancel-edit').addEventListener('click', (e) => { e.preventDefault(); cancelEditAppointment(); });
-    $('cal-add-btn').textContent = 'Guardar cambios';
+  let aptContactSearchTimer = null;
+  function searchAptContact(query) {
+    $('apt-f-contact-id').value = '';
+    clearTimeout(aptContactSearchTimer);
+    const q = query.trim();
+    if (q.length < 2) { $('apt-contact-results').style.display = 'none'; return; }
+    aptContactSearchTimer = setTimeout(async () => {
+      const orgId = getActiveOrgId();
+      let sq = sb.from('contacts').select('id,name,phone').ilike('name', `%${q}%`).limit(8);
+      if (orgId) sq = sq.eq('organization_id', orgId);
+      const { data } = await sq;
+      const resEl = $('apt-contact-results');
+      if (!data || !data.length) { resEl.style.display = 'none'; return; }
+      resEl.innerHTML = data.map(c => {
+        const safeName = (c.name || 'Sin nombre').replace(/'/g, "\\'");
+        return `<div class="cal-contact-result-item" onclick="selectAptContact('${c.id}','${safeName}')">${c.name || 'Sin nombre'} <span style="color:var(--text-dim)">· ${c.phone || ''}</span></div>`;
+      }).join('');
+      resEl.style.display = 'block';
+    }, 250);
   }
+  window.searchAptContact = searchAptContact;
 
-  function cancelEditAppointment() {
-    calView.editingId = null;
-    $('cal-title').value = '';
-    $('cal-service').value = '';
-    $('cal-contact').value = '';
-    $('cal-time').value = '10:00';
-    $('cal-form-error').style.display = 'none';
-    $('cal-form-title').textContent = 'Nueva cita';
-    $('cal-add-btn').textContent = '+ Agregar cita';
+  function selectAptContact(id, name) {
+    $('apt-f-contact-id').value = id;
+    $('apt-f-contact-search').value = name;
+    $('apt-contact-results').style.display = 'none';
   }
+  window.selectAptContact = selectAptContact;
 
-  async function addAppointment() {
-    const title   = $('cal-title').value.trim();
-    const service = $('cal-service').value.trim();
-    const contact = $('cal-contact').value.trim();
-    const time    = $('cal-time').value || '10:00';
-    const errEl   = $('cal-form-error');
-    const btn     = $('cal-add-btn');
-    const editingId = calView.editingId;
+  async function openAptModal(appointmentId) {
+    calView.editingId = appointmentId || null;
+    calView.formDuration = 60;
+    calView.formTime = null;
 
+    $('apt-modal-title').textContent = appointmentId ? 'Editar cita' : 'Nueva cita';
+    $('apt-form-error').style.display = 'none';
+    $('apt-f-title').value = '';
+    $('apt-f-service').value = '';
+    $('apt-f-notes').value = '';
+    $('apt-f-status').value = 'pending';
+    $('apt-f-contact-search').value = '';
+    $('apt-f-contact-id').value = '';
+    $('apt-contact-results').style.display = 'none';
+
+    const orgId = getActiveOrgId();
+    if (!orgId) { showToast('Selecciona un cliente'); return; }
+    await loadOrgHoursForCal(orgId);
+
+    if (appointmentId) {
+      let a = findAptById(appointmentId);
+      if (!a) { const res = await sb.from('appointments').select('*').eq('id', appointmentId).maybeSingle(); a = res.data; }
+      if (a) {
+        const parts = utcIsoToZonedParts(a.scheduled_at);
+        $('apt-f-title').value = a.title || '';
+        $('apt-f-service').value = a.service || '';
+        $('apt-f-notes').value = a.notes || '';
+        $('apt-f-status').value = a.status === 'confirmed' ? 'confirmed' : 'pending';
+        $('apt-f-contact-search').value = a.contact_name || '';
+        $('apt-f-contact-id').value = a.contact_id || '';
+        $('apt-f-date').value = `${parts.year}-${String(parts.month+1).padStart(2,'0')}-${String(parts.day).padStart(2,'0')}`;
+        calView.formDuration = a.duration_minutes || 60;
+        calView.formTime = parts.hour*60 + parts.minute;
+      }
+    } else {
+      const d = calView.mode === 'month' ? (calView.selectedDate || new Date()) : calView.timegridDate;
+      $('apt-f-date').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    renderAptDurationChips();
+    renderAptTimeSlots();
+    $('apt-modal-overlay').style.display = 'block';
+  }
+  window.openAptModal = openAptModal;
+
+  function closeAptModal() { $('apt-modal-overlay').style.display = 'none'; }
+  window.closeAptModal = closeAptModal;
+
+  async function saveAptModal() {
+    const title   = $('apt-f-title').value.trim();
+    const service = $('apt-f-service').value.trim();
+    const notes   = $('apt-f-notes').value.trim();
+    const status  = $('apt-f-status').value;
+    const contactId   = $('apt-f-contact-id').value || null;
+    const contactName = $('apt-f-contact-search').value.trim();
+    const dateStr = $('apt-f-date').value;
+    const duration = calView.formDuration || 60;
+    const timeMin  = calView.formTime;
+    const errEl = $('apt-form-error');
     errEl.style.display = 'none';
-    if (!title) {
-      errEl.textContent = 'El título es obligatorio.';
-      errEl.style.display = 'block'; return;
-    }
-    if (!calView.selectedDate) {
-      errEl.textContent = 'Selecciona un día primero.';
-      errEl.style.display = 'block'; return;
-    }
 
-    const orgId = state.currentOrgId || state.userOrgId;
-    if (!orgId) {
-      errEl.textContent = 'Selecciona una organización desde el menú superior.';
-      errEl.style.display = 'block'; return;
-    }
+    if (!title)   { errEl.textContent = 'El título es obligatorio.'; errEl.style.display = 'block'; return; }
+    if (!dateStr) { errEl.textContent = 'Selecciona una fecha.'; errEl.style.display = 'block'; return; }
+    if (timeMin == null) { errEl.textContent = 'Selecciona una hora de inicio.'; errEl.style.display = 'block'; return; }
 
-    const [hh, mm] = time.split(':').map(Number);
-    const sel = calView.selectedDate;
-    const scheduledAtIso = zonedWallTimeToUtcIso(sel.getFullYear(), sel.getMonth(), sel.getDate(), hh, mm);
+    const orgId = getActiveOrgId();
+    if (!orgId) { errEl.textContent = 'Selecciona un cliente.'; errEl.style.display = 'block'; return; }
 
-    btn.disabled = true; btn.textContent = editingId ? 'Guardando cambios…' : 'Guardando…';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const hh = Math.floor(timeMin/60), mm = timeMin % 60;
+    const scheduledAtIso = zonedWallTimeToUtcIso(y, m-1, d, hh, mm);
+
+    const btn = $('apt-save-btn');
+    btn.disabled = true; btn.textContent = 'Guardando…';
 
     const fields = {
-      title,
-      service: service || null,
-      scheduled_at: scheduledAtIso,
-      notes: contact || null,
+      title, service: service || null, notes: notes || null, status,
+      scheduled_at: scheduledAtIso, duration_minutes: duration,
+      contact_id: contactId, contact_name: contactName || null,
     };
 
-    let apptId = editingId;
-    let error;
+    const editingId = calView.editingId;
+    let apptId = editingId, error;
     if (editingId) {
       ({ error } = await sb.from('appointments').update(fields).eq('id', editingId));
     } else {
       const { data: newAppt, error: insErr } = await sb.from('appointments')
         .insert({ organization_id: orgId, created_by: state.userId, ...fields })
         .select('id').single();
-      error = insErr;
-      apptId = newAppt?.id;
+      error = insErr; apptId = newAppt?.id;
     }
 
     if (error) {
-      btn.disabled = false; btn.textContent = editingId ? 'Guardar cambios' : '+ Agregar cita';
-      errEl.textContent = 'Error: ' + error.message;
-      errEl.style.display = 'block'; return;
+      btn.disabled = false; btn.textContent = 'Guardar cita';
+      errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return;
     }
 
     if (apptId) {
       btn.textContent = 'Sincronizando con Google…';
       await syncAppointmentWithGoogle(orgId, apptId, editingId ? 'update' : 'create');
     }
-    btn.disabled = false;
+    btn.disabled = false; btn.textContent = 'Guardar cita';
+    closeAptModal();
+    await loadCalendarData();
+  }
+  window.saveAptModal = saveAptModal;
 
-    cancelEditAppointment();
-    await loadCalendarMonth();
+  // ── Modal detalle de cita ─────────────────────────────────────────────────
+  async function openAptDetailModal(id) {
+    let a = findAptById(id);
+    if (!a) { const res = await sb.from('appointments').select('*').eq('id', id).maybeSingle(); a = res.data; }
+    if (!a) return;
+    calView.detailId = id;
+
+    $('apt-detail-title').textContent = a.title || '—';
+    const dt = new Date(a.scheduled_at);
+    const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+    const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+    const st = a.status || 'pending';
+
+    $('apt-detail-body').innerHTML = `
+      <div class="apt-detail-row"><span style="color:var(--text-muted)">Estado</span><span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span></div>
+      <div class="apt-detail-row"><span style="color:var(--text-muted)">Fecha</span><span>${dateLabel.charAt(0).toUpperCase()+dateLabel.slice(1)}</span></div>
+      <div class="apt-detail-row"><span style="color:var(--text-muted)">Hora</span><span>${timeLabel} (${a.duration_minutes||60} min)</span></div>
+      <div class="apt-detail-row"><span style="color:var(--text-muted)">Contacto</span><span>${a.contact_name || '—'}</span></div>
+      ${a.service ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Servicio</span><span>${a.service}</span></div>` : ''}
+      ${a.notes   ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Notas</span><span>${a.notes}</span></div>` : ''}
+    `;
+    $('apt-detail-confirm-btn').style.display = st === 'confirmed' ? 'none' : '';
+    $('apt-detail-modal').style.display = 'flex';
+  }
+  window.openAptDetailModal = openAptDetailModal;
+
+  function closeAptDetailModal() { $('apt-detail-modal').style.display = 'none'; }
+  window.closeAptDetailModal = closeAptDetailModal;
+
+  function editAptFromDetail() { const id = calView.detailId; closeAptDetailModal(); openAptModal(id); }
+  window.editAptFromDetail = editAptFromDetail;
+  function rescheduleAptFromDetail() { editAptFromDetail(); }
+  window.rescheduleAptFromDetail = rescheduleAptFromDetail;
+
+  async function confirmAptFromDetail() {
+    const id = calView.detailId;
+    const orgId = getActiveOrgId();
+    await sb.from('appointments').update({ status: 'confirmed', updated_at: new Date().toISOString() }).eq('id', id);
+    await syncAppointmentWithGoogle(orgId, id, 'update');
+    closeAptDetailModal();
+    showToast('Cita marcada como confirmada');
+    await loadCalendarData();
+  }
+  window.confirmAptFromDetail = confirmAptFromDetail;
+
+  // ── Cancelar cita (con confirmación + deshacer) ──────────────────────────
+  let aptUndoTimer = null;
+  let aptUndoSnapshot = null;
+
+  function openAptCancelConfirm() {
+    const a = findAptById(calView.detailId);
+    if (!a) return;
+    const dt = new Date(a.scheduled_at);
+    const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
+    const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+    $('apt-cancel-text').textContent = `¿Seguro que quieres cancelar la cita "${a.title}" del ${dateLabel} a las ${timeLabel}? También se eliminará de Google Calendar.`;
+    $('apt-cancel-modal').style.display = 'flex';
+  }
+  window.openAptCancelConfirm = openAptCancelConfirm;
+
+  function closeAptCancelConfirm() { $('apt-cancel-modal').style.display = 'none'; }
+  window.closeAptCancelConfirm = closeAptCancelConfirm;
+
+  function showAptUndoToast() {
+    let el = $('apt-undo-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'apt-undo-toast';
+      el.style.cssText = "position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1e293b;color:#f1f5f9;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;padding:10px 14px 10px 18px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:9999;display:flex;align-items:center;gap:14px;border:1px solid rgba(255,255,255,.08)";
+      document.body.appendChild(el);
+    }
+    el.innerHTML = 'Cita cancelada <button onclick="undoCancelAppointment()" style="background:none;border:none;color:#5EEAD4;font-weight:700;cursor:pointer;font-size:13px;font-family:inherit;padding:0">Deshacer</button>';
+    el.style.display = 'flex';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, 6000);
   }
 
-  async function deleteAppointment(id) {
-    const a = calView.appointments.find(x => x.id === id);
-    const orgId = a?.organization_id || state.currentOrgId || state.userOrgId;
-    if (orgId) await syncAppointmentWithGoogle(orgId, id, 'delete');
-    await sb.from('appointments').delete().eq('id', id);
-    if (calView.editingId === id) cancelEditAppointment();
-    await loadCalendarMonth();
+  async function confirmCancelAppointment() {
+    const id = calView.detailId;
+    const a = findAptById(id);
+    if (!a) return;
+    const orgId = getActiveOrgId();
+
+    aptUndoSnapshot = { id, previousStatus: a.status };
+
+    await syncAppointmentWithGoogle(orgId, id, 'delete');
+    await sb.from('appointments').update({ status: 'cancelled', google_event_id: null, updated_at: new Date().toISOString() }).eq('id', id);
+
+    closeAptCancelConfirm();
+    closeAptDetailModal();
+
+    clearTimeout(aptUndoTimer);
+    showAptUndoToast();
+    aptUndoTimer = setTimeout(() => { aptUndoSnapshot = null; }, 6000);
+
+    await loadCalendarData();
   }
+  window.confirmCancelAppointment = confirmCancelAppointment;
+
+  async function undoCancelAppointment() {
+    if (!aptUndoSnapshot) return;
+    const { id, previousStatus } = aptUndoSnapshot;
+    clearTimeout(aptUndoTimer);
+    aptUndoSnapshot = null;
+    const toastEl = $('apt-undo-toast');
+    if (toastEl) toastEl.style.display = 'none';
+    const orgId = getActiveOrgId();
+    await sb.from('appointments').update({ status: previousStatus || 'pending', updated_at: new Date().toISOString() }).eq('id', id);
+    await syncAppointmentWithGoogle(orgId, id, 'create');
+    showToast('Cancelación revertida');
+    await loadCalendarData();
+  }
+  window.undoCancelAppointment = undoCancelAppointment;
 
   $('cal-prev').addEventListener('click', () => {
     if (--calView.month < 0) { calView.month = 11; calView.year--; }
-    loadCalendarMonth();
+    loadCalendarData();
   });
   $('cal-next').addEventListener('click', () => {
     if (++calView.month > 11) { calView.month = 0; calView.year++; }
-    loadCalendarMonth();
+    loadCalendarData();
   });
-  $('cal-add-btn').addEventListener('click', addAppointment);
+  $('cal-timegrid-prev').addEventListener('click', () => {
+    calView.timegridDate.setDate(calView.timegridDate.getDate() - (calView.mode === 'week' ? 7 : 1));
+    loadCalendarData();
+  });
+  $('cal-timegrid-next').addEventListener('click', () => {
+    calView.timegridDate.setDate(calView.timegridDate.getDate() + (calView.mode === 'week' ? 7 : 1));
+    loadCalendarData();
+  });
 
   /* ── Clock ── */
   function updateClock() {
