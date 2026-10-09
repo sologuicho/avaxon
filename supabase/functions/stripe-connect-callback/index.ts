@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeV2Fetch } from '../_shared/stripe.ts'
+import { stripeFetch } from '../_shared/stripe.ts'
 import { verifyState } from '../_shared/google.ts'
 
 // ── Retorno del onboarding de Stripe Connect v2 ──────────────────────────────
