@@ -2773,7 +2773,7 @@
     el.innerHTML = `
       <div class="org-dropdown-item-icon">${iconText}</div>
       <span class="org-dropdown-item-name">${label}</span>
-      ${status ? statusPill(status) : ''}
+      ${status ? statusPill(status).replace('class="pill ', 'class="pill no-dot ') : ''}
     `;
     el.addEventListener('click', e => {
       e.stopPropagation();
