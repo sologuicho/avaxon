@@ -1,13 +1,12 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeFetch } from '../_shared/stripe.ts'
+import { stripeV2Fetch } from '../_shared/stripe.ts'
 import { verifyState } from '../_shared/google.ts'
 
-// ── Retorno del onboarding de Stripe Connect ────────────────────────────────
-// Stripe redirige aquí al navegador (sin JWT de Supabase — se despliega con
-// --no-verify-jwt). La única autorización válida es el `state` firmado que
-// generó stripe-connect-start. Revisa charges_enabled en la cuenta y guarda
-// el estado real en integrations.
+// ── Retorno del onboarding de Stripe Connect v2 ──────────────────────────────
+// Stripe redirige aquí al navegador (sin JWT — --no-verify-jwt).
+// Autorización real: state HMAC firmado por stripe-connect-start.
+// Verifica card_payments.status === 'active' (equivalente v2 de charges_enabled).
 
 const DASHBOARD_URL = 'https://avaxon.lat/dashboard/'
 
@@ -45,14 +44,20 @@ Deno.serve(async (req: Request) => {
     const accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
     if (!accountId) return redirect(`${DASHBOARD_URL}?conexion=stripe_error`)
 
-    const account = await stripeFetch(`/accounts/${accountId}`, STRIPE_SECRET_KEY, { method: 'GET' })
-
-    const chargesEnabled = !!account.charges_enabled
+    // ── Verificar estado v2 ─────────────────────────────────────────────────
+    const account = await stripeV2Fetch(`/v2/core/accounts/${accountId}`, STRIPE_SECRET_KEY, { method: 'GET' })
+    const cardPaymentsStatus = account.configuration?.merchant?.capabilities?.card_payments?.status
+    const chargesEnabled = cardPaymentsStatus === 'active'
     const status = chargesEnabled ? 'connected' : 'pending'
 
     await sb.from('integrations').update({
       status,
-      config: { email: account.email || null, charges_enabled: chargesEnabled, test_mode: STRIPE_SECRET_KEY.startsWith('sk_test_') },
+      config: {
+        email: account.identity?.email || null,
+        charges_enabled: chargesEnabled,
+        card_payments_status: cardPaymentsStatus || null,
+        test_mode: STRIPE_SECRET_KEY.startsWith('sk_test_'),
+      },
       connected_at: chargesEnabled ? new Date().toISOString() : null,
       updated_at: new Date().toISOString(),
     }).eq('organization_id', organizationId).eq('provider', 'stripe')

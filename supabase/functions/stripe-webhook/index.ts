@@ -1,17 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { verifyStripeSignature } from '../_shared/stripe.ts'
+import { verifyStripeSignature, stripeV2Fetch } from '../_shared/stripe.ts'
 import { sendZapierEvent } from '../_shared/zapier.ts'
 
-// ── Webhook de Stripe (cuentas conectadas) ──────────────────────────────────
-// --no-verify-jwt: Stripe llama sin JWT de Supabase: la autenticación real es
-// la firma en el header Stripe-Signature, verificada contra
-// STRIPE_WEBHOOK_SECRET sobre el body crudo (antes de cualquier parseo).
-//
-// checkout.session.completed → marca el payment como pagado, avisa al dueño
-//   del negocio por WhatsApp (al número de Configuración → Contacto) y manda
-//   payment_completed a Zapier.
-// account.updated → releer charges_enabled y actualizar el status del card.
+// ── Webhook de Stripe ────────────────────────────────────────────────────────
+// Maneja eventos v1 y v2:
+//   checkout.session.completed  → marcar pago, avisar al negocio por WA
+//   account.updated             → (v1) actualizar charges_enabled
+//   v2.core.account.updated     → (v2 thin event) re-fetch cuenta y actualizar
 
 const corsHeaders = { 'Access-Control-Allow-Origin': '*' }
 const json = (data: unknown, status = 200) =>
@@ -78,16 +74,16 @@ Deno.serve(async (req: Request) => {
   try { event = JSON.parse(rawBody) } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+  const isTestMode = STRIPE_SECRET_KEY.startsWith('sk_test_')
 
   try {
+    // ── Pago completado ────────────────────────────────────────────────────
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object
-      const sessionId = session.id
-
       const { data: payment } = await sb
         .from('payments')
         .select('id, organization_id, concept, amount, contact_id')
-        .eq('session_id', sessionId)
+        .eq('session_id', session.id)
         .maybeSingle()
 
       if (payment) {
@@ -110,31 +106,30 @@ Deno.serve(async (req: Request) => {
           contact_id: payment.contact_id,
         })
       } else {
-        console.error('checkout.session.completed sin payment correspondiente:', sessionId)
+        console.error('checkout.session.completed sin payment correspondiente:', session.id)
       }
     }
 
+    // ── Cuenta actualizada (v1) ────────────────────────────────────────────
     if (event.type === 'account.updated') {
       const account = event.data.object
       const accountId = account.id
       const chargesEnabled = !!account.charges_enabled
+      await updateStripeIntegration(sb, accountId, chargesEnabled, account.email, isTestMode)
+    }
 
-      const { data: integ } = await sb
-        .from('integrations')
-        .select('organization_id, status')
-        .eq('provider', 'stripe')
-        .eq('credentials->>account_id', accountId)
-        .maybeSingle()
-
-      if (integ) {
-        const newStatus = chargesEnabled ? 'connected' : 'pending'
-        if (integ.status !== 'disconnected') {
-          await sb.from('integrations').update({
-            status: newStatus,
-            config: { email: account.email || null, charges_enabled: chargesEnabled, test_mode: STRIPE_SECRET_KEY.startsWith('sk_test_') },
-            connected_at: chargesEnabled ? new Date().toISOString() : null,
-            updated_at: new Date().toISOString(),
-          }).eq('organization_id', integ.organization_id).eq('provider', 'stripe')
+    // ── Cuenta actualizada (v2 thin event) ────────────────────────────────
+    // El thin event solo trae el ID — hay que re-fetch la cuenta completa.
+    if (event.type === 'v2.core.account.updated') {
+      const accountId = event.data?.id
+      if (accountId && STRIPE_SECRET_KEY) {
+        try {
+          const account = await stripeV2Fetch(`/v2/core/accounts/${accountId}`, STRIPE_SECRET_KEY, { method: 'GET' })
+          const cardPaymentsStatus = account.configuration?.merchant?.capabilities?.card_payments?.status
+          const chargesEnabled = cardPaymentsStatus === 'active'
+          await updateStripeIntegration(sb, accountId, chargesEnabled, account.identity?.email, isTestMode)
+        } catch (e) {
+          console.error('Error re-fetching cuenta v2:', e)
         }
       }
     }
@@ -145,3 +140,27 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Error interno' }, 500)
   }
 })
+
+async function updateStripeIntegration(
+  sb: ReturnType<typeof createClient>,
+  accountId: string,
+  chargesEnabled: boolean,
+  email: string | null | undefined,
+  isTestMode: boolean,
+): Promise<void> {
+  const { data: integ } = await sb
+    .from('integrations')
+    .select('organization_id, status')
+    .eq('provider', 'stripe')
+    .eq('credentials->>account_id', accountId)
+    .maybeSingle()
+
+  if (integ && integ.status !== 'disconnected') {
+    await sb.from('integrations').update({
+      status: chargesEnabled ? 'connected' : 'pending',
+      config: { email: email || null, charges_enabled: chargesEnabled, test_mode: isTestMode },
+      connected_at: chargesEnabled ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    }).eq('organization_id', integ.organization_id).eq('provider', 'stripe')
+  }
+}

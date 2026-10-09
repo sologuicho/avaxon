@@ -1,7 +1,4 @@
 // ── Google OAuth: state firmado (HMAC) + refresco de access_token ──────────
-// Usado por google-oauth-start, google-oauth-callback, y cualquier función
-// que necesite llamar a la API de Google (Calendar/Sheets) a nombre de una org.
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
@@ -26,8 +23,6 @@ function b64urlToBytes(s: string): Uint8Array {
   return Uint8Array.from(bin, c => c.charCodeAt(0))
 }
 
-// payload.org firmado con OAUTH_STATE_SECRET — evita que alguien pueda
-// forjar un `state` para conectar Google en la organización de otro.
 export async function signState(organizationId: string, secret: string): Promise<string> {
   const payload = JSON.stringify({ org: organizationId, ts: Date.now() })
   const payloadB64 = b64url(new TextEncoder().encode(payload))
@@ -66,9 +61,6 @@ type GoogleCredentials = {
   expires_at?: string
 }
 
-// Devuelve un access_token válido para la org, refrescándolo con Google si ya
-// expiró. Lee/escribe la fila google_calendar de `integrations` (Calendar y
-// Sheets comparten el mismo grant, por eso basta una fila como fuente).
 export async function getGoogleAccessToken(
   sb: ReturnType<typeof createClient>,
   organizationId: string,
@@ -84,7 +76,7 @@ export async function getGoogleAccessToken(
   if (!creds?.access_token) return null
 
   const expiresAtMs = creds.expires_at ? new Date(creds.expires_at).getTime() : 0
-  const stillValid = expiresAtMs - 60_000 > Date.now() // 60s de margen
+  const stillValid = expiresAtMs - 60_000 > Date.now()
   if (stillValid) return creds.access_token
 
   if (!creds.refresh_token) return null
@@ -110,7 +102,7 @@ export async function getGoogleAccessToken(
 
   const newCreds: GoogleCredentials = {
     access_token: tokenData.access_token,
-    refresh_token: creds.refresh_token, // Google no siempre reenvía uno nuevo al refrescar
+    refresh_token: creds.refresh_token,
     expires_at: new Date(Date.now() + (tokenData.expires_in ?? 3600) * 1000).toISOString(),
   }
 

@@ -3218,7 +3218,7 @@
     el.innerHTML = `
       <div class="org-dropdown-item-icon">${iconText}</div>
       <span class="org-dropdown-item-name">${label}</span>
-      ${status ? statusPill(status) : ''}
+      ${status ? statusPill(status).replace('class="pill ', 'class="pill no-dot ') : ''}
     `;
     el.addEventListener('click', e => {
       e.stopPropagation();
@@ -4992,6 +4992,17 @@
     loadIntegrations();
     handleGoogleOAuthRedirect();
 
+    // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
+    const _urlParams = new URLSearchParams(window.location.search)
+    const _conexion  = _urlParams.get('conexion')
+    if (_conexion) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (_conexion === 'stripe_ok')      { showToast('✅ Stripe conectado correctamente'); switchView('conexiones'); loadIntegrations() }
+      else if (_conexion === 'stripe_pending') { showToast('⏳ Onboarding de Stripe incompleto — complétalo en dashboard.stripe.com', 6000); switchView('conexiones') }
+      else if (_conexion === 'stripe_retry')   { showToast('Redirigiendo a Stripe para retomar el onboarding…', 4000); switchView('conexiones') }
+      else if (_conexion === 'stripe_error')   { showToast('❌ Error al conectar Stripe. Intenta de nuevo.', 5000); switchView('conexiones') }
+    }
+
     if (state.isReviewer) {
       // Deshabilitar botón Pausar/Reanudar agente
       const toggleBtn = $('agent-toggle-btn');
@@ -6458,7 +6469,6 @@
     mostrador:  'Mostrador',
     sucursal:   'Sucursal',
     cadena:     'Cadena',
-    enterprise: 'Enterprise',
   }
 
   let crmData       = []
@@ -8370,7 +8380,8 @@
       const trialDays = $('cuenta-trial-days');
       const trialProg = $('cuenta-trial-progress');
 
-      if (planName) planName.textContent = sub?.plan_id === 'pro' ? 'Pro — $2,990/mes' : sub?.plan_id ?? 'Pro';
+      const PLAN_LABELS = { mostrador: 'Mostrador — $2,990/mes', sucursal: 'Sucursal — $4,990/mes', cadena: 'Cadena — $10,990/mes' }
+      if (planName) planName.textContent = PLAN_LABELS[sub?.plan_id] ?? sub?.plan_id ?? 'Sin plan';
 
       if (sub?.status === 'trialing') {
         const end       = new Date(sub.current_period_end);
@@ -8583,7 +8594,7 @@
       if (detStatus)  { detStatus.textContent = 'Activo'; detStatus.style.color = 'var(--green)'; }
       if (detAccount) { detAccount.textContent = email; detAccount.style.color = 'var(--text)'; }
       if (detSync)    { detSync.textContent = 'Dashboard → Google (una vía)'; detSync.style.color = 'var(--text)'; }
-      if (detRemind)  { detRemind.textContent = 'Próximamente'; detRemind.style.color = 'var(--text-muted)'; }
+      if (detRemind)  { detRemind.textContent = 'Activos (24h y 1h antes)'; detRemind.style.color = 'var(--green)'; }
       if (banner) banner.className = 'gcal-banner connected';
       if (bannerTitle) bannerTitle.textContent = 'Google Calendar conectado';
       if (bannerSub)   bannerSub.textContent   = 'Cuenta: ' + email + ' · Las citas se sincronizan automáticamente';
@@ -8811,6 +8822,28 @@
               onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
           </label>
         </details>`;
+    } else if (provider === 'stripe') {
+      const stripeStatus = integ?.status
+      const stripeEmail = integ?.config?.email || ''
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(99,91,255,.07);border:1px solid rgba(99,91,255,.18);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Al hacer clic en <strong style="color:var(--text)">Conectar</strong> serás redirigido a Stripe para completar el onboarding de tu cuenta. Stripe gestiona comisiones y protecciones directamente.
+        </div>
+        ${stripeStatus === 'connected' ? `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:10px">
+            <i class="fa fa-circle-check" style="color:var(--accent);font-size:14px"></i>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Cuenta conectada</div>
+              ${stripeEmail ? `<div style="font-size:12px;color:var(--text-muted)">${stripeEmail}</div>` : ''}
+            </div>
+          </div>
+        ` : stripeStatus === 'pending' ? `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px">
+            <i class="fa fa-clock" style="color:#f59e0b;font-size:14px"></i>
+            <div style="font-size:13px;color:var(--text-muted)">Onboarding incompleto — haz clic en Conectar para retomarlo.</div>
+          </div>
+        ` : ''}
+      `;
     } else if (provider === 'zapier') {
       const webhookUrl = integ?.config?.webhook_url || '';
       body.innerHTML = `
@@ -8872,6 +8905,22 @@
         updateIntegPill('google_sheets', 'gsheets-integ-pill');
         closeIntegModal();
         showToast('Hoja de cálculo guardada');
+
+      } else if (provider === 'stripe') {
+        const orgId = state.currentOrgId || state.userOrgId
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-connect-start`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ organization_id: orgId }),
+        })
+        const data = await res.json()
+        if (!res.ok || !data.url) {
+          errEl.textContent = data.error || 'Error al iniciar Stripe Connect'
+          errEl.style.display = 'block'
+          return
+        }
+        window.location.href = data.url
 
       } else if (provider === 'zapier') {
         const url = document.getElementById('im-zapier-url')?.value?.trim();
@@ -9633,7 +9682,6 @@
               <option value="mostrador">Mostrador — $2,990</option>
               <option value="sucursal">Sucursal — $4,990</option>
               <option value="cadena">Cadena — $10,990</option>
-              <option value="enterprise">Enterprise — $20,000+</option>
             </select>
           </div>
           <div>

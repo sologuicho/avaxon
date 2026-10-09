@@ -1,11 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-// ── sendZapierEvent ──────────────────────────────────────────────────────────
-// POST al webhook de Zapier guardado en integrations (provider='zapier') para
-// la organización. Nunca lanza: si la integración no está conectada o el POST
-// falla, devuelve { ok:false } y solo registra el error — no debe tronar al
-// caller (bot de WhatsApp, acción del dashboard, etc).
-
 export type ZapierEventResult =
   | { ok: true }
   | { ok: false; skipped: true }

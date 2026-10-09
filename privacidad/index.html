@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad — Avaxon</title>
+  <meta name="description" content="Política de privacidad de Avaxon. Cómo recopilamos, usamos y protegemos tus datos." />
+  <link rel="icon" type="image/jpeg" href="/avaxon_favicon.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+  <style>
+    html, body { margin: 0; padding: 0; background: #f8fafc; }
+    body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #475569; -webkit-font-smoothing: antialiased; overflow-x: hidden; line-height: 1.75; }
+    * { box-sizing: border-box; }
+    a { color: #16a34a; text-decoration: none; }
+    a:hover { color: #15803d; }
+    .navlink { font-size: 15px; font-weight: 500; color: #64748b; }
+    .navlink:hover { color: #0f172a; }
+    .nav-toggle { display: none; width: 44px; height: 44px; flex-direction: column; justify-content: center; gap: 5px; padding: 0 11px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; }
+    .nav-mobile-panel { display: none; border-top: 1px solid #e2e8f0; padding: 10px 20px 22px; flex-direction: column; background: #fff; }
+    .nav-mobile-panel.is-open { display: flex; }
+    .nav-mobile-panel a { padding: 15px 0; border-bottom: 1px solid #f1f5f9; font-size: 16px; font-weight: 500; color: #334155; }
+    @media (max-width: 899px) { .nav-links-wide { display: none !important; } .nav-toggle { display: flex; } }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 64px 24px 96px; }
+    h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 4vw, 36px); font-weight: 700; color: #0f172a; margin-bottom: 8px; letter-spacing: -.02em; }
+    .updated { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #94a3b8; margin-bottom: 40px; }
+    .intro { font-size: 16px; color: #64748b; margin-bottom: 48px; line-height: 1.7; border-left: 3px solid #25D366; padding-left: 16px; }
+    h2 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #1e293b; margin: 40px 0 10px; letter-spacing: -.01em; }
+    p { font-size: 15px; color: #64748b; margin: 0 0 10px; }
+    li { font-size: 15px; color: #64748b; }
+    ul { padding-left: 20px; display: flex; flex-direction: column; gap: 7px; margin-bottom: 10px; }
+    strong { color: #334155; font-weight: 600; }
+    .divider { border: none; border-top: 1px solid #e2e8f0; margin: 48px 0; }
+    .contact-block { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px 28px; }
+    .contact-block h2 { margin-top: 0; }
+    .footer-copy { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #cbd5e1; margin-top: 56px; }
+  </style>
+</head>
+<body>
+
+<header style="position: sticky; top: 0; z-index: 50; background: rgba(248,250,252,.9); backdrop-filter: blur(14px); border-bottom: 1px solid #e2e8f0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 28px;">
+    <a href="/" style="display: flex; align-items: center; gap: 11px; text-decoration: none;">
+      <img src="/avaxon_favicon.jpeg" alt="Avaxon" style="width: 30px; height: 30px; border-radius: 9px; object-fit: cover;">
+      <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -.01em; color: #0f172a; text-transform: uppercase;">Avaxon</span>
+    </a>
+    <div style="flex: 1;"></div>
+    <nav class="nav-links-wide" style="display: flex; align-items: center; gap: 30px;">
+      <a class="navlink" href="/#agente">El agente</a>
+      <a class="navlink" href="/#proceso">Proceso</a>
+      <a class="navlink" href="/#panel">Panel</a>
+      <a class="navlink" href="/#precios">Precios</a>
+      <a href="/#contacto" style="padding: 11px 20px; border-radius: 12px; background: #25D366; color: #062513; font-weight: 700; font-size: 15px; text-decoration: none;">Agendar demo</a>
+    </nav>
+    <button class="nav-toggle" id="navToggle" type="button" aria-label="Menú" aria-expanded="false" aria-controls="navMobilePanel">
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+      <span style="display: block; height: 2px; background: #334155; border-radius: 2px;"></span>
+    </button>
+  </div>
+  <nav class="nav-mobile-panel" id="navMobilePanel">
+    <a href="/#agente">El agente</a>
+    <a href="/#proceso">Proceso</a>
+    <a href="/#panel">Panel</a>
+    <a href="/#precios">Precios</a>
+    <a href="/#contacto" style="margin-top: 14px; padding: 15px; border-radius: 12px; background: #25D366; color: #062513; text-align: center; font-weight: 700; font-size: 16px; border-bottom: 0;">Agendar demo</a>
+  </nav>
+</header>
+
+<div class="wrap">
+
+  <h1>Política de Privacidad</h1>
+  <p class="updated">Última actualización: 8 de octubre de 2026</p>
+
+  <p class="intro">Avaxon ("nosotros", "nuestro") opera una plataforma de automatización de WhatsApp con inteligencia artificial para negocios. Esta política describe cómo recopilamos, usamos y protegemos la información que procesamos a través de nuestros servicios.</p>
+
+  <h2>1. Información que recopilamos</h2>
+  <ul>
+    <li><strong>Datos de contacto de usuarios finales:</strong> números de teléfono, nombres y mensajes de WhatsApp de las personas que interactúan con los agentes de nuestros clientes.</li>
+    <li><strong>Datos de cuenta del cliente:</strong> correo electrónico y nombre de los administradores que acceden al panel de Avaxon.</li>
+    <li><strong>Credenciales de integración:</strong> tokens de WhatsApp Business API, Google OAuth, Stripe Account ID y Zapier Webhook URL proporcionados por nuestros clientes para conectar sus servicios.</li>
+    <li><strong>Datos de calendario y citas:</strong> fechas, horas y detalles de citas agendadas a través del panel o el agente de IA, sincronizadas con Google Calendar cuando el cliente lo tiene conectado.</li>
+    <li><strong>Datos de pago:</strong> Avaxon no almacena datos de tarjetas. Los pagos son procesados directamente por Stripe y la información de pago nunca pasa por nuestros servidores.</li>
+    <li><strong>Registros de uso:</strong> historial de conversaciones, métricas de respuesta, logs del sistema y eventos de automatización (Zapier).</li>
+  </ul>
+
+  <h2>2. Cómo usamos la información</h2>
+  <ul>
+    <li>Operar los agentes de IA de WhatsApp en nombre de nuestros clientes.</li>
+    <li>Almacenar el historial de conversaciones para contexto, análisis y recordatorios automáticos.</li>
+    <li>Agendar y recordar citas a través de WhatsApp y Google Calendar.</li>
+    <li>Procesar pagos y verificar el estado de cuentas Stripe Connect de los clientes.</li>
+    <li>Disparar automatizaciones en Zapier (alta de leads, citas agendadas, pagos recibidos) según la configuración del cliente.</li>
+    <li>Enviar notificaciones y recordatorios a los contactos finales conforme a la configuración del cliente.</li>
+    <li>Mejorar la calidad y precisión de los agentes.</li>
+  </ul>
+
+  <h2>3. Compartición de datos con terceros</h2>
+  <p>No vendemos datos personales. Compartimos información únicamente con los proveedores necesarios para operar el servicio:</p>
+  <ul>
+    <li><strong>OpenAI:</strong> los mensajes de conversación se envían a la API de OpenAI para generar las respuestas del agente de IA. Datos sujetos a la <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">política de privacidad de OpenAI</a>.</li>
+    <li><strong>Meta / WhatsApp Business API:</strong> para el envío y recepción de mensajes. El uso está sujeto a las <a href="https://www.whatsapp.com/legal/business-policy/" target="_blank" rel="noopener">Políticas de WhatsApp Business</a> y las <a href="https://developers.facebook.com/terms/" target="_blank" rel="noopener">Condiciones de la Plataforma de Meta</a>.</li>
+    <li><strong>Google (Calendar y Sheets):</strong> cuando el cliente conecta su cuenta de Google, Avaxon accede a Google Calendar para crear, actualizar y eliminar eventos de citas, y a Google Sheets para exportar leads. El acceso se limita a lo que el cliente autoriza durante el flujo OAuth y puede revocarse en cualquier momento desde la configuración de Google.</li>
+    <li><strong>Stripe:</strong> para el procesamiento de pagos de clientes finales (cobros en nombre del negocio) y la facturación de los planes de Avaxon. Avaxon utiliza Stripe Connect; los datos de pago son manejados directamente por Stripe conforme a su <a href="https://stripe.com/privacy" target="_blank" rel="noopener">política de privacidad</a>.</li>
+    <li><strong>Zapier:</strong> cuando el cliente configura una integración con Zapier, Avaxon envía eventos (lead creado, cita agendada, pago recibido, etc.) al webhook del cliente para activar sus automatizaciones. Solo se comparten los datos que el cliente configure en su Zap.</li>
+    <li><strong>Supabase:</strong> proveedor de infraestructura de base de datos y autenticación. Todos los datos se almacenan en servidores de Supabase con cifrado en reposo.</li>
+  </ul>
+
+  <h2>4. Retención de datos</h2>
+  <p>Los datos de conversaciones, citas y contactos se retienen mientras el cliente mantenga activa su cuenta. Al cancelar el servicio, los datos se eliminan dentro de los 30 días siguientes a la solicitud escrita enviada a <a href="mailto:hola@avaxon.lat">hola@avaxon.lat</a>.</p>
+
+  <h2>5. Eliminación de datos de usuarios finales</h2>
+  <p>Los usuarios finales que hayan interactuado con un agente de Avaxon pueden solicitar la eliminación de sus datos de dos formas:</p>
+  <ul>
+    <li>Contactando directamente al negocio que opera el agente de WhatsApp.</li>
+    <li>Enviando una solicitud a <a href="mailto:hola@avaxon.lat">hola@avaxon.lat</a> con su número de teléfono.</li>
+    <li>Usando el formulario de eliminación en <a href="/data-deletion.html">avaxon.lat/data-deletion</a>.</li>
+  </ul>
+  <p>Procesamos las solicitudes de eliminación en un plazo máximo de 72 horas.</p>
+
+  <h2>6. Seguridad</h2>
+  <p>Utilizamos cifrado en tránsito (HTTPS/TLS) y en reposo para proteger todos los datos. Las credenciales de API (WhatsApp, Google OAuth, Stripe) se almacenan cifradas y nunca se exponen en el frontend. El acceso al panel está protegido mediante autenticación de Supabase Auth.</p>
+
+  <h2>7. Uso de la API de WhatsApp Business (Meta)</h2>
+  <p>Avaxon utiliza la API de WhatsApp Business de Meta para enviar y recibir mensajes en nombre de nuestros clientes. Los datos procesados a través de esta API están sujetos a las <a href="https://www.whatsapp.com/legal/business-policy/" target="_blank" rel="noopener">Políticas de WhatsApp Business</a> y las <a href="https://developers.facebook.com/terms/" target="_blank" rel="noopener">Condiciones de la Plataforma de Meta</a>.</p>
+
+  <h2>8. Cambios a esta política</h2>
+  <p>Podemos actualizar esta política periódicamente. Notificaremos cambios significativos por correo a los administradores de cuenta activos con al menos 15 días de anticipación.</p>
+
+  <hr class="divider">
+
+  <div class="contact-block">
+    <h2>Contacto</h2>
+    <p>Para cualquier pregunta sobre privacidad o eliminación de datos:</p>
+    <ul>
+      <li>Email: <a href="mailto:hola@avaxon.lat">hola@avaxon.lat</a></li>
+      <li>Sitio: <a href="https://avaxon.lat">avaxon.lat</a></li>
+      <li>WhatsApp: <a href="https://wa.me/528991709336">+52 899 170 9336</a></li>
+    </ul>
+  </div>
+
+  <p class="footer-copy">© 2026 Avaxon. Todos los derechos reservados.</p>
+</div>
+
+<footer style="background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+  <div style="max-width: 1240px; margin: 0 auto; padding: 40px 20px; display: flex; flex-wrap: wrap; gap: 26px; justify-content: space-between; align-items: flex-start;">
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <span style="display: flex; align-items: center; gap: 10px;">
+        <img src="/avaxon_favicon.jpeg" alt="Avaxon" style="width: 26px; height: 26px; border-radius: 8px; object-fit: cover;">
+        <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; color: #0f172a; text-transform: uppercase;">Avaxon</span>
+      </span>
+      <span style="font-size: 14px; color: #94a3b8;">Tu WhatsApp contesta, califica y agenda solo.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+      <a href="https://wa.me/528991709336" style="color: #16a34a; font-weight: 600;">+52 899 170 9336</a>
+      <a href="/terminos/" style="color: #94a3b8;">Términos de servicio</a>
+      <a href="/data-deletion.html" style="color: #94a3b8;">Eliminación de datos</a>
+      <span style="color: #cbd5e1; font-family: 'JetBrains Mono', monospace; font-size: 12px;">© 2026 Avaxon</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const navToggle = document.getElementById('navToggle');
+  const navMobilePanel = document.getElementById('navMobilePanel');
+  navToggle.addEventListener('click', () => {
+    const isOpen = navMobilePanel.classList.toggle('is-open');
+    navToggle.setAttribute('aria-expanded', isOpen);
+  });
+</script>
+</body>
+</html>

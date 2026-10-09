@@ -1,8 +1,8 @@
 // ── Cliente mínimo de la API de Stripe (sin SDK) ────────────────────────────
-// Stripe espera application/x-www-form-urlencoded (no JSON), con notación de
-// corchetes para objetos/arrays anidados. stripeFetch encapsula eso + headers
-// comunes (auth, Stripe-Version, Stripe-Account para cargos directos en
-// cuentas conectadas).
+// stripeFetch  → v1 endpoints (Checkout Sessions, Payment Intents, etc.)
+//                usa application/x-www-form-urlencoded
+// stripeV2Fetch → v2 endpoints (/v2/core/accounts, /v2/core/account_links)
+//                usa application/json
 
 export const STRIPE_API_VERSION = '2026-09-30.endive'
 
@@ -38,32 +38,7 @@ function toFormUrlEncoded(obj: Record<string, unknown>, prefix = ''): string {
   return parts.filter(Boolean).join('&')
 }
 
-// Endpoints /v2/* de Stripe usan JSON (no form-urlencoded como v1) y no
-// llevan Stripe-Account (los cargos directos se siguen haciendo contra v1
-// Checkout Sessions con ese header; v2 aquí es solo para crear la cuenta).
-export async function stripeFetchV2(
-  path: string,
-  secretKey: string,
-  options: { method?: string; body?: Record<string, unknown> } = {},
-): Promise<any> {
-  const { method = 'POST', body } = options
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${secretKey}`,
-    'Stripe-Version': STRIPE_API_VERSION,
-    'Content-Type': 'application/json',
-  }
-  const res = await fetch(`https://api.stripe.com/v2${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const data = await res.json()
-  if (!res.ok) {
-    throw new StripeApiError(data.error?.message || `Stripe API error ${res.status}`, res.status, data.error)
-  }
-  return data
-}
-
+// ── v1 (form-encoded) ────────────────────────────────────────────────────────
 export async function stripeFetch(
   path: string,
   secretKey: string,
@@ -90,9 +65,36 @@ export async function stripeFetch(
   return data
 }
 
-// Verifica la firma de un webhook de Stripe (header Stripe-Signature) contra
-// STRIPE_WEBHOOK_SECRET. Implementado a mano (HMAC-SHA256 sobre
-// "<timestamp>.<payload crudo>"), sin el SDK de Stripe.
+// ── v2 (JSON) ────────────────────────────────────────────────────────────────
+// Usado para /v2/core/accounts y /v2/core/account_links (Accounts v2).
+// El path ya incluye /v2/..., se concatena directo a api.stripe.com.
+export async function stripeV2Fetch(
+  path: string,
+  secretKey: string,
+  options: { method?: string; body?: Record<string, unknown>; stripeAccount?: string } = {},
+): Promise<any> {
+  const { method = 'POST', body, stripeAccount } = options
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${secretKey}`,
+    'Stripe-Version': STRIPE_API_VERSION,
+  }
+  if (stripeAccount) headers['Stripe-Account'] = stripeAccount
+
+  let fetchBody: string | undefined
+  if (body) {
+    headers['Content-Type'] = 'application/json'
+    fetchBody = JSON.stringify(body)
+  }
+
+  const res = await fetch(`https://api.stripe.com${path}`, { method, headers, body: fetchBody })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new StripeApiError(data.error?.message || `Stripe API error ${res.status}`, res.status, data.error)
+  }
+  return data
+}
+
+// ── Webhook signature verification ──────────────────────────────────────────
 export async function verifyStripeSignature(
   rawPayload: string,
   sigHeader: string | null,

@@ -1,12 +1,11 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeFetch, stripeFetchV2 } from '../_shared/stripe.ts'
+import { stripeV2Fetch } from '../_shared/stripe.ts'
 import { signState } from '../_shared/google.ts' // helper genérico de HMAC state, no es específico de Google
 
-// ── Inicia Stripe Connect (cuentas Standard, cargos directos) ──────────────
-// Crea la cuenta conectada Standard (o reusa la existente si ya se había
-// creado antes pero no se terminó el onboarding) y genera un Account Link.
-// El dashboard redirige al navegador a la url que devuelve esta función.
+// ── Inicia Stripe Connect v2 (merchant, dashboard full) ──────────────────────
+// Crea la cuenta conectada v2 (o reusa la existente) y genera un Account Link
+// de onboarding. El dashboard redirige al navegador a la url devuelta.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -75,8 +74,10 @@ Deno.serve(async (req: Request) => {
       // o la API rechaza la creación ("review the responsibilities..."). No
       // se le pide a la cuenta de plataforma (application) responsabilidad
       // sobre nada.
-      const account = await stripeFetchV2('/core/accounts', STRIPE_SECRET_KEY, {
+      const account = await stripeV2Fetch('/v2/core/accounts', STRIPE_SECRET_KEY, {
         body: {
+          display_name: 'Cuenta conectada Avaxon',
+          configuration: { merchant: {} },
           dashboard: 'full',
           defaults: {
             responsibilities: {
@@ -84,9 +85,7 @@ Deno.serve(async (req: Request) => {
               losses_collector: 'stripe',
             },
           },
-          identity: {
-            country: 'mx',
-          },
+          identity: { country: 'MX' },
         },
       })
       accountId = account.id
@@ -105,18 +104,21 @@ Deno.serve(async (req: Request) => {
     const returnUrl = `${CALLBACK_URL}?state=${encodeURIComponent(state)}`
     const refreshUrl = `${DASHBOARD_URL}?conexion=stripe_retry`
 
-    const accountLink = await stripeFetch('/account_links', STRIPE_SECRET_KEY, {
+    // ── Account Link v2 ─────────────────────────────────────────────────────
+    const accountLink = await stripeV2Fetch('/v2/core/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,
-        refresh_url: refreshUrl,
+        use_case: 'account_onboarding',
+        configuration: 'merchant',
         return_url: returnUrl,
-        type: 'account_onboarding',
+        refresh_url: refreshUrl,
       },
     })
 
     return json({ ok: true, url: accountLink.url })
   } catch (e) {
     console.error('Error iniciando Stripe Connect:', e)
-    return json({ error: e instanceof Error ? e.message : 'Error de Stripe' }, 502)
+    const msg = e instanceof Error ? e.message : 'Error de Stripe'
+    return json({ error: msg }, 502)
   }
 })
