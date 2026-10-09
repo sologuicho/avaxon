@@ -4336,6 +4336,17 @@
     loadConversaciones();
     loadIntegrations();
 
+    // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
+    const _urlParams = new URLSearchParams(window.location.search)
+    const _conexion  = _urlParams.get('conexion')
+    if (_conexion) {
+      window.history.replaceState({}, '', window.location.pathname)
+      if (_conexion === 'stripe_ok')      { showToast('✅ Stripe conectado correctamente'); switchView('conexiones'); loadIntegrations() }
+      else if (_conexion === 'stripe_pending') { showToast('⏳ Onboarding de Stripe incompleto — complétalo en dashboard.stripe.com', 6000); switchView('conexiones') }
+      else if (_conexion === 'stripe_retry')   { showToast('Redirigiendo a Stripe para retomar el onboarding…', 4000); switchView('conexiones') }
+      else if (_conexion === 'stripe_error')   { showToast('❌ Error al conectar Stripe. Intenta de nuevo.', 5000); switchView('conexiones') }
+    }
+
     if (state.isReviewer) {
       // Deshabilitar botón Pausar/Reanudar agente
       const toggleBtn = $('agent-toggle-btn');
