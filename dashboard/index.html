@@ -7371,10 +7371,12 @@
     needs_info:  { label: 'Necesitamos más información',       color: '#ef4444', bg: 'rgba(239,68,68,.12)' },
     completed:   { label: 'Completada',                        color: '#22c55e', bg: 'rgba(34,197,94,.12)' },
   };
+  // organizations.plan_id ya es siempre uno de estos 3 valores (unificado en
+  // la tabla plans — ver migración de planes).
   const PLAN_RESPONSE_TIMES = {
-    mostrador: '48 horas hábiles', basic: '48 horas hábiles',
-    sucursal: '24 horas', pro: '24 horas',
-    cadena: 'el mismo día hábil', business: 'el mismo día hábil', enterprise: 'el mismo día hábil',
+    mostrador: '48 horas hábiles',
+    sucursal: '24 horas',
+    cadena: 'el mismo día hábil',
   };
 
   async function uploadAgentRequestFiles(orgId, requestId, files) {
