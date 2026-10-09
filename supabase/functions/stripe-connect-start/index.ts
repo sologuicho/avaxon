@@ -105,15 +105,17 @@ Deno.serve(async (req: Request) => {
     const refreshUrl = `${DASHBOARD_URL}?conexion=stripe_retry`
 
     // ── Account Link v2 ─────────────────────────────────────────────────────
-    // return_url/refresh_url van anidados dentro de use_case.account_onboarding,
-    // no en el nivel raíz del body.
+    // return_url/refresh_url van anidados dentro de use_case.account_onboarding.
+    // "configurations" NO es un campo del request (lo rechaza como unknown
+    // field) — se deriva solo de la `configuration` que ya tiene la cuenta
+    // (configuration.merchant puesto en /v2/core/accounts) y solo aparece en
+    // la respuesta, no se manda.
     const accountLink = await stripeV2Fetch('/v2/core/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,
         use_case: {
           type: 'account_onboarding',
           account_onboarding: {
-            configurations: ['merchant'],
             return_url: returnUrl,
             refresh_url: refreshUrl,
           },
