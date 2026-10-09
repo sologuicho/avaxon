@@ -68,14 +68,15 @@ Deno.serve(async (req: Request) => {
     let accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
 
     if (!accountId) {
-      // ── Crear cuenta v2 (merchant, dashboard full) ──────────────────────────
-      // Stripe es responsable de comisiones y pérdidas en el modelo merchant.
-      const account = await stripeV2Fetch('/v2/core/accounts', STRIPE_SECRET_KEY, {
+      // ── Crear cuenta Express v1 ─────────────────────────────────────────────
+      const account = await stripeFetch('/accounts', STRIPE_SECRET_KEY, {
         body: {
-          display_name: 'Cuenta conectada Avaxon',
-          configuration: { merchant: {} },
-          dashboard: 'full',
-          identity: { country: 'MX' },
+          type: 'express',
+          country: 'MX',
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+          },
         },
       })
       accountId = account.id
