@@ -2,28 +2,231 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 import { sendZapierEvent } from '../_shared/zapier.ts'
+import { getGoogleAccessToken } from '../_shared/google.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
 // POST → mensajes entrantes. Responde 200 a Meta de inmediato (EdgeRuntime.waitUntil)
 //        para evitar retries; el procesamiento real corre en background.
 //
-// Token por cliente: cada phone_numbers tiene su whatsapp_accounts.access_token;
-// si no existe, se usa WA_ACCESS_TOKEN (System User de Avaxon) como fallback.
+// Debounce: cuando el usuario manda varios mensajes seguidos, cada invocación
+// espera DEBOUNCE_MS. Si durante esa espera llega un mensaje más nuevo, esta
+// invocación se retira — la más nueva contesta, juntando todos los pendientes.
 //
-// Debounce de mensajes fragmentados: cuando el usuario manda varios mensajes
-// seguidos ("oye" / "si" / "es que" / "quiero ver los planes"), cada uno se
-// guarda por separado y esta invocación espera DEBOUNCE_MS antes de contestar.
-// Si durante esa espera llega un mensaje más nuevo del mismo contacto, esta
-// invocación se retira sin hacer nada — la invocación del mensaje más nuevo es
-// la que termina respondiendo, juntando en un solo turno para GPT-4o TODOS los
-// mensajes entrantes que en ese momento sigan sin procesar (processed_at NULL).
-//
-// El snapshot de IDs a marcar como procesados se toma justo antes de llamar a
-// GPT-4o — si llega un mensaje nuevo mientras se genera la respuesta, ese
-// mensaje NO se marca (sigue pendiente) y lo recoge su propia invocación.
+// Function calling: si la org tiene Google Calendar conectado, GPT-4o puede
+// llamar a consultar_disponibilidad, agendar_cita y cancelar_o_reagendar_cita.
+// El bot confirma con el usuario antes de agendar (instrucción en las tools).
 
 const DEBOUNCE_MS = 5000
+
+// ── Timezone offset helper (México) ─────────────────────────────────────────
+const TZ_OFFSETS: Record<string, string> = {
+  'America/Mexico_City': '-06:00',
+  'America/Monterrey':   '-06:00',
+  'America/Matamoros':   '-06:00',
+  'America/Chihuahua':   '-07:00',
+  'America/Hermosillo':  '-07:00',
+  'America/Mazatlan':    '-07:00',
+  'America/Tijuana':     '-08:00',
+  'America/Cancun':      '-05:00',
+}
+function tzOffset(tz: string): string { return TZ_OFFSETS[tz] || '-06:00' }
+
+// ── Tool definitions ─────────────────────────────────────────────────────────
+const APPOINTMENT_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'consultar_disponibilidad',
+      description: 'Consulta los horarios ocupados del negocio en Google Calendar para una fecha. Úsala cuando el cliente pregunte qué días u horas están disponibles para una cita.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fecha: { type: 'string', description: 'Fecha en formato YYYY-MM-DD, ej: 2026-10-15' },
+        },
+        required: ['fecha'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'agendar_cita',
+      description: 'Agenda una cita en el calendario del negocio. Solo llama esta función cuando el cliente haya confirmado EXPLÍCITAMENTE la fecha, la hora y el servicio. Si hay alguna duda o el cliente no ha confirmado, pregúntale primero antes de agendar.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fecha:    { type: 'string', description: 'Fecha en formato YYYY-MM-DD' },
+          hora:     { type: 'string', description: 'Hora en formato HH:MM (24h), ej: 14:30' },
+          servicio: { type: 'string', description: 'Nombre del servicio o motivo de la cita' },
+          nombre:   { type: 'string', description: 'Nombre completo del cliente' },
+          duracion_minutos: { type: 'number', description: 'Duración de la cita en minutos, por defecto 60' },
+        },
+        required: ['fecha', 'hora', 'servicio', 'nombre'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'cancelar_o_reagendar_cita',
+      description: 'Cancela o reagenda una cita existente del cliente. Para reagendar, incluye nueva_fecha y nueva_hora; para solo cancelar, omite esos campos.',
+      parameters: {
+        type: 'object',
+        properties: {
+          appointment_id: { type: 'string', description: 'ID de la cita a modificar' },
+          nueva_fecha:    { type: 'string', description: 'Nueva fecha YYYY-MM-DD (solo para reagendar)' },
+          nueva_hora:     { type: 'string', description: 'Nueva hora HH:MM (solo para reagendar)' },
+        },
+        required: ['appointment_id'],
+      },
+    },
+  },
+]
+
+// ── Herramienta: consultar disponibilidad ────────────────────────────────────
+async function consultarDisponibilidad(
+  fecha: string,
+  calendarToken: string,
+  timezone: string,
+): Promise<string> {
+  try {
+    const offset = tzOffset(timezone)
+    const timeMin = `${fecha}T00:00:00${offset}`
+    const timeMax = `${fecha}T23:59:59${offset}`
+    const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timeMin, timeMax, timeZone: timezone, items: [{ id: 'primary' }] }),
+    })
+    if (!res.ok) return `No se pudo consultar el calendario (error ${res.status}).`
+    const data = await res.json()
+    const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
+    if (busy.length === 0) return `El día ${fecha} no tiene citas registradas. Puedes ofrecer cualquier horario dentro del horario de atención del negocio.`
+    const toLocalHour = (iso: string) => iso.substring(11, 16)
+    const slots = busy.map(b => `${toLocalHour(b.start)}–${toLocalHour(b.end)}`).join(', ')
+    return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}. Puedes agendar en cualquier hueco libre dentro del horario del negocio.`
+  } catch (e) {
+    return `Error consultando el calendario: ${(e as Error).message}`
+  }
+}
+
+// ── Herramienta: agendar cita ────────────────────────────────────────────────
+async function agendarCita(
+  args: { fecha: string; hora: string; servicio: string; nombre: string; duracion_minutos?: number },
+  organizationId: string,
+  contactId: string,
+  sb: ReturnType<typeof createClient>,
+  calendarToken: string,
+  timezone: string,
+): Promise<string> {
+  const duracion = args.duracion_minutos || 60
+  const offset   = tzOffset(timezone)
+  const scheduledAt = `${args.fecha}T${args.hora}:00${offset}`
+  const endAt = new Date(new Date(scheduledAt).getTime() + duracion * 60000).toISOString()
+
+  // Guardar en DB
+  const { data: appt, error: apptErr } = await sb
+    .from('appointments')
+    .insert({
+      organization_id: organizationId,
+      contact_id:      contactId,
+      contact_name:    args.nombre,
+      title:           args.servicio,
+      service:         args.servicio,
+      scheduled_at:    scheduledAt,
+      duration_minutes: duracion,
+      status:          'confirmed',
+    })
+    .select('id')
+    .single()
+
+  if (apptErr || !appt) {
+    return `Error guardando la cita: ${apptErr?.message ?? 'desconocido'}`
+  }
+
+  // Crear evento en Google Calendar
+  let googleEventId: string | null = null
+  try {
+    const eventRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        summary:     `${args.servicio} — ${args.nombre}`,
+        description: `Cita agendada por WhatsApp vía Avaxon`,
+        start: { dateTime: scheduledAt, timeZone: timezone },
+        end:   { dateTime: endAt, timeZone: timezone },
+      }),
+    })
+    if (eventRes.ok) {
+      const eventData = await eventRes.json()
+      googleEventId = eventData.id
+      await sb.from('appointments')
+        .update({ google_event_id: googleEventId, updated_at: new Date().toISOString() })
+        .eq('id', appt.id)
+    }
+  } catch { /* continuar aunque Google falle */ }
+
+  return `Cita agendada correctamente. ID: ${appt.id}. Fecha: ${args.fecha} a las ${args.hora}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
+}
+
+// ── Herramienta: cancelar o reagendar ────────────────────────────────────────
+async function cancelarOReagendarCita(
+  args: { appointment_id: string; nueva_fecha?: string; nueva_hora?: string },
+  organizationId: string,
+  sb: ReturnType<typeof createClient>,
+  calendarToken: string,
+  timezone: string,
+): Promise<string> {
+  const { data: appt } = await sb
+    .from('appointments')
+    .select('id, title, service, scheduled_at, google_event_id, status')
+    .eq('id', args.appointment_id)
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  if (!appt) return `No se encontró la cita con ID ${args.appointment_id}.`
+  if (appt.status === 'cancelled') return `La cita ya estaba cancelada.`
+
+  const isReschedule = !!(args.nueva_fecha && args.nueva_hora)
+
+  if (isReschedule) {
+    const offset = tzOffset(timezone)
+    const newScheduledAt = `${args.nueva_fecha}T${args.nueva_hora}:00${offset}`
+    await sb.from('appointments')
+      .update({ scheduled_at: newScheduledAt, status: 'confirmed', updated_at: new Date().toISOString() })
+      .eq('id', appt.id)
+
+    if (appt.google_event_id) {
+      const duracion = 60
+      const endAt = new Date(new Date(newScheduledAt).getTime() + duracion * 60000).toISOString()
+      await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            start: { dateTime: newScheduledAt, timeZone: timezone },
+            end:   { dateTime: endAt, timeZone: timezone },
+          }),
+        },
+      ).catch(() => {})
+    }
+    return `Cita reagendada para el ${args.nueva_fecha} a las ${args.nueva_hora}.`
+  } else {
+    await sb.from('appointments')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', appt.id)
+
+    if (appt.google_event_id) {
+      await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${calendarToken}` } },
+      ).catch(() => {})
+    }
+    return `Cita cancelada correctamente.`
+  }
+}
 
 async function getMediaUrl(mediaId: string, token: string): Promise<{ url: string; mime: string } | null> {
   const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
@@ -57,7 +260,7 @@ async function transcribeAudio(bytes: ArrayBuffer, mime: string, apiKey: string)
 }
 
 interface Env {
-  WA_TOKEN: string   // fallback si el cliente no tiene token propio
+  WA_TOKEN: string
   OPENAI_KEY: string
   SUPABASE_URL: string
   SERVICE_KEY: string
@@ -71,9 +274,6 @@ interface ParsedMessage {
   imageCaption: string
 }
 
-// Extrae texto/tipo de UN mensaje crudo de Meta (texto, botón, imagen o audio).
-// Devuelve null para tipos no soportados (video, documento, ubicación, sticker...).
-// `token` es el access_token del cliente (o el fallback global) para media.
 async function parseMessage(msg: any, token: string, openaiKey: string): Promise<ParsedMessage | null> {
   const isText   = msg.type === 'text'
   const isButton = msg.type === 'interactive' && msg.interactive?.type === 'button_reply'
@@ -118,10 +318,6 @@ const DAY_LABELS: Record<string, string> = {
 }
 const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
-// Arma un bloque de contexto a partir de organization_profile (Configuración
-// → General) para que el bot sepa teléfono/horarios/dirección reales sin
-// tener que editar el prompt cada vez que el cliente los cambia. Solo incluye
-// lo que el cliente de verdad llenó — nunca inventa datos vacíos.
 function buildBusinessContextBlock(profile: any): string {
   if (!profile) return ''
   const lines: string[] = []
@@ -231,9 +427,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
-  // ── 4. Procesar y guardar CADA mensaje entrante del payload ────────────────
-  // Meta casi siempre manda un mensaje por webhook, pero value.messages es un
-  // arreglo — se procesan todos, no solo el primero.
+  // ── 4. Procesar y guardar CADA mensaje entrante ────────────────────────────
   let lastInsertedAt: string | null = null
   let lastImageDataUrl: string | null = null
   let lastImageCaption = ''
@@ -241,7 +435,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   for (const rawMsg of rawMessages) {
     const waMessageId = rawMsg?.id as string | undefined
 
-    // Idempotencia: si Meta ya reintentó este mensaje, ya está guardado.
     if (waMessageId) {
       const { data: dup } = await sb
         .from('messages')
@@ -252,7 +445,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     }
 
     const parsedMsg = await parseMessage(rawMsg, clientToken, OPENAI_KEY)
-    if (!parsedMsg) continue // tipo no soportado
+    if (!parsedMsg) continue
 
     const { data: inserted, error: insertErr } = await sb
       .from('messages')
@@ -268,8 +461,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       .single()
 
     if (insertErr) {
-      // 23505 = unique_violation: carrera con la constraint (reintento de Meta
-      // llegó al mismo tiempo que el chequeo de arriba) — se ignora, no es error real.
       if (insertErr.code !== '23505') console.error('Error guardando mensaje entrante:', insertErr)
       continue
     }
@@ -281,9 +472,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     }
   }
 
-  if (!lastInsertedAt) return // todo era duplicado o de tipos no soportados
+  if (!lastInsertedAt) return
 
-  // ── 5. Bot IA (solo si está habilitado para esta org) ──────────────────────
+  // ── 5. Bot IA (solo si está habilitado) ────────────────────────────────────
   const { data: botConfig } = await sb
     .from('bot_configs')
     .select('system_prompt, enabled')
@@ -293,9 +484,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!botConfig) return
 
-  // Contexto de negocio (Configuración → General): así cuando el cliente
-  // actualiza su horario o teléfono, el bot responde bien sin tocar el
-  // prompt a mano. Solo se incluyen los campos que el cliente sí llenó.
   const { data: orgProfile } = await sb
     .from('organization_profile')
     .select('description, phone, whatsapp, email, website, address, maps_url, hours')
@@ -303,11 +491,32 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .maybeSingle()
 
   const businessContext = buildBusinessContextBlock(orgProfile)
-  const systemPrompt = businessContext
-    ? `${botConfig.system_prompt}\n\n${businessContext}`
-    : botConfig.system_prompt
 
-  // ── 6. Debounce: esperar y ceder el turno si llegó algo más nuevo ──────────
+  // ── 6. Google Calendar: token + timezone (si está conectado) ───────────────
+  const calendarToken = await getGoogleAccessToken(sb, organization_id)
+  let timezone = 'America/Matamoros'
+  if (calendarToken) {
+    const { data: org } = await sb
+      .from('organizations')
+      .select('timezone')
+      .eq('id', organization_id)
+      .maybeSingle()
+    timezone = org?.timezone || 'America/Matamoros'
+  }
+
+  // ── 7. Construir system prompt ─────────────────────────────────────────────
+  const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
+  const calendarCtx = calendarToken
+    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Hoy es ${today}. Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres. 3) Confirma con el cliente. 4) Agénda solo tras confirmación explícita.`
+    : ''
+
+  const systemPrompt = [
+    botConfig.system_prompt,
+    businessContext,
+    calendarCtx,
+  ].filter(Boolean).join('\n\n')
+
+  // ── 8. Debounce ────────────────────────────────────────────────────────────
   await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS))
 
   const { data: newer } = await sb
@@ -319,9 +528,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .gt('created_at', lastInsertedAt)
     .limit(1)
 
-  if (newer && newer.length > 0) return // no soy el último — la invocación más nueva contesta
+  if (newer && newer.length > 0) return
 
-  // ── 7. Snapshot de TODO lo pendiente en este momento (IDs fijos) ───────────
+  // ── 9. Snapshot de mensajes pendientes ────────────────────────────────────
   const { data: pending } = await sb
     .from('messages')
     .select('id, content, created_at')
@@ -334,7 +543,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const batchIds     = pending.map(m => m.id)
   const combinedText = pending.map(m => m.content).join('\n')
 
-  // ── 8. Historial previo (ya procesado) + el turno combinado ────────────────
+  // ── 10. Historial previo + turno actual ────────────────────────────────────
   const batchIdSet = new Set(batchIds)
   const { data: historyRaw } = await sb
     .from('messages')
@@ -361,26 +570,82 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     chatHistory.push({ role: 'user', content: combinedText })
   }
 
-  // ── 9. Llamada a GPT-4o ──────────────────────────────────────────────────────
-  const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model:           'gpt-4o',
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...chatHistory,
-      ],
-      max_tokens:  600,
-      temperature: 0.7,
-    }),
-  })
+  // ── 11. Loop GPT-4o con function calling ───────────────────────────────────
+  const messages: any[] = [
+    { role: 'system', content: systemPrompt },
+    ...chatHistory,
+  ]
 
-  const aiData   = await aiRes.json()
-  const rawReply = aiData.choices?.[0]?.message?.content?.trim()
+  const tools = calendarToken ? APPOINTMENT_TOOLS : undefined
+  let rawReply = ''
+  const MAX_TOOL_LOOPS = 5
+
+  for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
+    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:           'gpt-4o',
+        response_format: { type: 'json_object' },
+        messages,
+        tools,
+        max_tokens:  600,
+        temperature: 0.7,
+      }),
+    })
+
+    const aiData  = await aiRes.json()
+    const choice  = aiData.choices?.[0]
+    const message = choice?.message
+
+    if (!message) {
+      console.error('GPT no devolvió mensaje:', JSON.stringify(aiData))
+      break
+    }
+
+    if (choice.finish_reason === 'tool_calls' && message.tool_calls?.length) {
+      messages.push(message) // assistant message con tool_calls
+
+      for (const toolCall of message.tool_calls) {
+        let toolResult: string
+        try {
+          const args = JSON.parse(toolCall.function.arguments)
+          if (toolCall.function.name === 'consultar_disponibilidad') {
+            toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone)
+          } else if (toolCall.function.name === 'agendar_cita') {
+            toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone)
+            sendZapierEvent(sb, organization_id, 'appointment_booked', {
+              contact_name:  args.nombre,
+              contact_phone: fromPhone,
+              service:       args.servicio,
+              fecha:         args.fecha,
+              hora:          args.hora,
+            })
+          } else if (toolCall.function.name === 'cancelar_o_reagendar_cita') {
+            toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone)
+          } else {
+            toolResult = 'Herramienta no reconocida.'
+          }
+        } catch (e) {
+          toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
+        }
+
+        messages.push({
+          role:         'tool',
+          tool_call_id: toolCall.id,
+          content:      toolResult,
+        })
+      }
+      // continuar el loop para obtener la respuesta final
+    } else {
+      rawReply = message.content?.trim() ?? ''
+      break
+    }
+  }
+
   if (!rawReply) return
 
+  // ── 12. Parsear respuesta JSON del bot ─────────────────────────────────────
   let aiParsed: { text: string; buttons?: string[]; notify_owner?: boolean }
   try {
     aiParsed = JSON.parse(rawReply)
@@ -388,14 +653,14 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     aiParsed = { text: rawReply }
   }
 
-  const replyText    = (aiParsed.text ?? rawReply)
+  const replyText = (aiParsed.text ?? rawReply)
     .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
     .replace(/~~([^~\n]+)~~/g, '~$1~')
     .replace(/^#{1,6}\s+/gm, '')
   const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3)
   const notifyOwner  = aiParsed.notify_owner === true
 
-  // ── 10. Enviar mensaje WhatsApp (con el token del cliente) ──────────────────
+  // ── 13. Enviar respuesta por WhatsApp ──────────────────────────────────────
   let waPayload: any
   if (buttonLabels.length > 0) {
     waPayload = {
@@ -429,12 +694,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   })
   const waData = await waRes.json()
 
-  // ── 11. Marcar como procesados SOLO los IDs de este batch (no todo NULL) ───
+  // ── 14. Marcar como procesados los IDs de este batch ──────────────────────
   await sb.from('messages')
     .update({ processed_at: new Date().toISOString() })
     .in('id', batchIds)
 
-  // ── 12. Notificar al dueño si el lead quiere agendar ────────────────────────
+  // ── 15. Notificar al dueño si el lead quiere agendar (Avaxon) ─────────────
   if (notifyOwner) {
     const leadName    = contactName ?? fromPhone
     const AVAXON_PHONE = '528991709336'
@@ -467,7 +732,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
-  // ── 13. Guardar mensaje saliente (siempre queda "procesado") ───────────────
+  // ── 16. Guardar mensaje saliente ──────────────────────────────────────────
   const savedContent = buttonLabels.length > 0
     ? `${replyText}\n[Botones: ${buttonLabels.join(' | ')}]`
     : replyText
@@ -492,14 +757,12 @@ Deno.serve(async (req: Request) => {
     SERVICE_KEY:  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   }
 
-  // ── Verificación de webhook (GET) ──────────────────────────────────────────
   if (req.method === 'GET') {
     const url       = new URL(req.url)
     const mode      = url.searchParams.get('hub.mode')
     const token     = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
-      // Mark all active phone numbers as webhook_verified
       const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
       await sb.from('phone_numbers').update({ webhook_verified: true }).eq('status', 'active')
       return new Response(challenge, { status: 200 })
@@ -512,8 +775,6 @@ Deno.serve(async (req: Request) => {
   let body: any
   try { body = await req.json() } catch { return new Response('Bad JSON', { status: 400 }) }
 
-  // Responder a Meta inmediatamente para evitar retries por timeout; el
-  // procesamiento (incluido el debounce de ~8s) corre en background.
   EdgeRuntime.waitUntil(handleIncoming(body, env))
   return new Response('ok', { status: 200 })
 })
