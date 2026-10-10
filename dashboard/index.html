@@ -2227,68 +2227,115 @@
             <div class="view-header-icon" style="background:rgba(239,68,68,.12);color:#ef4444"><i class="fa fa-user-group"></i></div>
             <div>
               <div class="view-header-title">Asignación</div>
-              <div class="view-header-sub">Distribución de conversaciones al equipo</div>
+              <div class="view-header-sub">Distribución automática de leads al equipo</div>
             </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="openAsignacionSettings()" style="padding:8px 12px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px;color:var(--text-muted);cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px" title="¿Cómo funciona?">
+              <i class="fa fa-circle-question"></i> Info
+            </button>
+            <button onclick="showRuleModal()" style="padding:9px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+              <i class="fa fa-plus"></i> Nueva regla
+            </button>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
 
-          <!-- Agentes -->
-          <div class="card bp" style="padding:0">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:9px">
-                <div style="width:32px;height:32px;background:rgba(239,68,68,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:14px"><i class="fa fa-user-group"></i></div>
-                <div style="font-size:15px;font-weight:700">Equipo de vendedores</div>
+          <!-- Left: Rules + Agents + Default -->
+          <div style="display:flex;flex-direction:column;gap:14px">
+
+            <!-- Reglas de asignación -->
+            <div class="card bp" style="padding:0">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:15px;font-weight:700;color:var(--text)">Reglas de asignación</div>
+                <span id="asig-rules-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted)"></span>
               </div>
-              <span id="asig-total-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+              <div id="rulesContainer"></div>
             </div>
-            <div id="asig-agents-list"></div>
+
+            <!-- Equipo de vendedores -->
+            <div class="card bp" style="padding:0">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:32px;height:32px;background:rgba(239,68,68,.10);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:14px"><i class="fa fa-user-group"></i></div>
+                  <div style="font-size:15px;font-weight:700">Equipo de vendedores</div>
+                </div>
+                <span id="asig-total-badge" style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--text-muted)"></span>
+              </div>
+              <div id="asig-agents-list"></div>
+            </div>
+
+            <!-- Asignación por defecto -->
+            <div class="card bp" style="padding:18px 20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="font-size:14px;font-weight:700;margin-bottom:6px">Asignación por defecto</div>
+              <p style="font-size:12px;color:var(--text-muted);margin:0 0 12px">Se usa cuando ninguna regla aplica.</p>
+              <select id="defaultAssignment" onchange="saveDefaultAssignment()" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;cursor:pointer">
+                <option value="round_robin">Se turnan parejo (rotación)</option>
+                <option value="least_busy">Menor carga de trabajo</option>
+                <option value="manual">Manual — supervisor asigna cada uno</option>
+              </select>
+            </div>
+
           </div>
 
-          <!-- Config -->
+          <!-- Right: Info + Tipos + SLA -->
           <div style="display:flex;flex-direction:column;gap:12px">
 
-            <!-- Modo de asignación -->
+            <!-- ¿Cómo funciona? -->
             <div class="card bp" style="padding:18px 20px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="font-size:14px;font-weight:700;margin-bottom:14px">Modo de asignación</div>
-              <div style="display:flex;flex-direction:column;gap:8px" id="asig-mode-options">
-                <label class="asig-mode-opt" data-mode="round_robin">
-                  <input type="radio" name="asig-mode" value="round_robin" style="display:none">
-                  <div class="asig-mode-card">
-                    <div style="font-size:13px;font-weight:700">Rotación pareja</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Se turna entre todos los vendedores disponibles</div>
-                  </div>
-                </label>
-                <label class="asig-mode-opt" data-mode="least_busy">
-                  <input type="radio" name="asig-mode" value="least_busy" style="display:none">
-                  <div class="asig-mode-card">
-                    <div style="font-size:13px;font-weight:700">Menor carga</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Al que tenga menos conversaciones abiertas</div>
-                  </div>
-                </label>
-                <label class="asig-mode-opt" data-mode="manual">
-                  <input type="radio" name="asig-mode" value="manual" style="display:none">
-                  <div class="asig-mode-card">
-                    <div style="font-size:13px;font-weight:700">Manual</div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">El supervisor asigna cada conversación</div>
-                  </div>
-                </label>
+              <div style="font-size:13px;font-weight:700;margin-bottom:12px">¿Cómo funciona?</div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-muted)">
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">1</span>Un lead nuevo llega por WhatsApp</div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">2</span>Se evalúan las reglas en orden de prioridad</div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">3</span>Si una regla coincide, se asigna a ese vendedor</div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">4</span>Si ninguna coincide, se usa la asignación por defecto</div>
               </div>
-              <div id="asig-mode-note" style="margin-top:10px;font-size:11px;color:var(--text-dim);padding:8px 10px;border:1px solid var(--border);background:var(--page-bg)"></div>
             </div>
 
-            <!-- Info -->
+            <!-- Tipos de condición -->
+            <div style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:18px 20px">
+              <div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px">Tipos de condición</div>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--text-muted)">
+                <div>• <strong style="color:var(--text)">Mensaje + datos:</strong> busca en todo lo que dijo el lead</div>
+                <div>• <strong style="color:var(--text)">Variable:</strong> evalúa una respuesta específica (ciudad, producto...)</div>
+                <div>• No importa mayúsculas/minúsculas</div>
+                <div>• Encuentra variantes: "cotización" = "cotizaciones"</div>
+              </div>
+            </div>
+
+            <!-- SLA y Escalación -->
             <div class="card bp" style="padding:18px 20px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="font-size:13px;font-weight:700;margin-bottom:10px">¿Cómo funciona?</div>
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--text-muted)">
-                <div style="display:flex;gap:8px"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">1</span>Llega un mensaje nuevo de WhatsApp</div>
-                <div style="display:flex;gap:8px"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">2</span>Se crea la conversación en el inbox</div>
-                <div style="display:flex;gap:8px"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">3</span>Se asigna automáticamente según el modo</div>
-                <div style="display:flex;gap:8px"><span style="width:20px;height:20px;background:var(--accent);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-radius:50%">4</span>El vendedor ve la conversación en su inbox</div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px">
+                  <i class="fa fa-clock" style="color:#f97316"></i> SLA y Escalación
+                </div>
+                <div id="sla-toggle-wrap" style="width:36px;height:20px;background:var(--border);border-radius:10px;position:relative;cursor:pointer;transition:background .15s" onclick="toggleSla()">
+                  <input type="checkbox" id="slaEnabled" style="display:none" onchange="syncSlaToggle();saveSlaConfig()">
+                  <div id="sla-toggle-thumb" style="position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+                </div>
+              </div>
+              <div id="slaConfigBody" style="display:flex;flex-direction:column;gap:10px">
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Primera respuesta (min)</label>
+                  <input type="number" id="slaFirstResponse" min="1" max="10080" placeholder="60" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Seguimiento sin respuesta (min)</label>
+                  <input type="number" id="slaFollowup" min="1" max="10080" placeholder="1440" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                </div>
+                <div>
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Escalar a agente</label>
+                  <select id="slaEscalateAgent" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none">
+                    <option value="">Sin escalación</option>
+                  </select>
+                </div>
+                <div id="slaAlertsBadge" style="display:none;padding:10px 12px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.2);border-radius:9px;font-size:12px;color:#ea580c;font-weight:600"></div>
               </div>
             </div>
 
