@@ -10283,6 +10283,157 @@
   </div>
 
   <!-- ── Modal QR contacto CRM ── -->
+  <!-- Modal: ¿Cómo funciona la asignación? -->
+  <div id="asignacionSettingsModal" style="display:none;position:fixed;inset:0;z-index:9100;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeAsignacionSettings()">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);max-height:90vh;display:flex;flex-direction:column">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(34,197,94,.03))">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)"><i class="fa fa-random" style="color:var(--accent);margin-right:8px"></i>Asignación de Leads</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:3px">Cómo se distribuyen los leads entre tu equipo</div>
+        </div>
+        <button onclick="closeAsignacionSettings()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1">×</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.15);border-radius:12px;padding:14px 16px">
+          <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px"><i class="fa fa-lightbulb" style="margin-right:6px"></i>¿Cómo funciona?</div>
+          <p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.6">Cuando llega un lead nuevo, el sistema decide a qué vendedor asignarlo. Puedes crear reglas personalizadas (por fuente, etiqueta, horario) o usar un método general por defecto.</p>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Métodos de asignación</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;gap:10px;padding:12px 14px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px;align-items:center">
+              <i class="fa fa-arrows-rotate" style="color:var(--accent);width:16px;text-align:center"></i>
+              <div><div style="font-size:13px;font-weight:600;color:var(--text)">Se turnan parejo</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">Turno rotativo — cada lead al siguiente vendedor disponible</div></div>
+            </div>
+            <div style="display:flex;gap:10px;padding:12px 14px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px;align-items:center">
+              <i class="fa fa-user-tie" style="color:#60a5fa;width:16px;text-align:center"></i>
+              <div><div style="font-size:13px;font-weight:600;color:var(--text)">Menor carga</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">Va al vendedor con menos leads activos en este momento</div></div>
+            </div>
+            <div style="display:flex;gap:10px;padding:12px 14px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px;align-items:center">
+              <i class="fa fa-hand-pointer" style="color:var(--text-dim);width:16px;text-align:center"></i>
+              <div><div style="font-size:13px;font-weight:600;color:var(--text)">Manual</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">El admin asigna cada lead de forma manual</div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Reglas de asignación</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:10px;padding:12px 14px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px">
+              <div style="width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Crea una regla nueva</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5">Por ejemplo: leads de Facebook → siempre a María. O leads entre 8am-2pm → Carlos. Las reglas tienen prioridad sobre el método general.</div>
+                <button type="button" onclick="closeAsignacionSettings();showRuleModal()" style="margin-top:8px;padding:6px 12px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer"><i class="fa fa-plus" style="margin-right:4px"></i>Nueva Regla</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;padding:12px 14px;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px">
+              <div style="width:24px;height:24px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</div>
+              <div><div style="font-size:13px;font-weight:600;color:var(--text)">Configura el método por defecto</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5">Cuando ninguna regla aplica, el sistema usa el método general. Cámbialo en el panel de asignación.</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;padding:12px 14px;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.15);border-radius:10px">
+          <i class="fa fa-star" style="color:#60a5fa;margin-top:2px;flex-shrink:0"></i>
+          <p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.6"><strong style="color:var(--text)">Tip:</strong> Asegúrate de que tu equipo tenga su número de WhatsApp guardado en el perfil. Sin él, las notificaciones de leads nuevos no llegan.</p>
+        </div>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+        <button type="button" onclick="closeAsignacionSettings();showRuleModal()" style="padding:9px 18px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer"><i class="fa fa-plus" style="margin-right:6px"></i>Nueva Regla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Regla de Asignación -->
+  <div id="ruleModal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(5,8,15,.88);backdrop-filter:blur(10px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeRuleModal()">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:500px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);max-height:92vh;display:flex;flex-direction:column">
+      <div style="padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;background:rgba(34,197,94,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-shuffle"></i></div>
+          <span id="rule-modal-title" style="font-size:16px;font-weight:700;color:var(--text)">Nueva Regla de Asignación</span>
+        </div>
+        <button onclick="closeRuleModal()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;padding:2px 8px;line-height:1">×</button>
+      </div>
+      <form id="ruleForm" style="overflow-y:auto;flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="ruleId">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Nombre de la regla *</label>
+          <input type="text" id="ruleName" required placeholder="Ej: Leads de CDMX → a María" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px">Condición *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Campo</div>
+              <select id="ruleCriteria" onchange="ruleOnFieldChange()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                <option value="message_and_data">Mensaje + datos del lead</option>
+                <option value="message">Solo mensaje</option>
+                <option value="var">Variable de calificación</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Operador</div>
+              <select id="ruleOperator" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                <option value="contains_any">Contiene</option>
+                <option value="equals">Es igual a</option>
+                <option value="starts_with">Empieza con</option>
+                <option value="not_contains">No contiene</option>
+                <option value="gt">Mayor que (número)</option>
+                <option value="gte">Mayor o igual que (número)</option>
+                <option value="lt">Menor que (número)</option>
+                <option value="lte">Menor o igual que (número)</option>
+              </select>
+            </div>
+          </div>
+          <div id="ruleVarWrapper" style="display:none;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Variable</div>
+            <select id="ruleVarName" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+              <option value="">Seleccionar variable...</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Valor</div>
+            <input type="text" id="ruleValue" required placeholder="Ej: urgente, cotización, cdmx" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box">
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="ruleValueHint">Separa múltiples valores con comas. No importa mayúsculas/minúsculas.</div>
+          </div>
+        </div>
+        <input type="hidden" id="ruleActionType" value="assign_agent">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:8px">Asignar a *</label>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <button type="button" id="ruleActionAgentBtn" onclick="ruleSetActionType('assign_agent')" style="flex:1;padding:8px 10px;border-radius:9px;border:2px solid var(--accent);background:var(--accent-sub);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s">
+              <i class="fa fa-user" style="margin-right:4px"></i>Agente específico
+            </button>
+            <button type="button" id="ruleActionRoleBtn" onclick="ruleSetActionType('assign_role')" style="flex:1;padding:8px 10px;border-radius:9px;border:2px solid var(--border);background:transparent;color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s">
+              <i class="fa fa-users-gear" style="margin-right:4px"></i>Por Rol
+            </button>
+          </div>
+          <div id="ruleAgentWrapper">
+            <select id="ruleAgent" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+              <option value="">Seleccionar agente...</option>
+            </select>
+          </div>
+          <div id="ruleRoleWrapper" style="display:none">
+            <select id="ruleRole" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+              <option value="">Seleccionar rol...</option>
+              <option value="agent">Agente</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Los vendedores con este rol se turnan parejo (al de menor carga).</div>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Prioridad</label>
+          <input type="number" id="rulePriority" value="1" min="1" max="100" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Menor número = mayor prioridad. Las reglas se evalúan en orden.</div>
+        </div>
+        <div style="display:flex;gap:8px;padding-top:4px">
+          <button type="button" onclick="closeRuleModal()" style="flex:1;padding:10px;background:var(--hover-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer">Cancelar</button>
+          <button type="submit" style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:10px;font-size:13px;font-weight:700;color:#fff;cursor:pointer">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="modal-crm-qr" style="display:none;position:fixed;inset:0;z-index:9300;background:rgba(5,8,15,.88);backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCRMQR()">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:300px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.5);text-align:center">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)">
