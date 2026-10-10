@@ -3,9 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { stripeFetch } from '../_shared/stripe.ts'
 import { signState } from '../_shared/google.ts'
 
-// ── Inicia Stripe Connect v2 (merchant, dashboard full) ──────────────────────
-// Crea la cuenta conectada v2 (o reusa la existente) y genera un Account Link
-// de onboarding. El dashboard redirige al navegador a la url devuelta.
+// ── Inicia Stripe Connect Express v1 ─────────────────────────────────────────
+// Crea la cuenta conectada Express (o reusa la existente) y genera un Account
+// Link de onboarding v1. El dashboard redirige al navegador a la url devuelta.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
     const refreshUrl = `${DASHBOARD_URL}?conexion=stripe_retry`
 
     // ── Account Link v1 ─────────────────────────────────────────────────────
-    // /v2/core/account_links no existe — los account links siguen siendo v1.
+    // stripeFetch ya prefija /v1, así que el path es /account_links.
     const accountLink = await stripeFetch('/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,

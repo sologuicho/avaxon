@@ -13,3 +13,7 @@ cron = "0 4 * * *"
 verify_jwt = false
 # cada 6 horas
 cron = "0 */6 * * *"
+
+[functions.pay]
+verify_jwt = false
+# Link corto de pago (avaxon.lat/p/<id> → checkout_url). Público.

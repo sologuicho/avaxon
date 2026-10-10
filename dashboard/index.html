@@ -4044,12 +4044,10 @@
 
       if (convState.activeId) {
         btn.textContent = 'Enviando por WhatsApp…';
-        const amountFmt = amount.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-        const text = `Aquí tienes tu link de pago por *${concept}* ($${amountFmt} MXN):\n${data.url}`;
         const sendRes = await fetch(EDGE_BASE + '/send-message', {
           method: 'POST',
           headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversation_id: convState.activeId, message: text }),
+          body: JSON.stringify({ conversation_id: convState.activeId, payment_id: data.payment_id }),
         });
         if (!sendRes.ok) {
           const sendData = await sendRes.json().catch(() => ({}));
@@ -9274,33 +9272,33 @@
 
   <!-- Modal: Enviar link de pago -->
   <div id="payment-link-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:2000;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.22);overflow:hidden">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid #f1f5f9">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.22);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 24px 18px;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:11px">
-          <div style="width:36px;height:36px;border-radius:10px;background:#eef6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <i class="fa fa-credit-card" style="color:#2c455d;font-size:15px"></i>
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--accent-sub);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fa fa-credit-card" style="color:var(--accent);font-size:15px"></i>
           </div>
           <div>
-            <div style="font-size:16px;font-weight:700;color:#1a2535;line-height:1.2">Enviar link de pago</div>
-            <div id="plm-contact-label" style="font-size:12px;color:#8c939b;margin-top:1px"></div>
+            <div style="font-size:16px;font-weight:700;color:var(--text);line-height:1.2">Enviar link de pago</div>
+            <div id="plm-contact-label" style="font-size:12px;color:var(--text-muted);margin-top:1px"></div>
           </div>
         </div>
-        <button onclick="closePaymentLinkModal()" style="width:30px;height:30px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;color:#94a3b8;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+        <button onclick="closePaymentLinkModal()" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--hover-bg);cursor:pointer;color:var(--text-dim);font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
       <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
         <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Concepto</span>
-          <input id="plm-concept" placeholder="Ej. Consulta, Anticipo…" style="padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2535;outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='#5980a6'" onblur="this.style.borderColor='#e2e8f0'" />
+          <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Concepto</span>
+          <input id="plm-concept" placeholder="Ej. Consulta, Anticipo…" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:var(--input-bg);outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
         </label>
         <label style="display:flex;flex-direction:column;gap:5px">
-          <span style="font-size:11.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Monto (MXN)</span>
-          <input id="plm-amount" type="number" min="1" step="0.01" placeholder="500.00" style="padding:10px 13px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2535;outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='#5980a6'" onblur="this.style.borderColor='#e2e8f0'" />
+          <span style="font-size:11.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;font-family:'Barlow Condensed',sans-serif">Monto (MXN)</span>
+          <input id="plm-amount" type="number" min="1" step="0.01" placeholder="500.00" style="padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);background:var(--input-bg);outline:none;font-family:Barlow,sans-serif;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
         </label>
         <div id="plm-error" style="display:none;font-size:12.5px;color:#ef4444;padding:9px 13px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:9px"></div>
       </div>
       <div style="display:flex;gap:10px;padding:0 24px 22px">
-        <button onclick="closePaymentLinkModal()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid #e2e8f0;background:#fff;font-size:13.5px;font-weight:600;color:#64748b;cursor:pointer;font-family:Barlow,sans-serif">Cancelar</button>
-        <button id="plm-send-btn" onclick="sendPaymentLink()" style="flex:2;padding:11px;border-radius:10px;border:0;background:#2c455d;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Barlow,sans-serif">Enviar por WhatsApp</button>
+        <button onclick="closePaymentLinkModal()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:Barlow,sans-serif">Cancelar</button>
+        <button id="plm-send-btn" onclick="sendPaymentLink()" style="flex:2;padding:11px;border-radius:10px;border:0;background:var(--accent);color:#062513;font-size:13.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Enviar por WhatsApp</button>
       </div>
     </div>
   </div>
