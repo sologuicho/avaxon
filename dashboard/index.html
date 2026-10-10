@@ -994,22 +994,44 @@
 
     /* ── Select global ── */
     select {
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      background-color: var(--card-bg) !important;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
       background-repeat: no-repeat !important;
       background-position: right 12px center !important;
-      background-size: 14px 14px !important;
-      padding-right: 38px !important;
-      cursor: pointer;
-      transition: border-color .15s, box-shadow .15s;
+      background-size: 15px 15px !important;
+      padding: 10px 40px 10px 13px !important;
+      border: 1.5px solid var(--border) !important;
+      border-radius: 10px !important;
+      font-family: 'Plus Jakarta Sans', sans-serif !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      color: var(--text) !important;
+      line-height: 1.4 !important;
+      min-height: 42px !important;
+      cursor: pointer !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,.05) !important;
+      transition: border-color .15s, box-shadow .15s, background-color .15s !important;
+      outline: none !important;
+      width: 100% !important;
     }
-    select:hover { border-color: var(--border-hover) !important; }
+    select:hover {
+      border-color: var(--border-hover) !important;
+      background-color: var(--hover-bg) !important;
+    }
     select:focus {
       border-color: var(--accent) !important;
-      box-shadow: 0 0 0 3px var(--accent-glow) !important;
-      outline: none !important;
+      box-shadow: 0 0 0 3px var(--accent-glow), 0 1px 3px rgba(0,0,0,.05) !important;
+      background-color: var(--card-bg) !important;
+    }
+    select option {
+      background: var(--card-bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px;
+      padding: 8px;
     }
     .cfg-hours-row {
       display: grid; grid-template-columns: 90px 1fr 1fr auto; gap: 8px; align-items: center;
