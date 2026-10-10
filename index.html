@@ -961,34 +961,126 @@
   </section>
 
   <!-- CTA FINAL -->
-  <section id="contacto" style="position: relative; background: radial-gradient(100% 90% at 20% 0%, #15306b 0%, #0d1730 45%, #0a0e17 82%); overflow: hidden;">
-    <div class="dot-grid" style="position: absolute; inset: 0; pointer-events: none; opacity: .5;"></div>
-    <div style="position: absolute; bottom: -160px; right: -80px; width: 460px; height: 460px; border-radius: 50%; background: radial-gradient(circle, rgba(37,211,102,.18), transparent 64%); pointer-events: none;"></div>
+  <section id="contacto" style="position: relative; background: radial-gradient(110% 100% at 15% 0%, #0f2656 0%, #0a1428 50%, #070a10 100%); overflow: hidden;">
+    <div class="dot-grid" style="position: absolute; inset: 0; pointer-events: none; opacity: .4;"></div>
+    <!-- glow verde -->
+    <div style="position: absolute; bottom: -200px; right: -120px; width: 640px; height: 640px; border-radius: 50%; background: radial-gradient(circle, rgba(37,211,102,.14), transparent 60%); pointer-events: none;"></div>
+    <!-- glow azul -->
+    <div style="position: absolute; top: -160px; left: -80px; width: 520px; height: 520px; border-radius: 50%; background: radial-gradient(circle, rgba(63,111,216,.12), transparent 65%); pointer-events: none;"></div>
 
-    <div style="position: relative; max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,104px) 20px; display: flex; flex-wrap: wrap; gap: clamp(32px,5vw,64px);">
-      <div data-reveal style="flex: 1 1 400px; min-width: 0;">
-        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px,4.2vw,52px); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; margin: 0 0 20px; color: #fff; text-wrap: balance;">Ve tu agente atendiendo tu propio negocio.</h2>
-        <p style="font-size: clamp(17px,1.6vw,20px); line-height: 1.6; color: #b9c3d4; max-width: 46ch; margin: 0 0 28px;">Déjanos tu nombre y tu WhatsApp. Te escribimos con una demo armada con tus propios casos, sin costo.</p>
-        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px; color: #cfd8e5;">
-          <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #25D366; display: block; flex-shrink: 0;"></span>Diagnóstico de 20 minutos</span>
-          <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #25D366; display: block; flex-shrink: 0;"></span>Sin compromiso ni tarjeta</span>
-          <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #25D366; display: block; flex-shrink: 0;"></span>Te atiende quien construye</span>
+    <div style="position: relative; max-width: 1240px; margin: 0 auto; padding: clamp(64px,8vw,112px) 20px 0;">
+
+      <!-- Headline centrado -->
+      <div data-reveal style="text-align: center; margin-bottom: clamp(40px,5vw,64px);">
+        <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(37,211,102,.12); border: 1px solid rgba(37,211,102,.22); margin-bottom: 20px;">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #25D366; display: block; animation: glow 2s ease-in-out infinite;"></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: #25D366;">Demo en vivo</span>
         </div>
+        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(30px,4.5vw,56px); font-weight: 700; letter-spacing: -.03em; line-height: 1.06; margin: 0 auto 16px; color: #fff; max-width: 18ch; text-wrap: balance;">Ve cómo contestaría el agente <span style="background: linear-gradient(90deg, #25D366, #7ae3a8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">en tu negocio.</span></h2>
+        <p style="font-size: clamp(16px,1.5vw,19px); color: #94a3b8; max-width: 52ch; margin: 0 auto; line-height: 1.6;">Déjanos 2 datos. Te escribimos con una demo armada con tus propios casos, sin costo.</p>
       </div>
 
-      <div data-reveal style="flex: 1 1 340px; min-width: 0;">
-        <form id="contactForm" style="background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: 20px; padding: 28px 24px 30px; display: flex; flex-direction: column; gap: 18px; backdrop-filter: blur(10px); box-shadow: 0 30px 70px rgba(0,0,0,.4);">
-          <label style="display: flex; flex-direction: column; gap: 9px;">
-            <span style="font-size: 13px; font-weight: 600; color: #cfd8e5;">Nombre</span>
-            <input class="input-field" id="formName" type="text" placeholder="Tu nombre">
-          </label>
-          <label style="display: flex; flex-direction: column; gap: 9px;">
-            <span style="font-size: 13px; font-weight: 600; color: #cfd8e5;">WhatsApp</span>
-            <input class="input-field" id="formPhone" type="tel" placeholder="10 dígitos">
-          </label>
-          <button type="submit" id="submitBtn" style="padding: 17px; border-radius: 12px; background: #25D366; color: #062513; border: 0; cursor: pointer; font-weight: 700; font-size: 17px; min-height: 52px; box-shadow: 0 14px 32px rgba(37,211,102,.3); transition: transform .18s ease, background .18s ease;">Agendar diagnóstico gratis</button>
-          <p id="formNote" style="margin: 0; font-size: 12.5px; line-height: 1.6; color: #9aa7bc;">Al enviar guardamos tu dato y se abre WhatsApp con el mensaje listo.</p>
-        </form>
+      <!-- 2 columnas -->
+      <div style="display: flex; flex-wrap: wrap; gap: clamp(24px,4vw,48px); align-items: flex-start; padding-bottom: clamp(64px,8vw,112px);">
+
+        <!-- COLUMNA IZQUIERDA: chat demo + QR -->
+        <div data-reveal style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+          <!-- Tarjeta chat WhatsApp -->
+          <div style="background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 20px; overflow: hidden; backdrop-filter: blur(12px);">
+            <!-- Header chat -->
+            <div style="background: rgba(7,94,45,.85); padding: 14px 18px; display: flex; align-items: center; gap: 12px;">
+              <div style="position: relative; flex-shrink: 0;">
+                <div style="width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #1a7d5b, #12a374); display: flex; align-items: center; justify-content: center;">
+                  <svg width="22" height="22" viewBox="0 0 18 20" fill="none"><path d="M9 1.5C6.8 1.5 4.8 2.8 4.2 5C3.7 6.5 3.8 8.5 4.8 10.2C5.5 11.4 6.2 12.3 7.1 13.2L7.5 18.5C7.6 18.9 7.9 19.1 8.2 19.1H9.8C10.1 19.1 10.4 18.9 10.5 18.5L10.9 13.2C11.8 12.3 12.5 11.4 13.2 10.2C14.2 8.5 14.3 6.5 13.8 5C13.2 2.8 11.2 1.5 9 1.5Z" fill="white"/></svg>
+                </div>
+                <span style="position: absolute; bottom: 1px; right: 1px; width: 11px; height: 11px; background: #25D366; border-radius: 50%; border: 2px solid #075e2d;"></span>
+              </div>
+              <div>
+                <div style="font-weight: 700; font-size: 14.5px; color: #fff;">Agente Avaxon</div>
+                <div style="font-size: 12px; color: #a7f3c8;">en línea ahora</div>
+              </div>
+              <div style="margin-left: auto; display: flex; gap: 14px; opacity: .7;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11.74 19.79 19.79 0 01.5 3.11 2 2 0 012.5 1h3a2 2 0 012 1.72c.13 1.05.37 2.09.73 3.09a2 2 0 01-.45 2.11L6.91 9.91a16 16 0 006.18 6.18l1.79-1.8a2 2 0 012.11-.45c1 .37 2.04.6 3.09.73A2 2 0 0122 16.92z"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+              </div>
+            </div>
+            <!-- Mensajes -->
+            <div style="background: #0d1117; padding: 18px 14px; display: flex; flex-direction: column; gap: 10px; min-height: 260px;" id="chatMessages">
+              <!-- Mensaje entrante usuario -->
+              <div class="chat-bubble-out" style="animation: bubbleIn .45s cubic-bezier(.17,.67,.35,1.3) both; animation-delay: .3s; align-self: flex-end; background: #005c4b; color: #e9fbe5; padding: 10px 14px; border-radius: 14px 4px 14px 14px; font-size: 14px; max-width: 78%; line-height: 1.5;">
+                Hola, tengo un gimnasio y me llegan como 30 mensajes al día preguntando horarios y precios 😅 ¿pueden ayudar?
+                <div style="font-size: 10.5px; color: rgba(233,251,229,.55); text-align: right; margin-top: 4px;">10:14 am ✓✓</div>
+              </div>
+              <!-- Typing indicator -->
+              <div id="chatTyping" style="animation: bubbleIn .3s ease both; animation-delay: 1.1s; align-self: flex-start; background: rgba(255,255,255,.07); border-radius: 4px 14px 14px 14px; padding: 12px 16px; display: flex; gap: 5px; align-items: center;">
+                <span style="width: 7px; height: 7px; background: #8a9ab5; border-radius: 50%; animation: typingDot 1.2s infinite ease-in-out; animation-delay: 0s;"></span>
+                <span style="width: 7px; height: 7px; background: #8a9ab5; border-radius: 50%; animation: typingDot 1.2s infinite ease-in-out; animation-delay: .2s;"></span>
+                <span style="width: 7px; height: 7px; background: #8a9ab5; border-radius: 50%; animation: typingDot 1.2s infinite ease-in-out; animation-delay: .4s;"></span>
+              </div>
+              <!-- Respuesta bot 1 -->
+              <div class="chat-bubble-in" style="opacity: 0; animation: bubbleIn .45s cubic-bezier(.17,.67,.35,1.3) both; animation-delay: 2.2s; align-self: flex-start; background: rgba(255,255,255,.08); color: #e2e8f3; padding: 10px 14px; border-radius: 4px 14px 14px 14px; font-size: 14px; max-width: 80%; line-height: 1.5;">
+                ¡Hola! 👋 Tenemos plantilla lista para gimnasios. Con 30 mensajes diarios te ahorramos fácil <strong style="color: #7ae3a8;">2–3 horas al día.</strong>
+                <div style="font-size: 10.5px; color: rgba(226,232,243,.4); text-align: right; margin-top: 4px;">10:14 am</div>
+              </div>
+              <!-- Respuesta bot 2 -->
+              <div class="chat-bubble-in" style="opacity: 0; animation: bubbleIn .45s cubic-bezier(.17,.67,.35,1.3) both; animation-delay: 3.2s; align-self: flex-start; background: rgba(255,255,255,.08); color: #e2e8f3; padding: 10px 14px; border-radius: 4px 14px 14px 14px; font-size: 14px; max-width: 80%; line-height: 1.5;">
+                ¿Quieres que armemos tu diagnóstico gratis? En 20 min te mostramos cómo quedaría para tu gym 😊
+                <div style="font-size: 10.5px; color: rgba(226,232,243,.4); text-align: right; margin-top: 4px;">10:14 am</div>
+              </div>
+            </div>
+            <!-- Input bar decorativa -->
+            <div style="background: #111827; padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-top: 1px solid rgba(255,255,255,.06);">
+              <div style="flex: 1; background: rgba(255,255,255,.07); border-radius: 22px; padding: 9px 14px; font-size: 13.5px; color: #4a5568;">Escribe un mensaje…</div>
+              <div style="width: 38px; height: 38px; background: #25D366; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#062513" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- QR -->
+          <div style="background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 16px;">
+            <div style="flex-shrink: 0; background: #fff; border-radius: 10px; padding: 6px; line-height: 0;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=76x76&color=062513&bgcolor=ffffff&data=https%3A%2F%2Fwa.me%2F528991709336%3Ftext%3DHola%20Avaxon%2C%20quiero%20mi%20diagn%C3%B3stico%20gratis" alt="QR Avaxon WhatsApp" width="76" height="76" style="border-radius: 6px; display: block;">
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 14.5px; color: #e2e8f3; margin-bottom: 4px;">Escanea y escríbenos</div>
+              <div style="font-size: 13px; color: #64748b; line-height: 1.5;">Directo a WhatsApp desde<br>tu celular. Sin formulario.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- COLUMNA DERECHA: formulario -->
+        <div data-reveal style="flex: 1 1 340px; min-width: 0;">
+          <form id="contactForm" style="background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.13); border-radius: 22px; padding: 30px 26px 32px; display: flex; flex-direction: column; gap: 18px; backdrop-filter: blur(12px); box-shadow: 0 32px 80px rgba(0,0,0,.45);">
+            <div>
+              <div style="font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; color: #fff; margin-bottom: 4px;">Agenda tu diagnóstico gratis</div>
+              <div style="font-size: 13.5px; color: #64748b;">20 minutos · sin compromiso · sin tarjeta</div>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">Tu nombre</span>
+              <input class="input-field" id="formName" type="text" placeholder="Ej. Carlos Ramos">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">WhatsApp</span>
+              <input class="input-field" id="formPhone" type="tel" placeholder="10 dígitos">
+            </label>
+            <label style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">Tu negocio <span style="color: #3f6fd8; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></span>
+              <input class="input-field" id="formBusiness" type="text" placeholder="Ej. Gimnasio FitPro">
+            </label>
+            <button type="submit" id="submitBtn" style="padding: 17px; border-radius: 13px; background: linear-gradient(135deg, #25D366 0%, #1db85a 100%); color: #062513; border: 0; cursor: pointer; font-weight: 700; font-size: 16.5px; min-height: 54px; box-shadow: 0 14px 36px rgba(37,211,102,.32); transition: transform .18s ease, box-shadow .18s ease; letter-spacing: -.01em;">Agendar diagnóstico gratis →</button>
+            <p id="formNote" style="margin: 0; font-size: 12px; line-height: 1.6; color: #475569; text-align: center;">Al enviar se abre WhatsApp con tu mensaje listo. Tu info no se comparte.</p>
+            <!-- Trust indicators -->
+            <div style="display: flex; justify-content: center; gap: 18px; padding-top: 4px; flex-wrap: wrap;">
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Sin tarjeta</span>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Respuesta en &lt;1 hora</span>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>100% gratis</span>
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
   </section>
