@@ -596,79 +596,159 @@
   </section>
 
   <!-- PANEL -->
-  <section id="panel" style="position: relative; background: radial-gradient(110% 80% at 80% 0%, #17306a 0%, #0d1730 44%, #0a0e17 80%); overflow: hidden;">
-    <div class="dot-grid" style="position: absolute; inset: 0; pointer-events: none; opacity: .5;"></div>
-    <div style="position: absolute; top: 20%; left: -140px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(79,142,247,.2), transparent 65%); pointer-events: none;"></div>
+  <section id="panel" style="position: relative; background: #070a11; border-top: 1px solid rgba(255,255,255,.06); overflow: hidden;">
+    <div style="position: absolute; top: -80px; right: -120px; width: 480px; height: 480px; border-radius: 50%; background: radial-gradient(circle, rgba(37,211,102,.09), transparent 62%); pointer-events: none;"></div>
+    <div style="position: absolute; bottom: -100px; left: -80px; width: 420px; height: 420px; border-radius: 50%; background: radial-gradient(circle, rgba(79,142,247,.11), transparent 62%); pointer-events: none;"></div>
+    <div class="dot-grid" style="position: absolute; inset: 0; pointer-events: none; opacity: .35;"></div>
 
     <div style="position: relative; max-width: 1240px; margin: 0 auto; padding: clamp(56px,7vw,100px) 20px;">
-      <div data-reveal style="max-width: 60ch; margin-bottom: 46px;">
-        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #6ff0a4; margin-bottom: 14px;">Panel y reporte diario</div>
-        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px,3.8vw,46px); font-weight: 700; letter-spacing: -.025em; line-height: 1.08; margin: 0 0 16px; color: #fff;">Todo lo que contesta el agente queda medido.</h2>
-        <p style="font-size: 17px; line-height: 1.6; color: #b9c3d4; margin: 0;">Entras al panel cuando quieras, y de todos modos el resumen te llega al WhatsApp cada noche.</p>
+
+      <!-- Header -->
+      <div data-reveal style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 40px;">
+        <div style="max-width: 56ch;">
+          <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #6ff0a4; margin-bottom: 14px;">Panel y reporte diario</div>
+          <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px,3.8vw,46px); font-weight: 700; letter-spacing: -.025em; line-height: 1.08; margin: 0 0 14px; color: #fff;">Todo lo que contesta el agente queda medido.</h2>
+          <p style="font-size: 17px; line-height: 1.6; color: #b9c3d4; margin: 0;">Entras al panel cuando quieras. Y de todos modos el resumen llega a tu WhatsApp cada noche.</p>
+        </div>
+        <span style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px; background: rgba(37,211,102,.1); border: 1px solid rgba(37,211,102,.25); font-family: 'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: .06em; color: #6ff0a4; white-space: nowrap; flex-shrink: 0;">
+          <span style="width: 6px; height: 6px; border-radius: 50%; background: #25D366; display: block; animation: glow 2s infinite; flex-shrink: 0;"></span>EN VIVO · 7 DÍAS
+        </span>
       </div>
 
-      <div style="display: flex; flex-wrap: wrap; gap: 26px; align-items: stretch;">
-        <div data-reveal style="flex: 1 1 500px; min-width: 0; perspective: 1500px;">
-          <div style="border-radius: 20px; background: linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.03)); border: 1px solid rgba(255,255,255,.14); padding: 20px; box-shadow: 0 44px 90px rgba(0,0,0,.55); transform: rotateY(-7deg) rotateX(5deg); transform-origin: left center;">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;">
-              <span style="display: flex; align-items: center; gap: 9px;">
-                <span style="width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(140deg, #4f8ef7, #1b3d8f); display: block; flex-shrink: 0;"></span>
-                <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Panel Avaxon</span>
-              </span>
-              <span style="display: inline-flex; align-items: center; gap: 7px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .08em; color: #6ff0a4;">
-                <span style="width: 6px; height: 6px; border-radius: 50%; background: #25D366; display: block; animation: glow 2s infinite; flex-shrink: 0;"></span>EN VIVO · 7 DÍAS
-              </span>
-            </div>
+      <!-- 3 metric cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px;">
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; margin-bottom: 16px;">
-              <div style="border-radius: 14px; background: rgba(9,14,26,.66); border: 1px solid rgba(255,255,255,.1); padding: 16px 16px 18px;">
-                <div style="font-size: 12px; color: #9aa7bc; margin-bottom: 8px; font-weight: 500;">Conversaciones</div>
-                <div id="statConv" style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: #fff; line-height: 1; letter-spacing: -.02em;">847</div>
-              </div>
-              <div style="border-radius: 14px; background: rgba(37,211,102,.1); border: 1px solid rgba(37,211,102,.32); padding: 16px 16px 18px;">
-                <div style="font-size: 12px; color: #9fe6bd; margin-bottom: 8px; font-weight: 500;">Leads calificados</div>
-                <div id="statLeads" style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: #6ff0a4; line-height: 1; letter-spacing: -.02em;">203</div>
-              </div>
-              <div style="border-radius: 14px; background: rgba(9,14,26,.66); border: 1px solid rgba(255,255,255,.1); padding: 16px 16px 18px;">
-                <div style="font-size: 12px; color: #9aa7bc; margin-bottom: 8px; font-weight: 500;">Citas</div>
-                <div id="statCitas" style="font-family: 'Space Grotesk', sans-serif; font-size: 34px; font-weight: 700; color: #fff; line-height: 1; letter-spacing: -.02em;">61</div>
-              </div>
-            </div>
+        <div data-reveal style="border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); padding: 22px 22px 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <span style="font-size: 12.5px; color: #9aa7bc; font-weight: 500;">Conversaciones · 7 días</span>
+            <span style="padding: 3px 8px; border-radius: 6px; background: rgba(37,211,102,.12); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6ff0a4; font-weight: 700;">+12%</span>
+          </div>
+          <div id="statConv" style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; color: #fff; line-height: 1; letter-spacing: -.03em; margin-bottom: 14px;">847</div>
+          <div style="display: flex; align-items: flex-end; gap: 4px; height: 26px;">
+            <div style="flex:1;height:35%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.35);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.1s;"></div>
+            <div style="flex:1;height:50%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.4);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.16s;"></div>
+            <div style="flex:1;height:62%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.45);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.22s;"></div>
+            <div style="flex:1;height:44%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.38);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.28s;"></div>
+            <div style="flex:1;height:78%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.55);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.34s;"></div>
+            <div style="flex:1;height:100%;border-radius:3px 3px 2px 2px;background:#25D366;transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.4s;"></div>
+            <div style="flex:1;height:52%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.4);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.46s;"></div>
+          </div>
+        </div>
 
-            <div style="border-radius: 14px; background: rgba(9,14,26,.66); border: 1px solid rgba(255,255,255,.1); padding: 18px 16px 14px;">
-              <div style="font-size: 12px; color: #9aa7bc; margin-bottom: 18px; font-weight: 500;">Conversaciones por día</div>
-              <div style="display: flex; align-items: flex-end; gap: 9px; height: 132px;">
-                <div style="flex: 1; height: 44%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.55); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .1s;"></div>
-                <div style="flex: 1; height: 56%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.55); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .18s;"></div>
-                <div style="flex: 1; height: 61%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.55); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .26s;"></div>
-                <div style="flex: 1; height: 78%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.75); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .34s;"></div>
-                <div style="flex: 1; height: 89%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.75); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .42s;"></div>
-                <div style="flex: 1; height: 100%; border-radius: 6px 6px 3px 3px; background: #25D366; transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .5s;"></div>
-                <div style="flex: 1; height: 43%; border-radius: 6px 6px 3px 3px; background: rgba(79,142,247,.55); transform-origin: bottom; animation: barGrow .8s ease both; animation-delay: .58s;"></div>
-              </div>
-              <div style="display: flex; gap: 9px; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #8b97ab;">
-                <span style="flex: 1; text-align: center;">L</span><span style="flex: 1; text-align: center;">M</span><span style="flex: 1; text-align: center;">M</span><span style="flex: 1; text-align: center;">J</span><span style="flex: 1; text-align: center;">V</span><span style="flex: 1; text-align: center;">S</span><span style="flex: 1; text-align: center;">D</span>
-              </div>
+        <div data-reveal style="border-radius: 18px; background: rgba(37,211,102,.07); border: 1px solid rgba(37,211,102,.2); padding: 22px 22px 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <span style="font-size: 12.5px; color: #9fe6bd; font-weight: 500;">Leads calificados</span>
+            <span style="padding: 3px 8px; border-radius: 6px; background: rgba(37,211,102,.18); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6ff0a4; font-weight: 700;">+8%</span>
+          </div>
+          <div id="statLeads" style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; color: #6ff0a4; line-height: 1; letter-spacing: -.03em; margin-bottom: 14px;">203</div>
+          <div style="display: flex; align-items: flex-end; gap: 4px; height: 26px;">
+            <div style="flex:1;height:40%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.25);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.12s;"></div>
+            <div style="flex:1;height:55%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.3);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.18s;"></div>
+            <div style="flex:1;height:48%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.28);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.24s;"></div>
+            <div style="flex:1;height:70%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.38);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.3s;"></div>
+            <div style="flex:1;height:85%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.48);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.36s;"></div>
+            <div style="flex:1;height:100%;border-radius:3px 3px 2px 2px;background:#25D366;transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.42s;"></div>
+            <div style="flex:1;height:60%;border-radius:3px 3px 2px 2px;background:rgba(37,211,102,.32);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.48s;"></div>
+          </div>
+        </div>
+
+        <div data-reveal style="border-radius: 18px; background: rgba(79,142,247,.07); border: 1px solid rgba(79,142,247,.18); padding: 22px 22px 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+            <span style="font-size: 12.5px; color: #a8c4f8; font-weight: 500;">Citas agendadas</span>
+            <span style="padding: 3px 8px; border-radius: 6px; background: rgba(79,142,247,.15); font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #93b4f8; font-weight: 700;">+22%</span>
+          </div>
+          <div id="statCitas" style="font-family: 'Space Grotesk', sans-serif; font-size: 44px; font-weight: 700; color: #93b4f8; line-height: 1; letter-spacing: -.03em; margin-bottom: 14px;">61</div>
+          <div style="display: flex; align-items: flex-end; gap: 4px; height: 26px;">
+            <div style="flex:1;height:30%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.28);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.14s;"></div>
+            <div style="flex:1;height:45%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.34);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.2s;"></div>
+            <div style="flex:1;height:58%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.4);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.26s;"></div>
+            <div style="flex:1;height:50%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.36);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.32s;"></div>
+            <div style="flex:1;height:75%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.48);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.38s;"></div>
+            <div style="flex:1;height:100%;border-radius:3px 3px 2px 2px;background:#4f8ef7;transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.44s;"></div>
+            <div style="flex:1;height:66%;border-radius:3px 3px 2px 2px;background:rgba(79,142,247,.42);transform-origin:bottom;animation:barGrow .7s ease both;animation-delay:.5s;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Activity feed + WhatsApp report -->
+      <div style="display: flex; flex-wrap: wrap; gap: 14px;">
+
+        <!-- Activity feed -->
+        <div data-reveal style="flex: 1 1 440px; min-width: 0; border-radius: 18px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); padding: 22px 20px 10px; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: #fff;">Actividad reciente</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4b5563; letter-spacing: .06em;">últimas 24 h</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px;">
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;background:rgba(37,211,102,.07);border:1px solid rgba(37,211,102,.14);">
+              <span style="width:7px;height:7px;border-radius:50%;background:#25D366;flex-shrink:0;display:block;"></span>
+              <span style="flex:1;font-size:13.5px;color:#e9edf2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Karla M. · cita agendada · viernes 17:00</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4b5563;flex-shrink:0;">4 min</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#4f8ef7;flex-shrink:0;display:block;"></span>
+              <span style="flex:1;font-size:13.5px;color:#9aa7bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Luis R. · lead calificado · presupuesto alto</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4b5563;flex-shrink:0;">11 min</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#6772E5;flex-shrink:0;display:block;"></span>
+              <span style="flex:1;font-size:13.5px;color:#9aa7bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pago recibido · $650 · Limpieza dental</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4b5563;flex-shrink:0;">18 min</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#4f8ef7;flex-shrink:0;display:block;"></span>
+              <span style="flex:1;font-size:13.5px;color:#9aa7bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ana G. · consulta resuelta · horarios</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4b5563;flex-shrink:0;">29 min</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#25D366;flex-shrink:0;display:block;"></span>
+              <span style="flex:1;font-size:13.5px;color:#9aa7bc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Marco T. · cita agendada · jueves 10:30</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#4b5563;flex-shrink:0;">43 min</span>
+            </div>
+          </div>
+          <!-- Mini chart -->
+          <div style="padding-top: 16px; border-top: 1px solid rgba(255,255,255,.06);">
+            <div style="font-size: 12px; color: #4b5563; margin-bottom: 10px; font-weight: 500;">Conversaciones por día</div>
+            <div style="display: flex; align-items: flex-end; gap: 7px; height: 48px;">
+              <div style="flex:1;height:44%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.35);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.1s;"></div>
+              <div style="flex:1;height:56%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.42);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.18s;"></div>
+              <div style="flex:1;height:61%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.46);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.26s;"></div>
+              <div style="flex:1;height:78%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.56);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.34s;"></div>
+              <div style="flex:1;height:89%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.64);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.42s;"></div>
+              <div style="flex:1;height:100%;border-radius:4px 4px 2px 2px;background:#25D366;transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.5s;"></div>
+              <div style="flex:1;height:43%;border-radius:4px 4px 2px 2px;background:rgba(79,142,247,.35);transform-origin:bottom;animation:barGrow .8s ease both;animation-delay:.58s;"></div>
+            </div>
+            <div style="display:flex;gap:7px;margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#4b5563;">
+              <span style="flex:1;text-align:center;">L</span><span style="flex:1;text-align:center;">M</span><span style="flex:1;text-align:center;">M</span><span style="flex:1;text-align:center;">J</span><span style="flex:1;text-align:center;">V</span><span style="flex:1;text-align:center;">S</span><span style="flex:1;text-align:center;">D</span>
             </div>
           </div>
         </div>
 
-        <div data-reveal style="flex: 1 1 300px; min-width: 0; display: flex;">
-          <div style="width: 100%; border-radius: 20px; background: #0b141a; border: 1px solid rgba(255,255,255,.12); padding: 20px 18px 24px; box-shadow: 0 30px 60px rgba(0,0,0,.45);">
-            <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 16px;">
-              <span style="width: 8px; height: 8px; border-radius: 50%; background: #25D366; display: block; flex-shrink: 0;"></span>
+        <!-- WhatsApp report + response time -->
+        <div data-reveal style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <div style="border-radius: 18px; background: #0b141a; border: 1px solid rgba(255,255,255,.1); padding: 20px 18px 22px; flex: 1;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: #25D366; display: block; flex-shrink: 0;"></span>
               <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: .1em; color: #6ff0a4;">REPORTE 22:00 HRS</span>
             </div>
-            <div style="background: #1f2c34; border-radius: 4px 14px 14px 14px; padding: 16px 16px 10px; font-size: 15px; line-height: 1.7; color: #e9edf2;">
+            <div style="background: #1f2c34; border-radius: 4px 14px 14px 14px; padding: 14px 14px 10px; font-size: 14.5px; line-height: 1.7; color: #e9edf2;">
               Resumen de hoy:<br>
-              · <span id="reportConv">156</span> conversaciones atendidas<br>
+              · <span id="reportConv">156</span> conversaciones<br>
               · <span id="reportLeads">38</span> leads calificados<br>
-              · <span id="reportCitas">11</span> citas agendadas
-              <span style="display: block; text-align: right; font-size: 10px; color: #8696a0; margin-top: 8px;">22:00</span>
+              · <span id="reportCitas">11</span> citas agendadas<br>
+              · $8,450 en pagos
+              <span style="display: block; text-align: right; font-size: 10px; color: #8696a0; margin-top: 6px;">22:00</span>
             </div>
-            <p style="margin: 18px 0 0; font-size: 14.5px; line-height: 1.6; color: #9aa7bc;">Llega a tu WhatsApp todas las noches. Sin abrir el panel, sin pedirle nada a nadie.</p>
+            <p style="margin: 14px 0 0; font-size: 13.5px; line-height: 1.6; color: #9aa7bc;">Llega automático cada noche. Sin configurar nada.</p>
+          </div>
+          <div style="border-radius: 18px; background: rgba(37,211,102,.07); border: 1px solid rgba(37,211,102,.18); padding: 18px 20px;">
+            <div style="font-size: 12.5px; color: #9fe6bd; margin-bottom: 8px; font-weight: 500;">Tiempo de respuesta promedio</div>
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: #6ff0a4; line-height: 1; letter-spacing: -.02em;">3.1 seg</div>
+            <div style="font-size: 12px; color: #4b8c65; margin-top: 6px; line-height: 1.5;">Los humanos tardan 6 h en promedio</div>
           </div>
         </div>
+
       </div>
     </div>
   </section>
