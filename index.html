@@ -1148,57 +1148,42 @@
     line.style.width = '100%';
   }
 
-  /* ── Contadores del panel: datos reales de Supabase ── */
-  let counting = false;
-  async function startCountUp() {
-    if (counting) return;
-    counting = true;
-
-    let targets = { conv: 847, leads: 203, citas: 61 };
-    let reportTargets = { conv: 156, leads: 38, citas: 11 };
-    try {
-      const res = await fetch(EDGE_BASE + '/landing-stats');
-      if (res.ok) {
-        const data = await res.json();
-        targets = { conv: data.conv ?? targets.conv, leads: data.leads ?? targets.leads, citas: data.citas ?? targets.citas };
-        reportTargets = { conv: data.today_conv ?? reportTargets.conv, leads: data.today_leads ?? reportTargets.leads, citas: data.today_citas ?? reportTargets.citas };
-      }
-    } catch (_) { /* mantiene los valores demo si la función no responde */ }
-
-    const nf = new Intl.NumberFormat('es-MX');
-    const els = {
-      conv: document.getElementById('statConv'),
-      leads: document.getElementById('statLeads'),
-      citas: document.getElementById('statCitas')
-    };
-    const reportEls = {
-      conv: document.getElementById('reportConv'),
-      leads: document.getElementById('reportLeads'),
-      citas: document.getElementById('reportCitas')
-    };
-    const t0 = performance.now(), dur = 1400;
-    function step(t) {
-      const p = Math.min(1, (t - t0) / dur);
-      const e = 1 - Math.pow(1 - p, 3);
-      els.conv.textContent  = nf.format(Math.round(targets.conv  * e));
-      els.leads.textContent = nf.format(Math.round(targets.leads * e));
-      els.citas.textContent = nf.format(Math.round(targets.citas * e));
-      if (reportEls.conv)  reportEls.conv.textContent  = nf.format(Math.round(reportTargets.conv  * e));
-      if (reportEls.leads) reportEls.leads.textContent = nf.format(Math.round(reportTargets.leads * e));
-      if (reportEls.citas) reportEls.citas.textContent = nf.format(Math.round(reportTargets.citas * e));
-      if (p < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-  }
-
+  /* ── Contadores del panel: animación count-up con valores fijos demo ── */
   const panelSection = document.getElementById('panel');
   if (panelSection && 'IntersectionObserver' in window) {
     const statIo = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { startCountUp(); statIo.unobserve(e.target); } });
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        statIo.unobserve(e.target);
+        const nf = new Intl.NumberFormat('es-MX');
+        const targets = { conv: 1284, leads: 318, citas: 94 };
+        const reportTargets = { conv: 183, leads: 47, citas: 14 };
+        const els = {
+          conv: document.getElementById('statConv'),
+          leads: document.getElementById('statLeads'),
+          citas: document.getElementById('statCitas')
+        };
+        const reportEls = {
+          conv: document.getElementById('reportConv'),
+          leads: document.getElementById('reportLeads'),
+          citas: document.getElementById('reportCitas')
+        };
+        const t0 = performance.now(), dur = 1400;
+        function step(t) {
+          const p = Math.min(1, (t - t0) / dur);
+          const ep = 1 - Math.pow(1 - p, 3);
+          if (els.conv)  els.conv.textContent  = nf.format(Math.round(targets.conv  * ep));
+          if (els.leads) els.leads.textContent = nf.format(Math.round(targets.leads * ep));
+          if (els.citas) els.citas.textContent = nf.format(Math.round(targets.citas * ep));
+          if (reportEls.conv)  reportEls.conv.textContent  = nf.format(Math.round(reportTargets.conv  * ep));
+          if (reportEls.leads) reportEls.leads.textContent = nf.format(Math.round(reportTargets.leads * ep));
+          if (reportEls.citas) reportEls.citas.textContent = nf.format(Math.round(reportTargets.citas * ep));
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
     }, { threshold: 0.25 });
     statIo.observe(panelSection);
-  } else {
-    startCountUp();
   }
 
   /* ── FAQ acordeón ── */
