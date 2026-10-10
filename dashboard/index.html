@@ -7469,84 +7469,321 @@
   };
 
   /* ── Asignación ── */
+  let asigAgents = [];
+  let assignmentRules = [];
+
   async function loadAsignacion() {
-    const listEl = $('asig-agents-list');
-    if (!listEl) return;
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
 
-    // Cargar profiles de la org
-    let q = sb.from('profiles').select('id,full_name,role,organization_id');
+    // Load profiles (agents)
+    let q = sb.from('profiles').select('id,full_name,role');
     if (state.currentOrgId) q = q.eq('organization_id', state.currentOrgId);
-    else if (state.userOrgId) q = q.eq('organization_id', state.userOrgId);
+    else q = q.eq('organization_id', state.userOrgId);
     const { data: profiles } = await q;
+    asigAgents = (profiles || []).filter(p => p.role === 'agent' || p.role === 'admin');
 
-    // Contar conversaciones abiertas por agente
+    // Count open conversations per agent
     let countMap = {};
     try {
-      let convQ = sb.from('conversations').select('assigned_to').eq('status', 'open');
-      if (state.currentOrgId) convQ = convQ.eq('organization_id', state.currentOrgId);
-      else if (state.userOrgId) convQ = convQ.eq('organization_id', state.userOrgId);
+      let convQ = sb.from('conversations').select('assigned_to').eq('status', 'open').eq('organization_id', orgId);
       const { data: convs } = await convQ;
       (convs || []).forEach(c => { if (c.assigned_to) countMap[c.assigned_to] = (countMap[c.assigned_to] || 0) + 1; });
-    } catch (_) { /* columna assigned_to puede no existir aún */ }
+    } catch (_) {}
 
-    const agents = (profiles || []).filter(p => p.role === 'agent' || p.role === 'admin');
-    $('asig-total-badge').textContent = `${agents.length} vendedor${agents.length !== 1 ? 'es' : ''}`;
-
-    if (!agents.length) {
-      listEl.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin vendedores en este equipo todavía</div>`;
-    } else {
-      listEl.innerHTML = agents.map(a => {
+    // Render agents list
+    const listEl = $('asig-agents-list');
+    const badge  = $('asig-total-badge');
+    if (badge) badge.textContent = `${asigAgents.length} vendedor${asigAgents.length !== 1 ? 'es' : ''}`;
+    if (listEl) {
+      listEl.innerHTML = asigAgents.length ? asigAgents.map(a => {
         const count     = countMap[a.id] || 0;
         const roleLabel = a.role === 'admin' ? 'Admin' : 'Vendedor';
-        return `
-          <div class="asig-agent-row">
-            <div class="asig-agent-avatar">${initials(a.full_name || a.id)}</div>
-            <div>
-              <div class="asig-agent-name">${a.full_name || '—'}</div>
-              <div class="asig-agent-role">${roleLabel}</div>
-            </div>
-            <div class="asig-agent-count" title="Conversaciones abiertas">${count}</div>
-          </div>
-        `;
-      }).join('');
+        return `<div class="asig-agent-row">
+          <div class="asig-agent-avatar">${initials(a.full_name || a.id)}</div>
+          <div><div class="asig-agent-name">${a.full_name || '—'}</div><div class="asig-agent-role">${roleLabel}</div></div>
+          <div class="asig-agent-count" title="Conversaciones abiertas">${count}</div>
+        </div>`;
+      }).join('') : `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin vendedores en este equipo todavía</div>`;
     }
 
-    // Modo de asignación — guardado en bot_configs.assignment_mode
+    // Load assignment rules
     try {
-      const orgId = state.currentOrgId || state.userOrgId;
+      const { data: rules } = await sb.from('assignment_rules').select('*').eq('organization_id', orgId).order('priority');
+      assignmentRules = rules || [];
+    } catch (_) { assignmentRules = []; }
+    renderRules();
+
+    // Load default assignment from bot_configs
+    try {
       const { data: cfg } = await sb.from('bot_configs').select('assignment_mode').eq('organization_id', orgId).maybeSingle();
-      const currentMode = cfg?.assignment_mode || 'round_robin';
-      document.querySelectorAll('[name="asig-mode"]').forEach(r => { r.checked = r.value === currentMode; });
-      updateAsigModeNote(currentMode);
-    } catch (_) {
-      updateAsigModeNote('round_robin');
+      const sel = $('defaultAssignment');
+      if (sel && cfg?.assignment_mode) sel.value = cfg.assignment_mode;
+    } catch (_) {}
+
+    // Load SLA config
+    loadSlaConfig(orgId);
+
+    // Populate agent dropdown in rule modal
+    const ruleAgentSel = $('ruleAgent');
+    if (ruleAgentSel) {
+      ruleAgentSel.innerHTML = '<option value="">Seleccionar agente...</option>' +
+        asigAgents.map(a => `<option value="${a.id}">${a.full_name || a.id}</option>`).join('');
     }
-
-    // Re-attach listeners each time (remove old ones by replacing elements isn't trivial;
-    // use a flag to avoid stacking listeners)
-    document.querySelectorAll('[name="asig-mode"]').forEach(r => {
-      r.onchange = async () => {
-        const mode  = r.value;
-        updateAsigModeNote(mode);
-        const orgId = state.currentOrgId || state.userOrgId;
-        if (orgId) {
-          try {
-            await sb.from('bot_configs').update({ assignment_mode: mode }).eq('organization_id', orgId);
-          } catch (_) { /* silencioso */ }
-        }
-      };
-    });
+    // Populate SLA escalation dropdown
+    const slaAgSel = $('slaEscalateAgent');
+    if (slaAgSel) {
+      const prev = slaAgSel.value;
+      slaAgSel.innerHTML = '<option value="">Sin escalación</option>' +
+        asigAgents.map(a => `<option value="${a.id}">${a.full_name || a.id}</option>`).join('');
+      if (prev) slaAgSel.value = prev;
+    }
   }
 
-  function updateAsigModeNote(mode) {
-    const notes = {
-      round_robin: 'Cada nueva conversación se asigna al siguiente vendedor en turno.',
-      least_busy:  'La nueva conversación va al vendedor con menos chats abiertos en este momento.',
-      manual:      'Las conversaciones entran sin asignar. El supervisor las asigna desde el inbox.',
+  function renderRules() {
+    const container = $('rulesContainer');
+    const badge     = $('asig-rules-badge');
+    if (!container) return;
+    if (badge) badge.textContent = `${assignmentRules.length} regla${assignmentRules.length !== 1 ? 's' : ''}`;
+    if (!assignmentRules.length) {
+      container.innerHTML = `<div style="padding:28px 20px;text-align:center;color:var(--text-dim);font-size:13px">
+        <i class="fa fa-shuffle" style="font-size:28px;margin-bottom:10px;display:block;opacity:.4"></i>
+        No hay reglas configuradas<br>
+        <span style="font-size:12px">Crea reglas para asignar leads automáticamente</span>
+      </div>`;
+      return;
+    }
+    container.innerHTML = assignmentRules.map((r, i) => {
+      let targetLabel = 'Sin asignar';
+      if (r.action_type === 'assign_role' && r.target_role_id) {
+        targetLabel = `Rol: ${r.target_role_id}`;
+      } else {
+        const agentId = (r.target_agent_ids || [])[0] || r.agent_id;
+        const agent   = asigAgents.find(a => a.id === agentId);
+        targetLabel   = agent?.full_name || 'Sin asignar';
+      }
+      let condText = '';
+      if (r.conditions && r.conditions.length > 0) {
+        const c  = r.conditions[0];
+        const op = { contains_any: 'contiene', equals: 'es igual a', starts_with: 'empieza con', not_contains: 'no contiene', gt: '>', gte: '≥', lt: '<', lte: '≤' }[c.operator] || 'contiene';
+        const val = Array.isArray(c.value) ? c.value.join(', ') : c.value;
+        condText  = `${op} <strong>${val}</strong>`;
+      } else {
+        condText = r.description || r.value || 'Condición personalizada';
+      }
+      return `<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-sub);padding:2px 8px;border-radius:6px">#${r.priority || i+1}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${r.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Si ${condText} → <strong style="color:var(--accent)">${targetLabel}</strong></div>
+        </div>
+        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;${r.is_active !== false ? 'background:rgba(34,197,94,.1);color:var(--accent)' : 'background:var(--hover-bg);color:var(--text-dim)'}">${r.is_active !== false ? 'Activa' : 'Inactiva'}</span>
+        <button onclick="editAsigRule('${r.id}')" style="padding:6px 8px;background:none;border:none;color:var(--text-muted);cursor:pointer;border-radius:8px" title="Editar"><i class="fa fa-pen"></i></button>
+        <button onclick="deleteAsigRule('${r.id}')" style="padding:6px 8px;background:none;border:none;color:#ef4444;cursor:pointer;border-radius:8px" title="Eliminar"><i class="fa fa-trash"></i></button>
+      </div>`;
+    }).join('');
+  }
+
+  function showRuleModal(ruleData) {
+    const modal = $('ruleModal');
+    if (!modal) return;
+    $('ruleForm').reset();
+    $('ruleId').value = '';
+    $('rule-modal-title').textContent = 'Nueva Regla de Asignación';
+    ruleSetActionType('assign_agent');
+    ruleOnFieldChange();
+    if (ruleData) {
+      $('rule-modal-title').textContent = 'Editar Regla de Asignación';
+      $('ruleId').value    = ruleData.id;
+      $('ruleName').value  = ruleData.name || '';
+      $('rulePriority').value = ruleData.priority || 1;
+      if (ruleData.action_type === 'assign_role') {
+        ruleSetActionType('assign_role');
+        $('ruleRole').value = ruleData.target_role_id || '';
+      } else {
+        ruleSetActionType('assign_agent');
+        const agId = (ruleData.target_agent_ids || [])[0] || ruleData.agent_id || '';
+        $('ruleAgent').value = agId;
+      }
+      if (ruleData.conditions && ruleData.conditions.length > 0) {
+        const cond = ruleData.conditions[0];
+        const raw  = cond.field || 'message_and_data';
+        let uiField = raw, varName = '';
+        if (raw.startsWith('var:')) { uiField = 'var'; varName = raw.replace('var:', ''); }
+        $('ruleCriteria').value = uiField;
+        $('ruleOperator').value = cond.operator || 'contains_any';
+        if (varName) $('ruleVarName').value = varName;
+        ruleOnFieldChange();
+        const val = cond.value;
+        $('ruleValue').value = Array.isArray(val) ? val.join(', ') : (val || '');
+      }
+    }
+    modal.style.display = 'flex';
+  }
+
+  function closeRuleModal() {
+    const m = $('ruleModal');
+    if (m) m.style.display = 'none';
+  }
+
+  function editAsigRule(id) {
+    const rule = assignmentRules.find(r => r.id === id);
+    if (!rule) { showToast('Regla no encontrada'); return; }
+    showRuleModal(rule);
+  }
+
+  async function deleteAsigRule(id) {
+    if (!confirm('¿Eliminar esta regla?')) return;
+    const orgId = state.currentOrgId || state.userOrgId;
+    try {
+      await sb.from('assignment_rules').delete().eq('id', id).eq('organization_id', orgId);
+      await loadAsignacion();
+    } catch (e) { showToast('Error al eliminar: ' + e.message); }
+  }
+
+  function ruleOnFieldChange() {
+    const field = $('ruleCriteria')?.value;
+    const wrap  = $('ruleVarWrapper');
+    if (wrap) wrap.style.display = field === 'var' ? 'block' : 'none';
+    const hint = $('ruleValueHint');
+    if (hint) hint.textContent = field === 'var'
+      ? 'Valor exacto o palabras que debe contener la respuesta a esta variable.'
+      : 'Separa múltiples valores con comas. No importa mayúsculas/minúsculas.';
+  }
+
+  function ruleSetActionType(type) {
+    const el = $('ruleActionType');
+    if (el) el.value = type;
+    const isRole   = type === 'assign_role';
+    const agWrap   = $('ruleAgentWrapper');
+    const roWrap   = $('ruleRoleWrapper');
+    const agBtn    = $('ruleActionAgentBtn');
+    const roBtn    = $('ruleActionRoleBtn');
+    if (agWrap) agWrap.style.display = isRole ? 'none' : 'block';
+    if (roWrap) roWrap.style.display = isRole ? 'block' : 'none';
+    if (agBtn) {
+      agBtn.style.borderColor = isRole ? 'var(--border)' : 'var(--accent)';
+      agBtn.style.background  = isRole ? 'transparent' : 'var(--accent-sub)';
+      agBtn.style.color       = isRole ? 'var(--text-muted)' : 'var(--accent)';
+    }
+    if (roBtn) {
+      roBtn.style.borderColor = isRole ? 'var(--accent)' : 'var(--border)';
+      roBtn.style.background  = isRole ? 'var(--accent-sub)' : 'transparent';
+      roBtn.style.color       = isRole ? 'var(--accent)' : 'var(--text-muted)';
+    }
+  }
+
+  async function saveDefaultAssignment() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    const val   = $('defaultAssignment')?.value;
+    if (!orgId || !val) return;
+    try {
+      await sb.from('bot_configs').update({ assignment_mode: val }).eq('organization_id', orgId);
+      showToast('Guardado');
+    } catch (e) { showToast('Error: ' + e.message); }
+  }
+
+  async function saveSlaConfig() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId) return;
+    const sla = {
+      enabled: $('slaEnabled')?.checked || false,
+      first_response_minutes: parseInt($('slaFirstResponse')?.value) || 60,
+      followup_minutes:       parseInt($('slaFollowup')?.value) || 1440,
+      escalate_to_agent_id:   $('slaEscalateAgent')?.value || null,
     };
-    const el = $('asig-mode-note');
-    if (el) el.textContent = notes[mode] || '';
+    syncSlaToggle();
+    try {
+      await sb.from('bot_configs').update({ sla_config: sla }).eq('organization_id', orgId);
+      showToast('SLA guardado');
+    } catch (_) {}
   }
+
+  async function loadSlaConfig(orgId) {
+    try {
+      const { data: cfg } = await sb.from('bot_configs').select('sla_config').eq('organization_id', orgId).maybeSingle();
+      const sla = cfg?.sla_config || {};
+      const cb  = $('slaEnabled');
+      if (cb) { cb.checked = !!sla.enabled; syncSlaToggle(); }
+      if ($('slaFirstResponse')) $('slaFirstResponse').value = sla.first_response_minutes || 60;
+      if ($('slaFollowup'))      $('slaFollowup').value      = sla.followup_minutes || 1440;
+    } catch (_) {}
+  }
+
+  function syncSlaToggle() {
+    const cb    = $('slaEnabled');
+    const track = $('sla-toggle-wrap');
+    const thumb = $('sla-toggle-thumb');
+    if (!cb || !track || !thumb) return;
+    const on = cb.checked;
+    track.style.background = on ? 'var(--accent)' : 'var(--border)';
+    thumb.style.left        = on ? '18px' : '2px';
+  }
+
+  function toggleSla() {
+    const cb = $('slaEnabled');
+    if (cb) { cb.checked = !cb.checked; syncSlaToggle(); saveSlaConfig(); }
+  }
+
+  function openAsignacionSettings() {
+    const m = $('asignacionSettingsModal');
+    if (m) m.style.display = 'flex';
+  }
+
+  function closeAsignacionSettings() {
+    const m = $('asignacionSettingsModal');
+    if (m) m.style.display = 'none';
+  }
+
+  // Rule form submit
+  (function () {
+    const form = document.getElementById('ruleForm');
+    if (!form) return;
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const orgId    = state.currentOrgId || state.userOrgId;
+      const ruleId   = $('ruleId').value;
+      const value    = $('ruleValue').value;
+      const uiField  = $('ruleCriteria').value;
+      const operator = $('ruleOperator').value;
+      const actionType = $('ruleActionType').value;
+      let condField  = uiField;
+      if (uiField === 'var') {
+        const varName = $('ruleVarName').value;
+        if (!varName) { showToast('Selecciona una variable'); return; }
+        condField = 'var:' + varName;
+      }
+      const conditions = [{ field: condField, operator, value: value.split(',').map(v => v.trim().toLowerCase()).filter(Boolean) }];
+      const ruleData = {
+        name:           $('ruleName').value,
+        priority:       parseInt($('rulePriority').value) || 1,
+        conditions,
+        operator:       'OR',
+        action_type:    actionType,
+        is_active:      true,
+      };
+      if (actionType === 'assign_role') {
+        ruleData.target_role_id   = $('ruleRole').value;
+        ruleData.target_agent_ids = [];
+      } else {
+        const agId = $('ruleAgent').value;
+        if (!agId) { showToast('Selecciona un agente'); return; }
+        ruleData.target_agent_ids = [agId];
+        ruleData.target_role_id   = null;
+      }
+      try {
+        if (ruleId) {
+          await sb.from('assignment_rules').update(ruleData).eq('id', ruleId).eq('organization_id', orgId);
+        } else {
+          ruleData.organization_id = orgId;
+          await sb.from('assignment_rules').insert(ruleData);
+        }
+        closeRuleModal();
+        showToast(ruleId ? 'Regla actualizada' : 'Regla guardada');
+        loadAsignacion();
+      } catch (err) { showToast('Error al guardar: ' + err.message); }
+    });
+  })();
 
   /* ── Calendar ── */
   const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
