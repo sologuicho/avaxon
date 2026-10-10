@@ -1247,13 +1247,14 @@
     e.preventDefault();
     const name = document.getElementById('formName').value.trim();
     const phone = document.getElementById('formPhone').value.trim();
-    const msg = 'Hola Avaxon, soy ' + (name || '(nombre)') + '. Mi WhatsApp es ' + (phone || '(teléfono)') + '. Quiero el diagnóstico gratis.';
+    const business = document.getElementById('formBusiness')?.value.trim() || '';
+    const msg = 'Hola Avaxon, soy ' + (name || '(nombre)') + (business ? ' de ' + business : '') + '. Mi WhatsApp es ' + (phone || '(teléfono)') + '. Quiero el diagnóstico gratis.';
 
     if (phone) {
       fetch(EDGE_BASE + '/landing-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone })
+        body: JSON.stringify({ name, phone, business })
       }).catch(() => { /* no bloquear el flujo si falla el registro */ });
     }
 
