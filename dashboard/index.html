@@ -8952,8 +8952,8 @@
 
   function updateGcalUI() {
     const integ      = state.integrations?.['google_calendar'];
-    const connected  = integ?.status === 'connected';
-    const email      = integ?.config?.email || '—';
+    const connected  = integ?.status === 'connected' || isDemoMode();
+    const email      = isDemoMode() ? 'luzsalonpiel@gmail.com' : (integ?.config?.email || '—');
 
     const pill       = document.getElementById('gcal-status-pill');
     const btn        = document.getElementById('gcal-connect-btn');
