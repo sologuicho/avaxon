@@ -8075,15 +8075,21 @@
       return;
     }
     box.innerHTML = apts.map(a => {
-      const t   = new Date(a.scheduled_at).toLocaleTimeString('es-MX', { hour:'numeric', minute:'2-digit' });
-      const svc = a.service ? `<span style="font-size:11px;color:var(--text-muted)"> · ${a.service}</span>` : '';
-      const cnt = a.contact_name ? `<div class="apt-contact">${a.contact_name}</div>` : '';
+      const dt  = new Date(a.scheduled_at);
+      const t   = formatTime12h(dt.getHours(), dt.getMinutes());
       const st  = a.status || 'pending';
-      return `<div class="apt-item" style="cursor:pointer" onclick="openAptDetailModal('${a.id}')">
-        <div class="apt-time">${t}</div>
-        <div class="apt-body"><div class="apt-title">${a.title}${svc}</div>${cnt}</div>
-        <span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span>
-        <button class="apt-pencil" onclick="event.stopPropagation();openAptModal('${a.id}')" title="Editar"><i class="fa fa-pen"></i></button>
+      const ini = a.contact_name ? a.contact_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+      const waBadge = isDemoMode() ? `<span class="apt-wa-badge"><i class="fa-brands fa-whatsapp" style="font-size:9px"></i> WhatsApp</span>` : '';
+      return `<div class="apt-card" onclick="openAptDetailModal('${a.id}')">
+        <div class="apt-card-avatar">${ini}</div>
+        <div class="apt-card-body">
+          <div class="apt-card-title">${a.title}</div>
+          <div class="apt-card-meta">${a.contact_name || '—'}${waBadge}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <div class="apt-card-time">${t}</div>
+          <span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span>
+        </div>
       </div>`;
     }).join('');
   }
