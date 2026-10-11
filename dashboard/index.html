@@ -3248,6 +3248,14 @@
     }
   }
 
+  function togglePwd(inputId, btn) {
+    const inp = document.getElementById(inputId)
+    if (!inp) return
+    const isHidden = inp.type === 'password'
+    inp.type = isHidden ? 'text' : 'password'
+    btn.style.color = isHidden ? '#22c55e' : '#3a5068'
+  }
+
   function maskPhone(phone) {
     if (!phone) return '—'
     if (!state.isReviewer) return phone
