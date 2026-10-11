@@ -7953,15 +7953,21 @@
       end   = new Date(calView.timegridDate); end.setHours(23,59,59,999);
     }
 
-    let query = sb.from('appointments')
-      .select('id,title,service,scheduled_at,duration_minutes,notes,status,organization_id,contact_id,contact_name,google_event_id')
-      .gte('scheduled_at', start.toISOString())
-      .lte('scheduled_at', end.toISOString())
-      .order('scheduled_at', { ascending: true });
-    if (orgId) query = query.eq('organization_id', orgId);
-
-    const { data } = await query;
-    calView.appointments = data || [];
+    let calData;
+    if (isDemoMode()) {
+      calData = DEMO_APTS.filter(a => { const d = new Date(a.scheduled_at); return d >= start && d <= end; })
+        .sort((a,b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+    } else {
+      let query = sb.from('appointments')
+        .select('id,title,service,scheduled_at,duration_minutes,notes,status,organization_id,contact_id,contact_name,google_event_id')
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString())
+        .order('scheduled_at', { ascending: true });
+      if (orgId) query = query.eq('organization_id', orgId);
+      const { data } = await query;
+      calData = data || [];
+    }
+    calView.appointments = calData;
 
     await loadCalKpis(orgId);
 
