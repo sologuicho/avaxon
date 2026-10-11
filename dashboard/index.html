@@ -8108,13 +8108,22 @@
   }
 
   async function renderUpcomingList(orgId) {
-    let q = sb.from('appointments').select('id,title,scheduled_at,status,contact_name')
-      .neq('status', 'cancelled')
-      .gte('scheduled_at', new Date().toISOString())
-      .order('scheduled_at', { ascending: true })
-      .limit(5);
-    if (orgId) q = q.eq('organization_id', orgId);
-    const { data } = await q;
+    let data;
+    if (isDemoMode()) {
+      const now = new Date();
+      data = DEMO_APTS.filter(a => new Date(a.scheduled_at) >= now && a.status !== 'cancelled')
+        .sort((a,b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+        .slice(0, 5);
+    } else {
+      let q = sb.from('appointments').select('id,title,scheduled_at,status,contact_name')
+        .neq('status', 'cancelled')
+        .gte('scheduled_at', new Date().toISOString())
+        .order('scheduled_at', { ascending: true })
+        .limit(5);
+      if (orgId) q = q.eq('organization_id', orgId);
+      const res = await q;
+      data = res.data;
+    }
     const el = $('cal-upcoming-list');
     if (!data || !data.length) { el.innerHTML = '<div class="apt-empty">Sin próximas citas</div>'; return; }
     el.innerHTML = data.map(a => {
