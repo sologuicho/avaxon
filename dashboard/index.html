@@ -7905,6 +7905,18 @@
   ];
 
   async function loadCalKpis(orgId) {
+    if (isDemoMode()) {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
+      const todayKey = calDateKey(now);
+      const monthApts = DEMO_APTS.filter(a => { const d = new Date(a.scheduled_at); return d >= start && d <= end; });
+      $('cal-kpi-total').textContent     = monthApts.length;
+      $('cal-kpi-confirmed').textContent = monthApts.filter(a => a.status === 'confirmed').length;
+      $('cal-kpi-pending').textContent   = monthApts.filter(a => a.status === 'pending').length;
+      $('cal-kpi-today').textContent     = monthApts.filter(a => calDateKey(new Date(a.scheduled_at)) === todayKey).length;
+      return;
+    }
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
     const end   = new Date(now.getFullYear(), now.getMonth()+1, 0, 23, 59, 59);
