@@ -8113,9 +8113,12 @@
         const top = Math.max(0, (startMin - GRID_START_HOUR*60) / 60 * HOUR_PX);
         const height = Math.max(20, dur / 60 * HOUR_PX - 2);
         const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
-        return `<div class="cal-apt-block status-${a.status||'pending'}" style="top:${top}px;height:${height}px" onclick="openAptDetailModal('${a.id}')" title="${a.title} · ${timeLabel}${a.contact_name ? ' · ' + a.contact_name : ''}">
+        const showContact = height > 38 && a.contact_name;
+        const showWa = isDemoMode() && height > 52;
+        return `<div class="cal-apt-block status-${a.status||'pending'}" style="top:${top}px;height:${height}px" onclick="openAptDetailModal('${a.id}')">
           <div class="cal-apt-block-title">${a.title}</div>
-          <div class="cal-apt-block-time">${timeLabel}</div>
+          ${showContact ? `<div class="cal-apt-block-contact">${a.contact_name}</div>` : ''}
+          <div class="cal-apt-block-time">${showWa ? '<span class="cal-apt-wa-dot"></span>' : ''}${timeLabel}</div>
         </div>`;
       }).join('');
       const headerLabel = d.toLocaleDateString('es-MX', { weekday:'short', day:'numeric' });
