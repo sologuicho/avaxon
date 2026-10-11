@@ -8160,13 +8160,22 @@
     const el = $('cal-upcoming-list');
     if (!data || !data.length) { el.innerHTML = '<div class="apt-empty">Sin próximas citas</div>'; return; }
     el.innerHTML = data.map(a => {
-      const dt = new Date(a.scheduled_at);
-      const label = dt.toLocaleDateString('es-MX', { day:'numeric', month:'short' }) + ' · ' + formatTime12h(dt.getHours(), dt.getMinutes());
-      const st = a.status || 'pending';
-      return `<div class="apt-item" style="cursor:pointer" onclick="openAptDetailModal('${a.id}')">
-        <div class="apt-time" style="min-width:auto">${label}</div>
-        <div class="apt-body"><div class="apt-title">${a.title}</div>${a.contact_name ? `<div class="apt-contact">${a.contact_name}</div>` : ''}</div>
-        <span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span>
+      const dt  = new Date(a.scheduled_at);
+      const day = dt.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
+      const t   = formatTime12h(dt.getHours(), dt.getMinutes());
+      const st  = a.status || 'pending';
+      const ini = a.contact_name ? a.contact_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
+      const waBadge = isDemoMode() ? `<span class="apt-wa-badge"><i class="fa-brands fa-whatsapp" style="font-size:9px"></i> WhatsApp</span>` : '';
+      return `<div class="apt-card" onclick="openAptDetailModal('${a.id}')">
+        <div class="apt-card-avatar">${ini}</div>
+        <div class="apt-card-body">
+          <div class="apt-card-title">${a.title}</div>
+          <div class="apt-card-meta">${a.contact_name || '—'}${waBadge}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--text-muted);white-space:nowrap">${day}</div>
+          <div class="apt-card-time">${t}</div>
+        </div>
       </div>`;
     }).join('');
   }
