@@ -8362,6 +8362,7 @@
   // ── Modal detalle de cita ─────────────────────────────────────────────────
   async function openAptDetailModal(id) {
     let a = findAptById(id);
+    if (!a && isDemoMode()) a = DEMO_APTS.find(x => x.id === id);
     if (!a) { const res = await sb.from('appointments').select('*').eq('id', id).maybeSingle(); a = res.data; }
     if (!a) return;
     calView.detailId = id;
