@@ -74,23 +74,23 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO appointments (id, organization_id, contact_id, contact_name, title, service, notes, status, scheduled_at, duration_minutes, created_by)
 VALUES
   ('a001-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c001-0000-0000-0000-000000000001','Valentina Torres',
-   'Limpieza facial profunda','Limpieza profunda','Primera visita — piel mixta','confirmed',
+   'Limpieza facial profunda','Limpieza facial profunda','Agendada por el agente de WhatsApp. Valentina escribió: "quiero una limpieza para hoy en la tarde, ¿tienen espacio?" — el agente confirmó disponibilidad y registró la cita automáticamente.','confirmed',
    '2026-10-10 14:00:00+00',60,'PEGA-AQUI-EL-UUID'),
 
   ('a002-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c004-0000-0000-0000-000000000001','Daniela Mendoza',
-   'Aplicación de botox','Botox preventivo','Zona frente y entrecejo','confirmed',
+   'Aplicación de botox','Botox preventivo','Agendada vía WhatsApp. Daniela preguntó por botox en frente y entrecejo. El agente revisó disponibilidad y confirmó el horario sin intervención del equipo.','confirmed',
    '2026-10-10 16:30:00+00',45,'PEGA-AQUI-EL-UUID'),
 
   ('a003-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c002-0000-0000-0000-000000000001','Mariana Gutiérrez',
-   'Microblading de cejas','Microblading','Tono rubio ceniza','pending',
+   'Microblading de cejas','Microblading','Acordado en WhatsApp: tono rubio ceniza, cejas semipermanentes. El agente le envió precios, aclaró dudas y cerró la cita en el mismo chat.','pending',
    '2026-10-11 10:00:00+00',90,'PEGA-AQUI-EL-UUID'),
 
   ('a004-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c007-0000-0000-0000-000000000001','Sofía Jiménez',
-   'Hidratación profunda','Hidratación','Piel seca con signos de deshidratación','confirmed',
+   'Hidratación profunda','Hidratación','Sofía mandó mensaje a las 11 pm. El agente respondió, identificó piel deshidratada y agendó cita para el día siguiente — sin que nadie del equipo estuviera conectado.','confirmed',
    '2026-10-12 11:00:00+00',60,'PEGA-AQUI-EL-UUID'),
 
   ('a005-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c005-0000-0000-0000-000000000001','Camila Herrera',
-   'Consulta inicial','Valoración gratuita','Quiere saber sobre relleno de labios','pending',
+   'Consulta — relleno de labios','Valoración gratuita','Camila tenía dudas sobre el procedimiento. El agente resolvió sus preguntas y agendó una valoración sin costo. Todo acordado en WhatsApp.','pending',
    '2026-10-13 09:30:00+00',30,'PEGA-AQUI-EL-UUID'),
 
   ('a006-0000-0000-0000-000000000001','bbbb0000-0000-0000-0000-000000000001','c008-0000-0000-0000-000000000001','Isabella Ramírez',
