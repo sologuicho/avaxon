@@ -635,6 +635,25 @@
     .apt-status-pill.confirmed { color: #10b981; background: rgba(16,185,129,.12); }
     .apt-status-pill.cancelled { color: #64748b; background: rgba(100,116,139,.12); }
 
+    /* Appointment cards mejoradas */
+    .apt-card {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      border-radius: 10px; background: var(--card-bg); border: 1px solid var(--border);
+      cursor: pointer; transition: border-color .13s, box-shadow .13s; margin-bottom: 6px;
+    }
+    .apt-card:last-child { margin-bottom: 0; }
+    .apt-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+    .apt-card-avatar {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--accent-sub);
+      color: var(--accent); font-family: 'Barlow Condensed', sans-serif; font-size: 13px;
+      font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .apt-card-body { flex: 1; min-width: 0; }
+    .apt-card-title { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .apt-card-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+    .apt-card-time { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; flex-shrink: 0; }
+    .apt-wa-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: #25d366; background: rgba(37,211,102,.1); border-radius: 6px; padding: 1px 5px; white-space: nowrap; }
+
     /* Panel lateral en laptop, pantalla completa en teléfono */
     .apt-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2100; }
     .apt-modal-panel {
