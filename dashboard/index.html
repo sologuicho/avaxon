@@ -7937,6 +7937,12 @@
       renderTimeGrid();
     }
     renderUpcomingList(orgId);
+
+    // Demo mode: auto-abre el modal de la cita estrella al entrar al calendario
+    if (orgId === 'bbbb0000-0000-0000-0000-000000000001' && !calView._demoShown) {
+      calView._demoShown = true;
+      setTimeout(() => openAptDetailModal('a001-0000-0000-0000-000000000001'), 500);
+    }
   }
 
   function renderCalGrid() {
