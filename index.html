@@ -228,35 +228,33 @@
     </div>
   </section>
 
-  <!-- MARQUEE INTEGRATIONS -->
-  <section style="background: #0a0e17; border-bottom: 1px solid rgba(255,255,255,.06); padding: clamp(28px,3.5vw,44px) 0;">
-    <div style="max-width: 1240px; margin: 0 auto; padding: 0 20px 20px;">
-      <div data-reveal style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #8b97ab; text-align: center; margin-bottom: 22px;">Integrado con</div>
-    </div>
-    <div class="marquee-container">
-      <div class="marquee-track">
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#25D366;display:block;flex-shrink:0;"></span>WhatsApp Business API</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:2px;background:#fff;display:block;flex-shrink:0;"></span>GPT-4o</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#4285F4;display:block;flex-shrink:0;"></span>Google Calendar</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#0F9D58;display:block;flex-shrink:0;"></span>Google Sheets</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:3px;background:#6772E5;display:block;flex-shrink:0;"></span>Stripe</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#003087;display:block;flex-shrink:0;"></span>PayPal</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#FF4A00;display:block;flex-shrink:0;"></span>Zapier</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#3ecf8e;display:block;flex-shrink:0;"></span>Supabase</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:2px;background:#1877F2;display:block;flex-shrink:0;"></span>Meta Business</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#74aa9c;display:block;flex-shrink:0;"></span>OpenAI</span>
-        <!-- duplicate for seamless loop -->
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#25D366;display:block;flex-shrink:0;"></span>WhatsApp Business API</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:2px;background:#fff;display:block;flex-shrink:0;"></span>GPT-4o</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#4285F4;display:block;flex-shrink:0;"></span>Google Calendar</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#0F9D58;display:block;flex-shrink:0;"></span>Google Sheets</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:3px;background:#6772E5;display:block;flex-shrink:0;"></span>Stripe</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#003087;display:block;flex-shrink:0;"></span>PayPal</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#FF4A00;display:block;flex-shrink:0;"></span>Zapier</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#3ecf8e;display:block;flex-shrink:0;"></span>Supabase</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:2px;background:#1877F2;display:block;flex-shrink:0;"></span>Meta Business</span>
-        <span class="marquee-pill"><span style="width:8px;height:8px;border-radius:50%;background:#74aa9c;display:block;flex-shrink:0;"></span>OpenAI</span>
+  <!-- DASHBOARD CITAS -->
+  <section style="position: relative; background: #070a11; border-bottom: 1px solid rgba(255,255,255,.06); overflow: hidden;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 700px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(37,211,102,.09), transparent 65%); pointer-events: none;"></div>
+    <div style="position: relative; max-width: 1100px; margin: 0 auto; padding: clamp(56px,7vw,100px) 20px;">
+
+      <!-- Header -->
+      <div data-reveal style="text-align: center; margin-bottom: clamp(32px,4vw,52px);">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #25D366; margin-bottom: 16px;">Dashboard · Citas</div>
+        <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(26px,3.6vw,44px); font-weight: 700; letter-spacing: -.025em; line-height: 1.08; margin: 0 auto 16px; color: #fff; max-width: 22ch; text-wrap: balance;">Cada cita que tu agente agenda, aparece aquí sola.</h2>
+        <p style="font-size: clamp(15px,1.4vw,18px); color: #94a3b8; max-width: 52ch; margin: 0 auto; line-height: 1.65;">El agente la confirma por WhatsApp, la registra en el panel y la sincroniza con Google Calendar — sin que toques nada.</p>
       </div>
+
+      <!-- Feature chips -->
+      <div data-reveal style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: clamp(36px,5vw,56px);">
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 13.5px; color: #6ff0a4; font-weight: 500;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Sincronizado con Google Calendar</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 13.5px; color: #6ff0a4; font-weight: 500;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Confirmadas, pendientes y de hoy de un vistazo</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 13.5px; color: #6ff0a4; font-weight: 500;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Sin hojas de Excel ni mensajes perdidos</span>
+      </div>
+
+      <!-- Dashboard image -->
+      <div data-reveal style="position: relative; text-align: center;">
+        <img src="dashboard-avaxon.png" alt="Dashboard de citas Avaxon" style="width: 100%; max-width: 860px; display: inline-block; filter: drop-shadow(0 40px 80px rgba(0,0,0,.6));">
+      </div>
+
     </div>
   </section>
 
