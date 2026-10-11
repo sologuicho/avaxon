@@ -5021,7 +5021,8 @@
     }
 
     // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
-    if (!state.isSuperAdmin) {
+    const _isDemo = user.email === 'luisflores050704@gmail.com';
+    if (!state.isSuperAdmin && !_isDemo) {
       if (!profileData?.terms_accepted_at) {
         showTermsModal();
         return; // bootstrap continúa desde acceptTerms()
