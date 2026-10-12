@@ -935,6 +935,44 @@
     .wa-phone-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
     .wa-phone-empty { padding: 28px 24px; text-align: center; color: var(--text-dim); font-size: 13px; font-style: italic; }
 
+    /* ── Conexiones section labels ── */
+    .conn-section-label {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em;
+      padding: 4px 0 8px; margin-top: 6px; display: flex; align-items: center; gap: 8px;
+    }
+    .conn-section-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    /* ── WA setup flow (estado sin conectar) ── */
+    .wa-setup-wrap { padding: 28px 24px 24px; }
+    .wa-steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+    @media(max-width:640px){ .wa-steps-grid { grid-template-columns:1fr; } }
+    .wa-step-card {
+      background: var(--page-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .wa-step-num {
+      width: 26px; height: 26px; border-radius: 50%; background: var(--accent-sub);
+      color: var(--accent); font-family: 'Barlow Condensed', sans-serif; font-size: 13px;
+      font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .wa-step-title { font-size: 13.5px; font-weight: 700; color: var(--text); }
+    .wa-step-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+    .wa-step-icon { font-size: 20px; }
+    .wa-rec-card {
+      background: var(--page-bg); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px 20px; display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+    }
+    .wa-rec-badge {
+      display: inline-flex; align-items: center; gap: 5px; background: var(--accent-sub);
+      color: var(--accent); font-family: 'Barlow Condensed', sans-serif; font-size: 10px;
+      font-weight: 800; text-transform: uppercase; letter-spacing: .07em;
+      border-radius: 6px; padding: 3px 8px; margin-bottom: 6px;
+    }
+    .wa-rec-bullets { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; }
+    .wa-rec-bullet { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
+    .wa-rec-bullet i { color: var(--accent); font-size: 10px; flex-shrink: 0; }
+
     /* ── Integration cards ── */
     .integ-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px 20px; }
     .integ-card { border:1.5px solid var(--border);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,box-shadow .15s;background:var(--page-bg); }
