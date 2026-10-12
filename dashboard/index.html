@@ -3342,18 +3342,18 @@
     }
   }
 
-  // Login left-panel dot grid animation
+  // Full-page login dot grid animation
   (function() {
     const canvas = document.getElementById('lgnDotGrid');
-    const scene  = document.getElementById('lgnScene');
-    if (!canvas || !scene) return;
+    const screen = document.getElementById('login-screen');
+    if (!canvas || !screen) return;
     const ctx = canvas.getContext('2d');
-    const SPACING = 24, DOT_R = 1.1, INFLUENCE = 100;
-    let mouse = { x:-999, y:-999 }, dots = [], W, H, raf;
+    const SPACING = 24, DOT_R = 1.1, INFLUENCE = 110;
+    let mouse = { x:-999, y:-999 }, dots = [], W, H;
     function resize() {
-      const r = scene.getBoundingClientRect();
-      W = canvas.width  = r.width;
-      H = canvas.height = r.height;
+      const r = screen.getBoundingClientRect();
+      W = canvas.width  = r.width  || window.innerWidth;
+      H = canvas.height = r.height || window.innerHeight;
       dots = [];
       const cols = Math.ceil(W/SPACING)+1, rows = Math.ceil(H/SPACING)+1;
       const ox = (W-(cols-1)*SPACING)/2, oy = (H-(rows-1)*SPACING)/2;
@@ -3373,13 +3373,13 @@
         ctx.fill();
       }
       ctx.shadowBlur=0;
-      raf = requestAnimationFrame(draw);
+      requestAnimationFrame(draw);
     }
-    scene.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
-    scene.addEventListener('mouseleave', () => { mouse.x=-999; mouse.y=-999; });
+    screen.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
+    screen.addEventListener('mouseleave', () => { mouse.x=-999; mouse.y=-999; });
     window.addEventListener('resize', resize);
     window._lgnResize = resize;
-    raf = requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
   })();
 
   function togglePwd(inputId, btn) {
