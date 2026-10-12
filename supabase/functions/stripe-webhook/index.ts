@@ -6,6 +6,7 @@ import { sendZapierEvent } from '../_shared/zapier.ts'
 // ── Webhook de Stripe ────────────────────────────────────────────────────────
 // Maneja eventos v1 y v2:
 //   checkout.session.completed  → marcar pago, avisar al negocio por WA
+//   checkout.session.expired    → marcar pago como "expired" (caducó solo a las 24h)
 //   account.updated             → (v1) actualizar charges_enabled
 //   v2.core.account.updated     → (v2 thin event) re-fetch cuenta y actualizar
 
@@ -108,6 +109,15 @@ Deno.serve(async (req: Request) => {
       } else {
         console.error('checkout.session.completed sin payment correspondiente:', session.id)
       }
+    }
+
+    // ── Link caducó solo a las 24h (sin pagar, sin cancelar a mano) ────────
+    if (event.type === 'checkout.session.expired') {
+      const session = event.data.object
+      await sb.from('payments')
+        .update({ status: 'expired', updated_at: new Date().toISOString() })
+        .eq('session_id', session.id)
+        .eq('status', 'pending')
     }
 
     // ── Cuenta actualizada (v1) ────────────────────────────────────────────

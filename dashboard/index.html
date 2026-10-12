@@ -2557,6 +2557,9 @@
             </div>
           </div>
           <div class="view-header-actions">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted);margin-right:12px;cursor:pointer">
+              <input type="checkbox" id="pagos-hide-closed" checked onchange="loadPagos()"> Ocultar cancelados y expirados
+            </label>
             <button class="btn-refresh" onclick="loadPagos()"><i class="fa fa-rotate-right" style="font-size:11px"></i> Actualizar</button>
           </div>
         </div>
@@ -8305,6 +8308,31 @@
     expired: { label: 'Expirado',  color: '#64748b', bg: 'rgba(100,116,139,.12)' },
     cancelled: { label: 'Cancelado', color: '#64748b', bg: 'rgba(100,116,139,.12)' },
   };
+  let pagosCache = [];
+
+  async function cancelPago(id) {
+    const p = pagosCache.find(x => x.id === id);
+    if (!p) return;
+    const amountFmt = Number(p.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    if (!confirm(`¿Seguro que quieres cancelar el cobro ${p.concept} de $${amountFmt}?`)) return;
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { showToast('Tu sesión expiró'); return; }
+
+    const resp = await fetch(EDGE_BASE + '/stripe-payment-cancel', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_id: id }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      showToast('Error al cancelar: ' + (data.error || resp.status), 5000);
+      return;
+    }
+    showToast('Cobro cancelado');
+    loadPagos();
+  }
+  window.cancelPago = cancelPago;
 
   async function loadPagos() {
     const orgId = getActiveOrgId();
@@ -8321,21 +8349,29 @@
     if (error) { listEl.innerHTML = `<div class="apt-empty">Error: ${error.message}</div>`; return; }
 
     const pagos = data || [];
+    pagosCache = pagos;
     const paidTotal = pagos.filter(p => p.status === 'paid').reduce((s,p) => s + Number(p.amount), 0);
     const pendingTotal = pagos.filter(p => p.status === 'pending').reduce((s,p) => s + Number(p.amount), 0);
     $('pagos-kpi-paid').textContent = '$' + paidTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
     $('pagos-kpi-pending').textContent = '$' + pendingTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
     $('pagos-kpi-total').textContent = pagos.length;
 
-    if (!pagos.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros todavía</div>'; return; }
+    const hideClosed = $('pagos-hide-closed')?.checked ?? true;
+    const visible = hideClosed ? pagos.filter(p => p.status !== 'cancelled' && p.status !== 'expired') : pagos;
 
-    listEl.innerHTML = pagos.map(p => {
+    if (!pagos.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros todavía</div>'; return; }
+    if (!visible.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros visibles (hay cancelados/expirados ocultos)</div>'; return; }
+
+    listEl.innerHTML = visible.map(p => {
       const st = PAGO_STATUS_LABELS[p.status] || PAGO_STATUS_LABELS.pending;
       const amountFmt = '$' + Number(p.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' MXN';
       const dateFmt = new Date(p.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
       const contactName = p.contacts?.name || p.contacts?.phone || '—';
       const linkBtn = (p.status === 'pending' && p.checkout_url)
         ? `<a href="${p.checkout_url}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);font-weight:600">Abrir link</a>`
+        : '';
+      const cancelBtn = p.status === 'pending'
+        ? `<button onclick="cancelPago('${p.id}')" style="font-size:11.5px;color:#ef4444;font-weight:600;background:none;border:none;cursor:pointer;padding:0">Cancelar cobro</button>`
         : '';
       return `<div class="pago-row">
         <div>
@@ -8344,6 +8380,7 @@
         </div>
         <span class="apt-status-pill" style="color:${st.color};background:${st.bg}">${st.label}</span>
         ${linkBtn}
+        ${cancelBtn}
         <span class="pago-amount">${amountFmt}</span>
       </div>`;
     }).join('');
