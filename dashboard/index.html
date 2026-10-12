@@ -9811,6 +9811,7 @@
 
   function navigateToGcalConexion() {
     switchView('conexiones');
+    switchConnTab('herramientas');
     setTimeout(() => {
       const card = document.getElementById('gcal-conexion-card');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
