@@ -792,6 +792,14 @@
         <span id="solicitudes-clientes-badge" style="display:none;margin-left:auto;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.6"></span>
       </div>
 
+      <div class="nav-item" data-view="sistema">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>
+        </span>
+        Sistema
+      </div>
+
       <hr class="nav-divider" />
 
       <div class="nav-back" onclick="window.location.href='../dashboard/'">
@@ -1056,6 +1064,29 @@
         </div>
         <div class="card" style="padding:0">
           <div id="src-list"></div>
+        </div>
+      </div>
+
+      <!-- VISTA: SISTEMA -->
+      <div class="view" id="view-sistema">
+        <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:14px">Información de infraestructura interna de Avaxon — solo para el equipo, no se muestra a los clientes. Snapshot al 2026-10-12, no se actualiza sola.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+          <div class="card" style="padding:18px 20px">
+            <div class="card-title" style="margin-bottom:14px">Motor de IA</div>
+            <div style="display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text-muted)">Modelo</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">gpt-4o</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text-muted)">Transcripción de audio</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">whisper-1</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:var(--text-muted)">Contexto de conversación</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">14 mensajes previos</span></div>
+            </div>
+          </div>
+          <div class="card" style="padding:18px 20px">
+            <div class="card-title" style="margin-bottom:14px">Backend</div>
+            <div style="display:flex;flex-direction:column">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text-muted)">Base de datos</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">PostgreSQL (Supabase)</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--text-muted)">Edge Functions desplegadas</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">37</span></div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:var(--text-muted)">Región</span><span style="font-size:13.5px;font-weight:700;color:#1a2535">us-west-2</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1424,7 +1455,7 @@
 
   const VIEW_TITLES = {
     overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes',
-    agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes',
+    agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes', sistema: 'Sistema',
   };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
