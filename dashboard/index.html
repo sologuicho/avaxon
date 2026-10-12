@@ -9539,13 +9539,27 @@
   // Las tarjetas de Google Calendar y Stripe en la cuadrícula de Integraciones
   // son solo un acceso rápido a su card grande de detalle (misma vista) — no
   // repiten la información, por eso solo hacen scroll + un resalte breve.
+  function switchConnTab(tab) {
+    ['canales','herramientas','api'].forEach(t => {
+      const btn = document.getElementById('conn-tab-' + t);
+      const panel = document.getElementById('conn-panel-' + t);
+      if (btn)   btn.classList.toggle('active', t === tab);
+      if (panel) panel.style.display = t === tab ? '' : 'none';
+    });
+  }
+  window.switchConnTab = switchConnTab;
+
   function scrollToConexionCard(cardId) {
-    const el = $(cardId);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    el.style.transition = 'box-shadow .2s ease';
-    el.style.boxShadow = '0 0 0 2px var(--accent)';
-    setTimeout(() => { el.style.boxShadow = ''; }, 1400);
+    switchView('conexiones');
+    switchConnTab('herramientas');
+    setTimeout(() => {
+      const el = $(cardId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'box-shadow .2s ease';
+      el.style.boxShadow = '0 0 0 2px var(--accent)';
+      setTimeout(() => { el.style.boxShadow = ''; }, 1400);
+    }, 80);
   }
   window.scrollToConexionCard = scrollToConexionCard;
 
