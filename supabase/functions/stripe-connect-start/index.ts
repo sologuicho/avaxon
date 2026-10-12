@@ -1,11 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { stripeFetch } from '../_shared/stripe.ts'
-import { signState } from '../_shared/google.ts'
+import { stripeV2Fetch } from '../_shared/stripe.ts'
+import { signState } from '../_shared/google.ts' // helper genérico de HMAC state, no es específico de Google
 
-// ── Inicia Stripe Connect Express v1 ─────────────────────────────────────────
-// Crea la cuenta conectada Express (o reusa la existente) y genera un Account
-// Link de onboarding v1. El dashboard redirige al navegador a la url devuelta.
+// ── Inicia Stripe Connect v2 (merchant, dashboard full) ──────────────────────
+// Crea la cuenta conectada v2 (o reusa la existente) y genera un Account Link
+// de onboarding. El dashboard redirige al navegador a la url devuelta.
+//
+// IMPORTANTE: no revertir a v1 (type: 'express'/'standard'). El perfil de
+// plataforma en Stripe (dashboard.stripe.com/settings/connect/platform-profile)
+// está configurado con Stripe como responsable de pérdidas/fees y dashboard
+// completo de Stripe para la cuenta conectada — una cuenta Express v1 no
+// cumple eso y la creación falla con "review the responsibilities...".
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -68,15 +74,24 @@ Deno.serve(async (req: Request) => {
     let accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
 
     if (!accountId) {
-      // ── Crear cuenta Express v1 ─────────────────────────────────────────────
-      const account = await stripeFetch('/accounts', STRIPE_SECRET_KEY, {
+      // Cuenta v2: el perfil de la plataforma en Stripe está configurado con
+      // Stripe como responsable de pérdidas/fees y dashboard completo de
+      // Stripe para la cuenta conectada — esto tiene que coincidir exactamente
+      // o la API rechaza la creación ("review the responsibilities..."). No
+      // se le pide a la cuenta de plataforma (application) responsabilidad
+      // sobre nada.
+      const account = await stripeV2Fetch('/v2/core/accounts', STRIPE_SECRET_KEY, {
         body: {
-          type: 'express',
-          country: 'MX',
-          capabilities: {
-            card_payments: { requested: true },
-            transfers: { requested: true },
+          display_name: 'Cuenta conectada Avaxon',
+          configuration: { merchant: {} },
+          dashboard: 'full',
+          defaults: {
+            responsibilities: {
+              fees_collector: 'stripe',
+              losses_collector: 'stripe',
+            },
           },
+          identity: { country: 'MX' },
         },
       })
       accountId = account.id
@@ -95,14 +110,22 @@ Deno.serve(async (req: Request) => {
     const returnUrl = `${CALLBACK_URL}?state=${encodeURIComponent(state)}`
     const refreshUrl = `${DASHBOARD_URL}?conexion=stripe_retry`
 
-    // ── Account Link v1 ─────────────────────────────────────────────────────
-    // stripeFetch ya prefija /v1, así que el path es /account_links.
-    const accountLink = await stripeFetch('/account_links', STRIPE_SECRET_KEY, {
+    // ── Account Link v2 ─────────────────────────────────────────────────────
+    // return_url/refresh_url van anidados dentro de use_case.account_onboarding.
+    // "configurations" NO es un campo del request (lo rechaza como unknown
+    // field) — se deriva solo de la `configuration` que ya tiene la cuenta
+    // (configuration.merchant puesto en /v2/core/accounts) y solo aparece en
+    // la respuesta, no se manda.
+    const accountLink = await stripeV2Fetch('/v2/core/account_links', STRIPE_SECRET_KEY, {
       body: {
         account: accountId,
-        type: 'account_onboarding',
-        return_url: returnUrl,
-        refresh_url: refreshUrl,
+        use_case: {
+          type: 'account_onboarding',
+          account_onboarding: {
+            return_url: returnUrl,
+            refresh_url: refreshUrl,
+          },
+        },
       },
     })
 
