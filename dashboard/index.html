@@ -127,60 +127,95 @@
       pointer-events: none; z-index: 0;
     }
 
-    /* Left animation panel */
+    /* Left content panel */
     .login-left {
       flex: 1; position: relative; z-index: 1;
       display: flex; align-items: center; justify-content: center;
     }
-    .lgn-scene {
-      position: absolute; inset: 0;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      gap: 24px;
+
+    /* Ambient orbs */
+    .lgn-orb {
+      position: absolute; border-radius: 50%; pointer-events: none;
     }
-    .lgn-glow {
-      position: absolute; width: 360px; height: 360px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(74,222,128,.14) 0%, rgba(74,222,128,.05) 45%, transparent 70%);
-      pointer-events: none; z-index: 1;
-      animation: lgn-breathe 5s ease-in-out infinite;
+    .lgn-orb-1 {
+      width: 500px; height: 500px; top: -120px; left: -80px;
+      background: radial-gradient(circle, rgba(74,222,128,.13) 0%, transparent 65%);
+      animation: lgn-drift1 9s ease-in-out infinite;
     }
-    @keyframes lgn-breathe { 0%,100% { transform:scale(1); opacity:.65; } 50% { transform:scale(1.15); opacity:1; } }
-    .lgn-orbit-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; overflow: visible; }
-    .lgn-ring-1 { fill:none; stroke:rgba(74,222,128,.12); stroke-width:1; stroke-dasharray:5 12; animation:lgn-spin1 22s linear infinite; transform-origin:50% 50%; }
-    .lgn-ring-2 { fill:none; stroke:rgba(74,222,128,.07); stroke-width:.7; stroke-dasharray:2 20; animation:lgn-spin2 32s linear infinite; transform-origin:50% 50%; }
-    @keyframes lgn-spin1 { to { transform: rotate(360deg); } }
-    @keyframes lgn-spin2 { to { transform: rotate(-360deg); } }
-    .lgn-odot1 { fill:#4ade80; filter:drop-shadow(0 0 5px #4ade80); animation:lgn-spin1 22s linear infinite; transform-origin:50% 50%; }
-    .lgn-odot2 { fill:rgba(74,222,128,.6); filter:drop-shadow(0 0 4px rgba(74,222,128,.6)); animation:lgn-spin2 32s linear infinite; transform-origin:50% 50%; }
-    .lgn-wordmark {
+    .lgn-orb-2 {
+      width: 350px; height: 350px; bottom: -80px; right: 10%;
+      background: radial-gradient(circle, rgba(74,222,128,.08) 0%, transparent 65%);
+      animation: lgn-drift2 12s ease-in-out infinite;
+    }
+    .lgn-orb-3 {
+      width: 220px; height: 220px; top: 30%; left: 55%;
+      background: radial-gradient(circle, rgba(99,102,241,.07) 0%, transparent 65%);
+      animation: lgn-drift1 15s ease-in-out infinite reverse;
+    }
+    @keyframes lgn-drift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(24px,18px)} }
+    @keyframes lgn-drift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-18px,-24px)} }
+
+    @keyframes lgn-fadeup { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes lgn-barGrow { to{width:100%} }
+
+    /* Left content */
+    .lgn-content {
       position: relative; z-index: 5;
-      display: flex; align-items: center; gap: 14px;
-      opacity: 0; animation: lgn-fadeup .9s ease .4s forwards;
+      padding: 0 64px;
+      max-width: 520px;
+      width: 100%;
+      opacity: 0; animation: lgn-fadeup .8s ease .25s forwards;
     }
-    @keyframes lgn-fadeup { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-    .lgn-wordmark-text {
-      font-size: 40px; font-weight: 600; letter-spacing: .12em;
-      color: #fff; text-transform: uppercase; line-height: 1;
-      font-family: system-ui, sans-serif;
+    .lgn-brand-row {
+      display: flex; align-items: center; gap: 11px;
+      margin-bottom: 56px;
     }
-    .lgn-wordmark-bar {
-      display: block; height: 2px; width: 0;
+    .lgn-brand-icon {
+      width: 36px; height: 36px; border-radius: 10px; object-fit: cover;
+      box-shadow: 0 2px 12px rgba(0,0,0,.5);
+    }
+    .lgn-brand-name {
+      font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700;
+      color: rgba(255,255,255,.45); letter-spacing: .1em; text-transform: uppercase;
+    }
+    .lgn-headline {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(30px, 3.2vw, 48px);
+      font-weight: 700; line-height: 1.1; letter-spacing: -.03em;
+      color: #f1f5f9; margin-bottom: 36px;
+    }
+    .lgn-headline em { font-style: normal; color: #4ade80; }
+    .lgn-features {
+      display: flex; flex-direction: column; gap: 13px;
+      margin-bottom: 52px;
+    }
+    .lgn-feat-row {
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: rgba(255,255,255,.48);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .lgn-feat-dot {
+      width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+      background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,.7);
+    }
+    .lgn-live-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 100px;
+      background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.2);
+      font-size: 11px; font-weight: 700; color: #4ade80;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: .07em; text-transform: uppercase;
+    }
+    .lgn-live-dot {
+      width: 6px; height: 6px; border-radius: 50%;
       background: #4ade80; box-shadow: 0 0 8px #4ade80;
-      margin-top: 6px; border-radius: 2px;
-      animation: lgn-barGrow .8s cubic-bezier(.22,1,.36,1) 1.1s forwards;
+      animation: avx-pulse 2.2s ease-in-out infinite;
     }
-    @keyframes lgn-barGrow { to { width:100%; } }
-    .lgn-tagline {
-      position: relative; z-index: 5;
-      font-size: 11px; font-weight: 300; letter-spacing: .38em;
-      color: rgba(255,255,255,.32); text-transform: uppercase;
-      opacity: 0; animation: lgn-fadeup .7s ease 1.6s forwards;
-      font-family: system-ui, sans-serif;
-    }
-    .lgn-status-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: #4ade80; box-shadow: 0 0 10px #4ade80;
-      animation: avx-pulse 2.4s ease-in-out infinite; flex-shrink: 0;
+    /* Animated underline on headline */
+    .lgn-underline {
+      display: block; height: 2px; width: 0; max-width: 120px;
+      background: #4ade80; box-shadow: 0 0 8px #4ade80;
+      border-radius: 2px; margin-top: 14px;
+      animation: lgn-barGrow .9s cubic-bezier(.22,1,.36,1) .9s forwards;
     }
 
     /* Right form panel */
