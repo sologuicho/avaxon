@@ -3385,8 +3385,8 @@
     }
     scene.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
     scene.addEventListener('mouseleave', () => { mouse.x=-999; mouse.y=-999; });
-    resize();
     window.addEventListener('resize', resize);
+    window._lgnResize = resize;
     raf = requestAnimationFrame(draw);
   })();
 
