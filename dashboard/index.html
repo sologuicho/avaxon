@@ -2308,9 +2308,11 @@
               <button onclick="copyOnboardingLink()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--text-muted);border:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;padding:7px 16px;cursor:pointer;transition:all 0.15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--border-hover)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
                 <i class="fa fa-link" style="font-size:11px"></i> Compartir guía
               </button>
-              <button id="wa-connect-btn" class="btn-primary" onclick="showConnectModal()">
-                <i class="fa fa-plus" style="font-size:11px;margin-right:4px"></i>Conectar número
+              <button id="wa-embedded-btn" class="btn-primary" onclick="launchEmbeddedSignup()" style="display:inline-flex;align-items:center;gap:8px;background:#1877f2;border:0">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
+                Conectar con Meta
               </button>
+              <button onclick="showConnectModal()" style="background:none;border:none;font-size:12px;color:var(--text-dim);cursor:pointer;padding:4px 8px;text-decoration:underline">manual</button>
             </div>
             <div style="padding:10px 24px;background:color-mix(in srgb,#22c55e 8%,transparent);border-bottom:1px solid color-mix(in srgb,#22c55e 20%,transparent);display:flex;align-items:center;gap:10px">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
