@@ -4866,6 +4866,22 @@
   }
   window.saveWANumber = saveWANumber;
 
+  async function disconnectPhoneNumber(phoneId) {
+    showConfirmModal({
+      title: '¿Desconectar número?',
+      text: 'El bot dejará de recibir mensajes por este número. Podrás volver a conectarlo cuando quieras.',
+      confirmLabel: 'Sí, desconectar',
+      danger: true,
+      onConfirm: async () => {
+        const { error } = await sb.from('phone_numbers').delete().eq('id', phoneId);
+        if (error) { showToast('Error al desconectar: ' + error.message, 4000); return; }
+        showToast('Número desconectado');
+        await loadDashboard(state.currentOrgId || state.userOrgId);
+      },
+    });
+  }
+  window.disconnectPhoneNumber = disconnectPhoneNumber;
+
   // ── Modal de confirmación genérico (reemplaza confirm()) ───────────────────
   // showConfirmModal({ title, text, confirmLabel, cancelLabel, danger, onConfirm })
   // onConfirm puede ser async — mientras corre, el botón muestra un spinner y
