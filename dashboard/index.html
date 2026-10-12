@@ -4022,17 +4022,17 @@
     const phones = phoneData || [];
     const phone  = phones[0];
 
-    const listEl      = $('wa-numbers-list');
-    const connectFlow = $('wa-connect-flow');
-    const verifiedBar = $('wa-verified-bar');
+    const listEl        = $('wa-numbers-list');
+    const setupView     = $('wa-setup-view');
+    const connectedView = $('wa-connected-view');
 
     if (!phones.length) {
-      if (connectFlow) connectFlow.style.display = '';
-      if (verifiedBar) verifiedBar.style.display = 'none';
-      listEl.innerHTML = '';
+      if (setupView)     setupView.style.display = '';
+      if (connectedView) connectedView.style.display = 'none';
+      if (listEl) listEl.innerHTML = '';
     } else {
-      if (connectFlow) connectFlow.style.display = 'none';
-      if (verifiedBar) verifiedBar.style.display = 'flex';
+      if (setupView)     setupView.style.display = 'none';
+      if (connectedView) connectedView.style.display = '';
       listEl.innerHTML = phones.map(p => `
         <div class="wa-phone-row">
           <div style="width:36px;height:36px;background:#25D366;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
