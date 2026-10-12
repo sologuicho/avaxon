@@ -2340,9 +2340,9 @@
             </div>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:16px">
 
-          <!-- Solicitudes de onboarding -->
+          <!-- Solicitudes de onboarding (fuera de tabs) -->
           <div id="onboarding-requests-section" style="display:none">
             <div class="card bp" style="padding:0">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
@@ -2364,192 +2364,189 @@
             </div>
           </div>
 
-          <!-- CANALES -->
-          <div class="conn-section-label">Canales de comunicación</div>
+          <!-- Navegación por tabs -->
+          <div class="conn-tabs">
+            <button class="conn-tab active" id="conn-tab-canales" onclick="switchConnTab('canales')">
+              <i class="fa fa-comment-dots"></i> Canales
+            </button>
+            <button class="conn-tab" id="conn-tab-herramientas" onclick="switchConnTab('herramientas')">
+              <i class="fa fa-wrench"></i> Herramientas
+            </button>
+            <button class="conn-tab" id="conn-tab-api" onclick="switchConnTab('api')">
+              <i class="fa fa-code"></i> API & Webhooks
+            </button>
+          </div>
 
-          <!-- WhatsApp Business -->
-          <div class="card bp" style="padding:0">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-              <div style="display:flex;align-items:center;gap:14px">
-                <div style="width:44px;height:44px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                  <svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <!-- PANEL: Canales -->
+          <div id="conn-panel-canales">
+            <div class="card bp" style="padding:0">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div style="width:44px;height:44px;background:#25D366;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size:15px;font-weight:700;color:var(--text)">WhatsApp Business</div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Meta Business API · Números conectados</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <button onclick="copyOnboardingLink()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--text-muted);border:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;padding:7px 16px;cursor:pointer;transition:all 0.15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--border-hover)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+                    <i class="fa fa-link" style="font-size:11px"></i> Compartir guía
+                  </button>
+                  <button id="wa-embedded-btn" class="btn-primary" onclick="launchEmbeddedSignup()" style="display:inline-flex;align-items:center;gap:8px;background:#1877f2;border:0">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
+                    Conectar con Meta
+                  </button>
+                  <button onclick="showConnectModal()" style="background:none;border:none;font-size:12px;color:var(--text-dim);cursor:pointer;padding:4px 8px;text-decoration:underline">manual</button>
+                </div>
+              </div>
+              <div style="padding:10px 24px;background:color-mix(in srgb,#22c55e 8%,transparent);border-bottom:1px solid color-mix(in srgb,#22c55e 20%,transparent);display:flex;align-items:center;gap:10px">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#15803d;letter-spacing:.05em;text-transform:uppercase">Empresa verificada por Meta</span>
+                <span style="font-size:12px;color:var(--text-muted)">· 23 sept. 2026 — números ilimitados disponibles</span>
+              </div>
+              <div id="wa-numbers-list"></div>
+            </div>
+          </div>
+
+          <!-- PANEL: Herramientas -->
+          <div id="conn-panel-herramientas" style="display:none">
+            <div class="integ-full-grid">
+
+              <!-- Google Calendar -->
+              <div class="integ-full-card" id="gcal-conexion-card">
+                <div class="integ-full-card-top">
+                  <div class="integ-full-logo" style="background:#fff;border:1.5px solid #e5e7eb">
+                    <svg viewBox="0 0 48 48" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M32 14H16a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V16a2 2 0 0 0-2-2zm0 2v3H16v-3h16zm-16 16V21h16v11H16zm2-9h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3zm-10 4h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3z"/></svg>
+                  </div>
+                  <span id="gcal-status-pill" class="pill pill-amber no-dot">No conectado</span>
                 </div>
                 <div>
-                  <div style="font-size:15px;font-weight:700;color:var(--text)">WhatsApp Business</div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Meta Business API · Números conectados</div>
+                  <div class="integ-full-name">Google Calendar</div>
+                  <div class="integ-full-desc">Sincroniza citas agendadas desde el dashboard o WhatsApp directamente en tu calendario</div>
+                </div>
+                <div id="gcal-detail-panel" style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);padding-top:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Estado</span>
+                    <span id="gcal-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Cuenta</span>
+                    <span id="gcal-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">—</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Sincronización</span>
+                    <span id="gcal-detail-sync" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Deshabilitada</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+                    <span style="font-size:12px;color:var(--text-muted)">Recordatorios</span>
+                    <span id="gcal-detail-reminders" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Deshabilitados</span>
+                  </div>
+                </div>
+                <div class="integ-full-footer">
+                  <span id="gcal-integ-pill" style="display:none"></span>
+                  <button id="gcal-connect-btn" class="btn-primary" onclick="gcalConnect()" style="font-size:13px;padding:7px 16px;width:100%">
+                    <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google
+                  </button>
                 </div>
               </div>
-              <button onclick="copyOnboardingLink()" style="display:inline-flex;align-items:center;gap:6px;background:transparent;color:var(--text-muted);border:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;border-radius:10px;padding:7px 16px;cursor:pointer;transition:all 0.15s;white-space:nowrap" onmouseover="this.style.borderColor='var(--border-hover)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
-                <i class="fa fa-link" style="font-size:11px"></i> Compartir guía
-              </button>
-              <button id="wa-embedded-btn" class="btn-primary" onclick="launchEmbeddedSignup()" style="display:inline-flex;align-items:center;gap:8px;background:#1877f2;border:0">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
-                Conectar con Meta
-              </button>
-              <button onclick="showConnectModal()" style="background:none;border:none;font-size:12px;color:var(--text-dim);cursor:pointer;padding:4px 8px;text-decoration:underline">manual</button>
-            </div>
-            <div style="padding:10px 24px;background:color-mix(in srgb,#22c55e 8%,transparent);border-bottom:1px solid color-mix(in srgb,#22c55e 20%,transparent);display:flex;align-items:center;gap:10px">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <span style="font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#15803d;letter-spacing:.05em;text-transform:uppercase">Empresa verificada por Meta</span>
-              <span style="font-size:12px;color:var(--text-muted)">· 23 sept. 2026 — números ilimitados disponibles</span>
-            </div>
-            <div id="wa-numbers-list"></div>
-          </div>
 
-          <!-- HERRAMIENTAS -->
-          <div class="conn-section-label" style="margin-top:8px">Herramientas conectadas</div>
-
-          <!-- Google Calendar -->
-          <div class="card bp" style="padding:0" id="gcal-conexion-card">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-              <div style="display:flex;align-items:center;gap:14px">
-                <div style="width:44px;height:44px;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                  <svg viewBox="0 0 48 48" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M32 14H16a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V16a2 2 0 0 0-2-2zm0 2v3H16v-3h16zm-16 16V21h16v11H16zm2-9h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3zm-10 4h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3z"/></svg>
+              <!-- Stripe -->
+              <div class="integ-full-card" id="stripe-conexion-card">
+                <div class="integ-full-card-top">
+                  <div class="integ-full-logo" style="background:#635bff">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>
+                  </div>
+                  <span id="stripe-status-pill" class="pill pill-amber no-dot">No conectado</span>
                 </div>
                 <div>
-                  <div style="font-size:15px;font-weight:700;color:var(--text)">Google Calendar</div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Las citas que agendes en el dashboard o por WhatsApp se envían a tu Google Calendar</div>
+                  <div class="integ-full-name">Stripe</div>
+                  <div class="integ-full-desc">Genera links de pago y cobra desde WhatsApp con Stripe Checkout sin salir del chat</div>
+                </div>
+                <div id="stripe-testmode-banner" style="display:none;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:8px 12px;font-size:12px;color:#92700a;font-weight:600">
+                  <i class="fa fa-flask" style="margin-right:6px"></i>Modo de prueba — los cobros no son reales (sk_test)
+                </div>
+                <div id="stripe-detail-panel" style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);padding-top:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Estado</span>
+                    <span id="stripe-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+                    <span style="font-size:12px;color:var(--text-muted)">Cuenta</span>
+                    <span id="stripe-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">—</span>
+                  </div>
+                </div>
+                <div class="integ-full-footer">
+                  <span id="stripe-integ-pill" style="display:none"></span>
+                  <button id="stripe-connect-btn" class="btn-primary" onclick="stripeConnect()" style="font-size:13px;padding:7px 16px;width:100%">
+                    <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe
+                  </button>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                <span id="gcal-status-pill" class="pill pill-amber no-dot">No conectado</span>
-                <button id="gcal-connect-btn" class="btn-primary" onclick="gcalConnect()" style="font-size:13px;padding:7px 16px">
-                  <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Google
-                </button>
-              </div>
-            </div>
-            <div id="gcal-detail-panel" style="padding:18px 24px;display:flex;flex-direction:column;gap:0">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:13px;color:var(--text-muted)">Estado</span>
-                <span id="gcal-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:13px;color:var(--text-muted)">Cuenta</span>
-                <span id="gcal-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">—</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:13px;color:var(--text-muted)">Sincronización</span>
-                <span id="gcal-detail-sync" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Deshabilitada</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
-                <span style="font-size:13px;color:var(--text-muted)">Recordatorios</span>
-                <span id="gcal-detail-reminders" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Deshabilitados</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Stripe Connect -->
-          <div class="card bp" style="padding:0" id="stripe-conexion-card">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="padding:18px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-              <div style="display:flex;align-items:center;gap:14px">
-                <div style="width:44px;height:44px;background:#635bff;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>
+              <!-- Google Sheets -->
+              <div class="integ-full-card" style="cursor:pointer" onclick="openIntegModal('google_sheets')">
+                <div class="integ-full-card-top">
+                  <div class="integ-full-logo" style="background:#fff;border:1.5px solid #e5e7eb">
+                    <svg viewBox="0 0 48 48" width="28" height="28"><rect fill="#43A047" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M14 14h20v4H14zm0 6h20v4H14zm0 6h12v4H14z"/></svg>
+                  </div>
+                  <span id="gsheets-integ-pill" class="pill pill-amber no-dot">No conectado</span>
                 </div>
                 <div>
-                  <div style="font-size:15px;font-weight:700;color:var(--text)">Stripe</div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Cobra pagos desde WhatsApp con un link de Stripe Checkout</div>
+                  <div class="integ-full-name">Google Sheets</div>
+                  <div class="integ-full-desc">Exporta leads y conversaciones a una hoja de cálculo cuando tú lo pidas o de forma automática</div>
+                </div>
+                <div class="integ-full-footer" style="margin-top:auto">
+                  <span style="font-size:12px;color:var(--text-muted)">Se conecta con tu Google</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px">Configurar <i class="fa fa-arrow-right" style="font-size:10px"></i></span>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                <span id="stripe-status-pill" class="pill pill-amber no-dot">No conectado</span>
-                <button id="stripe-connect-btn" class="btn-primary" onclick="stripeConnect()" style="font-size:13px;padding:7px 16px">
-                  <i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe
-                </button>
+
+              <!-- Zapier -->
+              <div class="integ-full-card" style="cursor:pointer" onclick="openIntegModal('zapier')">
+                <div class="integ-full-card-top">
+                  <div class="integ-full-logo" style="background:#ff4a00">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M13.001.014c-.294 0-.584.014-.875.04a12.026 12.026 0 0 0-.998 6.25 8.978 8.978 0 0 0 7.373 7.373 12.03 12.03 0 0 0 6.25-.999 12.027 12.027 0 0 0-11.75-12.664zM.014 10.999a12.026 12.026 0 0 0 6.25 10.999A8.979 8.979 0 0 0 13.636 14.626a12.025 12.025 0 0 0-6.25.999A12.024 12.024 0 0 0 .014 11zM10.999.014A12.026 12.026 0 0 0 .014 11.747a12.03 12.03 0 0 0 6.25.999 8.978 8.978 0 0 0 7.373-7.373 12.025 12.025 0 0 0-.999-6.25A11.978 11.978 0 0 0 11 .014zM.014 13.001a12.026 12.026 0 0 0 11.75 10.985 12.026 12.026 0 0 0 .998-6.25 8.978 8.978 0 0 0-7.373-7.373A12.025 12.025 0 0 0 .014 13z"/></svg>
+                  </div>
+                  <span id="zapier-integ-pill" class="pill pill-amber no-dot">No conectado</span>
+                </div>
+                <div>
+                  <div class="integ-full-name">Zapier</div>
+                  <div class="integ-full-desc">Conecta Avaxon con más de 6,000 apps y automatiza flujos de trabajo sin escribir código</div>
+                </div>
+                <div class="integ-full-footer" style="margin-top:auto">
+                  <span style="font-size:12px;color:var(--text-muted)">6,000+ aplicaciones</span>
+                  <span style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px">Configurar <i class="fa fa-arrow-right" style="font-size:10px"></i></span>
+                </div>
               </div>
-            </div>
-            <div id="stripe-testmode-banner" style="display:none;padding:9px 24px;background:rgba(245,158,11,.1);border-bottom:1px solid rgba(245,158,11,.25);font-size:12px;color:#92700a;font-weight:600">
-              <i class="fa fa-flask" style="margin-right:6px"></i>Modo de prueba — los cobros no son reales (sk_test)
-            </div>
-            <div id="stripe-detail-panel" style="padding:18px 24px;display:flex;flex-direction:column;gap:0">
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:13px;color:var(--text-muted)">Estado</span>
-                <span id="stripe-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0">
-                <span style="font-size:13px;color:var(--text-muted)">Cuenta</span>
-                <span id="stripe-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--text-muted)">—</span>
-              </div>
+
             </div>
           </div>
 
-          <!-- Integraciones -->
-          <div class="card bp" style="padding:0">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px">
-              <div style="width:28px;height:28px;background:rgba(99,102,241,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#6366f1;font-size:12px"><i class="fa fa-puzzle-piece"></i></div>
-              <span style="font-size:15px;font-weight:700;color:var(--text)">Integraciones</span>
-            </div>
-            <div class="integ-grid">
-              <div class="integ-card" style="cursor:pointer" id="gcal-integ-card" onclick="scrollToConexionCard('gcal-conexion-card')">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                  <div class="integ-logo" style="background:#fff;border:1.5px solid #e5e7eb">
-                    <svg viewBox="0 0 48 48" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><rect fill="#1565C0" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M32 14H16a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V16a2 2 0 0 0-2-2zm0 2v3H16v-3h16zm-16 16V21h16v11H16zm2-9h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3zm-10 4h3v2h-3zm5 0h3v2h-3zm5 0h3v2h-3z"/></svg>
+          <!-- PANEL: API & Webhooks -->
+          <div id="conn-panel-api" style="display:none">
+            <div class="card bp" style="padding:20px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
+                <div style="width:32px;height:32px;background:rgba(59,130,246,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:13px"><i class="fa fa-code"></i></div>
+                <div style="flex:1">
+                  <div style="font-size:15px;font-weight:700;color:var(--text)">Webhook</div>
+                  <div style="font-size:12px;color:var(--text-muted)">Endpoint para mensajes entrantes de Meta</div>
+                </div>
+                <div id="wa-webhook-status" style="display:flex;align-items:center;gap:6px">
+                  <span style="width:7px;height:7px;border-radius:50%;background:var(--text-dim)"></span>
+                  <span style="font-size:13px;color:var(--text-muted)">Sin configurar</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
+                <label style="display:flex;flex-direction:column;gap:5px">
+                  <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">URL del webhook</span>
+                  <div style="display:flex;gap:6px">
+                    <input id="wa-webhook-url" value="—" readonly style="flex:1;padding:9px 11px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text);outline:none"/>
+                    <button onclick="copyWebhookUrl()" style="padding:9px 13px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:12px;flex-shrink:0" title="Copiar URL"><i class="fa fa-copy"></i></button>
                   </div>
-                  <span class="pill pill-amber no-dot" id="gcal-integ-pill">No conectado</span>
-                </div>
-                <div class="integ-name">Google Calendar</div>
-                <div class="integ-desc">Agenda y recordatorios en tu calendario</div>
-              </div>
-              <div class="integ-card" style="cursor:pointer" onclick="openIntegModal('google_sheets')">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                  <div class="integ-logo" style="background:#fff;border:1.5px solid #e5e7eb">
-                    <svg viewBox="0 0 48 48" width="26" height="26"><rect fill="#43A047" x="6" y="6" width="36" height="36" rx="4"/><path fill="#fff" d="M14 14h20v4H14zm0 6h20v4H14zm0 6h12v4H14z"/></svg>
-                  </div>
-                  <span class="pill pill-amber no-dot" id="gsheets-integ-pill">No conectado</span>
-                </div>
-                <div class="integ-name">Google Sheets</div>
-                <div class="integ-desc">Exporta tus leads a una hoja de cálculo cuando tú lo pidas</div>
-              </div>
-              <div class="integ-card" style="cursor:pointer" onclick="scrollToConexionCard('stripe-conexion-card')">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                  <div class="integ-logo" style="background:#635bff">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.929 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.591-7.305z"/></svg>
-                  </div>
-                  <span class="pill pill-amber no-dot" id="stripe-integ-pill">No conectado</span>
-                </div>
-                <div class="integ-name">Stripe</div>
-                <div class="integ-desc">Cobra pagos desde WhatsApp</div>
-              </div>
-              <div class="integ-card" style="cursor:pointer" onclick="openIntegModal('zapier')">
-                <div style="display:flex;align-items:center;justify-content:space-between">
-                  <div class="integ-logo" style="background:#ff4a00">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M13.001.014c-.294 0-.584.014-.875.04a12.026 12.026 0 0 0-.998 6.25 8.978 8.978 0 0 0 7.373 7.373 12.03 12.03 0 0 0 6.25-.999 12.027 12.027 0 0 0-11.75-12.664zM.014 10.999a12.026 12.026 0 0 0 6.25 10.999A8.979 8.979 0 0 0 13.636 14.626a12.025 12.025 0 0 0-6.25.999A12.024 12.024 0 0 0 .014 11zM10.999.014A12.026 12.026 0 0 0 .014 11.747a12.03 12.03 0 0 0 6.25.999 8.978 8.978 0 0 0 7.373-7.373 12.025 12.025 0 0 0-.999-6.25A11.978 11.978 0 0 0 11 .014zM.014 13.001a12.026 12.026 0 0 0 11.75 10.985 12.026 12.026 0 0 0 .998-6.25 8.978 8.978 0 0 0-7.373-7.373A12.025 12.025 0 0 0 .014 13z"/></svg>
-                  </div>
-                  <span class="pill pill-amber no-dot" id="zapier-integ-pill">No conectado</span>
-                </div>
-                <div class="integ-name">Zapier</div>
-                <div class="integ-desc">Conecta con más de 6,000 apps y automatiza flujos sin código</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- API -->
-          <div class="conn-section-label" style="margin-top:8px">API & Webhooks</div>
-
-          <!-- Webhook -->
-          <div class="card bp" style="padding:20px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="display:flex;align-items:center;gap:9px;margin-bottom:16px">
-              <div style="width:32px;height:32px;background:rgba(59,130,246,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:13px"><i class="fa fa-code"></i></div>
-              <div style="flex:1">
-                <div style="font-size:15px;font-weight:700;color:var(--text)">Webhook</div>
-                <div style="font-size:12px;color:var(--text-muted)">Endpoint para mensajes entrantes de Meta</div>
-              </div>
-              <div id="wa-webhook-status" style="display:flex;align-items:center;gap:6px">
-                <span style="width:7px;height:7px;border-radius:50%;background:var(--text-dim)"></span>
-                <span style="font-size:13px;color:var(--text-muted)">Sin configurar</span>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">
-              <label style="display:flex;flex-direction:column;gap:5px">
-                <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">URL del webhook</span>
-                <div style="display:flex;gap:6px">
-                  <input id="wa-webhook-url" value="—" readonly style="flex:1;padding:9px 11px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--text);outline:none"/>
-                  <button onclick="copyWebhookUrl()" style="padding:9px 13px;border:1px solid var(--border);background:var(--page-bg);border-radius:8px;cursor:pointer;color:var(--text-muted);font-size:12px;flex-shrink:0" title="Copiar URL"><i class="fa fa-copy"></i></button>
-                </div>
               </label>
               <label style="display:flex;flex-direction:column;gap:5px">
                 <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Verify token</span>
