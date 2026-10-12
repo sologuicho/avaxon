@@ -4037,6 +4037,9 @@
             ${statusPill(p.status)}
             ${qualityBadge(p.quality_rating)}
             ${webhookBadge(p.webhook_verified)}
+            <button onclick="disconnectPhoneNumber('${p.id}')" style="padding:5px 11px;background:transparent;border:1px solid var(--border);border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;color:var(--red);cursor:pointer;transition:all .15s" onmouseover="this.style.background='color-mix(in srgb,var(--red) 8%,transparent)';this.style.borderColor='var(--red)'" onmouseout="this.style.background='transparent';this.style.borderColor='var(--border)'">
+              <i class="fa fa-unlink" style="font-size:9px;margin-right:4px"></i>Desconectar
+            </button>
           </div>
         </div>
       `).join('');
