@@ -4572,6 +4572,60 @@
   // Send message
   const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
 
+  /* ── WhatsApp Embedded Signup ── */
+  let _embeddedSignupListenerAdded = false;
+
+  async function launchEmbeddedSignup() {
+    FB.init({ appId: '1562796358200501', cookie: true, xfbml: false, version: 'v21.0' });
+
+    if (!_embeddedSignupListenerAdded) {
+      _embeddedSignupListenerAdded = true;
+      window.addEventListener('message', async function(e) {
+        if (!e.data || e.data.type !== 'WA_EMBEDDED_SIGNUP') return;
+        const { code, waba_id, phone_number_id } = e.data.data || {};
+        if (!code) return;
+
+        const btn = document.getElementById('wa-embedded-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Conectando…'; }
+
+        try {
+          const { data: { session } } = await sb.auth.getSession();
+          const res = await fetch('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/whatsapp-embedded-signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ code, waba_id, phone_number_id })
+          });
+          const result = await res.json();
+          if (result.ok) {
+            showToast('✓ Número de WhatsApp conectado');
+            loadDashboard(state.currentOrgId || state.userOrgId);
+          } else {
+            showToast(result.error || 'Error al conectar número');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
+          }
+        } catch (err) {
+          showToast(err.message || 'Error al conectar número');
+          if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
+        }
+      });
+    }
+
+    FB.login(function(response) {
+      if (!response || response.status === 'not_authorized' || !response.authResponse) {
+        // User cancelled or did not authorize
+      }
+    }, {
+      scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+      response_type: 'code',
+      override_default_response_type: true,
+      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' }
+    });
+  }
+  window.launchEmbeddedSignup = launchEmbeddedSignup;
+
   /* ── Conectar número WhatsApp (modal manual) ── */
   function showConnectModal() {
     const m = $('wa-connect-modal');
