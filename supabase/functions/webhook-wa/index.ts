@@ -3,6 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 import { sendZapierEvent } from '../_shared/zapier.ts'
 import { getGoogleAccessToken } from '../_shared/google.ts'
+import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
+import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -18,19 +20,6 @@ import { getGoogleAccessToken } from '../_shared/google.ts'
 // El bot confirma con el usuario antes de agendar (instrucción en las tools).
 
 const DEBOUNCE_MS = 5000
-
-// ── Timezone offset helper (México) ─────────────────────────────────────────
-const TZ_OFFSETS: Record<string, string> = {
-  'America/Mexico_City': '-06:00',
-  'America/Monterrey':   '-06:00',
-  'America/Matamoros':   '-06:00',
-  'America/Chihuahua':   '-07:00',
-  'America/Hermosillo':  '-07:00',
-  'America/Mazatlan':    '-07:00',
-  'America/Tijuana':     '-08:00',
-  'America/Cancun':      '-05:00',
-}
-function tzOffset(tz: string): string { return TZ_OFFSETS[tz] || '-06:00' }
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
 const APPOINTMENT_TOOLS = [
@@ -91,9 +80,8 @@ async function consultarDisponibilidad(
   timezone: string,
 ): Promise<string> {
   try {
-    const offset = tzOffset(timezone)
-    const timeMin = `${fecha}T00:00:00${offset}`
-    const timeMax = `${fecha}T23:59:59${offset}`
+    const timeMin = fechaHoraToUtcIso(fecha, '00:00:00', timezone)
+    const timeMax = fechaHoraToUtcIso(fecha, '23:59:59', timezone)
     const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
       method: 'POST',
       headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
@@ -103,7 +91,10 @@ async function consultarDisponibilidad(
     const data = await res.json()
     const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
     if (busy.length === 0) return `El día ${fecha} no tiene citas registradas. Puedes ofrecer cualquier horario dentro del horario de atención del negocio.`
-    const toLocalHour = (iso: string) => iso.substring(11, 16)
+    // Google regresa start/end en UTC (sufijo Z) — convertir a la hora local
+    // de la org, no cortar el string asumiendo que ya viene en esa zona.
+    const toLocalHour = (iso: string) =>
+      new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone })
     const slots = busy.map(b => `${toLocalHour(b.start)}–${toLocalHour(b.end)}`).join(', ')
     return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}. Puedes agendar en cualquier hueco libre dentro del horario del negocio.`
   } catch (e) {
@@ -121,11 +112,11 @@ async function agendarCita(
   timezone: string,
 ): Promise<string> {
   const duracion = args.duracion_minutos || 60
-  const offset   = tzOffset(timezone)
-  const scheduledAt = `${args.fecha}T${args.hora}:00${offset}`
+  const scheduledAt = fechaHoraToUtcIso(args.fecha, args.hora, timezone)
   const endAt = new Date(new Date(scheduledAt).getTime() + duracion * 60000).toISOString()
 
-  // Guardar en DB
+  // Guardar en DB — las citas agendadas por el bot quedan "pending": las
+  // confirma el negocio, no quedan como confirmadas automáticamente.
   const { data: appt, error: apptErr } = await sb
     .from('appointments')
     .insert({
@@ -136,7 +127,7 @@ async function agendarCita(
       service:         args.servicio,
       scheduled_at:    scheduledAt,
       duration_minutes: duracion,
-      status:          'confirmed',
+      status:          'pending',
     })
     .select('id')
     .single()
@@ -144,6 +135,8 @@ async function agendarCita(
   if (apptErr || !appt) {
     return `Error guardando la cita: ${apptErr?.message ?? 'desconocido'}`
   }
+
+  await notifyAppointment(sb, appt.id, 'created', 'whatsapp')
 
   // Crear evento en Google Calendar
   let googleEventId: string | null = null
@@ -191,10 +184,11 @@ async function cancelarOReagendarCita(
   const isReschedule = !!(args.nueva_fecha && args.nueva_hora)
 
   if (isReschedule) {
-    const offset = tzOffset(timezone)
-    const newScheduledAt = `${args.nueva_fecha}T${args.nueva_hora}:00${offset}`
+    const newScheduledAt = fechaHoraToUtcIso(args.nueva_fecha!, args.nueva_hora!, timezone)
+    // Reagendar por el bot también deja la cita "pending" — requiere
+    // reconfirmación del negocio, igual que al agendarla por primera vez.
     await sb.from('appointments')
-      .update({ scheduled_at: newScheduledAt, status: 'confirmed', updated_at: new Date().toISOString() })
+      .update({ scheduled_at: newScheduledAt, status: 'pending', updated_at: new Date().toISOString() })
       .eq('id', appt.id)
 
     if (appt.google_event_id) {
@@ -212,6 +206,7 @@ async function cancelarOReagendarCita(
         },
       ).catch(() => {})
     }
+    await notifyAppointment(sb, appt.id, 'rescheduled', 'whatsapp')
     return `Cita reagendada para el ${args.nueva_fecha} a las ${args.nueva_hora}.`
   } else {
     await sb.from('appointments')
@@ -224,6 +219,7 @@ async function cancelarOReagendarCita(
         { method: 'DELETE', headers: { Authorization: `Bearer ${calendarToken}` } },
       ).catch(() => {})
     }
+    await notifyAppointment(sb, appt.id, 'cancelled', 'whatsapp')
     return `Cita cancelada correctamente.`
   }
 }
@@ -492,22 +488,30 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const businessContext = buildBusinessContextBlock(orgProfile)
 
-  // ── 6. Google Calendar: token + timezone (si está conectado) ───────────────
+  // ── 6. Zona horaria de la org + Google Calendar (si está conectado) ────────
+  // Siempre se resuelve la zona horaria real de la org (no solo cuando hay
+  // Calendar conectado) — la necesita el bot para interpretar "hoy"/"mañana"
+  // y para convertir bien la hora que da el cliente a UTC al agendar.
+  const { data: orgRow } = await sb
+    .from('organizations')
+    .select('timezone')
+    .eq('id', organization_id)
+    .maybeSingle()
+  const timezone = orgRow?.timezone || 'America/Matamoros'
   const calendarToken = await getGoogleAccessToken(sb, organization_id)
-  let timezone = 'America/Matamoros'
-  if (calendarToken) {
-    const { data: org } = await sb
-      .from('organizations')
-      .select('timezone')
-      .eq('id', organization_id)
-      .maybeSingle()
-    timezone = org?.timezone || 'America/Matamoros'
-  }
 
   // ── 7. Construir system prompt ─────────────────────────────────────────────
-  const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
+  const now = new Date()
+  const todayLabel = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
+  const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+
+  const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
+  const hoursGuardrail = hasBusinessHours
+    ? ''
+    : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
+
   const calendarCtx = calendarToken
-    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Hoy es ${today}. Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres. 3) Confirma con el cliente. 4) Agénda solo tras confirmación explícita.`
+    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.`
     : ''
 
   const systemPrompt = [
