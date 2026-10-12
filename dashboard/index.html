@@ -1251,24 +1251,30 @@
 <!-- Login -->
 <div id="login-screen">
   <canvas id="lgnDotGrid"></canvas>
-  <!-- Left: animated logo motion -->
+  <!-- Left: content + ambient animation -->
   <div class="login-left">
-    <div class="lgn-scene" id="lgnScene">
-      <div class="lgn-glow"></div>
-      <svg class="lgn-orbit-svg" viewBox="0 0 420 420" preserveAspectRatio="xMidYMid meet">
-        <circle class="lgn-ring-1" cx="210" cy="210" r="155"/>
-        <circle class="lgn-odot1" cx="210" cy="55" r="4"/>
-        <circle class="lgn-ring-2" cx="210" cy="210" r="185"/>
-        <circle class="lgn-odot2" cx="210" cy="25" r="2.8"/>
-      </svg>
-      <div class="lgn-wordmark">
-        <div class="lgn-status-dot"></div>
-        <div>
-          <div class="lgn-wordmark-text">AVAXON</div>
-          <span class="lgn-wordmark-bar"></span>
-        </div>
+    <div class="lgn-orb lgn-orb-1"></div>
+    <div class="lgn-orb lgn-orb-2"></div>
+    <div class="lgn-orb lgn-orb-3"></div>
+    <div class="lgn-content">
+      <div class="lgn-brand-row">
+        <img src="../avaxon_favicon.jpeg" alt="Avaxon" class="lgn-brand-icon" />
+        <span class="lgn-brand-name">Avaxon</span>
       </div>
-      <div class="lgn-tagline">AI · Automation · WhatsApp</div>
+      <h2 class="lgn-headline">
+        Tu WhatsApp<br>responde, califica<br>y <em>agenda solo.</em>
+        <span class="lgn-underline"></span>
+      </h2>
+      <div class="lgn-features">
+        <div class="lgn-feat-row"><span class="lgn-feat-dot"></span>Responde y califica leads las 24 horas</div>
+        <div class="lgn-feat-row"><span class="lgn-feat-dot"></span>Agenda citas directo en Google Calendar</div>
+        <div class="lgn-feat-row"><span class="lgn-feat-dot"></span>Cobra con Stripe desde la conversación</div>
+        <div class="lgn-feat-row"><span class="lgn-feat-dot"></span>Automatizaciones con Zapier en tiempo real</div>
+      </div>
+      <div class="lgn-live-badge">
+        <span class="lgn-live-dot"></span>
+        Agente activo ahora
+      </div>
     </div>
   </div>
   <!-- Right: form card -->
