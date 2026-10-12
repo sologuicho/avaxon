@@ -3341,6 +3341,7 @@
       $('loading-screen').style.display = 'flex';
     } else if (name === 'login') {
       $('login-screen').style.display = 'flex';
+      requestAnimationFrame(() => { if (window._lgnResize) window._lgnResize(); });
     } else if (name === 'recovery') {
       $('recovery-screen').style.display = 'flex';
     } else if (name === 'forgot') {
