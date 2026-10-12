@@ -3892,7 +3892,59 @@
 
     const listEl = $('wa-numbers-list');
     if (!phones.length) {
-      listEl.innerHTML = '<div class="wa-phone-empty">Sin números conectados · Haz clic en "Conectar número" para agregar uno</div>';
+      listEl.innerHTML = `
+        <div class="wa-setup-wrap">
+          <div class="wa-steps-grid">
+            <div class="wa-step-card">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="wa-step-num">1</div>
+                <span class="wa-step-icon">🔐</span>
+              </div>
+              <div>
+                <div class="wa-step-title">Inicia sesión</div>
+                <div class="wa-step-sub">Con tu cuenta de Meta&nbsp;/ Facebook</div>
+              </div>
+            </div>
+            <div class="wa-step-card">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="wa-step-num">2</div>
+                <span class="wa-step-icon">📱</span>
+              </div>
+              <div>
+                <div class="wa-step-title">Selecciona número</div>
+                <div class="wa-step-sub">Elige o agrega tu número WA Business</div>
+              </div>
+            </div>
+            <div class="wa-step-card">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div class="wa-step-num">3</div>
+                <span class="wa-step-icon">🤖</span>
+              </div>
+              <div>
+                <div class="wa-step-title">Bot activo</div>
+                <div class="wa-step-sub">El chatbot empieza a responder automáticamente</div>
+              </div>
+            </div>
+          </div>
+          <div class="wa-rec-card">
+            <div style="flex:1;min-width:200px">
+              <div class="wa-rec-badge"><i class="fa fa-star" style="font-size:9px"></i> Recomendado</div>
+              <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Conexión con Meta</div>
+              <div style="font-size:12.5px;color:var(--text-muted);line-height:1.5">
+                Inicia sesión con tu cuenta de Facebook, elige tu número de WhatsApp Business y confirma en tu celular. Toma unos 5 minutos.
+              </div>
+              <div class="wa-rec-bullets">
+                <div class="wa-rec-bullet"><i class="fa fa-check"></i> Tu mismo número — sigues usándolo en la app</div>
+                <div class="wa-rec-bullet"><i class="fa fa-check"></i> Sin capturar datos de tus chats existentes</div>
+                <div class="wa-rec-bullet"><i class="fa fa-check"></i> El agente responde solo en conversaciones nuevas</div>
+              </div>
+            </div>
+            <button onclick="launchEmbeddedSignup()" style="display:inline-flex;align-items:center;gap:8px;background:#1877f2;color:#fff;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;border-radius:10px;padding:11px 20px;cursor:pointer;transition:opacity .15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
+              Conectar con Meta
+            </button>
+          </div>
+        </div>`;
     } else {
       listEl.innerHTML = phones.map(p => `
         <div class="wa-phone-row">
