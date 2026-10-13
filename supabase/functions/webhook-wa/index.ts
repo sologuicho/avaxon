@@ -326,6 +326,11 @@ function buildBusinessContextBlock(profile: any): string {
   if (profile.address) lines.push(`Dirección: ${profile.address}`)
   if (profile.maps_url) lines.push(`Ubicación en Google Maps: ${profile.maps_url}`)
 
+  const social = profile.social || {}
+  if (social.facebook) lines.push(`Facebook: ${social.facebook}`)
+  if (social.instagram) lines.push(`Instagram: ${social.instagram}`)
+  if (social.tiktok) lines.push(`TikTok: ${social.tiktok}`)
+
   const hours = profile.hours || {}
   const hourLines = DAY_ORDER
     .filter(day => hours[day])
@@ -482,7 +487,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const { data: orgProfile } = await sb
     .from('organization_profile')
-    .select('description, phone, whatsapp, email, website, address, maps_url, hours')
+    .select('description, phone, whatsapp, email, website, address, maps_url, hours, social')
     .eq('organization_id', organization_id)
     .maybeSingle()
 

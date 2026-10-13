@@ -1198,6 +1198,13 @@
       padding: 14px 4px; margin-top: 4px; background: var(--page-bg);
       border-top: 1px solid var(--border);
     }
+    .cfg-subtab-btn {
+      padding: 7px 16px; border-radius: 9px; border: none; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; white-space: nowrap;
+      background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--border);
+      transition: all .15s;
+    }
+    .cfg-subtab-btn.active { background: var(--accent); color: #062513; border-color: var(--accent); }
     @media (max-width: 720px) {
       .cfg-general-grid { grid-template-columns: 1fr; }
       .cfg-hours-row { grid-template-columns: 70px 1fr 1fr auto; }
@@ -2845,6 +2852,8 @@
           </div>
         </div>
 
+        <div id="cfg-editing-org-banner" style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:14px">Editando: <span id="cfg-editing-org-name" style="color:var(--accent)">—</span></div>
+
         <!-- Tabs -->
         <div style="display:flex;gap:6px;margin-bottom:18px;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:5px;width:fit-content">
           <button id="cfg-tab-plantillas" onclick="switchConfigTab('plantillas')" style="padding:7px 18px;border-radius:9px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;background:var(--accent);color:#062513;transition:all .15s">Plantillas</button>
@@ -2957,8 +2966,18 @@
 
         <!-- Pane: General -->
         <div id="cfg-pane-general" style="display:none">
-          <div class="cfg-general-grid">
 
+          <!-- Sub-tabs de General -->
+          <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">
+            <button id="cfg-sub-negocio"      onclick="switchConfigGeneralSub('negocio')"      class="cfg-subtab-btn" style="flex-shrink:0">Negocio</button>
+            <button id="cfg-sub-horarios"     onclick="switchConfigGeneralSub('horarios')"     class="cfg-subtab-btn" style="flex-shrink:0">Horarios</button>
+            <button id="cfg-sub-redes"        onclick="switchConfigGeneralSub('redes')"        class="cfg-subtab-btn" style="flex-shrink:0">Redes sociales</button>
+            <button id="cfg-sub-preferencias" onclick="switchConfigGeneralSub('preferencias')" class="cfg-subtab-btn" style="flex-shrink:0">Preferencias</button>
+            <button id="cfg-sub-plan"         onclick="switchConfigGeneralSub('plan')"         class="cfg-subtab-btn" style="flex-shrink:0">Mi plan</button>
+          </div>
+
+          <!-- Sub-pane: Negocio (perfil + contacto) -->
+          <div id="cfg-subpane-negocio" class="cfg-general-grid">
             <!-- Perfil del negocio -->
             <div class="card bp" style="padding:22px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
@@ -3023,11 +3042,6 @@
                   <input id="cfg-contact-email" type="email" class="cfg-field-input" placeholder="contacto@tunegocio.com" />
                 </div>
                 <div>
-                  <label class="cfg-field-label">Correo para notificaciones</label>
-                  <input id="cfg-notification-email" type="email" class="cfg-field-input" placeholder="Por defecto, el del dueño de la cuenta" />
-                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Aquí llegan los avisos de citas nuevas, reagendadas y canceladas.</div>
-                </div>
-                <div>
                   <label class="cfg-field-label">Sitio web</label>
                   <input id="cfg-contact-website" type="url" class="cfg-field-input" placeholder="https://tunegocio.com" />
                 </div>
@@ -3041,19 +3055,27 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Horarios de atención -->
-            <div class="card bp" style="padding:22px">
+          <!-- Sub-pane: Horarios -->
+          <div id="cfg-subpane-horarios" style="display:none">
+            <div class="card bp" style="padding:22px;max-width:640px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-                <div style="width:32px;height:32px;background:rgba(245,158,11,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#f59e0b;font-size:13px"><i class="fa fa-clock"></i></div>
-                <span style="font-size:15px;font-weight:700;color:var(--text)">Horarios de atención</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="width:32px;height:32px;background:rgba(245,158,11,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#f59e0b;font-size:13px"><i class="fa fa-clock"></i></div>
+                  <span style="font-size:15px;font-weight:700;color:var(--text)">Horarios de atención</span>
+                </div>
+                <button type="button" onclick="copyMondayToAllDays()" style="font-size:12px;font-weight:600;color:var(--accent);background:none;border:1px solid var(--border);border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap">Copiar lunes a todos los días</button>
               </div>
+              <div id="cfg-hours-hint" style="display:none;font-size:12.5px;color:#92700a;margin-bottom:10px;padding:9px 11px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px">Aún no configuras tus horarios. Mientras estén vacíos, tu asistente de WhatsApp no asumirá un horario — le dirá al cliente que un asesor lo confirmará.</div>
               <div id="cfg-hours-list"></div>
             </div>
+          </div>
 
-            <!-- Redes sociales -->
-            <div class="card bp" style="padding:22px">
+          <!-- Sub-pane: Redes sociales -->
+          <div id="cfg-subpane-redes" style="display:none">
+            <div class="card bp" style="padding:22px;max-width:480px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div style="width:32px;height:32px;background:rgba(167,139,250,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#a78bfa;font-size:13px"><i class="fa fa-share-nodes"></i></div>
@@ -3074,13 +3096,15 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Zona horaria e idioma -->
-            <div class="card bp" style="padding:22px">
+          <!-- Sub-pane: Preferencias -->
+          <div id="cfg-subpane-preferencias" style="display:none">
+            <div class="card bp" style="padding:22px;max-width:480px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div style="width:32px;height:32px;background:rgba(59,130,246,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:13px"><i class="fa fa-globe"></i></div>
-                <span style="font-size:15px;font-weight:700;color:var(--text)">Zona horaria e idioma</span>
+                <span style="font-size:15px;font-weight:700;color:var(--text)">Preferencias</span>
               </div>
               <div style="display:flex;flex-direction:column;gap:14px">
                 <div>
@@ -3110,11 +3134,18 @@
                     <option value="en">English</option>
                   </select>
                 </div>
+                <div>
+                  <label class="cfg-field-label">Correo para notificaciones</label>
+                  <input id="cfg-notification-email" type="email" class="cfg-field-input" placeholder="Por defecto, el del dueño de la cuenta" />
+                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Aquí llegan los avisos de citas nuevas, reagendadas y canceladas.</div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Mi plan (solo lectura) -->
-            <div class="card bp" style="padding:22px">
+          <!-- Sub-pane: Mi plan (solo lectura) -->
+          <div id="cfg-subpane-plan" style="display:none">
+            <div class="card bp" style="padding:22px;max-width:480px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
                 <div style="width:32px;height:32px;background:rgba(34,197,94,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px"><i class="fa fa-crown"></i></div>
@@ -3125,10 +3156,9 @@
                 <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Precio</span><span id="cfg-plan-price" style="font-weight:700">—</span></div>
                 <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Conversaciones este mes</span><span id="cfg-plan-usage" style="font-weight:700">—</span></div>
                 <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-muted)">Renovación</span><span id="cfg-plan-renewal" style="font-weight:700">—</span></div>
-                <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0"><span style="color:var(--text-muted)">Modificaciones al agente</span><span id="cfg-plan-response" style="font-weight:700">—</span></div>
+                <div id="cfg-plan-response-row" style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0"><span style="color:var(--text-muted)">Modificaciones al agente</span><span id="cfg-plan-response" style="font-weight:700">—</span></div>
               </div>
             </div>
-
           </div>
 
           <div class="cfg-save-bar">
@@ -3254,6 +3284,13 @@
 <script>
 (function () {
   'use strict';
+
+  // ── Feature flags ───────────────────────────────────────────────────────
+  // Módulo "Mi agente" (solicitudes de cambios al bot vía dashboard). Oculto
+  // por ahora — poner en true para reactivarlo. No borra nada: tabla
+  // agent_change_requests, bucket de adjuntos, aviso por WhatsApp y la vista
+  // "Solicitudes de clientes" del Panel Admin siguen intactos.
+  const FEATURE_AGENT_REQUESTS = false;
 
   history.scrollRestoration = 'manual';
   window.scrollTo(0, 0);
@@ -3437,6 +3474,7 @@
   };
 
   function switchView(name) {
+    if (name === 'bot' && !FEATURE_AGENT_REQUESTS) { switchView('inicio'); return; }
     document.querySelectorAll('.nav-item').forEach(el => {
       el.classList.toggle('active', el.dataset.view === name);
     });
@@ -5282,6 +5320,10 @@
       });
     }
 
+    if (!FEATURE_AGENT_REQUESTS) {
+      const navBot = $('nav-bot'); if (navBot) navBot.style.display = 'none';
+    }
+
     if (role === 'reviewer') {
       state.isReviewer = true;
       // Ocultar nav restringido
@@ -5450,7 +5492,7 @@
     { target: 'view-leads',          nav: 'leads',          title: 'Contactos',  body: 'Gestiona tu base de contactos, etiquétalos y filtra por estado.' },
     { target: 'view-bot',            nav: 'bot',            title: 'Mi agente',  body: '¿Quieres cambiar el menú, los precios o cómo responde tu agente? Mándanos la solicitud aquí — está incluido en tu plan.' },
     { target: 'view-conexiones',     nav: 'conexiones',     title: 'Conexiones', body: 'Conecta Google Calendar, Sheets, Stripe y más integraciones desde aquí.' },
-  ];
+  ].filter(step => FEATURE_AGENT_REQUESTS || step.nav !== 'bot');
   let tourStep = 0;
 
   function startTour() {
@@ -7403,10 +7445,26 @@
       if (pane) pane.style.display = t === tab ? 'block' : 'none'
     })
     if (tab === 'plantillas') loadTemplates()
-    if (tab === 'general')    loadOrgConfig()
+    if (tab === 'general')    { loadOrgConfig(); switchConfigGeneralSub('negocio') }
   }
 
+  const CFG_GENERAL_SUBS = ['negocio', 'horarios', 'redes', 'preferencias', 'plan'];
+  function switchConfigGeneralSub(sub) {
+    CFG_GENERAL_SUBS.forEach(s => {
+      const btn  = $('cfg-sub-' + s);
+      const pane = $('cfg-subpane-' + s);
+      if (btn)  btn.classList.toggle('active', s === sub);
+      if (pane) pane.style.display = s === sub ? (s === 'negocio' ? 'grid' : 'block') : 'none';
+    });
+  }
+  window.switchConfigGeneralSub = switchConfigGeneralSub;
+
   async function loadConfig() {
+    const orgId = getActiveOrgId();
+    if (orgId && $('cfg-editing-org-name')) {
+      const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle();
+      $('cfg-editing-org-name').textContent = org?.name || '—';
+    }
     switchConfigTab('plantillas')
   }
 
@@ -7576,16 +7634,22 @@
     ['fri', 'Viernes'], ['sat', 'Sábado'], ['sun', 'Domingo'],
   ];
 
+  // Un día sin entrada en `hours` (nunca se guardó) se renderiza vacío, no con
+  // 09:00–18:00 — ese default solía guardarse como si fuera un horario real
+  // (así quedó contaminado el de Avaxon) y el bot lo tomaba como verdadero.
   function renderHoursEditor(hours) {
     const el = $('cfg-hours-list');
     if (!el) return;
+    const hint = $('cfg-hours-hint');
+    const hasAnyConfigured = !!(hours && Object.keys(hours).length);
+    if (hint) hint.style.display = hasAnyConfigured ? 'none' : 'block';
     el.innerHTML = CFG_HOURS_DAYS.map(([key, label]) => {
-      const h = hours?.[key] || {};
-      const closed = !!h.closed;
+      const h = hours?.[key];
+      const closed = !!h?.closed;
       return `<div class="cfg-hours-row">
         <span style="font-size:13px;color:var(--text)">${label}</span>
-        <input type="time" id="cfg-hours-${key}-open" value="${h.open || '09:00'}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
-        <input type="time" id="cfg-hours-${key}-close" value="${h.close || '18:00'}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
+        <input type="time" id="cfg-hours-${key}-open" value="${h?.open || ''}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
+        <input type="time" id="cfg-hours-${key}-close" value="${h?.close || ''}" ${closed ? 'disabled' : ''} class="cfg-field-input" style="padding:7px 9px;font-size:12.5px" />
         <label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted);white-space:nowrap;cursor:pointer">
           <input type="checkbox" id="cfg-hours-${key}-closed" ${closed ? 'checked' : ''} onchange="toggleCfgHoursClosed('${key}')" /> Cerrado
         </label>
@@ -7602,14 +7666,36 @@
   }
   window.toggleCfgHoursClosed = toggleCfgHoursClosed;
 
+  function copyMondayToAllDays() {
+    const open   = $('cfg-hours-mon-open')?.value || '';
+    const close  = $('cfg-hours-mon-close')?.value || '';
+    const closed = !!$('cfg-hours-mon-closed')?.checked;
+    CFG_HOURS_DAYS.forEach(([key]) => {
+      if (key === 'mon') return;
+      const openEl = $('cfg-hours-' + key + '-open');
+      const closeEl = $('cfg-hours-' + key + '-close');
+      const closedEl = $('cfg-hours-' + key + '-closed');
+      if (openEl) openEl.value = open;
+      if (closeEl) closeEl.value = close;
+      if (closedEl) closedEl.checked = closed;
+      toggleCfgHoursClosed(key);
+    });
+    const hint = $('cfg-hours-hint'); if (hint) hint.style.display = 'none';
+    showToast('Horario de lunes copiado a todos los días — no olvides guardar');
+  }
+  window.copyMondayToAllDays = copyMondayToAllDays;
+
+  // Un día sin "Cerrado" marcado y sin ambas horas llenas se deja fuera del
+  // objeto guardado — así no se graba un 09:00–18:00 inventado que el bot
+  // luego tomaría como horario real.
   function collectHoursFromForm() {
     const hours = {};
     CFG_HOURS_DAYS.forEach(([key]) => {
-      hours[key] = {
-        open: $('cfg-hours-' + key + '-open')?.value || '09:00',
-        close: $('cfg-hours-' + key + '-close')?.value || '18:00',
-        closed: !!$('cfg-hours-' + key + '-closed')?.checked,
-      };
+      const open   = $('cfg-hours-' + key + '-open')?.value || '';
+      const close  = $('cfg-hours-' + key + '-close')?.value || '';
+      const closed = !!$('cfg-hours-' + key + '-closed')?.checked;
+      if (closed) hours[key] = { open: '', close: '', closed: true };
+      else if (open && close) hours[key] = { open, close, closed: false };
     });
     return hours;
   }
@@ -7647,6 +7733,7 @@
       if ($('cfg-org-industry')) $('cfg-org-industry').value = org.industry ?? '';
       if ($('cfg-org-timezone')) $('cfg-org-timezone').value = org.timezone || APPOINTMENT_TIMEZONE_FALLBACK;
     }
+    if ($('cfg-editing-org-name')) $('cfg-editing-org-name').textContent = org?.name || '—';
 
     const { data: profile } = await sb.from('organization_profile').select('*').eq('organization_id', orgId).maybeSingle();
     if ($('cfg-org-description')) $('cfg-org-description').value = profile?.description || '';
@@ -7672,6 +7759,8 @@
     if ($('cfg-plan-name'))  $('cfg-plan-name').textContent  = plan?.name || '—';
     if ($('cfg-plan-price')) $('cfg-plan-price').textContent = plan?.price_monthly ? `$${Number(plan.price_monthly).toLocaleString('es-MX')}/mes` : '—';
     if ($('cfg-plan-response')) $('cfg-plan-response').textContent = PLAN_RESPONSE_TIMES[org?.plan_id] || '—';
+    const planResponseRow = $('cfg-plan-response-row');
+    if (planResponseRow) planResponseRow.style.display = FEATURE_AGENT_REQUESTS ? 'flex' : 'none';
     if ($('cfg-plan-renewal'))  $('cfg-plan-renewal').textContent  = '—'; // sin sistema de suscripción/facturación activo aún
 
     const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
