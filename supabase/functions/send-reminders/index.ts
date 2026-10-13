@@ -9,7 +9,19 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Para recordatorios de citas (appointment_id != null) que fallen por la
 // ventana de 24h (error 131026), intenta reenviar con la plantilla
 // `recordatorio_cita` si está registrada en la org. Si no existe la plantilla,
-// marca el reminder como enviado con error para no reintentar indefinidamente.
+// se marca failed = true (sent también en true, para no reintentar
+// indefinidamente, pero NUNCA se confunde con un envío exitoso).
+//
+// Nada se manda entre las 22:00 y las 08:00 hora de la org — el reminder se
+// deja sin marcar (sent sigue false) para que la próxima corrida (cada
+// minuto) lo reintente ya dentro de horario.
+
+function isQuietHours(date: Date, timeZone: string): boolean {
+  const hour = Number(
+    new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', hourCycle: 'h23' }).format(date),
+  )
+  return hour >= 22 || hour < 8
+}
 
 Deno.serve(async (_req: Request) => {
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
@@ -35,15 +47,19 @@ Deno.serve(async (_req: Request) => {
   }
 
   let sent = 0
+  let skippedQuietHours = 0
 
   for (const reminder of pending) {
     const { data: pn } = await sb
       .from('phone_numbers')
-      .select('whatsapp_accounts(access_token)')
+      .select('whatsapp_accounts(access_token), organizations(timezone)')
       .eq('phone_number_id', reminder.phone_number_id)
       .maybeSingle()
 
     const token = (pn?.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
+    const timezone = (pn?.organizations as any)?.timezone || 'America/Matamoros'
+
+    if (isQuietHours(new Date(), timezone)) { skippedQuietHours++; continue }
 
     const waRes = await fetch(
       `https://graph.facebook.com/v20.0/${reminder.phone_number_id}/messages`,
@@ -77,8 +93,9 @@ Deno.serve(async (_req: Request) => {
         await sb.from('reminders').update({ sent: true }).eq('id', reminder.id)
         sent++
       } else {
-        // No hay template disponible — marcar para no reintentar
-        await sb.from('reminders').update({ sent: true }).eq('id', reminder.id)
+        // No hay template disponible — se deja de reintentar, pero queda
+        // marcado como fallido, no como enviado (nunca se entregó).
+        await sb.from('reminders').update({ sent: true, failed: true }).eq('id', reminder.id)
         console.warn(`Recordatorio ${reminder.id} no enviado (ventana 24h cerrada, sin template).`)
       }
     } else {
@@ -86,7 +103,7 @@ Deno.serve(async (_req: Request) => {
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, sent, total: pending.length }), {
+  return new Response(JSON.stringify({ ok: true, sent, skippedQuietHours, total: pending.length }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   })
