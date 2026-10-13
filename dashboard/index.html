@@ -2514,87 +2514,65 @@
                 <!-- Info del número — generado por renderConexiones -->
                 <div id="wa-numbers-list"></div>
 
-                <!-- Toggle: Recibir mensajes -->
-                <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:var(--text)">Recibir mensajes</div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Pausa temporalmente sin perder la configuración</div>
-                  </div>
-                  <label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0">
-                    <input type="checkbox" id="wa-active-toggle" checked onchange="waToggleActive(this.checked)" style="opacity:0;width:0;height:0;position:absolute">
-                    <span id="wa-active-slider" style="position:absolute;cursor:pointer;inset:0;background:#10b981;border-radius:24px;transition:.3s">
-                      <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(18px)"></span>
-                    </span>
-                  </label>
-                </div>
-
-                <!-- Probar conexión -->
-                <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:var(--text)">Probar conexión</div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Envía un mensaje de prueba a tu propio número</div>
-                  </div>
-                  <button onclick="waSendTestMessage()" style="background:#25D366;border:none;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;border-radius:9px;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s;flex-shrink:0" onmouseover="this.style.background='#1da854'" onmouseout="this.style.background='#25D366'">
-                    <i class="fab fa-whatsapp" style="font-size:13px"></i> Probar
-                  </button>
-                </div>
-
-                <!-- Toggle: Powered by Avaxon -->
-                <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-                  <div>
-                    <div style="font-size:13px;font-weight:600;color:var(--text)">Mostrar "Enviado con Avaxon"</div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Pie de página discreto en mensajes automáticos del chatbot</div>
-                  </div>
-                  <label style="position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0">
-                    <input type="checkbox" id="wa-poweredby-toggle" checked onchange="waTogglePoweredBy(this.checked)" style="opacity:0;width:0;height:0;position:absolute">
-                    <span id="wa-poweredby-slider" style="position:absolute;cursor:pointer;inset:0;background:#10b981;border-radius:24px;transition:.3s">
-                      <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;transform:translateX(18px)"></span>
-                    </span>
-                  </label>
-                </div>
-
-                <!-- Perfil de negocio (collapsible) -->
+                <!-- Filas de configuración -->
                 <div style="border-top:1px solid var(--border)">
-                  <button onclick="waToggleProfileCard()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:none;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'">
-                    <div style="display:flex;align-items:center;gap:12px">
-                      <div style="width:34px;height:34px;background:color-mix(in srgb,#3b82f6 10%,var(--card-bg));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                        <i class="fa fa-building" style="color:#3b82f6;font-size:13px"></i>
-                      </div>
-                      <div style="text-align:left">
-                        <div style="font-size:13px;font-weight:600;color:var(--text)">Perfil de Negocio</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:1px">Información visible para tus clientes en WhatsApp</div>
-                      </div>
+                  <!-- Toggle: Recibir mensajes -->
+                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border)">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                      <span style="font-size:14px;font-weight:600;color:var(--text)">Recibir mensajes</span>
+                      <span style="font-size:13px;color:var(--text-muted)">Pausa temporalmente sin perder la configuración</span>
                     </div>
-                    <i id="wa-profile-chevron" class="fa fa-chevron-down" style="color:var(--text-muted);font-size:11px;transition:transform .2s;flex-shrink:0"></i>
+                    <button id="wa-active-btn" onclick="waToggleActive()" aria-label="Recibir mensajes" style="width:40px;height:24px;flex:none;border-radius:999px;border:none;padding:2px;display:flex;cursor:pointer;transition:background .15s;background:#16A34A;justify-content:flex-end"><span style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></button>
+                  </div>
+                  <!-- Toggle: Firma Avaxon -->
+                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border)">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                      <span style="font-size:14px;font-weight:600;color:var(--text)">Mostrar "Enviado con Avaxon"</span>
+                      <span style="font-size:13px;color:var(--text-muted)">Pie de página discreto en mensajes automáticos</span>
+                    </div>
+                    <button id="wa-firma-btn" onclick="waTogglePoweredBy()" aria-label="Firma Avaxon" style="width:40px;height:24px;flex:none;border-radius:999px;border:none;padding:2px;display:flex;cursor:pointer;transition:background .15s;background:#16A34A;justify-content:flex-end"><span style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></button>
+                  </div>
+                  <!-- Perfil de negocio (collapsible) -->
+                  <button onclick="waToggleProfileCard()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 22px;background:none;border:none;border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;text-align:left;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'">
+                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
+                      <span style="font-size:14px;font-weight:600;color:var(--text)">Perfil de negocio</span>
+                      <span style="font-size:13px;color:var(--text-muted)">Información visible para tus clientes en WhatsApp</span>
+                    </div>
+                    <i id="wa-profile-chevron" class="fa fa-chevron-down" style="color:var(--text-muted);font-size:14px;transition:transform .2s;flex-shrink:0"></i>
                   </button>
-                  <div id="wa-profile-content" style="display:none;border-top:1px solid var(--border);padding:16px 20px">
-                    <div style="text-align:center;padding:20px 0;color:var(--text-muted);font-size:13px">
-                      <i class="fa fa-wrench" style="font-size:20px;display:block;margin-bottom:8px;opacity:.4"></i>
-                      Próximamente — edición de perfil desde el dashboard
+                  <div id="wa-profile-content" style="display:none;border-bottom:1px solid var(--border);padding:16px 22px;background:var(--page-bg)">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px 24px">
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Nombre</span>
+                        <span style="font-size:13px;color:var(--text)">Avaxon</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Categoría</span>
+                        <span style="font-size:13px;color:var(--text)">Software y tecnología</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Horario</span>
+                        <span style="font-size:13px;color:var(--text)">Lun–Vie · 9:00–19:00</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Sitio web</span>
+                        <span style="font-size:13px;color:var(--text)">avaxon.lat</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Badge: Token protegido -->
-                <div style="margin:0 20px 16px;background:color-mix(in srgb,#10b981 7%,var(--card-bg));border:1px solid color-mix(in srgb,#10b981 20%,var(--border));border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px">
-                  <div style="width:32px;height:32px;background:color-mix(in srgb,#10b981 15%,var(--card-bg));border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <i class="fa fa-shield-halved" style="color:#10b981;font-size:13px"></i>
-                  </div>
-                  <div>
-                    <div style="font-size:12.5px;font-weight:600;color:var(--text)">Token protegido</div>
-                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Tu access token está encriptado con AES-256. Nadie puede verlo, ni siquiera nosotros.</div>
-                  </div>
-                </div>
-
-                <!-- Footer: Agregar número + Desconectar -->
-                <div style="padding:12px 20px 16px;border-top:1px solid var(--border)">
-                  <button onclick="launchEmbeddedSignup()" style="width:100%;padding:9px;border:1px solid var(--border);background:var(--card-bg);border-radius:10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s;margin-bottom:10px" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
+                <!-- Footer -->
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--page-bg);flex-wrap:wrap">
+                  <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex:1;min-width:200px">
+                    <i class="fa fa-shield-halved" style="color:#16A34A;font-size:15px"></i>Token cifrado con AES-256. Nadie puede verlo, ni siquiera nosotros.
+                  </span>
+                  <button onclick="launchEmbeddedSignup()" style="display:flex;align-items:center;gap:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
                     <i class="fa fa-plus" style="font-size:10px"></i> Agregar número
                   </button>
-                  <button onclick="waDisconnectCurrent()" style="width:100%;padding:7px;background:none;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;transition:all .15s" onmouseover="this.style.color='var(--red)';this.style.background='color-mix(in srgb,var(--red) 6%,transparent)'" onmouseout="this.style.color='var(--text-muted)';this.style.background='none'">
-                    <i class="fa fa-unlink" style="font-size:10px"></i> Desconectar WhatsApp
+                  <button onclick="waDisconnectCurrent()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--red);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;padding:6px 4px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                    <i class="fa fa-unlink" style="font-size:11px"></i> Desconectar
                   </button>
-                  <div style="text-align:center;margin-top:6px;font-size:10.5px;color:var(--text-muted)">Esto eliminará el acceso y deberás configurar de nuevo</div>
                 </div>
               </div>
             </div>
