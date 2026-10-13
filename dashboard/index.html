@@ -798,6 +798,8 @@
     .cal-apt-block:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
     .cal-apt-block.status-confirmed { background: rgba(16,185,129,.13); border-left-color: #10b981; }
     .cal-apt-block.status-cancelled { background: rgba(148,163,184,.14); border-left-color: #94a3b8; opacity: .6; text-decoration: line-through; }
+    .cal-apt-block.status-completed { background: rgba(148,163,184,.14); border-left-color: #94a3b8; opacity: .75; }
+    .cal-apt-block.status-no_show   { background: rgba(148,163,184,.14); border-left-color: #94a3b8; opacity: .6; text-decoration: line-through; }
     .cal-apt-block-title { font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
     .cal-apt-block-contact { font-size: 10.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
     .cal-apt-block-time { color: var(--text-muted); font-size: 10px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
@@ -809,6 +811,8 @@
     .apt-status-pill.pending   { color: #f59e0b; background: rgba(245,158,11,.12); }
     .apt-status-pill.confirmed { color: #10b981; background: rgba(16,185,129,.12); }
     .apt-status-pill.cancelled { color: #64748b; background: rgba(100,116,139,.12); }
+    .apt-status-pill.completed { color: #64748b; background: rgba(100,116,139,.12); }
+    .apt-status-pill.no_show   { color: #64748b; background: rgba(100,116,139,.12); }
 
     /* Appointment cards mejoradas */
     .apt-card {
@@ -2280,6 +2284,8 @@
               <select id="apt-f-status" class="cfg-field-select">
                 <option value="pending">Pendiente</option>
                 <option value="confirmed">Confirmada</option>
+                <option value="completed">Completada</option>
+                <option value="no_show">No asistió</option>
               </select>
             </div>
             <div>
@@ -2307,7 +2313,8 @@
             <button onclick="editAptFromDetail()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-pen" style="font-size:11px;margin-right:5px"></i>Editar</button>
             <button onclick="confirmAptFromDetail()" id="apt-detail-confirm-btn" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid #10b981;background:rgba(16,185,129,.08);color:#10b981;font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-check" style="font-size:11px;margin-right:5px"></i>Marcar confirmada</button>
             <button onclick="rescheduleAptFromDetail()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-clock-rotate-left" style="font-size:11px;margin-right:5px"></i>Reagendar</button>
-            <button onclick="openAptCancelConfirm()" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--red);background:transparent;color:var(--red);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-ban" style="font-size:11px;margin-right:5px"></i>Cancelar cita</button>
+            <button onclick="openAptCancelConfirm()" id="apt-detail-cancel-btn" style="flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--red);background:transparent;color:var(--red);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-ban" style="font-size:11px;margin-right:5px"></i>Cancelar cita</button>
+            <button onclick="markAptNoShow()" id="apt-detail-noshow-btn" style="display:none;flex:1;min-width:120px;padding:9px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-weight:600;cursor:pointer;font-size:13px"><i class="fa fa-user-xmark" style="font-size:11px;margin-right:5px"></i>Marcar como no asistió</button>
           </div>
         </div>
       </div>
@@ -8695,7 +8702,7 @@
   const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   const APT_DURATIONS = [15, 30, 45, 60, 90];
-  const APT_STATUS_LABELS = { pending: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada' };
+  const APT_STATUS_LABELS = { pending: 'Pendiente', confirmed: 'Confirmada', cancelled: 'Cancelada', completed: 'Completada', no_show: 'No asistió' };
   const CAL_DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
   const GRID_START_HOUR = 7, GRID_END_HOUR = 21, HOUR_PX = 48;
 
@@ -9168,7 +9175,7 @@
         $('apt-f-title').value = a.title || '';
         $('apt-f-service').value = a.service || '';
         $('apt-f-notes').value = a.notes || '';
-        $('apt-f-status').value = a.status === 'confirmed' ? 'confirmed' : 'pending';
+        $('apt-f-status').value = ['confirmed','completed','no_show'].includes(a.status) ? a.status : 'pending';
         $('apt-f-contact-search').value = a.contact_name || '';
         $('apt-f-contact-id').value = a.contact_id || '';
         $('apt-f-date').value = `${parts.year}-${String(parts.month+1).padStart(2,'0')}-${String(parts.day).padStart(2,'0')}`;
@@ -9262,6 +9269,8 @@
     const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
     const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
     const st = a.status || 'pending';
+    const endMs = dt.getTime() + (a.duration_minutes || 60) * 60000;
+    const isPast = endMs < Date.now();
 
     $('apt-detail-body').innerHTML = `
       <div class="apt-detail-row"><span style="color:var(--text-muted)">Estado</span><span class="apt-status-pill ${st}">${APT_STATUS_LABELS[st]}</span></div>
@@ -9272,6 +9281,7 @@
       ${a.notes   ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Notas</span><span>${a.notes}</span></div>` : ''}
     `;
     $('apt-detail-confirm-btn').style.display = st === 'confirmed' ? 'none' : '';
+    $('apt-detail-noshow-btn').style.display = (isPast && st !== 'cancelled' && st !== 'no_show') ? '' : 'none';
     $('apt-detail-modal').style.display = 'flex';
   }
   window.openAptDetailModal = openAptDetailModal;
@@ -9294,6 +9304,17 @@
     await loadCalendarData();
   }
   window.confirmAptFromDetail = confirmAptFromDetail;
+
+  async function markAptNoShow() {
+    const id = calView.detailId;
+    const orgId = getActiveOrgId();
+    await sb.from('appointments').update({ status: 'no_show', updated_at: new Date().toISOString() }).eq('id', id);
+    await syncAppointmentWithGoogle(orgId, id, 'update');
+    closeAptDetailModal();
+    showToast('Cita marcada como no asistió');
+    await loadCalendarData();
+  }
+  window.markAptNoShow = markAptNoShow;
 
   // ── Cancelar cita (con confirmación + deshacer) ──────────────────────────
   let aptUndoTimer = null;
