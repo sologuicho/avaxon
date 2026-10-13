@@ -112,12 +112,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Link caducó solo a las 24h (sin pagar, sin cancelar a mano) ────────
+    // Son cargos directos de Stripe Connect: el evento llega con event.account
+    // = la cuenta conectada donde vive el Checkout Session (no la plataforma).
+    // Se filtra también por stripe_account_id para no tocar por error un
+    // payment de otra cuenta conectada si alguna vez se repitiera un
+    // session_id (los ids de Stripe son únicos, pero es una guarda barata).
     if (event.type === 'checkout.session.expired') {
       const session = event.data.object
-      await sb.from('payments')
+      const connectedAccountId = event.account as string | undefined
+      let q = sb.from('payments')
         .update({ status: 'expired', updated_at: new Date().toISOString() })
         .eq('session_id', session.id)
         .eq('status', 'pending')
+      if (connectedAccountId) q = q.eq('stripe_account_id', connectedAccountId)
+      await q
     }
 
     // ── Cuenta actualizada (v1) ────────────────────────────────────────────

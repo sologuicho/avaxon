@@ -62,17 +62,27 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Este cobro no tiene un Checkout Session de Stripe asociado' }, 422)
   }
 
+  let finalStatus = 'cancelled'
+
   try {
     await stripeFetch(`/checkout/sessions/${payment.session_id}/expire`, STRIPE_SECRET_KEY, {
       stripeAccount: payment.stripe_account_id,
     })
   } catch (e) {
-    console.error('Error expirando Checkout Session:', e)
-    return json({ error: e instanceof Error ? e.message : 'Error de Stripe' }, 502)
+    const msg = e instanceof Error ? e.message : String(e)
+
+    if (msg.includes('status of `expired`')) {
+      finalStatus = 'expired'   // ya estaba expirada en Stripe, solo actualizamos la BD
+    } else if (msg.includes('status of `complete`')) {
+      return json({ error: 'Este cobro ya fue pagado, no se puede cancelar' }, 409)
+    } else {
+      console.error('Error expirando Checkout Session:', e)
+      return json({ error: msg || 'Error de Stripe' }, 502)
+    }
   }
 
   const { error: updErr } = await adminClient.from('payments').update({
-    status: 'cancelled',
+    status: finalStatus,
     updated_at: new Date().toISOString(),
   }).eq('id', paymentId)
 
