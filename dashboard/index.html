@@ -4119,6 +4119,7 @@
   function renderConexiones(phoneData) {
     const phones = phoneData || [];
     const phone  = phones[0];
+    window._lastPhoneData = phones;
 
     const listEl        = $('wa-numbers-list');
     const setupView     = $('wa-setup-view');
