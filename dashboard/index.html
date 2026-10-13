@@ -4989,6 +4989,45 @@
   }
   window.disconnectPhoneNumber = disconnectPhoneNumber;
 
+  function waToggleActive(checked) {
+    const slider = $('wa-active-slider');
+    if (slider) slider.style.background = checked ? '#10b981' : 'var(--border)';
+    showToast(checked ? 'Mensajes activados' : 'Mensajes pausados temporalmente');
+  }
+  window.waToggleActive = waToggleActive;
+
+  function waTogglePoweredBy(checked) {
+    const slider = $('wa-poweredby-slider');
+    if (slider) slider.style.background = checked ? '#10b981' : 'var(--border)';
+    showToast(checked ? '"Enviado con Avaxon" activado' : '"Enviado con Avaxon" desactivado');
+  }
+  window.waTogglePoweredBy = waTogglePoweredBy;
+
+  function waSendTestMessage() {
+    showToast('Función próximamente disponible', 3000);
+  }
+  window.waSendTestMessage = waSendTestMessage;
+
+  function waToggleProfileCard() {
+    const content = $('wa-profile-content');
+    const chevron = $('wa-profile-chevron');
+    if (!content) return;
+    const isOpen = content.style.display !== 'none';
+    content.style.display = isOpen ? 'none' : '';
+    if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  }
+  window.waToggleProfileCard = waToggleProfileCard;
+
+  function waDisconnectCurrent() {
+    const phones = (window._lastPhoneData || []);
+    if (phones.length === 1) {
+      disconnectPhoneNumber(phones[0].id);
+    } else {
+      showToast('Usa el botón "Desconectar" junto al número que quieres eliminar', 4000);
+    }
+  }
+  window.waDisconnectCurrent = waDisconnectCurrent;
+
   // ── Modal de confirmación genérico (reemplaza confirm()) ───────────────────
   // showConfirmModal({ title, text, confirmLabel, cancelLabel, danger, onConfirm })
   // onConfirm puede ser async — mientras corre, el botón muestra un spinner y
