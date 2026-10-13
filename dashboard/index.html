@@ -2511,17 +2511,8 @@
 
               <!-- ── ESTADO: Con número conectado ── -->
               <div id="wa-connected-view" style="display:none">
-                <!-- ✅ Header éxito -->
-                <div style="text-align:center;padding:24px 20px 18px;border-bottom:1px solid var(--border)">
-                  <div style="width:60px;height:60px;background:color-mix(in srgb,#10b981 12%,var(--card-bg));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
-                    <i class="fa fa-check" style="color:#10b981;font-size:22px"></i>
-                  </div>
-                  <div style="font-size:18px;font-weight:800;color:var(--text)">¡WhatsApp Conectado!</div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Tu número está configurado y seguro</div>
-                </div>
-
-                <!-- Números conectados -->
-                <div id="wa-numbers-list" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px"></div>
+                <!-- Info del número — generado por renderConexiones -->
+                <div id="wa-numbers-list"></div>
 
                 <!-- Toggle: Recibir mensajes -->
                 <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
