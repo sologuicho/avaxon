@@ -6,7 +6,24 @@
   <title>Avaxon — Agente de WhatsApp con IA para tu negocio</title>
   <meta name="description" content="Avaxon construye agentes de IA para WhatsApp que atienden, califican leads y agendan citas — 24/7. Para PyMEs mexicanas.">
   <meta name="facebook-domain-verification" content="0wm1x23dm03hgie421pcyec24n0281" />
+  <link rel="canonical" href="https://avaxon.lat/">
   <link rel="icon" type="image/jpeg" href="avaxon_favicon.jpeg">
+
+  <!-- Open Graph / WhatsApp, Facebook, LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://avaxon.lat/">
+  <meta property="og:title" content="Avaxon — Agente de WhatsApp con IA para tu negocio">
+  <meta property="og:description" content="Avaxon construye agentes de IA para WhatsApp que atienden, califican leads y agendan citas — 24/7. Para PyMEs mexicanas.">
+  <meta property="og:image" content="https://avaxon.lat/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="es_MX">
+
+  <!-- Twitter/X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Avaxon — Agente de WhatsApp con IA para tu negocio">
+  <meta name="twitter:description" content="Avaxon construye agentes de IA para WhatsApp que atienden, califican leads y agendan citas — 24/7. Para PyMEs mexicanas.">
+  <meta name="twitter:image" content="https://avaxon.lat/og-image.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
@@ -58,13 +75,13 @@
     /* Plan cards */
     .plan-card { background: #fff; border: 1px solid #e2e7ef; border-radius: 20px; padding: 28px 24px 30px; display: flex; flex-direction: column; transition: transform .22s ease, box-shadow .22s ease; }
     .plan-card:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(37,211,102,.3), 0 20px 40px rgba(13,17,23,.1); }
-    .plan-cta { margin-top: 26px; padding: 14px; border-radius: 12px; text-align: center; background: #0d1117; color: #fff; font-weight: 600; font-size: 15.5px; transition: background .18s; display: block; }
+    .plan-cta { margin-top: auto; padding: 14px; border-radius: 12px; text-align: center; background: #0d1117; color: #fff; font-weight: 600; font-size: 15.5px; transition: background .18s; display: block; }
     .plan-cta:hover { background: #2b3445; color: #fff; }
     .plan-featured { position: relative; background: linear-gradient(170deg, #101a33, #0a0e17); border: 1px solid rgba(37,211,102,.4); border-radius: 20px; padding: 32px 24px 30px; display: flex; flex-direction: column; box-shadow: 0 26px 60px rgba(10,14,23,.35); transition: transform .22s ease; }
     .plan-featured:hover { transform: translateY(-6px); }
-    .plan-cta-featured { margin-top: 26px; padding: 14px; border-radius: 12px; text-align: center; background: #25D366; color: #062513; font-weight: 700; font-size: 15.5px; box-shadow: 0 12px 28px rgba(37,211,102,.3); transition: background .18s; display: block; }
+    .plan-cta-featured { margin-top: auto; padding: 14px; border-radius: 12px; text-align: center; background: #25D366; color: #062513; font-weight: 700; font-size: 15.5px; box-shadow: 0 12px 28px rgba(37,211,102,.3); transition: background .18s; display: block; }
     .plan-cta-featured:hover { background: #2ef175; color: #062513; }
-    .plan-cta-outline { margin-top: 26px; padding: 14px; border-radius: 12px; text-align: center; border: 1px solid #0d1117; color: #0d1117; font-weight: 600; font-size: 15.5px; transition: background .18s, color .18s; display: block; }
+    .plan-cta-outline { margin-top: auto; padding: 14px; border-radius: 12px; text-align: center; border: 1px solid #0d1117; color: #0d1117; font-weight: 600; font-size: 15.5px; transition: background .18s, color .18s; display: block; }
     .plan-cta-outline:hover { background: #0d1117; color: #fff; }
     .plan-row { display: flex; align-items: flex-start; gap: 8px; font-size: 14.5px; }
     .plan-row-check { color: #25D366; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
@@ -80,6 +97,9 @@
 
     .input-field { padding: 14px 15px; border-radius: 12px; background: rgba(9,14,26,.7); border: 1px solid rgba(255,255,255,.16); color: #fff; font-size: 16px; min-height: 50px; width: 100%; transition: border-color .18s, box-shadow .18s; outline: none; }
     .input-field:focus { border-color: rgba(37,211,102,.5); box-shadow: 0 0 0 3px rgba(37,211,102,.12); }
+    .input-field.has-error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.14); }
+    .field-error { display: none; font-size: 12px; color: #f87171; }
+    .field-error.show { display: block; }
     .input-field::placeholder { color: rgba(255,255,255,.4); }
 
     .nav-toggle { display: none; width: 46px; height: 46px; flex-direction: column; justify-content: center; gap: 5px; padding: 0 11px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; cursor: pointer; transition: background .15s; }
@@ -105,6 +125,9 @@
       .nav-toggle { display: flex; }
       .bento-grid { grid-template-columns: 1fr; }
       .bento-wide { grid-column: span 1; }
+      /* En una columna, el formulario va antes que el chat de ejemplo —
+         es la acción que queremos que hagan primero. */
+      .contact-form-col { order: -1; }
     }
     @media (max-width: 1100px) {
       .industry-grid { grid-template-columns: repeat(3, 1fr) !important; }
@@ -198,10 +221,10 @@
       <!-- Phone mockup — video -->
       <div style="flex: 1 1 380px; min-width: 0; display: flex; justify-content: center;">
         <div style="position: relative; width: 100%; max-width: 600px;">
-          <video autoplay muted loop playsinline
-            style="width: 100%; display: block; position: relative; z-index: 1; animation: float 7s ease-in-out infinite; mix-blend-mode: screen;">
+          <video autoplay muted loop playsinline preload="auto" poster="iphone-mockup-poster.webp"
+            style="width: 100%; display: block; position: relative; z-index: 1; animation: float 7s ease-in-out infinite; mix-blend-mode: screen; background: transparent;">
             <source src="iphone-mockup.webm" type="video/webm">
-            <source src="iphone-mockup.mov" type="video/quicktime">
+            <source src="iphone-mockup.mp4" type="video/mp4">
           </video>
         </div>
       </div>
@@ -254,7 +277,7 @@
 
       <!-- Dashboard image -->
       <div data-reveal style="position: relative; text-align: center;">
-        <img src="dashboard-avaxon.png" alt="Dashboard de citas Avaxon" class="dashboard-img" style="display: inline-block; filter: drop-shadow(0 40px 80px rgba(0,0,0,.6));">
+        <img src="dashboard-avaxon.webp" alt="Dashboard de citas Avaxon" class="dashboard-img" width="1600" height="1000" loading="lazy" style="display: inline-block; filter: drop-shadow(0 40px 80px rgba(0,0,0,.6));">
       </div>
 
     </div>
@@ -266,7 +289,7 @@
       <div data-reveal style="max-width: 62ch; margin-bottom: 50px;">
         <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #3f6fd8; margin-bottom: 14px;">Qué hace el agente</div>
         <h2 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px,3.8vw,46px); font-weight: 700; letter-spacing: -.025em; line-height: 1.08; margin: 0 0 16px; color: #0d1117;">Todo lo que hace tu agente, en un solo lugar.</h2>
-        <p style="font-size: 17px; line-height: 1.6; color: #4a5568; margin: 0;">Once funciones que trabajan juntas para que no se te vaya ningún cliente.</p>
+        <p style="font-size: 17px; line-height: 1.6; color: #4a5568; margin: 0;">Ocho funciones que trabajan juntas para que no se te vaya ningún cliente.</p>
       </div>
 
       <div class="bento-grid">
@@ -381,12 +404,12 @@
         <p style="font-size: 17px; line-height: 1.6; color: #b9c3d4; margin: 0;">Sin cambiar tu stack. Sin complicaciones.</p>
       </div>
 
-      <div class="integ-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px;">
+      <div class="integ-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: stretch;">
 
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(37,211,102,.15); border: 1px solid rgba(37,211,102,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #25D366; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">WhatsApp Business API</span>
           </div>
@@ -396,7 +419,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(66,133,244,.15); border: 1px solid rgba(66,133,244,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #4285F4; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#4285F4"><path d="M18.316 5.684H24v12.632h-5.684V5.684zM5.684 24h12.632v-5.684H5.684V24zM18.316 5.684V0H1.895A1.894 1.894 0 0 0 0 1.895v16.421h5.684V5.684h12.632zm-7.207 6.25v-.065c.272-.144.5-.349.687-.617s.279-.595.279-.982c0-.379-.099-.72-.3-1.025a2.05 2.05 0 0 0-.832-.714 2.703 2.703 0 0 0-1.197-.257c-.6 0-1.094.156-1.481.467-.386.311-.65.671-.793 1.078l1.085.452c.086-.249.224-.461.413-.633.189-.172.445-.257.767-.257.33 0 .602.088.816.264a.86.86 0 0 1 .322.703c0 .33-.12.589-.36.778-.24.19-.535.284-.886.284h-.567v1.085h.633c.407 0 .748.109 1.02.327.272.218.407.499.407.843 0 .336-.129.614-.387.832s-.565.327-.924.327c-.351 0-.651-.103-.897-.311-.248-.208-.422-.502-.521-.881l-1.096.452c.178.616.505 1.082.977 1.401.472.319.984.478 1.538.477a2.84 2.84 0 0 0 1.293-.291c.382-.193.684-.458.902-.794.218-.336.327-.72.327-1.149 0-.429-.115-.797-.344-1.105a2.067 2.067 0 0 0-.881-.689zm2.093-1.931l.602.913L15 10.045v5.744h1.187V8.446h-.827l-2.158 1.557zM22.105 0h-3.289v5.184H24V1.895A1.894 1.894 0 0 0 22.105 0zm-3.289 23.5l4.684-4.684h-4.684V23.5zM0 22.105C0 23.152.848 24 1.895 24h3.289v-5.184H0v3.289z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Google Calendar</span>
           </div>
@@ -406,7 +429,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(15,157,88,.15); border: 1px solid rgba(15,157,88,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #0F9D58; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#0F9D58"><path d="M11.318 12.545H7.91v-1.909h3.41v1.91zM14.728 0v6h6l-6-6zm1.363 10.636h-3.41v1.91h3.41v-1.91zm0 3.273h-3.41v1.91h3.41v-1.91zM20.727 6.5v15.864c0 .904-.732 1.636-1.636 1.636H4.909a1.636 1.636 0 0 1-1.636-1.636V1.636C3.273.732 4.005 0 4.909 0h9.318v6.5h6.5zm-3.273 2.773H6.545v7.909h10.91v-7.91zm-6.136 4.636H7.91v1.91h3.41v-1.91z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Google Sheets</span>
           </div>
@@ -416,7 +439,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(103,114,229,.15); border: 1px solid rgba(103,114,229,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 3px; background: #6772E5; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#6772E5"><path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Stripe Connect</span>
           </div>
@@ -426,7 +449,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(0,48,135,.2); border: 1px solid rgba(0,48,135,.35); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #009cde; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#009cde"><path d="M15.607 4.653H8.941L6.645 19.251H1.82L4.862 0h7.995c3.754 0 6.375 2.294 6.473 5.513-.648-.478-2.105-.86-3.722-.86m6.57 5.546c0 3.41-3.01 6.853-6.958 6.853h-2.493L11.595 24H6.74l1.845-11.538h3.592c4.208 0 7.346-3.634 7.153-6.949a5.24 5.24 0 0 1 2.848 4.686M9.653 5.546h6.408c.907 0 1.942.222 2.363.541-.195 2.741-2.655 5.483-6.441 5.483H8.714Z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">PayPal</span>
           </div>
@@ -436,7 +459,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(255,74,0,.15); border: 1px solid rgba(255,74,0,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #FF4A00; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#FF4A00"><path d="M4.157 0A4.151 4.151 0 0 0 0 4.161v15.678A4.151 4.151 0 0 0 4.157 24h15.682A4.152 4.152 0 0 0 24 19.839V4.161A4.152 4.152 0 0 0 19.839 0H4.157Zm10.61 8.761h.03a.577.577 0 0 1 .23.038.585.585 0 0 1 .201.124.63.63 0 0 1 .162.431.612.612 0 0 1-.162.435.58.58 0 0 1-.201.128.58.58 0 0 1-.23.042.529.529 0 0 1-.235-.042.585.585 0 0 1-.332-.328.559.559 0 0 1-.038-.235.613.613 0 0 1 .17-.431.59.59 0 0 1 .405-.162Zm2.853 1.572c.03.004.061.004.095.004.325-.011.646.064.937.219.238.144.431.355.552.609.128.279.189.582.185.888v.193a2 2 0 0 1 0 .219h-2.498c.003.227.075.45.204.642a.78.78 0 0 0 .646.265.714.714 0 0 0 .484-.136.642.642 0 0 0 .23-.318l.915.257a1.398 1.398 0 0 1-.28.537c-.14.159-.321.284-.521.355a2.234 2.234 0 0 1-.836.136 1.923 1.923 0 0 1-1.001-.245 1.618 1.618 0 0 1-.665-.703 2.221 2.221 0 0 1-.227-1.036 1.95 1.95 0 0 1 .48-1.398 1.9 1.9 0 0 1 1.3-.488Zm-9.607.023c.162.004.325.026.48.079.207.065.4.174.563.314.26.302.393.692.366 1.088v2.276H8.53l-.109-.711h-.065c-.064.163-.155.31-.272.439a1.122 1.122 0 0 1-.374.264 1.023 1.023 0 0 1-.453.083 1.334 1.334 0 0 1-.866-.264.965.965 0 0 1-.329-.801.993.993 0 0 1 .076-.431 1.02 1.02 0 0 1 .242-.363 1.478 1.478 0 0 1 1.043-.303h.952v-.181a.696.696 0 0 0-.136-.454.553.553 0 0 0-.438-.154.695.695 0 0 0-.378.086.48.48 0 0 0-.193.254l-.99-.144a1.26 1.26 0 0 1 .257-.563c.14-.174.321-.302.533-.378.261-.091.54-.136.82-.129.053-.003.106-.007.163-.007Zm4.384.007c.174 0 .347.038.506.114.182.083.34.211.458.374.257.423.377.911.351 1.406a2.53 2.53 0 0 1-.355 1.448 1.148 1.148 0 0 1-1.009.517c-.204 0-.401-.045-.582-.136a1.052 1.052 0 0 1-.48-.457 1.298 1.298 0 0 1-.114-.234h-.045l.004 1.784h-1.059v-4.713h.904l.117.805h.057c.068-.208.177-.401.328-.56a1.129 1.129 0 0 1 .843-.344h.076v-.004Zm7.559.084h.903l.113.805h.053a1.37 1.37 0 0 1 .235-.484.813.813 0 0 1 .313-.242.82.82 0 0 1 .39-.076h.234v1.051h-.401a.662.662 0 0 0-.313.008.623.623 0 0 0-.272.155.663.663 0 0 0-.174.26.683.683 0 0 0-.027.314v1.875h-1.054v-3.666Zm-17.515.003h3.262v.896L3.73 13.104l.034.113h1.973l.042.9H2.4v-.9l1.931-1.754-.045-.117H2.441v-.896Zm11.815 0h1.055v3.659h-1.055V10.45Zm3.443.684.019.016a.69.69 0 0 0-.351.045.756.756 0 0 0-.287.204c-.11.155-.174.336-.189.522h1.545c-.034-.526-.257-.787-.74-.787h.003Zm-5.718.163c-.026 0-.057 0-.083.004a.78.78 0 0 0-.31.053.746.746 0 0 0-.257.189 1.016 1.016 0 0 0-.204.695v.064c-.015.257.057.507.204.711a.634.634 0 0 0 .253.196.638.638 0 0 0 .314.061.644.644 0 0 0 .578-.265c.14-.223.204-.48.189-.74a1.216 1.216 0 0 0-.181-.711.677.677 0 0 0-.503-.257Zm-4.509 1.266a.464.464 0 0 0-.268.102.373.373 0 0 0-.114.276c0 .053.008.106.027.155a.375.375 0 0 0 .087.132.576.576 0 0 0 .397.11v.004a.863.863 0 0 0 .563-.182.573.573 0 0 0 .211-.457v-.14h-.903Z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Zapier</span>
           </div>
@@ -445,8 +468,8 @@
 
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-            <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(24,119,242,.15); border: 1px solid rgba(24,119,242,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 2px; background: #1877F2; display: block;"></span>
+            <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(24,119,242,.15); border: 1px solid rgba(24,119,242,.3); display: flex; align-items: center; justify-content: center; gap: 4px; flex-shrink: 0;">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="#1877F2"><path d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"/></svg><svg viewBox="0 0 24 24" width="16" height="16" fill="#E4405F"><path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Facebook e Instagram</span>
           </div>
@@ -456,7 +479,7 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(126,87,194,.15); border: 1px solid rgba(126,87,194,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #7e57c2; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#7e57c2"><path d="M13.38 3.498c-.27 0-.511.19-.566.465L9.85 18.986a.578.578 0 0 0 .453.678l4.095.826a.58.58 0 0 0 .682-.455l2.963-15.021a.578.578 0 0 0-.453-.678l-4.096-.826a.589.589 0 0 0-.113-.012zm-5.876.098a.576.576 0 0 0-.516.318L.062 17.697a.575.575 0 0 0 .256.774l3.733 1.877a.578.578 0 0 0 .775-.258l6.926-13.781a.577.577 0 0 0-.256-.776L7.762 3.658a.571.571 0 0 0-.258-.062zm11.74.115a.576.576 0 0 0-.576.576v15.426c0 .318.258.578.576.578h4.178a.58.58 0 0 0 .578-.578V4.287a.578.578 0 0 0-.578-.576Z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">Make.com</span>
           </div>
@@ -466,15 +489,17 @@
         <div class="integ-card" data-reveal>
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(116,170,156,.15); border: 1px solid rgba(116,170,156,.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <span style="width: 10px; height: 10px; border-radius: 50%; background: #74aa9c; display: block;"></span>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="#74aa9c"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/></svg>
             </span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #fff;">OpenAI GPT-4o</span>
           </div>
           <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #9aa7bc;">El modelo más capaz de OpenAI procesa cada conversación en tiempo real.</p>
         </div>
 
-        <!-- Custom integration card -->
-        <div data-reveal style="border: 1.5px dashed rgba(255,255,255,.18); border-radius: 18px; padding: 24px 22px 26px; transition: border-color .22s ease; backdrop-filter: blur(8px);">
+        <!-- Custom integration card: ocupa todo el ancho de su fila para que
+             nunca deje huecos sueltos junto a ella, sea cual sea el número
+             de tarjetas de integración de arriba. -->
+        <div data-reveal style="grid-column: 1 / -1; border: 1.5px dashed rgba(255,255,255,.18); border-radius: 18px; padding: 24px 22px 26px; transition: border-color .22s ease; backdrop-filter: blur(8px);">
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.05); border: 1.5px dashed rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 300; color: #9aa7bc;">+</span>
             <span style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; color: #9aa7bc;">¿Usas otra herramienta?</span>
@@ -803,7 +828,7 @@
         <p style="font-size: 17px; line-height: 1.6; color: #4a5568; margin: 0;">Pesos mexicanos, mensuales, sin IVA. El setup se paga una sola vez.</p>
       </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(258px,1fr)); gap: 18px; align-items: start;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(258px,1fr)); gap: 18px; align-items: stretch;">
 
         <!-- Mostrador -->
         <div class="plan-card" data-reveal>
@@ -821,7 +846,7 @@
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Google Calendar</span></div>
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Reporte diario por WhatsApp</span></div>
           </div>
-          <a class="plan-cta" href="#contacto">Elegir plan</a>
+          <a class="plan-cta" href="#contacto" onclick="selectPlan('Mostrador')">Elegir plan</a>
         </div>
 
         <!-- Sucursal (featured) -->
@@ -843,7 +868,7 @@
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #e3e9f2;">Zapier</span></div>
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #e3e9f2;">Reporte diario por WhatsApp</span></div>
           </div>
-          <a class="plan-cta-featured" href="#contacto">Elegir plan</a>
+          <a class="plan-cta-featured" href="#contacto" onclick="selectPlan('Sucursal')">Elegir plan</a>
         </div>
 
         <!-- Cadena -->
@@ -862,7 +887,7 @@
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Todo incluido</span></div>
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Reporte diario por WhatsApp</span></div>
           </div>
-          <a class="plan-cta" href="#contacto">Elegir plan</a>
+          <a class="plan-cta" href="#contacto" onclick="selectPlan('Cadena')">Elegir plan</a>
         </div>
 
         <!-- Enterprise -->
@@ -880,7 +905,7 @@
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">SLA dedicado</span></div>
             <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Anual a convenir</span></div>
           </div>
-          <a class="plan-cta-outline" href="#contacto">Hablar con ventas</a>
+          <a class="plan-cta-outline" href="#contacto" onclick="selectPlan('Enterprise')">Hablar con ventas</a>
         </div>
 
       </div>
@@ -922,7 +947,7 @@
       <div style="display: flex; flex-wrap: wrap; gap: clamp(24px,4vw,48px); align-items: flex-start; padding-bottom: clamp(64px,8vw,112px);">
 
         <!-- COLUMNA IZQUIERDA: chat demo + QR -->
-        <div data-reveal style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div class="contact-chat-col" data-reveal style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
 
           <!-- Tarjeta chat WhatsApp -->
           <div style="background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 20px; overflow: hidden; backdrop-filter: blur(12px);">
@@ -988,19 +1013,22 @@
         </div>
 
         <!-- COLUMNA DERECHA: formulario -->
-        <div data-reveal style="flex: 1 1 340px; min-width: 0;">
+        <div class="contact-form-col" data-reveal style="flex: 1 1 340px; min-width: 0;">
           <form id="contactForm" style="background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.13); border-radius: 22px; padding: 30px 26px 32px; display: flex; flex-direction: column; gap: 18px; backdrop-filter: blur(12px); box-shadow: 0 32px 80px rgba(0,0,0,.45);">
             <div>
               <div style="font-family: 'Space Grotesk', sans-serif; font-size: 19px; font-weight: 700; color: #fff; margin-bottom: 4px;">Agenda tu diagnóstico gratis</div>
               <div style="font-size: 13.5px; color: #64748b;">20 minutos · sin compromiso · sin tarjeta</div>
+              <div id="selectedPlanBadge" style="display: none; margin-top: 10px; font-size: 12.5px; font-weight: 600; color: #25D366; background: rgba(37,211,102,.1); border: 1px solid rgba(37,211,102,.25); border-radius: 8px; padding: 6px 10px; width: fit-content;"></div>
             </div>
             <label style="display: flex; flex-direction: column; gap: 8px;">
               <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">Tu nombre</span>
               <input class="input-field" id="formName" type="text" placeholder="Ej. Carlos Ramos">
+              <span class="field-error" id="formNameError">Escribe tu nombre.</span>
             </label>
             <label style="display: flex; flex-direction: column; gap: 8px;">
               <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">WhatsApp</span>
-              <input class="input-field" id="formPhone" type="tel" placeholder="10 dígitos">
+              <input class="input-field" id="formPhone" type="tel" inputmode="numeric" placeholder="10 dígitos">
+              <span class="field-error" id="formPhoneError">Ingresa un número de WhatsApp a 10 dígitos.</span>
             </label>
             <label style="display: flex; flex-direction: column; gap: 8px;">
               <span style="font-size: 12.5px; font-weight: 600; color: #94a3b8; letter-spacing: .04em; text-transform: uppercase;">Tu negocio <span style="color: #3f6fd8; font-weight: 400; text-transform: none; letter-spacing: 0;">(opcional)</span></span>
@@ -1130,7 +1158,11 @@
     { q: "¿Se nota que es un bot?", a: "Se nota que contesta rápido. El agente usa tu forma de hablar, tus precios y tus políticas, no menús numéricos. Cuando la conversación se sale de lo que sabe, avisa que pasa el caso a una persona en lugar de inventar." },
     { q: "¿Puedo usar mi número actual?", a: "Sí. Migramos tu número a la WhatsApp Business API sin perder tus contactos. Si prefieres empezar con un número nuevo, lo conseguimos nosotros." },
     { q: "¿Puedo cancelar?", a: "Cancelas cuando quieras avisando con 30 días. No hay contrato forzoso ni penalización. El setup ya pagado no se reembolsa porque es trabajo hecho." },
-    { q: "¿Funciona para mi negocio?", a: "Funciona bien donde hay preguntas repetidas y citas: clínicas, talleres, inmobiliarias, escuelas, gimnasios y servicios a domicilio. Si tu venta es totalmente presencial y sin WhatsApp, te lo decimos en el diagnóstico." }
+    { q: "¿Funciona para mi negocio?", a: "Funciona bien donde hay preguntas repetidas y citas: clínicas, talleres, inmobiliarias, escuelas, gimnasios y servicios a domicilio. Si tu venta es totalmente presencial y sin WhatsApp, te lo decimos en el diagnóstico." },
+    { q: "¿Qué pasa si me paso de conversaciones?", a: "Tu agente nunca deja de atender — no se corta el servicio al llegar al límite de tu plan. Para campañas (envíos masivos) cada plan incluye una bolsa mensual de mensajes (200, 1,000 o 4,000 según el plan); los adicionales se cobran a $1.20 MXN cada uno." },
+    { q: "¿El costo de Meta por mensaje está incluido?", a: "Sí. Contestar a tus clientes, recordatorios y confirmaciones están incluidos en tu mensualidad, no pagas nada aparte a Meta por eso. Las campañas tienen su propia bolsa mensual de mensajes (200, 1,000 o 4,000 según el plan); si te pasas, cada mensaje adicional cuesta $1.20 MXN." },
+    { q: "¿Cuánto tarda la migración de mi número?", a: "Normalmente queda listo dentro del mismo proceso de alta de 7 días: migramos tu número actual de WhatsApp a la API de negocio sin perder tus contactos ni tu historial." },
+    { q: "¿Qué pasa con mis datos si cancelo?", a: "Tus conversaciones, citas y contactos se conservan mientras tu cuenta esté activa. Si cancelas, los eliminamos dentro de los 30 días siguientes a tu solicitud por escrito a hola@avaxon.lat." }
   ];
 
   const faqList = document.getElementById('faqList');
@@ -1162,24 +1194,55 @@
   const contactForm = document.getElementById('contactForm');
   const submitBtn = document.getElementById('submitBtn');
   const formNote = document.getElementById('formNote');
+  const formNoteDefault = formNote.textContent;
+
+  let selectedPlan = null;
+  function selectPlan(name) {
+    selectedPlan = name;
+    const badge = document.getElementById('selectedPlanBadge');
+    if (badge) { badge.textContent = 'Plan seleccionado: ' + name; badge.style.display = 'block'; }
+  }
+
+  function setFieldError(inputId, errorId, show) {
+    document.getElementById(inputId).classList.toggle('has-error', show);
+    document.getElementById(errorId).classList.toggle('show', show);
+  }
+  ['formName', 'formPhone'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => setFieldError(id, id + 'Error', false));
+  });
 
   contactForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('formName').value.trim();
-    const phone = document.getElementById('formPhone').value.trim();
+    const phoneRaw = document.getElementById('formPhone').value.trim();
+    const phoneDigits = phoneRaw.replace(/\D/g, '');
     const business = document.getElementById('formBusiness')?.value.trim() || '';
-    const msg = 'Hola Avaxon, soy ' + (name || '(nombre)') + (business ? ' de ' + business : '') + '. Mi WhatsApp es ' + (phone || '(teléfono)') + '. Quiero el diagnóstico gratis.';
 
-    if (phone) {
-      fetch(EDGE_BASE + '/landing-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, business })
-      }).catch(() => { /* no bloquear el flujo si falla el registro */ });
+    const nameValid = name.length > 0;
+    const phoneValid = phoneDigits.length === 10;
+    setFieldError('formName', 'formNameError', !nameValid);
+    setFieldError('formPhone', 'formPhoneError', !phoneValid);
+    if (!nameValid || !phoneValid) {
+      (!nameValid ? document.getElementById('formName') : document.getElementById('formPhone')).focus();
+      return;
     }
 
+    const planLine = selectedPlan ? ' Me interesa el plan ' + selectedPlan + '.' : '';
+    const msg = 'Hola Avaxon, soy ' + name + (business ? ' de ' + business : '') + '. Mi WhatsApp es ' + phoneDigits + '.' + planLine + ' Quiero el diagnóstico gratis.';
+
     submitBtn.textContent = 'Abriendo WhatsApp…';
-    formNote.textContent = 'Listo. Si no se abrió WhatsApp, escríbenos directo al +52 899 170 9336.';
+    formNote.textContent = formNoteDefault;
+
+    fetch(EDGE_BASE + '/landing-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone: phoneDigits, business, plan: selectedPlan })
+    }).then(res => {
+      if (!res.ok) throw new Error('bad status');
+    }).catch(() => {
+      formNote.textContent = 'Se abrió WhatsApp, pero no pudimos guardar tu registro — no pasa nada, ya tenemos tu mensaje ahí. Si no tienes respuesta pronto, vuelve a escribirnos.';
+      formNote.style.color = '#f87171';
+    });
 
     window.open('https://wa.me/' + AVAXON_PHONE_DIGITS + '?text=' + encodeURIComponent(msg), '_blank');
   });
