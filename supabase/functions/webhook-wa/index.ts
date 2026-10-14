@@ -5,6 +5,7 @@ import { sendZapierEvent } from '../_shared/zapier.ts'
 import { getGoogleAccessToken } from '../_shared/google.ts'
 import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
+import { stripeFetch } from '../_shared/stripe.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -68,6 +69,24 @@ const APPOINTMENT_TOOLS = [
           nueva_hora:     { type: 'string', description: 'Nueva hora HH:MM (solo para reagendar)' },
         },
         required: ['appointment_id'],
+      },
+    },
+  },
+]
+
+const PAYMENT_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'crear_link_pago',
+      description: 'Genera un link de pago de Stripe para un producto o servicio del catálogo (Inventario), usando el precio YA guardado ahí. SOLO se puede usar con un producto que esté listado en el CATÁLOGO del contexto del sistema, con el nombre EXACTO como aparece ahí. Nunca la uses para un monto libre, personalizado, o un producto que no esté en esa lista — en esos casos no la llames, dile al cliente que un asesor le confirmará el monto.',
+      parameters: {
+        type: 'object',
+        properties: {
+          producto: { type: 'string', description: 'Nombre EXACTO del producto/servicio tal como aparece en el catálogo' },
+          cantidad: { type: 'number', description: 'Cantidad, por defecto 1' },
+        },
+        required: ['producto'],
       },
     },
   },
@@ -250,6 +269,91 @@ async function cancelarOReagendarCita(
   }
 }
 
+// ── Herramienta: crear link de pago (SOLO catálogo, nunca monto libre) ──────
+// El bot nunca decide montos ni conceptos — busca el producto EXACTO en
+// `products` (Inventario) de la org y usa el precio guardado ahí. Si no lo
+// encuentra, no crea nada: regresa un mensaje para que el bot le diga al
+// cliente que un asesor confirmará el monto (y active notify_owner).
+async function crearLinkPago(
+  args: { producto: string; cantidad?: number },
+  organizationId: string,
+  contactId: string,
+  sb: ReturnType<typeof createClient>,
+  stripeSecretKey: string,
+): Promise<string> {
+  const { data: integ } = await sb
+    .from('integrations')
+    .select('status, credentials')
+    .eq('organization_id', organizationId)
+    .eq('provider', 'stripe')
+    .maybeSingle()
+
+  const accountId = (integ?.credentials as { account_id?: string } | null)?.account_id
+  if (integ?.status !== 'connected' || !accountId) {
+    return 'Stripe no está conectado para este negocio — no se puede generar el link. Dile al cliente que un asesor le ayudará con el pago.'
+  }
+
+  const { data: products } = await sb
+    .from('products')
+    .select('id, name, price, status')
+    .eq('organization_id', organizationId)
+    .neq('status', 'agotado')
+    .ilike('name', args.producto.trim())
+
+  const product = products?.[0]
+  if (!product) {
+    return `"${args.producto}" no está en el catálogo (o está agotado) — NO inventes un precio ni crees un link. Dile al cliente que un asesor le confirmará el monto, y marca notify_owner en true.`
+  }
+
+  const cantidad = args.cantidad && args.cantidad > 0 ? args.cantidad : 1
+  const amount = Number(product.price) * cantidad
+  const amountCents = Math.round(amount * 100)
+
+  try {
+    const session = await stripeFetch('/checkout/sessions', stripeSecretKey, {
+      stripeAccount: accountId,
+      body: {
+        mode: 'payment',
+        line_items: [{
+          price_data: {
+            currency: 'mxn',
+            product_data: { name: product.name },
+            unit_amount: amountCents,
+          },
+          quantity: cantidad,
+        }],
+        success_url: 'https://avaxon.lat/dashboard/?pago=exitoso',
+        cancel_url: 'https://avaxon.lat/dashboard/?pago=cancelado',
+      },
+    })
+
+    const { data: payment, error: insErr } = await sb.from('payments').insert({
+      organization_id: organizationId,
+      contact_id:       contactId,
+      amount,
+      currency:         'mxn',
+      concept:          product.name,
+      status:           'pending',
+      checkout_url:     session.url,
+      session_id:       session.id,
+      stripe_account_id: accountId,
+      created_by_bot:   true,
+    }).select('id').single()
+
+    if (insErr || !payment) {
+      console.error('Error guardando payment (bot):', insErr)
+      return 'Hubo un error guardando el cobro. Dile al cliente que un asesor le ayudará con el pago.'
+    }
+
+    const amountFmt = amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })
+    const shortUrl = `https://avaxon.lat/p/${payment.id}`
+    return `Link de pago creado correctamente. Dile al cliente: "Aquí tienes tu link de pago por *${product.name}* ($${amountFmt} MXN): ${shortUrl}"`
+  } catch (e) {
+    console.error('Error creando Checkout Session (bot):', e)
+    return 'Hubo un error con Stripe al crear el link. Dile al cliente que un asesor le ayudará con el pago.'
+  }
+}
+
 async function getMediaUrl(mediaId: string, token: string): Promise<{ url: string; mime: string } | null> {
   const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -286,6 +390,7 @@ interface Env {
   OPENAI_KEY: string
   SUPABASE_URL: string
   SERVICE_KEY: string
+  STRIPE_SECRET_KEY: string
 }
 
 interface ParsedMessage {
@@ -531,6 +636,34 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const timezone = orgRow?.timezone || 'America/Matamoros'
   const calendarToken = await getGoogleAccessToken(sb, organization_id)
 
+  // ── 6b. Stripe conectado + catálogo (Inventario) para links de pago ────────
+  // El bot SOLO puede generar links de pago de productos del catálogo, con el
+  // precio que ya está guardado ahí — nunca un monto que diga el cliente.
+  const { data: stripeInteg } = await sb
+    .from('integrations')
+    .select('status')
+    .eq('organization_id', organization_id)
+    .eq('provider', 'stripe')
+    .maybeSingle()
+  const stripeConnected = stripeInteg?.status === 'connected'
+
+  let catalogCtx = ''
+  if (stripeConnected) {
+    const { data: products } = await sb
+      .from('products')
+      .select('name, price')
+      .eq('organization_id', organization_id)
+      .neq('status', 'agotado')
+      .order('name')
+
+    if (products && products.length > 0) {
+      const lines = products.map(p => `- ${p.name}: $${Number(p.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`)
+      catalogCtx = `\n\nCATÁLOGO (Inventario — estos son los ÚNICOS productos/servicios para los que puedes generar un link de pago, con el precio exacto de aquí):\n${lines.join('\n')}\n\nCuando el cliente quiera pagar algo de esta lista, usa la herramienta crear_link_pago con el nombre EXACTO del producto. Si pide algo que NO está en esta lista, o un monto libre/personalizado/"lo que sea", NUNCA inventes un precio ni uses la herramienta — dile que un asesor le confirmará el monto y activa notify_owner en true.`
+    } else {
+      catalogCtx = `\n\nSin catálogo configurado: no tienes ningún producto/servicio con precio para generar links de pago. Si el cliente pide pagar algo, dile que un asesor le confirmará el monto y activa notify_owner en true. Nunca inventes un precio ni generes un link.`
+    }
+  }
+
   // ── 7. Construir system prompt ─────────────────────────────────────────────
   const now = new Date()
   const todayLabel = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
@@ -549,6 +682,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     botConfig.system_prompt,
     businessContext,
     calendarCtx,
+    catalogCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce ────────────────────────────────────────────────────────────
@@ -611,7 +745,11 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ...chatHistory,
   ]
 
-  const tools = calendarToken ? APPOINTMENT_TOOLS : undefined
+  const toolsArr = [
+    ...(calendarToken ? APPOINTMENT_TOOLS : []),
+    ...(stripeConnected ? PAYMENT_TOOLS : []),
+  ]
+  const tools = toolsArr.length > 0 ? toolsArr : undefined
   let rawReply = ''
   const MAX_TOOL_LOOPS = 5
 
@@ -658,6 +796,8 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             })
           } else if (toolCall.function.name === 'cancelar_o_reagendar_cita') {
             toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone)
+          } else if (toolCall.function.name === 'crear_link_pago') {
+            toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY)
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
@@ -790,6 +930,7 @@ Deno.serve(async (req: Request) => {
     OPENAI_KEY:   Deno.env.get('OPENAI_API_KEY')!,
     SUPABASE_URL: Deno.env.get('SUPABASE_URL')!,
     SERVICE_KEY:  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    STRIPE_SECRET_KEY: Deno.env.get('STRIPE_SECRET_KEY') || '',
   }
 
   if (req.method === 'GET') {

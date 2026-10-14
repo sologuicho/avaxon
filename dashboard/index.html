@@ -9670,7 +9670,7 @@
     if (!orgId) { listEl.innerHTML = '<div class="apt-empty">Selecciona un cliente</div>'; return; }
 
     let q = sb.from('payments')
-      .select('id,amount,concept,status,checkout_url,created_at,paid_at,contacts(name,phone)')
+      .select('id,amount,concept,status,checkout_url,created_at,paid_at,created_by_bot,contacts(name,phone)')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
       .limit(200);
@@ -9697,6 +9697,9 @@
       const amountFmt = '$' + Number(p.amount).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' MXN';
       const dateFmt = new Date(p.created_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
       const contactName = p.contacts?.name || p.contacts?.phone || '—';
+      const originBadge = p.created_by_bot
+        ? `<span title="Creado por el bot" style="font-size:10.5px;font-weight:700;color:#818cf8;background:rgba(99,102,241,.12);border-radius:6px;padding:2px 7px;white-space:nowrap">🤖 Bot</span>`
+        : `<span title="Creado por el equipo" style="font-size:10.5px;font-weight:700;color:var(--text-muted);background:var(--hover-bg);border-radius:6px;padding:2px 7px;white-space:nowrap">Equipo</span>`;
       const linkBtn = (p.status === 'pending' && p.checkout_url)
         ? `<a href="${p.checkout_url}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--accent);font-weight:600">Abrir link</a>`
         : '';
@@ -9709,6 +9712,7 @@
           <div class="pago-meta">${contactName} · ${dateFmt}</div>
         </div>
         <span class="apt-status-pill" style="color:${st.color};background:${st.bg}">${st.label}</span>
+        ${originBadge}
         ${linkBtn}
         ${cancelBtn}
         <span class="pago-amount">${amountFmt}</span>

@@ -105,6 +105,7 @@ Deno.serve(async (req: Request) => {
       session_id: session.id,
       stripe_account_id: accountId,
       created_by: user.id,
+      created_by_bot: false,
     }).select('id').single()
 
     if (insErr) {
