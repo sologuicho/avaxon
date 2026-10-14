@@ -659,6 +659,7 @@
     .quality-green  { background: var(--green); }
     .quality-amber  { background: var(--amber); }
     .quality-red    { background: var(--red); }
+    .quality-unknown { background: var(--text-dim); }
 
     /* Media badge */
     .media-badge {
@@ -3705,6 +3706,22 @@
     return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
   }
 
+  // Como fmtDate(), pero en la zona horaria del negocio — fmtDate() se usa en
+  // todos lados para timestamps de mensajes/eventos (ahí sí tiene sentido la
+  // hora local de quien ve el dashboard); para citas, en cambio, debe ser la
+  // hora en la que el negocio realmente las agendó.
+  function fmtAptDate(iso) {
+    if (!iso) return '—';
+    const tz = getAppointmentTimezone();
+    const d = new Date(iso);
+    const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date());
+    const dKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(d);
+    if (dKey === todayKey) {
+      return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+    }
+    return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', timeZone: tz });
+  }
+
   function fmtFull(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -3745,9 +3762,9 @@
 
   function qualityBadge(q) {
     if (!q) return '<span class="pill pill-muted no-dot">—</span>';
-    const map = { GREEN:'quality-green', YELLOW:'quality-amber', RED:'quality-red' };
-    const labels = { GREEN:'Alta', YELLOW:'Media', RED:'Baja' };
-    return `<span class="quality-pill ${map[q] ?? ''}">${labels[q] ?? q}</span>`;
+    const map = { GREEN:'quality-green', YELLOW:'quality-amber', RED:'quality-red', UNKNOWN:'quality-unknown' };
+    const labels = { GREEN:'Alta', YELLOW:'Media', RED:'Baja', UNKNOWN:'Desconocida' };
+    return `<span class="quality-pill ${map[q] ?? 'quality-unknown'}">${labels[q] ?? q}</span>`;
   }
 
   function mediaBadge(type) {
@@ -4147,8 +4164,8 @@
       if (setupView)     setupView.style.display = 'none';
       if (connectedView) connectedView.style.display = '';
       listEl.innerHTML = phones.map(p => {
-        const qualityColor = p.quality_rating === 'HIGH' ? '#0B7A46' : p.quality_rating === 'MEDIUM' ? '#92400E' : 'var(--text-muted)';
-        const qualityLabel = p.quality_rating === 'HIGH' ? 'Alta' : p.quality_rating === 'MEDIUM' ? 'Media' : p.quality_rating === 'LOW' ? 'Baja' : p.quality_rating || '—';
+        const qualityColor = p.quality_rating === 'GREEN' ? '#0B7A46' : p.quality_rating === 'YELLOW' ? '#92400E' : p.quality_rating === 'RED' ? '#b91c1c' : 'var(--text-muted)';
+        const qualityLabel = p.quality_rating === 'GREEN' ? 'Alta' : p.quality_rating === 'YELLOW' ? 'Media' : p.quality_rating === 'RED' ? 'Baja' : p.quality_rating === 'UNKNOWN' ? 'Desconocida' : p.quality_rating || '—';
         return `
         <div style="display:flex;align-items:center;gap:14px;padding:20px 22px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
           <div style="width:46px;height:46px;border-radius:12px;background:#25D366;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -4413,7 +4430,7 @@
       $('cpanel-apts').innerHTML = (apts && apts.length)
         ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${a.title || 'Cita'}</div>
-            <div style="font-size:11.5px;color:var(--text-muted)">${fmtDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
+            <div style="font-size:11.5px;color:var(--text-muted)">${fmtAptDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
           </div>`).join('')
         : '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
 
@@ -4787,7 +4804,7 @@
     if (_qapt_contact_id) {
       const { data: apts } = await sb.from('appointments').select('id,title,scheduled_at,status').eq('contact_id', _qapt_contact_id).order('scheduled_at', { ascending: false }).limit(3);
       $('cpanel-apts').innerHTML = (apts && apts.length)
-        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid #f1f2f4"><div style="font-size:13px;font-weight:600;color:#1a2535">${a.title||'Cita'}</div><div style="font-size:11.5px;color:#8c939b">${fmtDate(a.scheduled_at)}</div></div>`).join('')
+        ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid #f1f2f4"><div style="font-size:13px;font-weight:600;color:#1a2535">${a.title||'Cita'}</div><div style="font-size:11.5px;color:#8c939b">${fmtAptDate(a.scheduled_at)}</div></div>`).join('')
         : '<div style="font-size:12.5px;color:#a7adb5">Sin citas registradas</div>';
     }
   }
@@ -5517,7 +5534,6 @@
 
     const waStatus = phone?.status ?? 'unknown'
     const quality  = phone?.quality_rating ?? 'UNKNOWN'
-    const qualityColor = quality === 'GREEN' ? '#22c55e' : quality === 'YELLOW' ? '#f59e0b' : quality === 'RED' ? '#f87171' : '#94a3b8'
     const qualityIcon  = quality === 'GREEN' ? 'fa-circle-check' : quality === 'YELLOW' ? 'fa-triangle-exclamation' : quality === 'RED' ? 'fa-circle-xmark' : 'fa-circle-question'
     const waColor = waStatus === 'active' ? '#22c55e' : '#f87171'
     const waLabel = waStatus === 'active' ? 'Conectado' : waStatus === 'unknown' ? 'Sin número' : waStatus
@@ -5541,7 +5557,7 @@
 
     el.innerHTML = [
       row('fa-signal',    '34,197,94',       'Estado del número', `<span style="color:${waColor};font-weight:700">${waLabel}</span>`, phone?.display_phone_number ?? ''),
-      row(qualityIcon,    quality === 'GREEN' ? '34,197,94' : quality === 'YELLOW' ? '245,158,11' : '248,113,113', 'Calidad Meta',  `<span style="color:${qualityColor};font-weight:700">${quality}</span>`, 'Calificación de la API'),
+      row(qualityIcon,    quality === 'GREEN' ? '34,197,94' : quality === 'YELLOW' ? '245,158,11' : '248,113,113', 'Calidad Meta',  qualityBadge(quality), 'Calificación de la API'),
       row(ratioIcon,      ratioColor,        'Cobertura hoy',    ratioVal, ratioHint),
       row('fa-circle-check', '99,102,241',   'Resueltas hoy',    closedToday.toLocaleString('es-MX'), 'Conversaciones cerradas'),
     ].join('')
@@ -8724,7 +8740,19 @@
   function calDateKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
-  function aptDateKey(iso) { return calDateKey(new Date(iso)); }
+  // Día/hora de una cita en la zona horaria DEL NEGOCIO (organizations.timezone),
+  // no la del navegador de quien ve el dashboard — si no, una cita guardada
+  // correctamente en UTC se ve en la hora/día equivocado apenas el navegador
+  // esté en otra zona (ej. admin en Ciudad de México viendo una cita de un
+  // negocio en Matamoros, un offset distinto en temporada de horario de verano).
+  function aptDateKey(iso) {
+    const p = utcIsoToZonedParts(iso);
+    return `${p.year}-${String(p.month+1).padStart(2,'0')}-${String(p.day).padStart(2,'0')}`;
+  }
+  function aptZonedHM(iso) {
+    const p = utcIsoToZonedParts(iso);
+    return { hour: p.hour, minute: p.minute };
+  }
   function timeToMinutes(hhmm) { const [h,m] = (hhmm||'00:00').split(':').map(Number); return h*60+(m||0); }
   function formatTime12h(hh, mm) {
     const ampm = hh >= 12 ? 'p.m.' : 'a.m.';
@@ -8929,8 +8957,8 @@
       return;
     }
     box.innerHTML = apts.map(a => {
-      const dt  = new Date(a.scheduled_at);
-      const t   = formatTime12h(dt.getHours(), dt.getMinutes());
+      const { hour, minute } = aptZonedHM(a.scheduled_at);
+      const t   = formatTime12h(hour, minute);
       const st  = a.status || 'pending';
       const ini = a.contact_name ? a.contact_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
       const waBadge = isDemoMode() ? `<span class="apt-wa-badge"><i class="fa-brands fa-whatsapp" style="font-size:9px"></i> WhatsApp</span>` : '';
@@ -8967,12 +8995,12 @@
       const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dk && (calView.showCancelled || a.status !== 'cancelled'));
       const hourLines = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR + 1 }, (_, i) => `<div class="cal-hourline" style="top:${i*HOUR_PX}px"></div>`).join('');
       const blocks = dayApts.map(a => {
-        const dt = new Date(a.scheduled_at);
-        const startMin = dt.getHours()*60 + dt.getMinutes();
+        const { hour, minute } = aptZonedHM(a.scheduled_at);
+        const startMin = hour*60 + minute;
         const dur = a.duration_minutes || 60;
         const top = Math.max(0, (startMin - GRID_START_HOUR*60) / 60 * HOUR_PX);
         const height = Math.max(20, dur / 60 * HOUR_PX - 2);
-        const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+        const timeLabel = formatTime12h(hour, minute);
         const showContact = height > 38 && a.contact_name;
         const showWa = isDemoMode() && height > 52;
         return `<div class="cal-apt-block status-${a.status||'pending'}" style="top:${top}px;height:${height}px" onclick="openAptDetailModal('${a.id}')">
@@ -9014,9 +9042,9 @@
     const el = $('cal-upcoming-list');
     if (!data || !data.length) { el.innerHTML = '<div class="apt-empty">Sin próximas citas</div>'; return; }
     el.innerHTML = data.map(a => {
-      const dt  = new Date(a.scheduled_at);
-      const day = dt.toLocaleDateString('es-MX', { day:'numeric', month:'short' });
-      const t   = formatTime12h(dt.getHours(), dt.getMinutes());
+      const day = new Date(a.scheduled_at).toLocaleDateString('es-MX', { day:'numeric', month:'short', timeZone: getAppointmentTimezone() });
+      const { hour, minute } = aptZonedHM(a.scheduled_at);
+      const t   = formatTime12h(hour, minute);
       const st  = a.status || 'pending';
       const ini = a.contact_name ? a.contact_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : '?';
       const waBadge = isDemoMode() ? `<span class="apt-wa-badge"><i class="fa-brands fa-whatsapp" style="font-size:9px"></i> WhatsApp</span>` : '';
@@ -9081,8 +9109,8 @@
       const label = formatTime12h(hh, mm);
       const outOfHours = closed || min < openMin || (min + duration) > closeMin;
       const overlap = dayApts.some(a => {
-        const dt = new Date(a.scheduled_at);
-        const aStart = dt.getHours()*60 + dt.getMinutes();
+        const { hour, minute } = aptZonedHM(a.scheduled_at);
+        const aStart = hour*60 + minute;
         const aEnd = aStart + (a.duration_minutes || 60);
         return min < aEnd && (min + duration) > aStart;
       });
@@ -9106,8 +9134,8 @@
     const duration = calView.formDuration || 60;
     const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dateStr && a.status !== 'cancelled' && a.id !== calView.editingId);
     const conflict = dayApts.find(a => {
-      const dt = new Date(a.scheduled_at);
-      const aStart = dt.getHours()*60 + dt.getMinutes();
+      const { hour, minute } = aptZonedHM(a.scheduled_at);
+      const aStart = hour*60 + minute;
       const aEnd = aStart + (a.duration_minutes || 60);
       return min < aEnd && (min + duration) > aStart;
     });
@@ -9266,8 +9294,9 @@
 
     $('apt-detail-title').textContent = a.title || '—';
     const dt = new Date(a.scheduled_at);
-    const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
-    const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+    const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone: getAppointmentTimezone() });
+    const { hour: _h, minute: _m } = aptZonedHM(a.scheduled_at);
+    const timeLabel = formatTime12h(_h, _m);
     const st = a.status || 'pending';
     const endMs = dt.getTime() + (a.duration_minutes || 60) * 60000;
     const isPast = endMs < Date.now();
@@ -9323,9 +9352,9 @@
   function openAptCancelConfirm() {
     const a = findAptById(calView.detailId);
     if (!a) return;
-    const dt = new Date(a.scheduled_at);
-    const dateLabel = dt.toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' });
-    const timeLabel = formatTime12h(dt.getHours(), dt.getMinutes());
+    const dateLabel = new Date(a.scheduled_at).toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long', timeZone: getAppointmentTimezone() });
+    const { hour, minute } = aptZonedHM(a.scheduled_at);
+    const timeLabel = formatTime12h(hour, minute);
     $('apt-cancel-text').textContent = `¿Seguro que quieres cancelar la cita "${a.title}" del ${dateLabel} a las ${timeLabel}? También se eliminará de Google Calendar.`;
     $('apt-cancel-modal').style.display = 'flex';
   }

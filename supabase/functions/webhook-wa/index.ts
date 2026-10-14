@@ -138,6 +138,32 @@ async function agendarCita(
 
   await notifyAppointment(sb, appt.id, 'created', 'whatsapp')
 
+  // Mueve el contacto a "Calificado" en el pipeline (solo si sigue en una
+  // etapa temprana — no se toca si ya está qualified/won/lost) y le agrega
+  // la etiqueta de que el bot le agendó una cita.
+  try {
+    const { data: contactRow } = await sb
+      .from('contacts')
+      .select('status, tags')
+      .eq('id', contactId)
+      .maybeSingle()
+
+    const currentStatus = contactRow?.status
+    const tags = new Set<string>(contactRow?.tags || [])
+    tags.add('Cita agendada por bot')
+
+    const contactUpdate: Record<string, unknown> = {
+      tags: Array.from(tags),
+      updated_at: new Date().toISOString(),
+    }
+    if (!currentStatus || currentStatus === 'new' || currentStatus === 'contacted') {
+      contactUpdate.status = 'qualified'
+    }
+    await sb.from('contacts').update(contactUpdate).eq('id', contactId)
+  } catch (e) {
+    console.error('Error actualizando pipeline/etiqueta del contacto:', e)
+  }
+
   // Crear evento en Google Calendar
   let googleEventId: string | null = null
   try {
