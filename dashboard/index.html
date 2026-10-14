@@ -2050,7 +2050,7 @@
               <div style="width:56px;height:56px;background:rgba(34,197,94,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;color:var(--accent)"><i class="fa fa-paper-plane"></i></div>
               <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:8px">Lanza tu primera campaña</div>
               <div style="font-size:13px;color:var(--text-muted);max-width:360px;margin:0 auto 22px;line-height:1.6">Envía mensajes a tus contactos usando plantillas aprobadas por Meta. Monitorea entregados, leídos y respondidos.</div>
-              <button onclick="openCampaignWizard()" class="btn-primary" style="padding:10px 22px;font-size:13px;display:inline-flex;align-items:center;gap:8px"><i class="fa fa-plus"></i> Crear campaña</button>
+              <button id="camp-nueva-btn-empty" onclick="openCampaignWizard()" class="btn-primary" style="padding:10px 22px;font-size:13px;display:inline-flex;align-items:center;gap:8px"><i class="fa fa-plus"></i> Crear campaña</button>
             </div>
           </div>
         </div>
@@ -2580,7 +2580,7 @@
                 <!-- Footer -->
                 <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--page-bg);flex-wrap:wrap">
                   <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex:1;min-width:200px">
-                    <i class="fa fa-shield-halved" style="color:#16A34A;font-size:15px"></i>Token cifrado con AES-256. Nadie puede verlo, ni siquiera nosotros.
+                    <i class="fa fa-shield-halved" style="color:#16A34A;font-size:15px"></i>Tu token se guarda cifrado y nunca se muestra en el panel.
                   </span>
                   <button onclick="launchEmbeddedSignup()" style="display:flex;align-items:center;gap:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
                     <i class="fa fa-plus" style="font-size:10px"></i> Agregar número
@@ -2680,6 +2680,16 @@
                   <div class="integ-full-name">Google Sheets</div>
                   <div class="integ-full-desc">Exporta leads y conversaciones a una hoja de cálculo cuando tú lo pidas o de forma automática</div>
                 </div>
+                <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);padding-top:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Estado</span>
+                    <span id="gsheets-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+                    <span style="font-size:12px;color:var(--text-muted)">Cuenta</span>
+                    <span id="gsheets-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">—</span>
+                  </div>
+                </div>
                 <div class="integ-full-footer" style="margin-top:auto">
                   <span style="font-size:12px;color:var(--text-muted)">Se conecta con tu Google</span>
                   <span style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px">Configurar <i class="fa fa-arrow-right" style="font-size:10px"></i></span>
@@ -2697,6 +2707,16 @@
                 <div>
                   <div class="integ-full-name">Zapier</div>
                   <div class="integ-full-desc">Conecta Avaxon con más de 6,000 apps y automatiza flujos de trabajo sin escribir código</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);padding-top:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:12px;color:var(--text-muted)">Estado</span>
+                    <span id="zapier-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+                    <span style="font-size:12px;color:var(--text-muted)">Cuenta</span>
+                    <span id="zapier-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">—</span>
+                  </div>
                 </div>
                 <div class="integ-full-footer" style="margin-top:auto">
                   <span style="font-size:12px;color:var(--text-muted)">6,000+ aplicaciones</span>
@@ -5302,10 +5322,20 @@
   }
   window.copyWebhookUrl = copyWebhookUrl;
 
-  const VERIFY_TOKEN_VALUE = 'avaxon_meta_verify_2026';
-  function copyVerifyToken() {
-    navigator.clipboard.writeText(VERIFY_TOKEN_VALUE).then(() => {
-      const btn = document.querySelector('[onclick="copyVerifyToken()"]');
+  // El valor real nunca vive en este JS (se mandaba al navegador de
+  // cualquier usuario antes, cliente incluido) — se pide a un endpoint que
+  // verifica super_admin en el servidor, solo cuando se da clic en copiar.
+  async function copyVerifyToken() {
+    const btn = document.querySelector('[onclick="copyVerifyToken()"]');
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    const resp = await fetch(EDGE_BASE + '/admin-get-verify-token', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.verify_token) { showToast('No se pudo obtener el token: ' + (data.error || resp.status), 4000); return; }
+    navigator.clipboard.writeText(data.verify_token).then(() => {
       if (btn) { btn.innerHTML = '<i class="fa fa-check"></i>'; setTimeout(() => { btn.innerHTML = '<i class="fa fa-copy"></i>'; }, 1500); }
     });
   }
@@ -5801,6 +5831,12 @@
 
     if (!FEATURE_AGENT_REQUESTS) {
       const navBot = $('nav-bot'); if (navBot) navBot.style.display = 'none';
+    }
+
+    // "API & Webhooks" (URL del webhook + verify token) es información de
+    // infraestructura — solo super_admin debe verla, nunca un cliente.
+    if (!state.isSuperAdmin) {
+      const apiTab = $('conn-tab-api'); if (apiTab) apiTab.style.display = 'none';
     }
 
     if (role === 'reviewer') {
@@ -6679,16 +6715,42 @@
 
   let campState = { currentCampaignId: null, allCampaigns: [], wizData: {}, csvData: null }
 
+  // Antes caía a allOrgs[0] en modo "Todos los clientes" y creaba/mostraba
+  // campañas de una org arbitraria sin que el super_admin lo supiera — ahora
+  // usa la misma fuente de verdad que el resto del dashboard: sin org activa
+  // seleccionada, no hay orgId (ver isCampNuevaBlocked()).
   function campOrgId() {
-    let id = state.currentOrgId || state.userOrgId
-    if (!id && state.isSuperAdmin && state.allOrgs?.length) id = state.allOrgs[0].id
-    return id || null
+    return getActiveOrgId()
+  }
+
+  function isCampNuevaBlocked() {
+    return !campOrgId()
+  }
+
+  function updateCampNuevaBtnState() {
+    const blocked = isCampNuevaBlocked()
+    ;['camp-nueva-btn', 'camp-nueva-btn-empty'].forEach(id => {
+      const btn = $(id)
+      if (!btn) return
+      if (blocked) {
+        btn.disabled = true
+        btn.title = 'Selecciona un cliente para crear una campaña'
+        btn.style.opacity = '.55'
+        btn.style.cursor = 'not-allowed'
+      } else {
+        btn.disabled = false
+        btn.title = ''
+        btn.style.opacity = ''
+        btn.style.cursor = ''
+      }
+    })
   }
 
   async function loadCampanas() {
     const orgId = campOrgId()
     const list = $('camp-list')
     const empty = $('camp-empty')
+    updateCampNuevaBtnState()
     if (!orgId) {
       if (list)  list.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-dim);font-size:13px">Selecciona un cliente primero</div>'
       if (empty) empty.style.display = 'none'
@@ -6920,11 +6982,30 @@
     loadCampanas()
   }
 
-  function launchCampaign(id, btnEl) {
+  async function launchCampaign(id, btnEl) {
     const btn = btnEl ?? event?.currentTarget
+    const camp = campState.allCampaigns.find(c => c.id === id) ?? (campState.currentCampaignId === id ? await (async () => {
+      const { data } = await sb.from('campaigns').select('*').eq('id', id).single()
+      return data
+    })() : null)
+
+    let recipientCount = camp?.total_contacts || 0
+    if (camp && camp.source_type !== 'csv' && camp.source_type !== 'manual') {
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/send-broadcast`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ filter: camp.source_type, org_id: camp.organization_id, preview: true }),
+        })
+        const r = await res.json()
+        if (res.ok) recipientCount = r.total
+      } catch { /* si falla el preview, se muestra el total_contacts que ya había */ }
+    }
+
     showConfirmModal({
       title: '¿Lanzar esta campaña?',
-      text: 'Se enviarán mensajes a todos los contactos ahora.',
+      text: `Se enviarán mensajes a ${recipientCount} contacto${recipientCount !== 1 ? 's' : ''} ahora. Esta acción no se puede deshacer.`,
       confirmLabel: 'Sí, lanzar',
       danger: false,
       onConfirm: async () => {
@@ -7033,25 +7114,40 @@
 
     $('modal-camp-wizard').style.display = 'flex'
     setTimeout(() => $('wiz-name')?.focus(), 80)
+    loadWizSenderNumber()
   }
 
   // ── Wizard de campaña ─────────────────────────────────────────────────────
   let wizCsvRows = []
 
-  function openCampaignWizard() {
-    campState.wizData = { step: 1, editId: null, name: '', description: '', source: 'all', messageType: 'template', templateId: null, messageBody: '' }
+  async function openCampaignWizard() {
+    if (isCampNuevaBlocked()) { showToast('Selecciona un cliente para crear una campaña'); return }
+    campState.wizData = { step: 1, editId: null, name: '', description: '', source: null, messageType: 'template', templateId: null, messageBody: '' }
     wizCsvRows = []
     wizManualSelected = new Map()
     if ($('wiz-name'))        $('wiz-name').value        = ''
     if ($('wiz-description')) $('wiz-description').value = ''
     if ($('wiz-body'))        $('wiz-body').value        = ''
     setWizStep(1)
-    setWizSource('all')
+    setWizSource(null)
     setWizMsgType('template')
     const wizTitle = document.querySelector('#modal-camp-wizard h3')
     if (wizTitle) wizTitle.textContent = 'Nueva campaña'
     $('modal-camp-wizard').style.display = 'flex'
     setTimeout(() => $('wiz-name')?.focus(), 80)
+    loadWizSenderNumber()
+  }
+
+  // Número de WhatsApp desde el que se enviará la campaña — para que quede
+  // claro antes de mandar, no solo al revisar el resultado después.
+  async function loadWizSenderNumber() {
+    const el = $('wiz-sender-number')
+    if (!el) return
+    el.textContent = 'Cargando…'
+    const orgId = campOrgId()
+    if (!orgId) { el.textContent = '—'; return }
+    const { data } = await sb.from('phone_numbers').select('display_phone_number').eq('organization_id', orgId).limit(1).maybeSingle()
+    el.textContent = data?.display_phone_number ? formatPhoneMX(data.display_phone_number) : 'Sin número configurado'
   }
 
   function closeCampaignWizard() {
@@ -7069,6 +7165,8 @@
     if (bar) bar.style.width = (n === 1 ? '50%' : '100%')
     const stepLabel = $('wiz-step-label')
     if (stepLabel) stepLabel.textContent = `Paso ${n} de 2`
+    const backBtn = $('wiz-back-btn')
+    if (backBtn) backBtn.style.display = n === 1 ? 'none' : 'flex'
     const nextBtn = $('wiz-next-btn')
     if (nextBtn) {
       if (n === 2) {
@@ -7086,9 +7184,11 @@
   async function wizNext() {
     const name = ($('wiz-name')?.value || '').trim()
     if (!name) { $('wiz-name')?.focus(); return }
+    if (!campState.wizData.source) { showToast('Selecciona a quién le vas a enviar la campaña'); return }
+    if (campState.wizData.source === 'manual' && wizManualSelected.size === 0) { showToast('Selecciona al menos un contacto'); return }
+    if (campState.wizData.source === 'csv' && wizCsvRows.length === 0) { showToast('Carga un CSV con al menos un contacto'); return }
     campState.wizData.name        = name
     campState.wizData.description = ($('wiz-description')?.value || '').trim()
-    campState.wizData.source      = campState.wizData.source || 'all'
     // Load templates for step 2
     await loadWizTemplates()
     setWizStep(2)
@@ -7186,6 +7286,10 @@
   async function fetchWizCount() {
     const countEl = $('wiz-count-label')
     if (!countEl) return
+    if (!campState.wizData.source) {
+      countEl.textContent = 'Selecciona una audiencia'
+      return
+    }
     if (campState.wizData.source === 'csv') {
       countEl.textContent = wizCsvRows.length > 0 ? `${wizCsvRows.length} contactos del CSV` : 'Sin CSV cargado'
       return
@@ -9875,6 +9979,7 @@
       updateIntegPill('google_sheets', 'gsheets-integ-pill');
       updateIntegPill('stripe',        'stripe-integ-pill');
       updateIntegPill('zapier',        'zapier-integ-pill');
+      updateSheetsZapierDetails();
       return;
     }
     const { data } = await sb.from('integrations').select('provider,status,config,connected_at').eq('organization_id', orgId);
@@ -9885,6 +9990,7 @@
     updateIntegPill('google_sheets', 'gsheets-integ-pill');
     updateIntegPill('stripe',        'stripe-integ-pill');
     updateIntegPill('zapier',        'zapier-integ-pill');
+    updateSheetsZapierDetails();
   }
 
   function updateIntegPill(provider, pillId) {
@@ -9896,6 +10002,30 @@
     } else {
       pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado';
     }
+  }
+
+  // Panel "Estado / Cuenta" de una tarjeta de integración (igual que Calendar
+  // y Stripe) — accountText recibe el registro de state.integrations[provider].
+  function updateIntegDetail(provider, statusId, accountId, accountText) {
+    const detStatus  = document.getElementById(statusId);
+    const detAccount = document.getElementById(accountId);
+    const integ      = state.integrations?.[provider];
+    const connected  = integ?.status === 'connected';
+    if (detStatus) {
+      detStatus.textContent = connected ? 'Activo' : 'Sin conexión';
+      detStatus.style.color = connected ? 'var(--green)' : 'var(--text-muted)';
+    }
+    if (detAccount) {
+      const text = connected ? (accountText(integ) || '—') : '—';
+      detAccount.textContent = text;
+      detAccount.title = text;
+      detAccount.style.color = connected ? 'var(--text)' : 'var(--text-muted)';
+    }
+  }
+
+  function updateSheetsZapierDetails() {
+    updateIntegDetail('google_sheets', 'gsheets-detail-status', 'gsheets-detail-account', integ => integ?.config?.email);
+    updateIntegDetail('zapier', 'zapier-detail-status', 'zapier-detail-account', integ => integ?.config?.webhook_url);
   }
 
   // Única puerta de salida hacia la Edge Function integration-save — todo
@@ -9939,6 +10069,7 @@
   // son solo un acceso rápido a su card grande de detalle (misma vista) — no
   // repiten la información, por eso solo hacen scroll + un resalte breve.
   function switchConnTab(tab) {
+    if (tab === 'api' && !state.isSuperAdmin) return; // solo super_admin ve webhook/verify token
     ['canales','herramientas','api'].forEach(t => {
       const btn = document.getElementById('conn-tab-' + t);
       const panel = document.getElementById('conn-panel-' + t);
@@ -10106,6 +10237,7 @@
         state.integrations['google_sheets']   = { provider: 'google_sheets',   status: 'disconnected', config: null, connected_at: null };
         updateGcalUI();
         updateIntegPill('google_sheets', 'gsheets-integ-pill');
+        updateSheetsZapierDetails();
         showToast('Google desconectado');
       },
     });
@@ -10386,6 +10518,7 @@
         if (result.error) { errEl.textContent = 'Error al guardar: ' + result.error; errEl.style.display = 'block'; return; }
         state.integrations['google_sheets'] = { ...gsheetsInteg, config: result.config || { ...(gsheetsInteg.config || {}), spreadsheet_id: sheetId } };
         updateIntegPill('google_sheets', 'gsheets-integ-pill');
+        updateSheetsZapierDetails();
         closeIntegModal();
         showToast('Hoja de cálculo guardada');
 
@@ -10424,6 +10557,7 @@
         if (!state.integrations) state.integrations = {};
         state.integrations['zapier'] = { provider: 'zapier', status: 'connected', config: { webhook_url: url }, connected_at: new Date().toISOString() };
         updateIntegPill('zapier', 'zapier-integ-pill');
+        updateSheetsZapierDetails();
         closeIntegModal();
 
         if (result.api_key) {
@@ -10451,6 +10585,7 @@
         if (err) { showToast('Error al desconectar: ' + err, 4000); return; }
         const pillIds = { google_sheets: 'gsheets-integ-pill', zapier: 'zapier-integ-pill' };
         if (pillIds[provider]) updateIntegPill(provider, pillIds[provider]);
+        updateSheetsZapierDetails();
         closeIntegModal();
         showToast('Integración desconectada');
       },
@@ -11525,6 +11660,11 @@
             <label style="font-size:11.5px;font-weight:700;color:var(--text-muted);letter-spacing:.05em;text-transform:uppercase;display:block;margin-bottom:6px">Descripción (opcional)</label>
             <input id="wiz-description" type="text" placeholder="Descripción interna de la campaña" style="width:100%;padding:11px 14px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;outline:none;transition:border-color .15s" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
           </div>
+          <!-- Número de envío -->
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--hover-bg);border-radius:10px;font-size:12.5px;color:var(--text-muted)">
+            <i class="fa fa-phone" style="font-size:11px;opacity:.8"></i>
+            Se enviará desde <span id="wiz-sender-number" style="font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace">—</span>
+          </div>
           <!-- Destinatarios -->
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -11532,7 +11672,7 @@
               <span id="wiz-count-label" style="font-size:12px;color:var(--text-muted)">—</span>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
-              <button id="wiz-src-all"       onclick="setWizSource('all')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--accent);background:var(--accent-sub);font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-users" style="font-size:11px;opacity:.8"></i> Todos los contactos</button>
+              <button id="wiz-src-all"       onclick="setWizSource('all')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-users" style="font-size:11px;opacity:.8"></i> Todos los contactos</button>
               <button id="wiz-src-new"       onclick="setWizSource('new')"       style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-user-plus" style="font-size:11px;opacity:.8"></i> Nuevos</button>
               <button id="wiz-src-qualified" onclick="setWizSource('qualified')" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-star" style="font-size:11px;opacity:.8"></i> Calificados</button>
               <button id="wiz-src-active_24h" onclick="setWizSource('active_24h')" style="padding:9px 10px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;text-align:left;display:flex;align-items:center;gap:6px;transition:all .12s"><i class="fa fa-clock" style="font-size:11px;opacity:.8"></i> Activos 24h</button>
@@ -11599,7 +11739,7 @@
 
       <!-- Footer -->
       <div style="padding:14px 24px 18px;display:flex;gap:10px;border-top:1px solid var(--border);flex-shrink:0">
-        <button onclick="campState.wizData.step===1?closeCampaignWizard():setWizStep(1)" style="flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Atrás</button>
+        <button id="wiz-back-btn" onclick="setWizStep(1)" style="display:none;flex:1;padding:11px;background:transparent;border:1.5px solid var(--border);border-radius:12px;font-size:13.5px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Atrás</button>
         <button id="wiz-next-btn" onclick="wizNext()" class="btn-primary" style="flex:2;padding:11px;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px">
           Siguiente <i class="fa fa-arrow-right" style="font-size:11px"></i>
         </button>
