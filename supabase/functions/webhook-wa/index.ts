@@ -923,8 +923,33 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   })
 }
 
+// ── Verifica que el POST venga realmente de Meta ────────────────────────────
+// Meta firma cada entrega con HMAC-SHA256 del body crudo usando el App
+// Secret, en el header X-Hub-Signature-256 ("sha256=<hex>"). El GET de
+// verificación (hub.verify_token) solo protege el handshake inicial — sin
+// esto, cualquiera que conociera la URL del webhook podía mandar POSTs
+// falsos y hacer que el bot respondiera/gastara OpenAI y WhatsApp.
+async function verifyMetaSignature(rawBody: string, signatureHeader: string | null, appSecret: string): Promise<boolean> {
+  if (!signatureHeader || !signatureHeader.startsWith('sha256=')) return false
+  const expectedHex = signatureHeader.slice('sha256='.length).toLowerCase()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(appSecret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sigBuffer  = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody))
+  const computedHex = Array.from(new Uint8Array(sigBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
+  if (computedHex.length !== expectedHex.length) return false
+  let diff = 0
+  for (let i = 0; i < computedHex.length; i++) diff |= computedHex.charCodeAt(i) ^ expectedHex.charCodeAt(i)
+  return diff === 0
+}
+
 Deno.serve(async (req: Request) => {
   const VERIFY_TOKEN = Deno.env.get('WEBHOOK_VERIFY_TOKEN')!
+  const APP_SECRET    = Deno.env.get('META_APP_SECRET') ?? ''
   const env: Env = {
     WA_TOKEN:     Deno.env.get('WA_ACCESS_TOKEN')!,
     OPENAI_KEY:   Deno.env.get('OPENAI_API_KEY')!,
@@ -948,8 +973,20 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 })
 
+  const rawBody = await req.text()
+
+  if (!APP_SECRET) {
+    console.error('webhook-wa: META_APP_SECRET no está configurado — se rechaza el POST por seguridad')
+    return new Response('Unauthorized', { status: 401 })
+  }
+  const signature = req.headers.get('x-hub-signature-256')
+  if (!(await verifyMetaSignature(rawBody, signature, APP_SECRET))) {
+    console.error('webhook-wa: firma X-Hub-Signature-256 inválida o ausente')
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   let body: any
-  try { body = await req.json() } catch { return new Response('Bad JSON', { status: 400 }) }
+  try { body = JSON.parse(rawBody) } catch { return new Response('Bad JSON', { status: 400 }) }
 
   EdgeRuntime.waitUntil(handleIncoming(body, env))
   return new Response('ok', { status: 200 })
