@@ -3555,7 +3555,7 @@
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
               <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Asistente de IA 24/7</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Número de WhatsApp</div>
-              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Conversaciones ilimitadas</div>
+              <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i><span id="cuenta-plan-conv-limit">Conversaciones ilimitadas</span></div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Transcripción de audios</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Pipeline de leads</div>
               <div style="display:flex;align-items:center;gap:9px;font-size:13px"><i class="fa fa-check" style="color:var(--accent);font-size:11px"></i>Integraciones Google y Stripe</div>
@@ -3689,9 +3689,24 @@
     btn.style.color = isHidden ? '#22c55e' : '#3a5068'
   }
 
+  // WhatsApp Cloud API históricamente agregaba un "1" extra para celulares
+  // mexicanos (52 + 1 + 10 dígitos) que no es parte real del número — se
+  // quita antes de formatear. Deja cualquier otro número (otro país, o un
+  // MX que ya venga sin ese 1) intacto salvo el formato con espacios.
+  function formatPhoneMX(phone) {
+    if (!phone) return '—'
+    let d = String(phone).replace(/\D/g, '')
+    if (d.length === 13 && d.startsWith('521')) d = '52' + d.slice(3)
+    if (d.length === 12 && d.startsWith('52')) {
+      const local = d.slice(2)
+      return `+52 ${local.slice(0,3)} ${local.slice(3,6)} ${local.slice(6)}`
+    }
+    return phone.startsWith('+') ? phone : `+${d || phone}`
+  }
+
   function maskPhone(phone) {
     if (!phone) return '—'
-    if (!state.isReviewer) return phone
+    if (!state.isReviewer) return formatPhoneMX(phone)
     const d = phone.replace(/\D/g, '')
     return d.length >= 4 ? '••• ••• ' + d.slice(-4) : '••••••'
   }
@@ -5411,6 +5426,14 @@
       ])
 
       // ── Compute KPI values ──────────────────────────────────────────────────
+      // Un conteo (HEAD) que falla (ej. 503) no debe verse igual que un
+      // conteo real de 0 — eso es engañoso. kpiDisplay() muestra un aviso en
+      // la tarjeta en vez de "0" cuando la petición falló; los números
+      // crudos (con fallback a 0) se siguen usando para los cálculos
+      // internos (delta vs ayer, etc.) para no romper esas cuentas.
+      const WARN_VALUE = '<span style="color:#f59e0b" title="No se pudo cargar este dato"><i class="fa fa-triangle-exclamation"></i> Error</span>'
+      function kpiDisplay(result, rawValue) { return result?.error ? WARN_VALUE : rawValue }
+
       const todayMsgs = msgsToday.data ?? []
       const yesterMsgs = msgsYest.data ?? []
       const inboundToday   = todayMsgs.filter(m => m.direction === 'inbound').length
@@ -5437,13 +5460,13 @@
       // ── KPIs ────────────────────────────────────────────────────────────────
       const kpis = []
       if (isAll && state.isSuperAdmin) {
-        kpis.push({ label:'Clientes', value: orgsCount.count ?? 0, foot:'Organizaciones activas', icon:'fa-building', color:'#6366f1', iconBg:'rgba(99,102,241,.12)' })
+        kpis.push({ label:'Clientes', value: kpiDisplay(orgsCount, orgsCount.count ?? 0), foot:'Organizaciones activas', icon:'fa-building', color:'#6366f1', iconBg:'rgba(99,102,241,.12)' })
       }
       kpis.push(
         { label:'Recibidos hoy', value: inboundToday, trend: delta(inboundToday, inboundYest), trendClass: deltaClass(inboundToday, inboundYest), foot:'Mensajes de clientes', icon:'fa-arrow-down-left', color:'#22c55e', iconBg:'var(--accent-sub)' },
         { label:'Bot envió hoy', value: outboundToday, trend: delta(outboundToday, outboundYest), trendClass: deltaClass(outboundToday, outboundYest), foot:'Respuestas del agente', icon:'fa-robot', color:'#3b82f6', iconBg:'rgba(59,130,246,.12)' },
-        { label:'Nuevos hoy', value: newHoy, trend: delta(newHoy, newAyer), trendClass: deltaClass(newHoy, newAyer), foot:'Contactos registrados', icon:'fa-user-plus', color:'#f59e0b', iconBg:'rgba(245,158,11,.12)' },
-        { label:'Abiertas ahora', value: openConvs, foot: closedToday > 0 ? `${closedToday} resueltas hoy` : 'Conversaciones activas', icon:'fa-comments', color:'#a78bfa', iconBg:'rgba(167,139,250,.12)' },
+        { label:'Nuevos hoy', value: kpiDisplay(contactsToday, newHoy), trend: delta(newHoy, newAyer), trendClass: deltaClass(newHoy, newAyer), foot:'Contactos registrados', icon:'fa-user-plus', color:'#f59e0b', iconBg:'rgba(245,158,11,.12)' },
+        { label:'Abiertas ahora', value: kpiDisplay(convsOpen, openConvs), foot: closedToday > 0 ? `${closedToday} resueltas hoy` : 'Conversaciones activas', icon:'fa-comments', color:'#a78bfa', iconBg:'rgba(167,139,250,.12)' },
       )
       renderDashKpis(kpis)
 
@@ -5463,9 +5486,12 @@
       buildMsgChart(dayKeys.map(k => dayMap[k]))
 
       // ── Calidad del agente ──────────────────────────────────────────────────
-      const phone      = (phonesRes.data ?? [])[0]
-      const totalToday = todayMsgs.length
-      const ratio      = totalToday > 0 ? Math.round((outboundToday / totalToday) * 100) : null
+      // "Cobertura" es respuestas del bot por mensaje recibido — con 0
+      // recibidos no hay nada que cubrir, así que el ratio no aplica (antes
+      // dividía entre el total de mensajes del día, lo que daba 100% con 0
+      // recibidos en cuanto el bot mandaba cualquier mensaje saliente).
+      const phone = (phonesRes.data ?? [])[0]
+      const ratio = inboundToday > 0 ? Math.round((outboundToday / inboundToday) * 100) : null
       renderAgenteCalidad({ phone, ratio, closedToday, outboundToday, inboundToday })
 
       // ── Pipeline ────────────────────────────────────────────────────────────
@@ -5850,7 +5876,10 @@
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
     const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','pagos'];
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
-    loadConversaciones();
+    // switchView('conversaciones') ya llama loadConversaciones() en su propio
+    // dispatch — llamarlo también aquí sin condición duplicaba la petición
+    // cada vez que esa era la última vista visitada.
+    if (_savedView !== 'conversaciones') loadConversaciones();
     loadIntegrations();
     handleGoogleOAuthRedirect();
 
@@ -6053,8 +6082,19 @@
   async function loadInventario() {
     const tbody = $('tbody-inv')
     if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--text-dim);font-size:13px">Cargando…</td></tr>`
-    const orgId = state.currentOrgId
-    if (!orgId) return
+    // Usa getActiveOrgId() (currentOrgId || userOrgId), no state.currentOrgId
+    // solo — ese queda null para cualquier usuario no-super_admin, así que
+    // esto se quedaba en "Cargando…" para siempre sin llegar nunca a pedir
+    // los datos. El inventario es por negocio: en "Todos los clientes" no
+    // hay a quién mostrarle, así que se pide elegir uno.
+    const orgId = getActiveOrgId()
+    const sb2stats = $('inv-stats-bar')
+    if (!orgId) {
+      if (sb2stats) sb2stats.textContent = 'Selecciona un cliente'
+      if (tbody) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Selecciona un cliente para ver su inventario</td></tr>`
+      invData = []
+      return
+    }
     const { data } = await sb.from('products').select('*').eq('organization_id', orgId).order('name')
     invData = data ?? []
     const disp    = invData.filter(p => p.status === 'disponible').length
@@ -6067,7 +6107,13 @@
   function renderInvTable(data) {
     const tbody = $('tbody-inv')
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">Sin productos · Agrega uno o importa un CSV</td></tr>`
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">
+        <div style="margin-bottom:12px">Sin productos todavía</div>
+        <button onclick="invOpenModal()" class="btn-primary" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar producto
+        </button>
+      </td></tr>`
       return
     }
     tbody.innerHTML = data.map(p => {
@@ -6853,7 +6899,7 @@
         <td style="padding:10px 20px">
           <div style="font-size:13px;font-weight:600;color:var(--text)">${cc.name || '—'}</div>
         </td>
-        <td style="padding:10px 16px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11.5px">${cc.phone}</td>
+        <td style="padding:10px 16px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11.5px">${formatPhoneMX(cc.phone)}</td>
         <td style="padding:10px 16px">
           <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:${cs.color}">
             <span style="width:6px;height:6px;border-radius:50%;background:${cs.color};flex-shrink:0"></span>${cs.label}
@@ -9733,14 +9779,17 @@
     if (roleEl)  roleEl.textContent  = state.userRole === 'super_admin' ? 'Super Admin' : state.userRole === 'owner' ? 'Propietario' : 'Agente';
 
     if (orgId) {
-      const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle();
+      // Misma fuente de verdad que Configuración → Mi plan: organizations
+      // (plan_id, status, trial_ends_at) + plans. Antes esto leía de
+      // `subscriptions`, una tabla que nunca se llena (0 filas) — por eso
+      // siempre decía "Sin plan" aunque Configuración sí mostrara el plan
+      // real de organizations.plan_id.
+      const { data: org } = await sb.from('organizations').select('name, plan_id, status, trial_ends_at').eq('id', orgId).maybeSingle();
       if (orgEl) orgEl.textContent = org?.name || '—';
 
-      // Suscripción
-      const { data: sub } = await sb.from('subscriptions')
-        .select('plan_id, status, current_period_end')
-        .eq('organization_id', orgId)
-        .maybeSingle();
+      const { data: plan } = org?.plan_id
+        ? await sb.from('plans').select('name, price_monthly, max_conversations').eq('id', org.plan_id).maybeSingle()
+        : { data: null };
 
       const planName  = $('cuenta-plan-name');
       const planSt    = $('cuenta-plan-status');
@@ -9749,11 +9798,15 @@
       const trialDays = $('cuenta-trial-days');
       const trialProg = $('cuenta-trial-progress');
 
-      const PLAN_LABELS = { mostrador: 'Mostrador — $2,990/mes', sucursal: 'Sucursal — $4,990/mes', cadena: 'Cadena — $10,990/mes' }
-      if (planName) planName.textContent = PLAN_LABELS[sub?.plan_id] ?? sub?.plan_id ?? 'Sin plan';
+      if (planName) {
+        planName.textContent = plan
+          ? `${plan.name}${plan.price_monthly ? ` — $${Number(plan.price_monthly).toLocaleString('es-MX')}/mes` : ''}`
+          : 'Sin plan';
+      }
 
-      if (sub?.status === 'trialing') {
-        const end       = new Date(sub.current_period_end);
+      const isTrial = org?.status === 'trial' && org?.trial_ends_at;
+      if (isTrial) {
+        const end       = new Date(org.trial_ends_at);
         const daysLeft  = Math.max(0, Math.ceil((end - Date.now()) / 86400000));
         const total     = 14;
         const pct       = Math.round(((total - daysLeft) / total) * 100);
@@ -9761,13 +9814,24 @@
         if (planEnd)   planEnd.textContent = end.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
         if (trialWrap) trialWrap.style.display = 'block';
         if (trialDays) trialDays.textContent = `${daysLeft} día${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''}`;
-        if (trialProg) trialProg.style.width = pct + '%';
-      } else if (sub) {
-        if (planSt)  { planSt.innerHTML = '<span class="pill pill-green no-dot" style="font-size:11px">Activo</span>'; }
-        const end = new Date(sub.current_period_end);
-        if (planEnd) planEnd.textContent = end.toLocaleDateString('es-MX', { day:'numeric', month:'short', year:'numeric' });
+        if (trialProg) trialProg.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      } else if (plan) {
+        if (trialWrap) trialWrap.style.display = 'none';
+        if (planSt)  { planSt.innerHTML = org?.status === 'active' ? '<span class="pill pill-green no-dot" style="font-size:11px">Activo</span>' : (statusPill ? statusPill(org?.status) : org?.status || '—'); }
+        if (planEnd) planEnd.textContent = '—'; // sin sistema de facturación/renovación activo aún
       } else {
+        if (trialWrap) trialWrap.style.display = 'none';
         if (planSt) planSt.textContent = '—';
+        if (planEnd) planEnd.textContent = '—';
+      }
+
+      // "Incluido en tu plan": el límite de conversaciones es el del plan
+      // real, no un texto fijo de "ilimitadas" igual para todos.
+      const convLimitEl = $('cuenta-plan-conv-limit');
+      if (convLimitEl) {
+        convLimitEl.textContent = plan?.max_conversations
+          ? `${Number(plan.max_conversations).toLocaleString('es-MX')} conversaciones/mes`
+          : 'Conversaciones ilimitadas';
       }
     }
   }
@@ -10131,13 +10195,23 @@
       if (detStatus)  { detStatus.textContent = 'Verificación pendiente'; detStatus.style.color = '#f59e0b'; }
       if (detAccount) { detAccount.textContent = email; detAccount.style.color = 'var(--text)'; }
     } else {
+      const orgBlocked = isIntegrationsOrgBlocked();
       if (pill) { pill.className = 'pill pill-amber no-dot'; pill.textContent = 'No conectado'; }
       if (integPill) { integPill.className = 'pill pill-amber no-dot'; integPill.textContent = 'No conectado'; }
       if (btn) {
-        btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe';
-        btn.onclick = stripeConnect;
-        btn.style.cssText = 'font-size:13px;padding:7px 16px';
-        btn.className = 'btn-primary';
+        if (orgBlocked) {
+          btn.innerHTML = 'Selecciona un cliente';
+          btn.onclick = null;
+          btn.disabled = true;
+          btn.style.cssText = 'font-size:13px;padding:7px 16px;opacity:.55;cursor:not-allowed';
+          btn.className = 'btn-primary';
+        } else {
+          btn.innerHTML = '<i class="fa fa-link" style="font-size:11px;margin-right:5px"></i>Conectar con Stripe';
+          btn.onclick = stripeConnect;
+          btn.disabled = false;
+          btn.style.cssText = 'font-size:13px;padding:7px 16px';
+          btn.className = 'btn-primary';
+        }
       }
       if (detStatus)  { detStatus.textContent = 'Sin conexión'; detStatus.style.color = 'var(--text-muted)'; }
       if (detAccount) { detAccount.textContent = '—'; detAccount.style.color = 'var(--text-muted)'; }
