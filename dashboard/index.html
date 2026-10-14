@@ -475,7 +475,14 @@
       transition: all .15s;
     }
     .agent-toggle-btn:hover { background: rgba(16,185,129,.22); }
-    .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 6px; }
+    .sidebar-user-wrap { position: relative; }
+    .sidebar-user-trigger {
+      display: flex; align-items: center; gap: 10px; padding: 6px;
+      width: 100%; background: none; border: none; cursor: pointer;
+      border-radius: 10px; transition: background .15s; text-align: left;
+      font-family: inherit;
+    }
+    .sidebar-user-trigger:hover, .sidebar-user-trigger.open { background: rgba(255,255,255,.06); }
     .sidebar-user-avatar {
       width: 30px; height: 30px; background: #5980a6;
       border-radius: 99px;
@@ -492,15 +499,49 @@
       font-size: 12px; color: #6f8399;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .btn-signout {
-      background: none; border: 1px solid #1e2e40;
-      color: #4a6070;
-      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
-      border-radius: 6px;
-      padding: 4px 8px; cursor: pointer; transition: all 0.15s;
-      white-space: nowrap; flex-shrink: 0; letter-spacing: 0.04em;
+    .sidebar-user-chevron { color: #4a6070; flex-shrink: 0; transition: transform .15s; }
+    .sidebar-user-trigger.open .sidebar-user-chevron { transform: rotate(180deg); }
+
+    /* ── Menú de usuario (se abre hacia arriba desde el fondo del sidebar) ── */
+    .user-menu {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      width: 272px;
+      background: linear-gradient(180deg, #1f2c3f 0%, #16202d 100%);
+      border: 1px solid #0f1720;
+      border-radius: 14px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.45);
+      z-index: 500;
+      padding: 6px;
     }
-    .btn-signout:hover { border-color: rgba(239,68,68,0.5); color: #ef4444; }
+    .user-menu.open { display: block; }
+    .user-menu-header { padding: 16px 14px 14px; text-align: center; }
+    .user-menu-avatar {
+      width: 56px; height: 56px; border-radius: 50%; background: #5980a6;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: #0e1b26;
+    }
+    .user-menu-name { font-size: 15px; font-weight: 700; color: #e7edf4; margin-bottom: 2px; }
+    .user-menu-email { font-size: 12.5px; color: #8a9bb0; word-break: break-all; margin-bottom: 10px; }
+    .user-menu-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+    .user-menu-role, .user-menu-org {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    }
+    .user-menu-role { background: rgba(89,128,166,.18); color: #8db3d6; }
+    .user-menu-org { background: rgba(34,197,94,.12); color: #6ff0a4; }
+    .user-menu-divider { height: 1px; background: #26333f; margin: 4px 6px; }
+    .user-menu-item {
+      display: flex; align-items: center; gap: 10px; width: 100%;
+      padding: 10px 12px; background: none; border: none; cursor: pointer;
+      border-radius: 9px; font-family: 'Barlow', sans-serif; font-size: 13.5px; font-weight: 500;
+      color: #c3cedb; text-align: left; transition: background .13s;
+    }
+    .user-menu-item:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .user-menu-item i { width: 15px; text-align: center; opacity: .75; flex-shrink: 0; }
+    .user-menu-item-danger { color: #f87171; }
+    .user-menu-item-danger:hover { background: rgba(239,68,68,.12); color: #f87171; }
 
     /* Hamburger mobile */
     .hamburger {
@@ -1660,13 +1701,31 @@
           <button class="agent-toggle-btn" id="agent-toggle-btn">Pausar</button>
         </div>
       </div>
-      <div class="sidebar-user">
-        <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
-        <div class="sidebar-user-info">
-          <div class="sidebar-user-name" id="sidebar-user-name">—</div>
-          <div class="sidebar-user-email" id="sidebar-email">—</div>
+      <div class="sidebar-user-wrap">
+        <button class="sidebar-user-trigger" id="sidebar-user-trigger" type="button">
+          <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
+          <div class="sidebar-user-info">
+            <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+            <div class="sidebar-user-email" id="sidebar-email">—</div>
+          </div>
+          <svg class="sidebar-user-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+        </button>
+        <div class="user-menu" id="user-menu">
+          <div class="user-menu-header">
+            <div class="user-menu-avatar" id="user-menu-avatar">?</div>
+            <div class="user-menu-name" id="user-menu-name">—</div>
+            <div class="user-menu-email" id="user-menu-email">—</div>
+            <div class="user-menu-meta">
+              <span class="user-menu-role" id="user-menu-role">—</span>
+              <span class="user-menu-org" id="user-menu-org" style="display:none"></span>
+            </div>
+          </div>
+          <div class="user-menu-divider"></div>
+          <button class="user-menu-item" id="user-menu-cuenta" type="button"><i class="fa fa-user"></i> Mi cuenta</button>
+          <button class="user-menu-item" id="user-menu-password" type="button"><i class="fa fa-key"></i> Cambiar contraseña</button>
+          <div class="user-menu-divider"></div>
+          <button class="user-menu-item user-menu-item-danger" id="user-menu-signout" type="button"><i class="fa fa-arrow-right-from-bracket"></i> Cerrar sesión</button>
         </div>
-        <button class="btn-signout" id="signout-btn">Salir</button>
       </div>
     </div>
   </aside>
@@ -3657,6 +3716,7 @@
   let state = {
     isSuperAdmin: false,
     userEmail: '',
+    userFullName: null,
     userRole: '',
     userOrgId: null,
     currentOrgId: null,
@@ -3799,6 +3859,18 @@
     if (parts.length === 0) return '?';
     if (parts.length === 1) return parts[0][0].toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  // Única fuente del nombre/avatar del sidebar — se llama una vez que ya se
+  // conoce state.userFullName (puede ser null si el perfil no tiene
+  // full_name), nunca antes, para que nunca se vea el usuario del correo
+  // parpadear y luego cambiar a full_name.
+  function updateSidebarUserName() {
+    const display = state.userFullName || state.userEmail?.split('@')[0] || '—';
+    const nameEl = $('sidebar-user-name');
+    const avatarEl = $('sidebar-user-avatar');
+    if (nameEl) nameEl.textContent = display;
+    if (avatarEl) avatarEl.textContent = initials(state.userFullName || state.userEmail || '?');
   }
 
   function statusPill(status) {
@@ -5920,25 +5992,98 @@
   $('recovery-btn').addEventListener('click', handleSetNewPassword);
   $('recovery-password-confirm').addEventListener('keydown', e => { if (e.key === 'Enter') handleSetNewPassword(); });
 
-  $('signout-btn').addEventListener('click', async () => {
-    await sb.auth.signOut();
-    window.location.href = '../index.html';
+  // ── Menú de usuario (avatar + nombre + correo, abajo del sidebar) ───────
+  function isUserMenuOpen() { return $('user-menu').classList.contains('open'); }
+
+  function closeUserMenu() {
+    $('user-menu').classList.remove('open');
+    $('sidebar-user-trigger').classList.remove('open');
+    document.removeEventListener('click', onUserMenuOutsideClick, true);
+    document.removeEventListener('keydown', onUserMenuEscape);
+  }
+
+  function onUserMenuOutsideClick(e) {
+    if (!$('sidebar-user-trigger').closest('.sidebar-user-wrap').contains(e.target)) closeUserMenu();
+  }
+  function onUserMenuEscape(e) { if (e.key === 'Escape') closeUserMenu(); }
+
+  async function openUserMenu() {
+    $('user-menu').classList.add('open');
+    $('sidebar-user-trigger').classList.add('open');
+    document.addEventListener('click', onUserMenuOutsideClick, true);
+    document.addEventListener('keydown', onUserMenuEscape);
+
+    const display = state.userFullName || state.userEmail?.split('@')[0] || '—';
+    $('user-menu-avatar').textContent = initials(state.userFullName || state.userEmail || '?');
+    $('user-menu-name').textContent = display;
+    $('user-menu-email').textContent = state.userEmail || '—';
+    $('user-menu-role').textContent = state.userRole === 'super_admin' ? 'Super Admin'
+      : state.userRole === 'owner' ? 'Propietario'
+      : state.userRole === 'admin' ? 'Admin'
+      : state.userRole === 'reviewer' ? 'Revisor'
+      : 'Agente';
+
+    const orgPill = $('user-menu-org');
+    const orgId = getActiveOrgId();
+    if (!orgId) {
+      if (state.isSuperAdmin) { orgPill.textContent = 'Todos los clientes'; orgPill.style.display = 'inline-block'; }
+      else orgPill.style.display = 'none';
+      return;
+    }
+    orgPill.style.display = 'inline-block';
+    orgPill.textContent = '…';
+    const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle();
+    orgPill.textContent = org?.name || '—';
+  }
+
+  $('sidebar-user-trigger').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (isUserMenuOpen()) closeUserMenu(); else openUserMenu();
+  });
+
+  $('user-menu-cuenta').addEventListener('click', () => {
+    closeUserMenu();
+    switchView('cuenta');
+  });
+
+  $('user-menu-password').addEventListener('click', () => {
+    closeUserMenu();
+    showChangePasswordModal();
+  });
+
+  $('user-menu-signout').addEventListener('click', () => {
+    closeUserMenu();
+    showConfirmModal({
+      title: '¿Seguro que quieres cerrar sesión?',
+      text: 'Tendrás que volver a iniciar sesión para entrar al dashboard.',
+      confirmLabel: 'Cerrar sesión',
+      cancelLabel: 'Cancelar',
+      danger: true,
+      onConfirm: async () => {
+        await sb.auth.signOut();
+        window.location.href = '../index.html';
+      },
+    });
   });
 
   async function bootstrap(user) {
     state.userEmail = user.email;
     state.userId    = user.id;
+    // El nombre se pinta una sola vez, ya con el perfil cargado (abajo) — antes
+    // se mostraba primero el usuario del correo ("hectorgarcia") y luego, si
+    // la consulta de profiles tardaba o el flujo de términos/onboarding
+    // interrumpía bootstrap(), a veces se quedaba así en vez de actualizarse
+    // a full_name ("Hector García").
     $('sidebar-email').textContent = user.email;
-    if ($('sidebar-user-name')) $('sidebar-user-name').textContent = user.email.split('@')[0];
-
-    const userIni = initials(user.email || '?');
-    $('sidebar-user-avatar').textContent = userIni;
 
     const { data: profileData } = await sb
       .from('profiles')
       .select('role, organization_id, full_name, terms_accepted_at, onboarding_done_at')
       .eq('id', user.id)
       .maybeSingle();
+
+    state.userFullName = profileData?.full_name || null;
+    updateSidebarUserName();
 
     const role = profileData?.role ?? 'agent';
     state.isSuperAdmin = role === 'super_admin';
@@ -5994,11 +6139,6 @@
   }
 
   async function finishBootstrap(profileData) {
-    // Update sidebar user name with full_name if available
-    if (profileData?.full_name && $('sidebar-user-name')) {
-      $('sidebar-user-name').textContent = profileData.full_name;
-      $('sidebar-user-avatar').textContent = initials(profileData.full_name);
-    }
     if (state.isSuperAdmin) {
       $('org-switcher-wrap').style.display = 'block';
       $('nav-section-interno').style.display = 'block';
