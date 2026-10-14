@@ -65,13 +65,15 @@
       --hover-bg:     rgba(0,0,0,.04);
     }
 
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
     body {
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       font-size: 14px;
       color: var(--text);
       background: var(--page-bg);
       min-height: 100vh;
+      max-width: 100vw;
+      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -406,7 +408,17 @@
     }
 
     /* Sidebar nav */
-    .sidebar-nav { flex: 1; padding: 4px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+    /* scrollbar visible a propósito (antes dependía del auto-hide del SO,
+       así que en pantallas bajas parecía que el menú "se cortaba" en vez de
+       poder desplazarse) */
+    .sidebar-nav {
+      flex: 1; padding: 4px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent;
+    }
+    .sidebar-nav::-webkit-scrollbar { width: 6px; }
+    .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.3); }
     .nav-item {
       display: flex; align-items: center; gap: 10px; padding: 9px 12px;
       cursor: pointer; border-radius: 9px;
@@ -437,17 +449,19 @@
     .nav-badge-blue  { background: #2c455d; color: #c3cedb; }
 
     /* Sidebar bottom */
-    .sidebar-bottom { padding: 0 18px 28px; flex-shrink: 0; margin-top: auto; display: flex; flex-direction: column; gap: 12px; }
+    /* Compacta — en pantallas bajas (~760px de alto) esta tarjeta tapaba los
+       últimos ítems del menú (Configuración, Mi cuenta, Panel Admin). */
+    .sidebar-bottom { padding: 0 18px 16px; flex-shrink: 0; margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
     .agent-status-widget {
-      padding: 14px; border-radius: 11px;
+      padding: 9px 11px; border-radius: 10px;
       background: #131c27;
       border: 1px solid #26333f;
     }
     .agent-status-widget-label {
-      font-family: 'Barlow Condensed', sans-serif; font-size: 11px; letter-spacing: 0.14em;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 0.14em;
       text-transform: uppercase; color: #6f8399;
     }
-    .agent-status-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .agent-status-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
     .agent-dot {
       width: 8px; height: 8px; background: #10b981; border-radius: 50%;
       box-shadow: 0 0 0 3px rgba(16,185,129,0.22);
@@ -455,14 +469,13 @@
     }
     .agent-dot.paused { background: var(--amber); box-shadow: none; animation: none; }
     .agent-status-label { font-family: 'Barlow', sans-serif; font-size: 13px; font-weight: 600; color: #e7edf4; flex: 1; }
-    .agent-status-sub { color: #7f93a8; font-size: 12px; margin-top: 6px; }
     .agent-toggle-btn {
       font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700;
       color: #10b981; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.25); border-radius: 6px; cursor: pointer; padding: 3px 8px;
       transition: all .15s;
     }
     .agent-toggle-btn:hover { background: rgba(16,185,129,.22); }
-    .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 8px 6px; }
+    .sidebar-user { display: flex; align-items: center; gap: 10px; padding: 6px; }
     .sidebar-user-avatar {
       width: 30px; height: 30px; background: #5980a6;
       border-radius: 99px;
@@ -511,16 +524,18 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 28px; height: 56px; position: sticky; top: 0; z-index: 100; flex-shrink: 0;
     }
-    .topbar-left { display: flex; flex-direction: column; gap: 1px; }
+    .topbar-left { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
     .topbar-eyebrow {
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 600;
       text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .topbar-h1 {
       font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
       color: var(--text); line-height: 1; letter-spacing: -.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .topbar-time { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
     .btn-refresh {
       display: flex; align-items: center; gap: 5px;
@@ -1024,7 +1039,9 @@
     .view-header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
     .view-header-left { display:flex; align-items:center; gap:14px; }
     .view-header-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-    .view-header-title { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1; letter-spacing:-.01em; }
+    /* El título ya se muestra en la barra superior (#topbar-title) — este
+       duplicaba el mismo texto dentro de cada vista. */
+    .view-header-title { display: none; }
     .view-header-sub { font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; color:var(--text-muted); margin-top:3px; }
     .view-header-actions { display:flex; gap:8px; align-items:center; }
 
@@ -1159,18 +1176,10 @@
     }
     .btn-ghost:hover { background: rgba(255,255,255,.09); border-color: var(--border-hover); color: var(--text); }
 
-    /* ── Blueprint corners (matching landing) ── */
+    /* ── Blueprint corners (desactivadas: las cruces decorativas en las
+       esquinas de las tarjetas ensuciaban la vista sin aportar nada) ── */
     .bp { position: relative; border: 1px solid var(--border); }
-    /* Cards that have blueprint corners need overflow visible for the corners to show */
-    .card.bp { overflow: visible; }
-    .bp > .bc { position: absolute; width: 11px; height: 11px; color: color-mix(in srgb, var(--text) 40%, transparent); }
-    .bp > .bc::before, .bp > .bc::after { content: ""; position: absolute; background: currentColor; }
-    .bp > .bc::before { left: 5px; top: 0; width: 1px; height: 100%; }
-    .bp > .bc::after  { top: 5px; left: 0; width: 100%; height: 1px; }
-    .bp > .bc.tl { top: -6px; left: -6px; }
-    .bp > .bc.tr { top: -6px; right: -6px; }
-    .bp > .bc.bl { bottom: -6px; left: -6px; }
-    .bp > .bc.br { bottom: -6px; right: -6px; }
+    .bp > .bc { display: none; }
 
     /* ── View section headers (matching landing style) ── */
     .view-section-header { margin-bottom: 20px; }
@@ -1220,7 +1229,7 @@
       .sidebar-overlay.mobile-open { display: block; }
       .main-content { margin-left: 0; }
       .hamburger { display: flex; }
-      .topbar { padding: 0 16px 0 56px; height: 52px; }
+      .topbar { padding: 0 12px 0 52px; height: 52px; }
       .page-area { padding: 18px 14px 44px; }
       .two-col { grid-template-columns: 1fr; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1228,6 +1237,12 @@
       #dash-row2 + div { grid-template-columns: 1fr !important; }
       .topbar-time { display: none; }
       .wa-sep { display: none; }
+      /* La marca "Avaxon Dashboard" + separador sobraban en 390px y
+         empujaban el botón Actualizar fuera de la pantalla. */
+      .topbar-eyebrow-full, .topbar-divider { display: none; }
+      .topbar-h1 { font-size: 17px; }
+      #refresh-btn { padding: 6px 9px; }
+      #refresh-btn .btn-refresh-label { display: none; }
 
       /* Inbox de conversaciones: maestro-detalle en vez de 3 columnas fijas
          (300px + hilo + 248px no cabe en un teléfono) — se ve un panel a la
@@ -1644,7 +1659,6 @@
           <span class="agent-status-label" id="agent-status-label">Asistente en línea</span>
           <button class="agent-toggle-btn" id="agent-toggle-btn">Pausar</button>
         </div>
-        <div class="agent-status-sub">Última sincronización 2 min</div>
       </div>
       <div class="sidebar-user">
         <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
@@ -1661,15 +1675,15 @@
   <div class="main-content">
     <div class="topbar">
       <div class="topbar-left" style="flex-direction:row;align-items:center;gap:0">
-        <div class="topbar-eyebrow" style="white-space:nowrap">Avaxon Dashboard</div>
-        <div style="width:1px;height:20px;background:var(--border);margin:0 14px;flex-shrink:0"></div>
+        <div class="topbar-eyebrow topbar-eyebrow-full" style="white-space:nowrap">Avaxon Dashboard</div>
+        <div class="topbar-divider" style="width:1px;height:20px;background:var(--border);margin:0 14px;flex-shrink:0"></div>
         <div class="topbar-h1" id="topbar-title">Inicio</div>
       </div>
       <div class="topbar-right">
         <span class="topbar-time" id="topbar-time"></span>
         <button class="btn-refresh" id="refresh-btn" style="border:1px solid var(--border);background:transparent;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text);padding:6px 13px;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all 0.15s">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Actualizar
+          <span class="btn-refresh-label">Actualizar</span>
         </button>
       </div>
     </div>
@@ -1685,9 +1699,6 @@
               <div class="view-header-title">Inicio</div>
               <div class="view-header-sub" id="dash-fecha">Hoy</div>
             </div>
-          </div>
-          <div class="view-header-actions">
-            <button class="btn-refresh" onclick="loadDashboard()"><i class="fa fa-rotate-right" style="font-size:11px"></i> Actualizar</button>
           </div>
         </div>
 
@@ -1717,7 +1728,10 @@
                 </div>
               </div>
             </div>
-            <svg id="msg-chart-svg" viewBox="0 0 760 200" preserveAspectRatio="none" style="width:100%;height:170px;display:block"></svg>
+            <div style="position:relative">
+              <svg id="msg-chart-svg" viewBox="0 0 760 220" preserveAspectRatio="none" style="width:100%;height:190px;display:block"></svg>
+              <div id="msg-chart-tooltip" style="display:none;position:absolute;pointer-events:none;background:#111827;color:#fff;border-radius:8px;padding:6px 10px;font-size:11.5px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1.5;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:5;transform:translate(-50%,-100%)"></div>
+            </div>
           </div>
 
           <!-- Calidad del agente -->
@@ -2865,12 +2879,22 @@
               </div>
               <div id="slaConfigBody" style="display:flex;flex-direction:column;gap:10px">
                 <div>
-                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Primera respuesta (min)</label>
-                  <input type="number" id="slaFirstResponse" min="1" max="10080" placeholder="60" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Primera respuesta</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="slaFirstResponseH" min="0" max="168" placeholder="1" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                    <span style="font-size:11.5px;color:var(--text-dim);flex-shrink:0">h</span>
+                    <input type="number" id="slaFirstResponseM" min="0" max="59" placeholder="0" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                    <span style="font-size:11.5px;color:var(--text-dim);flex-shrink:0">min</span>
+                  </div>
                 </div>
                 <div>
-                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Seguimiento sin respuesta (min)</label>
-                  <input type="number" id="slaFollowup" min="1" max="10080" placeholder="1440" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                  <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Seguimiento sin respuesta</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" id="slaFollowupH" min="0" max="168" placeholder="24" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                    <span style="font-size:11.5px;color:var(--text-dim);flex-shrink:0">h</span>
+                    <input type="number" id="slaFollowupM" min="0" max="59" placeholder="0" onchange="saveSlaConfig()" style="width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--text);outline:none;box-sizing:border-box">
+                    <span style="font-size:11.5px;color:var(--text-dim);flex-shrink:0">min</span>
+                  </div>
                 </div>
                 <div>
                   <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Escalar a agente</label>
@@ -3150,10 +3174,9 @@
             </div>
           </div>
           <div class="view-header-actions">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted);margin-right:12px;cursor:pointer">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted);cursor:pointer">
               <input type="checkbox" id="pagos-hide-closed" checked onchange="loadPagos()"> Ocultar cancelados y expirados
             </label>
-            <button class="btn-refresh" onclick="loadPagos()"><i class="fa fa-rotate-right" style="font-size:11px"></i> Actualizar</button>
           </div>
         </div>
         <div id="pagos-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px">
@@ -3316,7 +3339,10 @@
                 <div style="display:flex;align-items:center;gap:14px">
                   <div id="cfg-logo-preview" style="width:64px;height:64px;border-radius:12px;background:var(--page-bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--text-dim);font-size:20px"><i class="fa fa-image"></i></div>
                   <div style="display:flex;flex-direction:column;gap:6px">
-                    <input id="cfg-logo-file" type="file" accept="image/*" style="font-size:12px;color:var(--text-muted)" onchange="uploadOrgLogo()" />
+                    <input id="cfg-logo-file" type="file" accept="image/*" style="display:none" onchange="uploadOrgLogo()" />
+                    <label for="cfg-logo-file" style="display:inline-flex;align-items:center;gap:6px;width:fit-content;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
+                      <i class="fa fa-upload" style="font-size:11px"></i> Subir logo
+                    </label>
                     <span id="cfg-logo-status" style="font-size:11.5px;color:var(--text-dim)"></span>
                   </div>
                 </div>
@@ -3813,8 +3839,19 @@
     return `<div class="tags-wrap">${tags.slice(0, 4).map(t => `<span class="tag">${t}</span>`).join('')}</div>`;
   }
 
-  function emptyRow(cols, msg) {
-    return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon">📭</div>${msg}</div></td></tr>`;
+  function emptyRow(cols, msg, actionHtml) {
+    return `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon">📭</div>${msg}${actionHtml ? `<div style="margin-top:14px;text-transform:none;letter-spacing:normal">${actionHtml}</div>` : ''}</div></td></tr>`;
+  }
+
+  // Estado vacío "grande" (icono + título + descripción + botón), igual al
+  // de Campañas — para listas/tablas sin datos donde sí hay una acción clara.
+  function richEmptyState(iconClass, iconColor, title, desc, buttonHtml) {
+    return `<div style="padding:40px 20px;text-align:center">
+      <div style="width:48px;height:48px;background:${iconColor}1f;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:19px;color:${iconColor}"><i class="fa ${iconClass}"></i></div>
+      <div style="font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:6px">${title}</div>
+      <div style="font-size:12.5px;color:var(--text-muted);max-width:300px;margin:0 auto 16px;line-height:1.55">${desc}</div>
+      ${buttonHtml || ''}
+    </div>`;
   }
 
   function webhookBadge(ok) {
@@ -3828,7 +3865,7 @@
     leads:'Leads / Contactos', calendario:'Calendario', conexiones:'Conexiones',
     pipeline: 'Pipeline', asignacion: 'Asignación', campanas: 'Campañas',
     bot: 'Modificaciones a tu agente', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
-    pagos: 'Pagos',
+    pagos: 'Pagos', inventario: 'Inventario',
   };
 
   function switchView(name) {
@@ -3841,6 +3878,7 @@
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
     closeSidebarMobile();
+    state.currentView = name;
     try { localStorage.setItem('avx_last_view', name); } catch(e) {}
     if (name === 'calendario')    { loadCalendarData(); updateGcalUI(); }
     if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
@@ -3854,6 +3892,28 @@
     if (name === 'config')         loadConfig();
     if (name === 'campanas')       loadCampanas();
     if (name === 'pagos')          loadPagos();
+    if (name === 'inventario')     loadInventario();
+  }
+
+  // El botón Actualizar de la barra superior refresca lo que se esté viendo
+  // — antes solo recargaba el dashboard de Inicio aunque estuvieras en otra
+  // vista (y cada vista tenía su propio botón "Actualizar" duplicado).
+  function refreshCurrentView() {
+    const name = state.currentView || 'inicio';
+    if (name === 'inicio')         loadDashboard(state.currentOrgId);
+    else if (name === 'calendario')    { loadCalendarData(); updateGcalUI(); }
+    else if (name === 'conversaciones') loadConversaciones();
+    else if (name === 'leads')          loadLeads();
+    else if (name === 'pipeline')       loadPipeline();
+    else if (name === 'asignacion')     loadAsignacion();
+    else if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
+    else if (name === 'bot')            loadAgentRequestsClient();
+    else if (name === 'cuenta')         loadCuenta();
+    else if (name === 'crm')            loadCRM();
+    else if (name === 'config')         loadConfig();
+    else if (name === 'campanas')       loadCampanas();
+    else if (name === 'pagos')          loadPagos();
+    else if (name === 'inventario')     loadInventario();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -3984,23 +4044,51 @@
     `).join('');
   }
 
+  let msgChartDays = [];
+
   function buildMsgChart(days) {
     const svg = $('msg-chart-svg'); if (!svg) return;
     if (!days || !days.length) return;
+    msgChartDays = days;
     const sent = days.map(d => d.sent);
     const recv = days.map(d => d.recv);
     const maxV = Math.max(...sent, ...recv, 1);
-    const W = 760, top = 16, bot = 185, span = bot - top;
+    // Márgenes para el eje Y (valores) y el eje X (días) — antes las
+    // etiquetas de día se dibujaban en y=228 dentro de un viewBox de solo
+    // 200 de alto, así que quedaban recortadas y nunca se veían.
+    const mLeft = 38, mRight = 6, top = 14, bot = 176;
+    const W = 760, span = bot - top;
     const n = days.length;
-    const px = i => n === 1 ? 0 : (i / (n - 1)) * W;
+    const plotW = W - mLeft - mRight;
+    const px = i => n === 1 ? mLeft : mLeft + (i / (n - 1)) * plotW;
     const py = v => bot - (v / maxV) * span;
     const line = arr => arr.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)} ${py(v).toFixed(1)}`).join(' ');
-    const area = arr => line(arr) + ` L${px(n-1).toFixed(1)} ${bot} L0 ${bot} Z`;
+    const area = arr => line(arr) + ` L${px(n-1).toFixed(1)} ${bot} L${mLeft} ${bot} Z`;
     const sentTotal = sent.reduce((a, b) => a + b, 0);
     const recvTotal = recv.reduce((a, b) => a + b, 0);
     $('chart-sent-total').textContent = sentTotal.toLocaleString('es-MX');
     $('chart-recv-total').textContent = recvTotal.toLocaleString('es-MX');
-    const labels = days.map((d, i) => `<text x="${px(i).toFixed(1)}" y="228" fill="var(--text-dim)" font-size="11" font-family="Barlow Condensed" text-anchor="middle">${d.label}</text>`).join('');
+
+    // Eje Y: 4 líneas guía con su valor a la izquierda
+    const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => {
+      const y = bot - f * span;
+      const val = Math.round(f * maxV);
+      return `<line x1="${mLeft}" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}" stroke="#eef0f2" stroke-width="1"/>
+        <text x="${mLeft - 8}" y="${(y + 3.5).toFixed(1)}" fill="var(--text-dim)" font-size="10.5" font-family="Barlow Condensed" text-anchor="end">${val}</text>`;
+    }).join('');
+
+    // Eje X: día de la semana debajo de cada punto
+    const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+    const xLabels = days.map((d, i) => `<text x="${px(i).toFixed(1)}" y="${bot + 18}" fill="var(--text-dim)" font-size="11" font-family="Barlow Condensed" text-anchor="middle">${cap(d.label)}</text>`).join('');
+
+    // Puntos invisibles (radio grande) para detectar el mouse más fácil, y
+    // marcador visible encima de cada serie.
+    const markers = days.map((d, i) => `
+      <circle cx="${px(i).toFixed(1)}" cy="${py(d.recv).toFixed(1)}" r="3" fill="#22c55e"/>
+      <circle cx="${px(i).toFixed(1)}" cy="${py(d.sent).toFixed(1)}" r="3" fill="#7c8899"/>
+      <rect x="${(px(i) - (plotW / n) / 2).toFixed(1)}" y="${top}" width="${(plotW / n).toFixed(1)}" height="${(bot - top)}" fill="transparent" class="msg-chart-hitzone" data-idx="${i}"/>
+    `).join('');
+
     $('msg-chart-svg').innerHTML = `
       <defs>
         <linearGradient id="avxFill" x1="0" y1="0" x2="0" y2="1">
@@ -4008,12 +4096,36 @@
           <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
         </linearGradient>
       </defs>
-      ${[0.25,0.5,0.75,1].map(f => `<line x1="0" y1="${(bot - f*span).toFixed(1)}" x2="${W}" y2="${(bot - f*span).toFixed(1)}" stroke="#eef0f2" stroke-width="1"/>`).join('')}
+      ${yTicks}
       <path d="${area(recv)}" fill="url(#avxFill)"/>
       <path d="${line(recv)}" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
       <path d="${line(sent)}" fill="none" stroke="#7c8899" stroke-width="2" stroke-dasharray="4 3" stroke-linejoin="round" stroke-linecap="round"/>
-      ${labels}
+      ${markers}
+      ${xLabels}
     `;
+    wireMsgChartTooltip();
+  }
+
+  // Muestra enviados/recibidos del día al pasar el mouse sobre la gráfica.
+  function wireMsgChartTooltip() {
+    const svg     = $('msg-chart-svg');
+    const wrap    = svg?.parentElement;
+    const tooltip = $('msg-chart-tooltip');
+    if (!svg || !wrap || !tooltip) return;
+    svg.querySelectorAll('.msg-chart-hitzone').forEach(zone => {
+      zone.addEventListener('mousemove', e => {
+        const idx = Number(zone.dataset.idx);
+        const d = msgChartDays[idx];
+        if (!d) return;
+        const wrapRect = wrap.getBoundingClientRect();
+        const label = d.label ? d.label.charAt(0).toUpperCase() + d.label.slice(1) : d.label;
+        tooltip.innerHTML = `<strong>${label}</strong><br>Enviados: ${d.sent} · Recibidos: ${d.recv}`;
+        tooltip.style.left = (e.clientX - wrapRect.left) + 'px';
+        tooltip.style.top  = (e.clientY - wrapRect.top - 10) + 'px';
+        tooltip.style.display = 'block';
+      });
+      zone.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+    });
   }
 
   function renderWaNumberCard(phones) {
@@ -4145,7 +4257,17 @@
     $('leads-count-all').textContent = all;
 
     const tbody = $('tbody-leads');
-    if (!data || !data.length) { tbody.innerHTML = emptyRow(7, 'Sin contactos todavía'); return; }
+    if (!data || !data.length) {
+      tbody.innerHTML = `<tr><td colspan="7">${richEmptyState(
+        'fa-users', '#5980a6',
+        'Aún no tienes contactos',
+        'Los contactos se crean automáticamente cuando alguien te escribe por WhatsApp.',
+        `<button onclick="switchView('conexiones')" class="btn-primary" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
+          <i class="fa fa-phone" style="font-size:12px"></i> Ver mi número de WhatsApp
+        </button>`
+      )}</td></tr>`;
+      return;
+    }
     tbody.innerHTML = data.map(c => `<tr style="cursor:pointer" onclick="openLeadModal('${c.id}')">
       <td>
         <div class="contact-cell">
@@ -5493,7 +5615,7 @@
         kpis.push({ label:'Clientes', value: kpiDisplay(orgsCount, orgsCount.count ?? 0), foot:'Organizaciones activas', icon:'fa-building', color:'#6366f1', iconBg:'rgba(99,102,241,.12)' })
       }
       kpis.push(
-        { label:'Recibidos hoy', value: inboundToday, trend: delta(inboundToday, inboundYest), trendClass: deltaClass(inboundToday, inboundYest), foot:'Mensajes de clientes', icon:'fa-arrow-down-left', color:'#22c55e', iconBg:'var(--accent-sub)' },
+        { label:'Recibidos hoy', value: inboundToday, trend: delta(inboundToday, inboundYest), trendClass: deltaClass(inboundToday, inboundYest), foot:'Mensajes de clientes', icon:'fa-arrow-down', color:'#22c55e', iconBg:'var(--accent-sub)' },
         { label:'Bot envió hoy', value: outboundToday, trend: delta(outboundToday, outboundYest), trendClass: deltaClass(outboundToday, outboundYest), foot:'Respuestas del agente', icon:'fa-robot', color:'#3b82f6', iconBg:'rgba(59,130,246,.12)' },
         { label:'Nuevos hoy', value: kpiDisplay(contactsToday, newHoy), trend: delta(newHoy, newAyer), trendClass: deltaClass(newHoy, newAyer), foot:'Contactos registrados', icon:'fa-user-plus', color:'#f59e0b', iconBg:'rgba(245,158,11,.12)' },
         { label:'Abiertas ahora', value: kpiDisplay(convsOpen, openConvs), foot: closedToday > 0 ? `${closedToday} resueltas hoy` : 'Conversaciones activas', icon:'fa-comments', color:'#a78bfa', iconBg:'rgba(167,139,250,.12)' },
@@ -5665,7 +5787,7 @@
     const countEl  = $('dash-sinresp-count')
     if (!listEl) return
 
-    if (countEl) countEl.textContent = msgs.length > 0 ? `${msgs.length}` : ''
+    if (countEl) countEl.textContent = `${msgs.length}`
 
     if (!msgs.length) {
       listEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:12px 0;color:var(--text-dim);font-size:13px"><i class="fa fa-circle-check" style="color:#22c55e"></i> Todo atendido</div>`
@@ -5677,7 +5799,7 @@
       const phone   = contact?.phone || ''
       const ago     = timeAgo(m.created_at)
       const initls  = initials(name)
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--hover-bg);cursor:pointer" onclick="switchView('inbox')" title="Ir a inbox">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--hover-bg);cursor:pointer" onclick="switchView('conversaciones')" title="Ir a conversaciones">
         <div style="width:32px;height:32px;border-radius:50%;background:rgba(248,113,113,.15);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f87171;flex-shrink:0">${initls}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
@@ -5698,7 +5820,7 @@
     return `${Math.floor(h / 24)}d`
   }
 
-  $('refresh-btn').addEventListener('click', () => loadDashboard(state.currentOrgId));
+  $('refresh-btn').addEventListener('click', () => refreshCurrentView());
 
   async function handleLogin() {
     const email    = $('login-email').value.trim();
@@ -6143,13 +6265,15 @@
   function renderInvTable(data) {
     const tbody = $('tbody-inv')
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-dim);font-size:13px">
-        <div style="margin-bottom:12px">Sin productos todavía</div>
-        <button onclick="invOpenModal()" class="btn-primary" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
+      tbody.innerHTML = `<tr><td colspan="5">${richEmptyState(
+        'fa-box-open', '#818cf8',
+        'Sin productos todavía',
+        'Agrega tu catálogo para que tus clientes vean precios y disponibilidad desde WhatsApp.',
+        `<button onclick="invOpenModal()" class="btn-primary" style="display:inline-flex;align-items:center;gap:7px;padding:9px 16px;font-size:13px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Agregar producto
-        </button>
-      </td></tr>`
+        </button>`
+      )}</td></tr>`
       return
     }
     tbody.innerHTML = data.map(p => {
@@ -8575,7 +8699,14 @@
           <div><div class="asig-agent-name">${a.full_name || '—'}</div><div class="asig-agent-role">${roleLabel}</div></div>
           <div class="asig-agent-count" title="Conversaciones abiertas">${count}</div>
         </div>`;
-      }).join('') : `<div style="padding:24px;text-align:center;color:var(--text-dim);font-size:13px">Sin vendedores en este equipo todavía</div>`;
+      }).join('') : richEmptyState(
+        'fa-user-group', '#f59e0b',
+        'Sin vendedores en este equipo',
+        'Los vendedores se agregan como usuarios de tu cuenta — pídele a Avaxon que invite a tu equipo.',
+        `<a href="mailto:hola@avaxon.lat?subject=Agregar vendedor" style="padding:9px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
+          <i class="fa fa-envelope"></i> Contactar a Avaxon
+        </a>`
+      );
     }
 
     // Load assignment rules
@@ -8617,11 +8748,14 @@
     if (!container) return;
     if (badge) badge.textContent = `${assignmentRules.length} regla${assignmentRules.length !== 1 ? 's' : ''}`;
     if (!assignmentRules.length) {
-      container.innerHTML = `<div style="padding:28px 20px;text-align:center;color:var(--text-dim);font-size:13px">
-        <i class="fa fa-shuffle" style="font-size:28px;margin-bottom:10px;display:block;opacity:.4"></i>
-        No hay reglas configuradas<br>
-        <span style="font-size:12px">Crea reglas para asignar leads automáticamente</span>
-      </div>`;
+      container.innerHTML = richEmptyState(
+        'fa-shuffle', '#ef4444',
+        'No hay reglas configuradas',
+        'Crea reglas para asignar leads automáticamente a tu equipo según su origen o tipo.',
+        `<button onclick="showRuleModal()" style="padding:9px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+          <i class="fa fa-plus"></i> Nueva regla
+        </button>`
+      );
       return;
     }
     container.innerHTML = assignmentRules.map((r, i) => {
@@ -8762,13 +8896,27 @@
     } catch (e) { showToast('Error: ' + e.message); }
   }
 
+  // Horas + minutos en la UI, minutos totales en bot_configs.sla_config
+  // (sin cambios al esquema — el SLA siempre se guardó en minutos).
+  function hmToMinutes(hId, mId, fallback) {
+    const h = parseInt($(hId)?.value) || 0;
+    const m = parseInt($(mId)?.value) || 0;
+    const total = h * 60 + m;
+    return total > 0 ? total : fallback;
+  }
+  function minutesToHm(totalMin, hId, mId) {
+    const hEl = $(hId), mEl = $(mId);
+    if (hEl) hEl.value = Math.floor(totalMin / 60);
+    if (mEl) mEl.value = totalMin % 60;
+  }
+
   async function saveSlaConfig() {
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
     const sla = {
       enabled: $('slaEnabled')?.checked || false,
-      first_response_minutes: parseInt($('slaFirstResponse')?.value) || 60,
-      followup_minutes:       parseInt($('slaFollowup')?.value) || 1440,
+      first_response_minutes: hmToMinutes('slaFirstResponseH', 'slaFirstResponseM', 60),
+      followup_minutes:       hmToMinutes('slaFollowupH', 'slaFollowupM', 1440),
       escalate_to_agent_id:   $('slaEscalateAgent')?.value || null,
     };
     syncSlaToggle();
@@ -8784,8 +8932,8 @@
       const sla = cfg?.sla_config || {};
       const cb  = $('slaEnabled');
       if (cb) { cb.checked = !!sla.enabled; syncSlaToggle(); }
-      if ($('slaFirstResponse')) $('slaFirstResponse').value = sla.first_response_minutes || 60;
-      if ($('slaFollowup'))      $('slaFollowup').value      = sla.followup_minutes || 1440;
+      minutesToHm(sla.first_response_minutes || 60,   'slaFirstResponseH', 'slaFirstResponseM');
+      minutesToHm(sla.followup_minutes       || 1440, 'slaFollowupH',      'slaFollowupM');
     } catch (_) {}
   }
 

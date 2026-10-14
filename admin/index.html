@@ -14,13 +14,17 @@
 
     :root {
       --page-bg:    #f1f5f9;
-      --sidebar-bg: #111827;
-      --sidebar-border: rgba(255,255,255,.07);
-      --sidebar-text:   #e2e8f0;
-      --sidebar-muted:  #94a3b8;
-      --sidebar-dim:    #64748b;
-      --sidebar-hover:  rgba(255,255,255,.06);
-      --sidebar-active: rgba(34,197,94,.12);
+      /* Mismo sidebar oscuro que el dashboard (antes el admin usaba un gris
+         casi negro distinto, #111827, sin relación visual con el dashboard) */
+      --sidebar-bg:  #1f2c3f;
+      --sidebar-bg2: #16202d;
+      --sidebar-border: #0f1720;
+      --sidebar-text:   #e7edf4;
+      --sidebar-muted:  #6f8399;
+      --sidebar-dim:    #3a4d62;
+      --sidebar-hover:  rgba(89,128,166,.10);
+      --sidebar-active: rgba(89,128,166,.18);
+      --sidebar-accent: #5980a6;
       --card-bg:    #ffffff;
       --border:     #e2e8f0;
       --border-h:   #cbd5e1;
@@ -260,7 +264,7 @@
     /* ── Sidebar ── */
     .sidebar {
       position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
-      background: var(--sidebar-bg);
+      background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg2) 100%);
       border-right: 1px solid var(--sidebar-border);
       display: flex; flex-direction: column; z-index: 200;
       transition: transform 0.25s ease;
@@ -293,9 +297,9 @@
       user-select: none; margin-bottom: 2px;
     }
     .nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-text); }
-    .nav-item.active { background: var(--sidebar-active); color: var(--accent); font-weight: 600; border-left: 2px solid var(--accent); }
+    .nav-item.active { background: var(--sidebar-active); color: var(--sidebar-text); font-weight: 600; border-left: 2px solid var(--sidebar-accent); }
     .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.20); flex-shrink: 0; margin-right: 2px; }
-    .nav-item.active .nav-dot { background: var(--accent); }
+    .nav-item.active .nav-dot { background: var(--sidebar-accent); }
     .nav-icon { width: 20px; display: flex; align-items: center; justify-content: center; opacity: 0.5; flex-shrink: 0; }
     .nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
     .sidebar-bottom { padding: 14px 14px 20px; border-top: 1px solid var(--sidebar-border); flex-shrink: 0; }
@@ -749,7 +753,7 @@
         <span class="nav-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         </span>
-        Overview
+        Resumen
       </div>
       <div class="nav-item" data-view="clientes">
         <span class="nav-dot"></span>
@@ -822,7 +826,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <div class="topbar-eyebrow">Avaxon Admin</div>
-        <div class="topbar-h1" id="topbar-title">Overview</div>
+        <div class="topbar-h1" id="topbar-title">Resumen</div>
       </div>
       <div class="topbar-right">
         <span class="topbar-time" id="topbar-time"></span>
@@ -996,7 +1000,7 @@
       <div class="view" id="view-agentes">
         <div class="card" style="margin-bottom:16px;padding:18px 20px">
           <label class="field-label">Organización</label>
-          <select class="field-input" id="agentes-org-select" style="max-width:420px" onchange="selectAgenteOrg(this.value)">
+          <select class="field-select" id="agentes-org-select" style="max-width:420px" onchange="selectAgenteOrg(this.value)">
             <option value="">Selecciona un cliente…</option>
           </select>
         </div>
@@ -1051,14 +1055,14 @@
       <!-- VISTA: SOLICITUDES DE CLIENTES -->
       <div class="view" id="view-solicitudes-clientes">
         <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-          <select class="field-input" id="src-filter-status" style="max-width:220px" onchange="loadSolicitudesClientes()">
+          <select class="field-select" id="src-filter-status" style="max-width:220px" onchange="loadSolicitudesClientes()">
             <option value="">Todos los estados</option>
             <option value="received">Recibida</option>
             <option value="in_progress">En proceso</option>
             <option value="needs_info">Necesitamos más información</option>
             <option value="completed">Completada</option>
           </select>
-          <select class="field-input" id="src-filter-org" style="max-width:260px" onchange="loadSolicitudesClientes()">
+          <select class="field-select" id="src-filter-org" style="max-width:260px" onchange="loadSolicitudesClientes()">
             <option value="">Todos los clientes</option>
           </select>
         </div>
@@ -1108,7 +1112,7 @@
       <div id="src-modal-attachments" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
       <div class="field-group">
         <label class="field-label">Estado</label>
-        <select class="field-input" id="src-modal-status">
+        <select class="field-select" id="src-modal-status">
           <option value="received">Recibida</option>
           <option value="in_progress">En proceso</option>
           <option value="needs_info">Necesitamos más información</option>
@@ -1454,7 +1458,7 @@
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const VIEW_TITLES = {
-    overview: 'Overview', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes',
+    overview: 'Resumen', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes',
     agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes', sistema: 'Sistema',
   };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
