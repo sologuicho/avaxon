@@ -8612,9 +8612,11 @@
     churned:     { label: 'Churned',     color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
   }
   const CRM_PLAN_LABELS = {
+    arranque:   'Arranque',
     mostrador:  'Mostrador',
     sucursal:   'Sucursal',
     cadena:     'Cadena',
+    enterprise: 'Enterprise',
   }
 
   let crmData       = []
@@ -12529,9 +12531,11 @@
             <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Plan</label>
             <select id="crm-f-plan" style="width:100%;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;cursor:pointer" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
               <option value="">Sin definir</option>
+              <option value="arranque">Arranque — $1,490</option>
               <option value="mostrador">Mostrador — $2,990</option>
               <option value="sucursal">Sucursal — $4,990</option>
               <option value="cadena">Cadena — $10,990</option>
+              <option value="enterprise">Enterprise — a medida</option>
             </select>
           </div>
           <div>

@@ -136,6 +136,9 @@
       .integ-grid { grid-template-columns: 1fr !important; }
       .industry-grid { grid-template-columns: 1fr 1fr !important; }
       .plan-card, .plan-featured { padding: 22px 18px 24px !important; }
+      /* En una columna, Sucursal (el plan más popular) va primero — es el
+         que queremos que la mayoría vea sin tener que seguir bajando. */
+      .plan-featured { order: -1; }
     }
     @media (max-width: 480px) {
       .industry-grid { grid-template-columns: 1fr !important; }
@@ -832,6 +835,25 @@
 
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(258px,1fr)); gap: 18px; align-items: stretch;">
 
+        <!-- Arranque -->
+        <div class="plan-card" data-reveal>
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; margin: 0 0 6px; color: #0d1117;">Arranque</h3>
+          <p style="font-size: 14px; color: #5b6880; margin: 0 0 20px; line-height: 1.5;">Para empezar hoy: tú solo, con tu asistente contestando.</p>
+          <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 22px;">
+            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 40px; font-weight: 700; color: #0d1117; letter-spacing: -.03em; line-height: 1;">$1,490</span>
+            <span style="font-size: 14px; color: #5b6880;">/mes</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px;">
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Setup único <strong>$2,500</strong></span></div>
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;"><strong>300</strong> conversaciones/mes</span></div>
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;"><strong>1</strong> número de WhatsApp</span></div>
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;"><strong>1</strong> usuario en el panel</span></div>
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Campañas: hasta <strong>50</strong> envíos/mes</span></div>
+            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Soporte por correo <strong>48 h</strong></span></div>
+          </div>
+          <a class="plan-cta" href="#contacto" onclick="selectPlan('Arranque')">Empezar con Arranque</a>
+        </div>
+
         <!-- Mostrador -->
         <div class="plan-card" data-reveal>
           <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; margin: 0 0 6px; color: #0d1117;">Mostrador</h3>
@@ -892,24 +914,10 @@
           <a class="plan-cta" href="#contacto" onclick="selectPlan('Cadena')">Elegir plan</a>
         </div>
 
-        <!-- Enterprise -->
-        <div class="plan-card" data-reveal>
-          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 600; margin: 0 0 6px; color: #0d1117;">Enterprise</h3>
-          <p style="font-size: 14px; color: #5b6880; margin: 0 0 20px; line-height: 1.5;">Integraciones a medida y volumen alto.</p>
-          <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 22px;">
-            <span style="font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; color: #0d1117; letter-spacing: -.03em; line-height: 1;">$20,000+</span>
-            <span style="font-size: 14px; color: #5b6880;">/mes</span>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px;">
-            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Setup desde <strong>$30,000</strong></span></div>
-            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Conversaciones sin límite</span></div>
-            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Usuarios ilimitados</span></div>
-            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">SLA dedicado</span></div>
-            <div class="plan-row"><span class="plan-row-check">✓</span><span style="color: #3c4658;">Anual a convenir</span></div>
-          </div>
-          <a class="plan-cta-outline" href="#contacto" onclick="selectPlan('Enterprise')">Hablar con ventas</a>
-        </div>
+      </div>
 
+      <div data-reveal style="text-align: center; margin-top: 30px;">
+        <a href="#contacto" onclick="selectPlan('Enterprise')" style="font-size: 16px; font-weight: 600; color: #3f6fd8; text-decoration: none;">¿Más de 8,000 conversaciones o integraciones a medida? Hablemos →</a>
       </div>
     </div>
   </section>
@@ -1161,8 +1169,8 @@
     { q: "¿Puedo usar mi número actual?", a: "Sí. Migramos tu número a la WhatsApp Business API sin perder tus contactos. Si prefieres empezar con un número nuevo, lo conseguimos nosotros." },
     { q: "¿Puedo cancelar?", a: "Cancelas cuando quieras avisando con 30 días. No hay contrato forzoso ni penalización. El setup ya pagado no se reembolsa porque es trabajo hecho." },
     { q: "¿Funciona para mi negocio?", a: "Funciona bien donde hay preguntas repetidas y citas: clínicas, talleres, inmobiliarias, escuelas, gimnasios y servicios a domicilio. Si tu venta es totalmente presencial y sin WhatsApp, te lo decimos en el diagnóstico." },
-    { q: "¿Qué pasa si me paso de conversaciones?", a: "Tu agente nunca deja de atender — no se corta el servicio al llegar al límite de tu plan. Para campañas (envíos masivos) cada plan incluye una bolsa mensual de mensajes (200, 1,000 o 4,000 según el plan); los adicionales se cobran a $1.20 MXN cada uno." },
-    { q: "¿El costo de Meta por mensaje está incluido?", a: "Sí. Contestar a tus clientes, recordatorios y confirmaciones están incluidos en tu mensualidad, no pagas nada aparte a Meta por eso. Las campañas tienen su propia bolsa mensual de mensajes (200, 1,000 o 4,000 según el plan); si te pasas, cada mensaje adicional cuesta $1.20 MXN." },
+    { q: "¿Qué pasa si me paso de conversaciones?", a: "Tu agente nunca deja de atender — no se corta el servicio al llegar al límite de tu plan. Para campañas (envíos masivos) cada plan incluye una bolsa mensual de mensajes (50, 200, 1,000 o 4,000 según el plan); los adicionales se cobran a $1.20 MXN cada uno." },
+    { q: "¿El costo de Meta por mensaje está incluido?", a: "Sí. Contestar a tus clientes, recordatorios y confirmaciones están incluidos en tu mensualidad, no pagas nada aparte a Meta por eso. Las campañas tienen su propia bolsa mensual de mensajes (50, 200, 1,000 o 4,000 según el plan); si te pasas, cada mensaje adicional cuesta $1.20 MXN." },
     { q: "¿Cuánto tarda la migración de mi número?", a: "Normalmente queda listo dentro del mismo proceso de alta de 7 días: migramos tu número actual de WhatsApp a la API de negocio sin perder tus contactos ni tu historial." },
     { q: "¿Qué pasa con mis datos si cancelo?", a: "Tus conversaciones, citas y contactos se conservan mientras tu cuenta esté activa. Si cancelas, los eliminamos dentro de los 30 días siguientes a tu solicitud por escrito a hola@avaxon.lat." }
   ];
