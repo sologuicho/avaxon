@@ -6085,6 +6085,253 @@
 
   // ── End onboarding ──────────────────────────────────────────────
 
+  // ══════════════════════════════════════════════════════════════════
+  // ITEM 8 — "Necesita humano" inbox helpers
+  // ══════════════════════════════════════════════════════════════════
+
+  function updateHumanBadge() {
+    const count = convState.all.filter(c => c.needs_human).length;
+    const badge    = $('conv-human-badge');
+    const navBadge = $('nav-human-badge');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
+    if (navBadge) navBadge.style.display = count > 0 ? 'inline-block' : 'none';
+  }
+
+  async function marcarAtendida() {
+    if (!convState.activeId) return;
+    try {
+      const { error } = await sb.from('conversations')
+        .update({ needs_human: false, needs_human_at: null, needs_human_reason: null })
+        .eq('id', convState.activeId);
+      if (error) throw error;
+      const conv = convState.all.find(c => c.id === convState.activeId);
+      if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; }
+      const btn = $('chat-btn-atender');
+      if (btn) btn.style.display = 'none';
+      updateHumanBadge();
+      showToast('Marcado como atendido');
+    } catch (e) {
+      showToast('Error: ' + e.message, 4000);
+    }
+  }
+  window.marcarAtendida = marcarAtendida;
+
+  function renderHumanCard() {
+    const humanConvs = convState.all.filter(c => c.needs_human);
+    const card = $('human-card');
+    if (!card) return;
+    if (!humanConvs.length) { card.style.display = 'none'; return; }
+    card.style.display = 'block';
+    const countEl = $('human-card-count');
+    if (countEl) countEl.textContent = humanConvs.length;
+    const list = $('human-card-list');
+    if (!list) return;
+    list.innerHTML = humanConvs.map(c => {
+      const name = c.contacts?.name || c.contacts?.phone || '—';
+      const reason = c.needs_human_reason || 'Sin motivo indicado';
+      const ago = c.needs_human_at ? fmtRelTime(c.needs_human_at) : '';
+      return `<div onclick="switchView('conversaciones');filterConvs('human');openConversacion('${c.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:9px;cursor:pointer;transition:background .12s;background:#fff;border:1px solid #fee2e2" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:700;color:#1a2535">${name}</div>
+          <div style="font-size:11.5px;color:#ef4444;margin-top:1px">${reason}</div>
+        </div>
+        <span style="font-size:11px;color:#8c939b;flex-shrink:0;margin-left:8px">${ago}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ITEM 9 — Notas internas
+  // ══════════════════════════════════════════════════════════════════
+  let noteMode = false;
+
+  function toggleNoteMode() {
+    noteMode = !noteMode;
+    const input  = $('chat-input');
+    const btn    = $('chat-note-btn');
+    const bar    = $('chat-input-bar');
+    if (!input) return;
+    if (noteMode) {
+      input.placeholder = 'Nota interna (solo tu equipo, nunca se envía al cliente)…';
+      if (btn) btn.style.background = 'rgba(202,138,4,.15)';
+      if (bar) bar.style.background = '#fefce8';
+    } else {
+      input.placeholder = 'Escribe para intervenir — el bot se pausa 30 min…';
+      if (btn) btn.style.background = '';
+      if (bar) bar.style.background = '#fff';
+    }
+  }
+  window.toggleNoteMode = toggleNoteMode;
+
+  function appendNoteToDOM(body, authorName) {
+    const d    = new Date();
+    const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const el   = document.createElement('div');
+    el.className = 'msg-note';
+    el.style.cssText = 'background:#fef9c3;border:1.5px solid #fde68a;border-radius:10px;padding:8px 12px;margin:4px 0;font-size:12.5px;color:#78350f';
+    el.innerHTML = `<strong>Nota interna · ${authorName || 'Tú'} · ${time}</strong><br>${body}`;
+    $('chat-messages').appendChild(el);
+    $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ITEM 10 — Reporte de valor
+  // ══════════════════════════════════════════════════════════════════
+  async function loadValorReport(orgId) {
+    const el = $('valor-grid');
+    if (!el) return;
+    el.innerHTML = '<div class="inner-loading" style="grid-column:1/-1"><div class="spinner-light"></div></div>';
+
+    const now        = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    function withOrg(q) { return orgId ? q.eq('organization_id', orgId) : q; }
+
+    try {
+      const [
+        convsThis,
+        convsPrev,
+        convsHumanThis,
+        aptsThis,
+        paymentsThis,
+        paymentsPrev,
+      ] = await Promise.all([
+        withOrg(sb.from('conversations').select('id', { count: 'exact' }).gte('created_at', monthStart.toISOString())),
+        withOrg(sb.from('conversations').select('id', { count: 'exact' }).gte('created_at', prevMonthStart.toISOString()).lt('created_at', monthStart.toISOString())),
+        withOrg(sb.from('conversations').select('id', { count: 'exact' }).gte('created_at', monthStart.toISOString()).eq('needs_human', true)),
+        withOrg(sb.from('appointments').select('id', { count: 'exact' }).gte('created_at', monthStart.toISOString())),
+        withOrg(sb.from('payments').select('amount').eq('status', 'paid').gte('created_at', monthStart.toISOString())),
+        withOrg(sb.from('payments').select('amount').eq('status', 'paid').gte('created_at', prevMonthStart.toISOString()).lt('created_at', monthStart.toISOString())),
+      ]);
+
+      const totalThis  = convsThis.count  ?? 0;
+      const totalPrev  = convsPrev.count  ?? 0;
+      const humanThis  = convsHumanThis.count ?? 0;
+      const botThis    = Math.max(0, totalThis - humanThis);
+      const resolvedPct = totalThis > 0 ? Math.round((botThis / totalThis) * 100) : null;
+      const hoursSaved = Math.round((botThis * 4) / 60 * 10) / 10;
+      const aptsCount  = aptsThis.count ?? 0;
+      const revenueThis = (paymentsThis.data ?? []).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+      const revenuePrev = (paymentsPrev.data ?? []).reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+      function trendArrow(cur, prev) {
+        if (prev === 0) return cur > 0 ? '<span style="color:#22c55e;font-size:10px">▲ nuevo</span>' : '';
+        const pct = Math.round(((cur - prev) / prev) * 100);
+        if (pct === 0) return '<span style="color:#94a3b8;font-size:10px">= igual</span>';
+        return pct > 0
+          ? `<span style="color:#22c55e;font-size:10px">▲ ${pct}% vs mes ant.</span>`
+          : `<span style="color:#f87171;font-size:10px">▼ ${Math.abs(pct)}% vs mes ant.</span>`;
+      }
+
+      const cards = [
+        { label: 'Convs. bot resueltas', value: botThis > 0 ? botThis.toLocaleString('es-MX') : '—', foot: trendArrow(botThis, totalPrev), color: '#10b981', icon: 'fa-robot' },
+        { label: '% sin intervención',   value: resolvedPct !== null ? resolvedPct + '%' : '—', foot: resolvedPct !== null ? `${botThis} de ${totalThis} conv.` : 'Sin datos', color: '#6366f1', icon: 'fa-check-double' },
+        { label: 'Horas ahorradas',      value: hoursSaved > 0 ? hoursSaved + 'h' : '—', foot: 'Estimado 4 min/conv.', color: '#f59e0b', icon: 'fa-clock' },
+        { label: 'Citas agendadas',      value: aptsCount > 0 ? aptsCount.toLocaleString('es-MX') : '—', foot: 'Este mes', color: '#3b82f6', icon: 'fa-calendar-check' },
+        { label: 'Cobros confirmados',   value: revenueThis > 0 ? '$' + revenueThis.toLocaleString('es-MX', { minimumFractionDigits: 0 }) : '—', foot: trendArrow(revenueThis, revenuePrev), color: '#22c55e', icon: 'fa-money-bill-wave' },
+      ];
+
+      el.innerHTML = cards.map(c => `
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:26px;height:26px;border-radius:8px;background:${c.color}18;display:flex;align-items:center;justify-content:center;color:${c.color};font-size:11px"><i class="fa ${c.icon}"></i></div>
+            <span style="font-size:11.5px;font-weight:600;color:var(--text-muted)">${c.label}</span>
+          </div>
+          <div style="font-size:26px;font-weight:800;color:var(--text);font-family:'Barlow Condensed',sans-serif;letter-spacing:-.02em;line-height:1">${c.value}</div>
+          <div style="font-size:11px;margin-top:4px;color:var(--text-dim)">${c.foot}</div>
+        </div>
+      `).join('');
+    } catch (e) {
+      if (el) el.innerHTML = '<div style="grid-column:1/-1;font-size:12px;color:var(--text-dim)">No se pudo cargar el reporte de valor.</div>';
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ITEM 11 — Guía de arranque
+  // ══════════════════════════════════════════════════════════════════
+  async function loadGuide(orgId) {
+    if (!orgId) return;
+    const card = $('guide-card');
+    if (!card) return;
+    const GUIDE_HIDDEN_KEY = `guide_hidden_${orgId}`;
+    try { if (localStorage.getItem(GUIDE_HIDDEN_KEY) === '1') return; } catch(e) {}
+
+    const steps = [
+      { label: 'WhatsApp conectado',      navTo: 'conexiones' },
+      { label: 'Perfil del negocio',      navTo: 'config' },
+      { label: 'Horarios y zona horaria', navTo: 'bot' },
+      { label: 'Productos / servicios',   navTo: 'inventario' },
+      { label: 'Google Calendar',         navTo: 'conexiones' },
+      { label: 'Conversación de prueba',  navTo: 'conversaciones' },
+    ];
+
+    try {
+      const [phones, orgData, botCfg, products, gcal, convCount] = await Promise.all([
+        sb.from('phone_numbers').select('id', { count: 'exact' }).eq('organization_id', orgId).eq('status', 'active'),
+        sb.from('organizations').select('name,industry').eq('id', orgId).maybeSingle(),
+        sb.from('bot_configs').select('timezone').eq('organization_id', orgId).maybeSingle(),
+        sb.from('products').select('id', { count: 'exact' }).eq('organization_id', orgId),
+        sb.from('integrations').select('id', { count: 'exact' }).eq('organization_id', orgId).eq('provider', 'google_calendar').eq('status', 'active'),
+        sb.from('conversations').select('id', { count: 'exact' }).eq('organization_id', orgId),
+      ]);
+
+      const done = [
+        (phones.count ?? 0) > 0,
+        !!(orgData.data?.name && orgData.data?.industry),
+        !!(botCfg.data?.timezone),
+        (products.count ?? 0) > 0,
+        (gcal.count ?? 0) > 0,
+        (convCount.count ?? 0) > 0,
+      ];
+
+      if (done.every(Boolean)) return; // All done, don't show
+
+      card.style.display = 'block';
+      const stepsEl = $('guide-steps');
+      if (!stepsEl) return;
+      stepsEl.innerHTML = steps.map((s, i) => {
+        const ok = done[i];
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${ok ? 'rgba(34,197,94,.05)' : '#f8fafc'};border:1px solid ${ok ? 'rgba(34,197,94,.15)' : 'var(--border)'}">
+          <div style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${ok ? '#22c55e' : '#e5e7eb'};color:${ok ? '#fff' : '#94a3b8'};font-size:10px"><i class="fa ${ok ? 'fa-check' : 'fa-circle'}"></i></div>
+          <span style="flex:1;font-size:13px;font-weight:600;color:${ok ? '#16a34a' : 'var(--text)'}">${s.label}</span>
+          ${!ok ? `<button onclick="switchView('${s.navTo}')" style="font-size:11.5px;font-weight:700;color:var(--accent);background:none;border:none;cursor:pointer">Completar →</button>` : ''}
+        </div>`;
+      }).join('');
+    } catch (e) {
+      // silently ignore guide load errors
+    }
+  }
+
+  function hideGuide() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (orgId) {
+      try { localStorage.setItem(`guide_hidden_${orgId}`, '1'); } catch(e) {}
+    }
+    const card = $('guide-card');
+    if (card) card.style.display = 'none';
+  }
+  window.hideGuide = hideGuide;
+
+  // ══════════════════════════════════════════════════════════════════
+  // ITEM 12 — log_bot_error helper
+  // ══════════════════════════════════════════════════════════════════
+  async function log_bot_error(orgId, convId, type, detail, errorCode, source) {
+    try {
+      await sb.from('bot_error_logs').insert({
+        organization_id: orgId,
+        conversation_id: convId || null,
+        type:       type       || 'unknown',
+        detail:     detail     || '',
+        error_code: errorCode  || null,
+        source:     source     || 'dashboard',
+      });
+    } catch (e) {
+      // Swallow — logging must never break the main flow
+    }
+  }
+  window.log_bot_error = log_bot_error;
+
   function copyWebhookUrl() {
     const url = $('wa-webhook-url')?.value;
     if (url && url !== '—') {
