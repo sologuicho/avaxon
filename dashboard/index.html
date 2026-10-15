@@ -8961,6 +8961,7 @@
         organization_id: orgId,
         phone:           r.phone,
         name:            r.name || null,
+        variables:       r.variables || null,
         status:          'pending',
       }))
       for (let i = 0; i < ccRows.length; i += 200) {
