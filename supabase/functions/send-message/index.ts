@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
   // Get conversation → contact phone + org phone_number_id + per-client token
   const { data: conv, error: convErr } = await adminClient
     .from('conversations')
-    .select('id, organization_id, contact_id, phone_number_id, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
+    .select('id, organization_id, contact_id, phone_number_id, needs_human, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
     .eq('id', conversation_id)
     .single()
 
@@ -152,10 +152,20 @@ Deno.serve(async (req: Request) => {
     return json({ error: `Mensaje enviado pero falló el registro: ${insertErr.message}` }, 500)
   }
 
-  // Update conversation last_message_at
-  await adminClient.from('conversations')
-    .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-    .eq('id', conversation_id)
+  // Update conversation last_message_at — y si alguien del equipo le
+  // escribió de verdad (este endpoint es el que usa "Escribir yo" en el
+  // dashboard) mientras estaba marcada needs_human, eso YA es la atención
+  // humana que se estaba esperando: se quita la marca (así
+  // resume-paused-conversations deja de contarla, no manda el "Perdón por
+  // la espera" a las 2h) y queda un rastro de que se resolvió sola, sin
+  // que nadie tuviera que darle a "Marcar como atendida".
+  const convUpdate: Record<string, unknown> = { last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  if (conv.needs_human) {
+    convUpdate.needs_human = false
+    convUpdate.bot_resumed_at = null
+    convUpdate.needs_human_reason = 'Atendida por el equipo'
+  }
+  await adminClient.from('conversations').update(convUpdate).eq('id', conversation_id)
 
   return json({ ok: true, wa_message_id: waMessageId })
 })
