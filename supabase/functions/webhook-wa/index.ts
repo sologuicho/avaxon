@@ -1090,6 +1090,42 @@ Deno.serve(async (req: Request) => {
   let body: any
   try { body = JSON.parse(rawBody) } catch { return new Response('Bad JSON', { status: 400 }) }
 
+  const change = body?.entry?.[0]?.changes?.[0]
+  if (change?.field === 'message_template_status_update') {
+    EdgeRuntime.waitUntil(handleTemplateStatusUpdate(change.value, env))
+    return new Response('ok', { status: 200 })
+  }
+
   EdgeRuntime.waitUntil(handleIncoming(body, env))
   return new Response('ok', { status: 200 })
 })
+
+// ── Estado real de una plantilla, directo de Meta ───────────────────────────
+// Meta manda este evento cuando revisa una plantilla (APPROVED/REJECTED/
+// PAUSED/DISABLED/…) — antes nada escuchaba esto y el estado en el dashboard
+// se marcaba a mano. Ahora message_templates.status solo lo mueve Meta (este
+// webhook) o la sincronización manual (ver sync-templates), nunca el equipo.
+function cleanTemplateReason(reason: unknown): string | null {
+  const r = typeof reason === 'string' ? reason.trim() : ''
+  return r && r !== 'NONE' ? r : null
+}
+
+async function handleTemplateStatusUpdate(value: any, env: Env): Promise<void> {
+  const newStatus = value?.event
+  const metaId    = value?.message_template_id ? String(value.message_template_id) : null
+  const name      = value?.message_template_name
+  const language  = value?.message_template_language
+  if (!newStatus || (!metaId && !name)) return
+
+  const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+  const update = {
+    status:          newStatus,
+    rejected_reason: newStatus === 'REJECTED' ? cleanTemplateReason(value?.reason) : null,
+    updated_at:       new Date().toISOString(),
+  }
+
+  let q = sb.from('message_templates').update(update)
+  q = metaId ? q.eq('meta_template_id', metaId) : q.eq('name', name).eq('language', language)
+  const { error } = await q
+  if (error) console.error('handleTemplateStatusUpdate: error actualizando estado:', error)
+}

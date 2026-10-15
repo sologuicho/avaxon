@@ -3352,11 +3352,14 @@
                 <span style="font-size:14px;font-weight:700;color:var(--text)">Plantillas de mensajes</span>
                 <span id="cfg-tpl-count" style="font-size:11px;font-weight:700;color:var(--text-muted);background:var(--hover-bg);padding:2px 8px;border-radius:6px">0</span>
               </div>
-              <button onclick="openTemplateModal()" class="btn-primary" style="padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:7px"><i class="fa fa-plus"></i> Nueva plantilla</button>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button id="cfg-tpl-sync-btn" onclick="syncTemplatesWithMeta()" class="btn-ghost" style="padding:8px 14px;font-size:13px;display:flex;align-items:center;gap:7px" title="Jala el estado real (Aprobada/Rechazada/Pausada) de las plantillas ya enviadas"><i class="fa fa-rotate"></i> Sincronizar con Meta</button>
+                <button onclick="openTemplateModal()" class="btn-primary" style="padding:8px 16px;font-size:13px;display:flex;align-items:center;gap:7px"><i class="fa fa-plus"></i> Nueva plantilla</button>
+              </div>
             </div>
             <div id="cfg-templates-list"></div>
             <div style="padding:12px 20px;background:rgba(99,102,241,.05);border-top:1px solid var(--border)">
-              <p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin:0"><i class="fa fa-circle-info" style="color:#818cf8;margin-right:5px"></i>Las plantillas en estado <strong style="color:var(--text-muted)">Borrador</strong> solo existen en este panel. Usa <strong style="color:#f59e0b">Enviar a revisión</strong> para que Meta las evalúe — solo las plantillas <strong style="color:#22c55e">Aprobadas</strong> pueden enviarse fuera de la ventana de 24h.</p>
+              <p style="font-size:12px;color:var(--text-dim);line-height:1.6;margin:0"><i class="fa fa-circle-info" style="color:#818cf8;margin-right:5px"></i>Las plantillas en estado <strong style="color:var(--text-muted)">Borrador</strong> solo existen en este panel. "Enviar a revisión" la manda de verdad a Meta — el estado (<strong style="color:#f59e0b">En revisión</strong> / <strong style="color:#22c55e">Aprobada</strong> / <strong style="color:#ef4444">Rechazada</strong>, con motivo) lo decide Meta, nunca se marca a mano. Una vez enviada, el texto ya no se puede editar aquí — Meta no permite cambiarlo; hay que crear una plantilla nueva.</p>
             </div>
           </div>
         </div>
@@ -8771,14 +8774,18 @@
   }
 
   const TEMPLATE_STATUS = {
-    APPROVED:    { label: 'Aprobada',          color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
-    PENDING:     { label: 'En revisión',        color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
-    REJECTED:    { label: 'Rechazada',          color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
-    DRAFT:       { label: 'Borrador',           color: '#64748b', bg: 'rgba(100,116,139,.12)' },
-    local:       { label: 'Local',              color: '#64748b', bg: 'rgba(100,116,139,.12)' },
-    approved:    { label: 'Aprobada',           color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
-    pending:     { label: 'En revisión',        color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
-    rejected:    { label: 'Rechazada',          color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
+    APPROVED:         { label: 'Aprobada',    color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
+    PENDING:          { label: 'En revisión', color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
+    REJECTED:         { label: 'Rechazada',   color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
+    PAUSED:           { label: 'Pausada',     color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
+    DISABLED:         { label: 'Deshabilitada', color: '#ef4444', bg: 'rgba(239,68,68,.12)'  },
+    FLAGGED:          { label: 'Señalada',    color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
+    PENDING_DELETION: { label: 'Borrándose en Meta', color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    DRAFT:            { label: 'Borrador',    color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    local:            { label: 'Borrador',    color: '#64748b', bg: 'rgba(100,116,139,.12)' },
+    approved:         { label: 'Aprobada',    color: '#22c55e', bg: 'rgba(34,197,94,.12)'   },
+    pending:          { label: 'En revisión', color: '#f59e0b', bg: 'rgba(245,158,11,.12)'  },
+    rejected:         { label: 'Rechazada',   color: '#ef4444', bg: 'rgba(239,68,68,.12)'   },
   }
   const TEMPLATE_CAT_LABELS = { MARKETING: 'Marketing', UTILITY: 'Utilidad', AUTHENTICATION: 'Autenticación' }
 
@@ -8810,10 +8817,18 @@
       const bodyText = t.components?.[0]?.text ?? '—'
       const vars     = t.components?.[0]?.variables ?? []
       const useCase  = t.components?.[0]?.use_case ?? ''
-      const isDraft  = (t.status === 'DRAFT' || t.status === 'local')
+      // El estado y meta_template_id solo los pone Meta (webhook) o
+      // "Sincronizar con Meta" — nunca un botón que lo marque a mano.
+      const sentToMeta = !!t.meta_template_id
       const varChips = vars.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${vars.map(v => `<span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#818cf8;background:rgba(129,140,248,.1);padding:2px 7px;border-radius:5px">{{${v}}}</span>`).join('')}</div>` : ''
-      const submitBtn = isDraft
+      const submitBtn = !sentToMeta
         ? `<button onclick="submitTemplateForReview('${t.id}')" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap" title="Enviar a revisión de Meta"><i class="fa fa-paper-plane" style="font-size:11px"></i> Enviar a revisión</button>`
+        : ''
+      const editBtn = !sentToMeta
+        ? `<button onclick="openTemplateModal('${t.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:6px 9px;border-radius:7px" title="Editar" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'"><i class="fa fa-pen"></i></button>`
+        : `<span style="color:var(--text-dim);cursor:default;font-size:13px;padding:6px 9px" title="Ya se envió a Meta — el texto no se puede cambiar; crea una plantilla nueva si necesitas otro texto"><i class="fa fa-lock"></i></span>`
+      const rejectedBox = (t.status === 'REJECTED' && t.rejected_reason)
+        ? `<div style="margin-top:8px;padding:8px 11px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);border-radius:8px;font-size:11.5px;color:#b91c1c"><strong>Meta la rechazó:</strong> ${t.rejected_reason}</div>`
         : ''
       return `<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:0">
         <div style="display:flex;align-items:flex-start;gap:12px">
@@ -8827,10 +8842,11 @@
             <div style="font-size:12.5px;color:var(--text-muted);line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${bodyText}</div>
             ${varChips}
             ${useCase ? `<div style="margin-top:6px;font-size:11.5px;color:var(--text-dim);font-style:italic">${useCase}</div>` : ''}
+            ${rejectedBox}
           </div>
           <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-top:2px">
             ${submitBtn}
-            <button onclick="openTemplateModal('${t.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:6px 9px;border-radius:7px" title="Editar" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'"><i class="fa fa-pen"></i></button>
+            ${editBtn}
             <button onclick="deleteTemplate('${t.id}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:13px;padding:6px 9px;border-radius:7px" title="Eliminar" onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background='none'"><i class="fa fa-trash"></i></button>
           </div>
         </div>
@@ -8838,35 +8854,71 @@
     }).join('') + '</div>'
   }
 
+  async function callSyncTemplates(payload) {
+    const { data: { session } } = await sb.auth.getSession()
+    const res = await fetch(`${EDGE_BASE}/sync-templates`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Error al hablar con Meta')
+    return data
+  }
+
   async function submitTemplateForReview(id) {
     const btn = event.currentTarget
     btn.disabled = true
     btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="font-size:11px"></i> Enviando…'
-    const { error } = await sb.from('message_templates').update({ status: 'PENDING', updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) {
+    let orgId = state.currentOrgId || state.userOrgId
+    if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
+    try {
+      await callSyncTemplates({ action: 'submit', organization_id: orgId, template_id: id })
+      showToast('Plantilla enviada a revisión de Meta')
+    } catch (e) {
       btn.disabled = false
       btn.innerHTML = '<i class="fa fa-paper-plane" style="font-size:11px"></i> Enviar a revisión'
-      showToast('Error al actualizar: ' + error.message, 5000)
+      showToast('Meta no aceptó la plantilla: ' + e.message, 7000)
       return
     }
     await loadTemplates()
   }
+  window.submitTemplateForReview = submitTemplateForReview
+
+  async function syncTemplatesWithMeta() {
+    const btn = $('cfg-tpl-sync-btn')
+    let orgId = state.currentOrgId || state.userOrgId
+    if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sincronizando…' }
+    try {
+      const data = await callSyncTemplates({ action: 'sync', organization_id: orgId })
+      showToast(data.checked ? `${data.updated}/${data.checked} plantillas actualizadas desde Meta` : 'No hay plantillas enviadas a Meta todavía')
+      await loadTemplates()
+    } catch (e) {
+      showToast('Error al sincronizar: ' + e.message, 6000)
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa fa-rotate"></i> Sincronizar con Meta' }
+    }
+  }
+  window.syncTemplatesWithMeta = syncTemplatesWithMeta
 
   function openTemplateModal(id) {
+    const existing = id ? configTemplates.find(x => x.id === id) : null
+    if (existing?.meta_template_id) {
+      showToast('Esta plantilla ya se envió a Meta — crea una nueva si necesitas otro texto', 5000)
+      return
+    }
     configEditId = id || null
     $('cfg-tpl-modal-title').textContent = id ? 'Editar plantilla' : 'Nueva plantilla'
     $('cfg-tpl-name').value     = ''
     $('cfg-tpl-category').value = 'MARKETING'
     $('cfg-tpl-language').value = 'es_MX'
     $('cfg-tpl-body').value     = ''
-    if (id) {
-      const t = configTemplates.find(x => x.id === id)
-      if (t) {
-        $('cfg-tpl-name').value     = t.name ?? ''
-        $('cfg-tpl-category').value = t.category ?? 'MARKETING'
-        $('cfg-tpl-language').value = t.language ?? 'es_MX'
-        $('cfg-tpl-body').value     = t.components?.[0]?.text ?? ''
-      }
+    if (existing) {
+      $('cfg-tpl-name').value     = existing.name ?? ''
+      $('cfg-tpl-category').value = existing.category ?? 'MARKETING'
+      $('cfg-tpl-language').value = existing.language ?? 'es_MX'
+      $('cfg-tpl-body').value     = existing.components?.[0]?.text ?? ''
     }
     $('modal-cfg-template').style.display = 'flex'
     setTimeout(() => $('cfg-tpl-name').focus(), 80)
@@ -8881,15 +8933,25 @@
     const name     = ($('cfg-tpl-name').value || '').trim()
     const body     = ($('cfg-tpl-body').value || '').trim()
     if (!name || !body) return
+    if (configEditId && configTemplates.find(x => x.id === configEditId)?.meta_template_id) {
+      showToast('Esta plantilla ya se envió a Meta — no se puede editar', 5000)
+      return
+    }
     let orgId = state.currentOrgId || state.userOrgId
     if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
+    // Variables: se detectan solas de [nombre], [negocio], etc. en el texto
+    // — así "Enviar a revisión" sabe qué convertir a {{1}}, {{2}}… para Meta.
+    // Antes editar una plantilla borraba silenciosamente sus variables
+    // (siempre guardaba components:[{type:'BODY', text}] sin ese campo).
+    const variables = [...new Set((body.match(/\[([a-zA-Z0-9_]+)\]/g) || []).map(m => m.slice(1, -1)))]
+    const useCase   = configEditId ? (configTemplates.find(x => x.id === configEditId)?.components?.[0]?.use_case ?? '') : ''
     const payload  = {
       organization_id: orgId,
       name,
       category:   $('cfg-tpl-category').value,
       language:   $('cfg-tpl-language').value,
       status:     'local',
-      components: [{ type: 'BODY', text: body }],
+      components: [{ type: 'BODY', text: body, variables, use_case: useCase }],
       updated_at: new Date().toISOString(),
     }
     if (configEditId) {
@@ -8902,12 +8964,22 @@
   }
 
   function deleteTemplate(id) {
+    const t = configTemplates.find(x => x.id === id)
     showConfirmModal({
       title: '¿Eliminar esta plantilla?',
-      text: 'Esta acción no se puede deshacer.',
+      text: t?.meta_template_id
+        ? 'También se borra en Meta. Esta acción no se puede deshacer.'
+        : 'Esta acción no se puede deshacer.',
       confirmLabel: 'Sí, eliminar',
       onConfirm: async () => {
-        await sb.from('message_templates').delete().eq('id', id)
+        let orgId = state.currentOrgId || state.userOrgId
+        if (!orgId && state.isSuperAdmin && state.allOrgs?.length) orgId = state.allOrgs[0].id
+        try {
+          await callSyncTemplates({ action: 'delete', organization_id: orgId, template_id: id })
+        } catch (e) {
+          showToast('Error al eliminar: ' + e.message, 5000)
+          return
+        }
         await loadTemplates()
       },
     })
@@ -12597,8 +12669,8 @@
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Cuerpo del mensaje *</label>
-          <textarea id="cfg-tpl-body" rows="5" placeholder="Hola {{1}}, te escribimos de parte de {{2}}. ¿Tienes unos minutos para hablar?" style="width:100%;resize:vertical;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;line-height:1.6" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-          <p style="font-size:11.5px;color:var(--text-dim);margin:5px 0 0">Usa <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">{{1}}</code>, <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">{{2}}</code>… para variables dinámicas.</p>
+          <textarea id="cfg-tpl-body" rows="5" placeholder="Hola [nombre], te escribimos de parte de [negocio]. ¿Tienes unos minutos para hablar?" style="width:100%;resize:vertical;padding:10px 13px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;outline:none;box-sizing:border-box;line-height:1.6" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <p style="font-size:11.5px;color:var(--text-dim);margin:5px 0 0">Usa <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">[nombre]</code>, <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">[negocio]</code>… para variables dinámicas — al enviarla a Meta se convierten solas a <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">{{1}}</code>, <code style="font-family:'JetBrains Mono',monospace;background:var(--hover-bg);padding:1px 5px;border-radius:4px">{{2}}</code>… con ejemplo, que es lo que Meta exige.</p>
         </div>
       </div>
       <div style="padding:0 24px 20px;display:flex;gap:10px">
