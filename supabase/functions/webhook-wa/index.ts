@@ -597,6 +597,23 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const { organization_id } = pn
   const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
 
+  // ── Track campaign reply (responded_at) ────────────────────────────────────
+  const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
+  const { data: ccReply } = await sb
+    .from('campaign_contacts')
+    .select('id, campaign_id')
+    .eq('phone', normalizedFrom)
+    .is('responded_at', null)
+    .order('sent_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (ccReply) {
+    const now = new Date().toISOString()
+    await sb.from('campaign_contacts').update({ responded_at: now }).eq('id', ccReply.id)
+    const { data: camp } = await sb.from('campaigns').select('responded_count').eq('id', ccReply.campaign_id).single()
+    if (camp) await sb.from('campaigns').update({ responded_count: (camp.responded_count ?? 0) + 1, updated_at: now }).eq('id', ccReply.campaign_id)
+  }
+
   // ── 2. Upsert contacto ─────────────────────────────────────────────────────
   const { data: contact_row } = await sb
     .from('contacts')
