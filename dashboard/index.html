@@ -12684,6 +12684,136 @@
   window.loadDashboard       = loadDashboard;
   window.loadLeads           = loadLeads;
 
+  // ── Requisiciones de herramientas ─────────────────────────────────────────
+
+  function openRequisitionPanel() {
+    const overlay = document.getElementById('req-panel-overlay');
+    if (!overlay) return;
+    // Reset form
+    const form = document.getElementById('req-form-state');
+    const success = document.getElementById('req-success-state');
+    if (form)    form.style.display    = 'flex', form.style.flexDirection = 'column';
+    if (success) success.style.display = 'none';
+    const errEl = document.getElementById('req-form-error');
+    if (errEl) errEl.style.display = 'none';
+    ['req-tool-name','req-use-case','req-description'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    overlay.style.display = 'flex';
+  }
+
+  function closeRequisitionPanel() {
+    const overlay = document.getElementById('req-panel-overlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  async function submitRequisition() {
+    const toolName   = (document.getElementById('req-tool-name')?.value || '').trim();
+    const useCase    = (document.getElementById('req-use-case')?.value  || '').trim();
+    const description = (document.getElementById('req-description')?.value || '').trim();
+    const errEl      = document.getElementById('req-form-error');
+    const btn        = document.getElementById('req-submit-btn');
+
+    errEl.style.display = 'none';
+    if (!toolName) { errEl.textContent = 'Escribe el nombre de la herramienta que necesitas'; errEl.style.display = 'block'; return; }
+    if (!useCase)  { errEl.textContent = 'Describe para qué la necesitas'; errEl.style.display = 'block'; return; }
+
+    const orgId = getActiveOrgId();
+    if (!orgId) { errEl.textContent = 'No se encontró tu organización'; errEl.style.display = 'block'; return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin" style="margin-right:6px"></i>Enviando…';
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { errEl.textContent = 'Tu sesión expiró'; errEl.style.display = 'block'; return; }
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/tool-requisition`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool_name: toolName, use_case: useCase, description, organization_id: orgId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        errEl.textContent = data.error || 'Error al enviar la solicitud. Intenta de nuevo.';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      // Show success state
+      document.getElementById('req-form-state').style.display = 'none';
+      const successEl = document.getElementById('req-success-state');
+      successEl.style.display = 'block';
+      document.getElementById('req-success-id').textContent = data.req_id || '';
+
+      // Reload list
+      await loadRequisitions();
+
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-paper-plane" style="margin-right:6px;font-size:12px"></i>Enviar solicitud';
+    }
+  }
+
+  const REQ_STATUS_LABELS = {
+    pending:        { label: 'En revisión', color: '#f59e0b', bg: 'rgba(245,158,11,.1)', border: 'rgba(245,158,11,.25)' },
+    reviewing:      { label: 'Analizando', color: '#3b82f6', bg: 'rgba(59,130,246,.1)', border: 'rgba(59,130,246,.25)' },
+    in_development: { label: 'En desarrollo', color: '#8b5cf6', bg: 'rgba(139,92,246,.1)', border: 'rgba(139,92,246,.25)' },
+    completed:      { label: 'Completada', color: '#10b981', bg: 'rgba(16,185,129,.1)', border: 'rgba(16,185,129,.25)' },
+    rejected:       { label: 'No viable', color: '#ef4444', bg: 'rgba(239,68,68,.1)', border: 'rgba(239,68,68,.25)' },
+  };
+
+  async function loadRequisitions() {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const { data, error } = await sb
+      .from('tool_requisitions')
+      .select('id,req_id,tool_name,status,notes,created_at')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false });
+    if (error || !data?.length) {
+      document.getElementById('req-list-section').style.display = 'none';
+      return;
+    }
+    document.getElementById('req-list-section').style.display = 'block';
+    const container = document.getElementById('req-list-rows');
+    container.innerHTML = data.map(r => {
+      const st = REQ_STATUS_LABELS[r.status] || REQ_STATUS_LABELS.pending;
+      const date = new Date(r.created_at).toLocaleDateString('es-MX', { day:'2-digit', month:'short', year:'numeric' });
+      return `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:14px;font-weight:700;color:var(--text)">${r.tool_name}</span>
+              <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text-muted)">${r.req_id}</span>
+            </div>
+            ${r.notes ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;line-height:1.4">${r.notes}</div>` : ''}
+            <div style="font-size:11px;color:var(--text-dim);margin-top:3px">${date}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;background:${st.bg};border:1px solid ${st.border};color:${st.color}">${st.label}</span>
+        </div>`;
+    }).join('');
+  }
+
+  async function setRequisitionStatus(requisitionId, status, notes) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return { error: 'Sin sesión' };
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/update-requisition-status`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requisition_id: requisitionId, status, notes }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) return { error: data.error || 'Error al actualizar' };
+    return { ok: true };
+  }
+
+  window.openRequisitionPanel   = openRequisitionPanel;
+  window.closeRequisitionPanel  = closeRequisitionPanel;
+  window.submitRequisition      = submitRequisition;
+  window.loadRequisitions       = loadRequisitions;
+  window.setRequisitionStatus   = setRequisitionStatus;
+
 })();
 </script>
   <!-- Modal: Aviso WhatsApp directo -->
