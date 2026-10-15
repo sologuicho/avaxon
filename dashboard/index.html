@@ -12284,6 +12284,57 @@
         } else {
           showToast('Zapier actualizado correctamente');
         }
+
+      } else if (provider === 'paypal') {
+        const clientId = document.getElementById('im-paypal-client-id')?.value?.trim();
+        const secret   = document.getElementById('im-paypal-client-secret')?.value?.trim();
+        const mode     = document.getElementById('im-paypal-mode-val')?.value || 'sandbox';
+        if (!clientId) { errEl.textContent = 'Ingresa el Client ID de PayPal'; errEl.style.display = 'block'; return; }
+        const orgId = getActiveOrgId();
+        if (!orgId) { errEl.textContent = 'Selecciona un cliente'; errEl.style.display = 'block'; return; }
+        const cfg = { client_id: clientId, mode };
+        if (secret) cfg.client_secret = secret;
+        const result = await callIntegrationSave({ organization_id: orgId, provider: 'paypal', action: 'connect', config: cfg });
+        if (result.error) { errEl.textContent = 'Error: ' + result.error; errEl.style.display = 'block'; return; }
+        if (!state.integrations) state.integrations = {};
+        state.integrations['paypal'] = { provider: 'paypal', status: 'connected', config: cfg, connected_at: new Date().toISOString() };
+        updateIntegPill('paypal', 'paypal-integ-pill');
+        updateSheetsZapierDetails();
+        closeIntegModal();
+        showToast('PayPal conectado correctamente');
+
+      } else if (provider === 'make') {
+        const url = document.getElementById('im-make-url')?.value?.trim();
+        if (!url || !/^https:\/\/hook\./.test(url)) { errEl.textContent = 'URL inválida — debe empezar con https://hook.'; errEl.style.display = 'block'; return; }
+        const orgId = getActiveOrgId();
+        if (!orgId) { errEl.textContent = 'Selecciona un cliente'; errEl.style.display = 'block'; return; }
+        const result = await callIntegrationSave({ organization_id: orgId, provider: 'make', action: 'connect', config: { webhook_url: url } });
+        if (result.error) { errEl.textContent = 'Error: ' + result.error; errEl.style.display = 'block'; return; }
+        if (!state.integrations) state.integrations = {};
+        state.integrations['make'] = { provider: 'make', status: 'connected', config: { webhook_url: url }, connected_at: new Date().toISOString() };
+        updateIntegPill('make', 'make-integ-pill');
+        updateSheetsZapierDetails();
+        closeIntegModal();
+        showToast('Make.com conectado correctamente');
+
+      } else if (provider === 'meta_leads') {
+        const pageId   = document.getElementById('im-meta-page-id')?.value?.trim();
+        const pageName = document.getElementById('im-meta-page-name')?.value?.trim();
+        const token    = document.getElementById('im-meta-token')?.value?.trim();
+        if (!pageId) { errEl.textContent = 'Ingresa el ID de tu página de Facebook'; errEl.style.display = 'block'; return; }
+        const orgId = getActiveOrgId();
+        if (!orgId) { errEl.textContent = 'Selecciona un cliente'; errEl.style.display = 'block'; return; }
+        const cfg = { page_id: pageId };
+        if (pageName) cfg.page_name = pageName;
+        if (token) cfg.page_token = token;
+        const result = await callIntegrationSave({ organization_id: orgId, provider: 'meta_leads', action: 'connect', config: cfg });
+        if (result.error) { errEl.textContent = 'Error: ' + result.error; errEl.style.display = 'block'; return; }
+        if (!state.integrations) state.integrations = {};
+        state.integrations['meta_leads'] = { provider: 'meta_leads', status: 'connected', config: cfg, connected_at: new Date().toISOString() };
+        updateIntegPill('meta_leads', 'meta_leads-integ-pill');
+        updateSheetsZapierDetails();
+        closeIntegModal();
+        showToast('Meta Lead Ads conectado correctamente');
       }
     } finally {
       saveBtn.disabled = false;
@@ -12302,7 +12353,10 @@
       onConfirm: async () => {
         const err = await saveIntegrationToDB(provider, 'disconnected', null, null);
         if (err) { showToast('Error al desconectar: ' + err, 4000); return; }
-        const pillIds = { google_sheets: 'gsheets-integ-pill', zapier: 'zapier-integ-pill' };
+        const pillIds = {
+          google_sheets: 'gsheets-integ-pill', zapier: 'zapier-integ-pill',
+          paypal: 'paypal-integ-pill', make: 'make-integ-pill', meta_leads: 'meta_leads-integ-pill',
+        };
         if (pillIds[provider]) updateIntegPill(provider, pillIds[provider]);
         updateSheetsZapierDetails();
         closeIntegModal();
