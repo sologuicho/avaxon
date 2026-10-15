@@ -8891,10 +8891,22 @@
       const headers = parse(lines[0])
       const rows    = lines.slice(1).map(parse)
 
-      const nameIdx  = headers.findIndex(h => /nombre|name/i.test(h))
+      const nameIdx  = headers.findIndex(h => /nombre|name|empresa|company|contact/i.test(h))
       const phoneIdx = headers.findIndex(h => /tel|phone|cel/i.test(h))
 
-      wizCsvRows = rows.map(r => ({ name: nameIdx >= 0 ? r[nameIdx] : '', phone: phoneIdx >= 0 ? r[phoneIdx] : r[0] })).filter(r => r.phone)
+      const normPhone = raw => {
+        const d = (raw || '').replace(/\D/g, '')
+        if (d.length === 10) return '+52' + d           // número local MX sin código de país
+        if (d.length === 12 && d.startsWith('52')) return '+' + d  // MX con código ya incluido
+        if (d.length === 11 && d.startsWith('1'))  return '+' + d  // US/CA
+        return d ? '+' + d : ''
+      }
+
+      wizCsvRows = rows.map(r => {
+        const nombre = nameIdx >= 0 ? (r[nameIdx] || '').trim() : ''
+        const phone  = normPhone(phoneIdx >= 0 ? r[phoneIdx] : r[0])
+        return { name: nombre, phone, variables: nombre ? { '1': nombre, '2': 'Avaxon' } : null }
+      }).filter(r => r.phone)
 
       const info = $('wiz-csv-info')
       if (info) info.textContent = `✓ ${wizCsvRows.length} contactos cargados desde ${file.name}`
