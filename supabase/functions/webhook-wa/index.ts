@@ -27,6 +27,8 @@ const DEBOUNCE_MS = 5000
 // independiente de si el system_prompt de la org sabe usar notify_owner.
 const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
 
+const OUT_OF_HOURS_TEXT = 'Gracias por escribirnos — ahorita estamos fuera de nuestro horario de atención. En cuanto abramos, un asesor te contesta por aquí mismo. 🙏'
+
 // ── Tool definitions ─────────────────────────────────────────────────────────
 const APPOINTMENT_TOOLS = [
   {
@@ -483,6 +485,21 @@ function buildBusinessContextBlock(profile: any): string {
   return `INFORMACIÓN DEL NEGOCIO (de Configuración — usa esto para responder sobre contacto, ubicación y horarios; no inventes datos que no estén aquí):\n${lines.join('\n')}`
 }
 
+// null = el negocio no configuró horarios (no se puede saber si está abierto)
+function isWithinBusinessHours(hours: any, timezone: string): boolean | null {
+  if (!hours || typeof hours !== 'object') return null
+  const hasAny = DAY_ORDER.some(d => hours[d] && !hours[d].closed && hours[d].open && hours[d].close)
+  if (!hasAny) return null
+
+  const now = new Date()
+  const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(now).toLowerCase().slice(0, 3)
+  const h = hours[dayKey]
+  if (!h || h.closed || !h.open || !h.close) return false
+
+  const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now)
+  return hhmm >= h.open && hhmm <= h.close
+}
+
 async function handleIncoming(body: any, env: Env): Promise<void> {
   const { WA_TOKEN, OPENAI_KEY, SUPABASE_URL, SERVICE_KEY } = env
 
@@ -529,9 +546,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // ── 3. Obtener o crear conversación abierta ────────────────────────────────
   let conversation_id: string
   let needsHumanBefore = false
+  let botResumedBefore = false
   const { data: existing } = await sb
     .from('conversations')
-    .select('id, needs_human')
+    .select('id, needs_human, bot_resumed_at')
     .eq('organization_id', organization_id)
     .eq('contact_id', contact_row.id)
     .eq('status', 'open')
@@ -542,6 +560,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   if (existing) {
     conversation_id = existing.id
     needsHumanBefore = !!existing.needs_human
+    botResumedBefore = !!existing.bot_resumed_at
     await sb.from('conversations')
       .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', conversation_id)
@@ -616,12 +635,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   if (!lastInsertedAt) return
 
   // ── 4b. Bandeja de atención humana ──────────────────────────────────────
-  // Si la conversación YA necesitaba humano, el bot se queda callado (el
-  // mensaje de arriba ya se guardó, así que sigue viéndose en el dashboard)
-  // hasta que alguien la marque "atendida". Si el cliente lo pide apenas
-  // ahora en este turno, se marca, se manda un acuse fijo (no depende de que
-  // el system_prompt de la org sepa manejar esto) y tampoco se llama a GPT.
-  if (needsHumanBefore) return
+  // Si la conversación YA necesitaba humano Y nadie la retomó por timeout
+  // (ver resume-paused-conversations), el bot se queda callado (el mensaje
+  // de arriba ya se guardó, así que sigue viéndose en el dashboard) hasta
+  // que alguien la marque "atendida". Si el cliente lo pide apenas ahora en
+  // este turno, se marca, se manda un acuse fijo (no depende de que el
+  // system_prompt de la org sepa manejar esto) y tampoco se llama a GPT.
+  if (needsHumanBefore && !botResumedBefore) return
 
   if (HUMAN_HANDOFF_REGEX.test(incomingBatchText)) {
     await flagNeedsHuman(sb, conversation_id, organization_id, 'El cliente pidió hablar con alguien')
@@ -667,6 +687,40 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .eq('id', organization_id)
     .maybeSingle()
   const timezone = orgRow?.timezone || 'America/Matamoros'
+
+  // ── 6a. Fuera de horario de atención ────────────────────────────────────
+  // Antes el bot contestaba igual 24/7 sin importar el horario configurado
+  // (el system_prompt solo le decía que no inventara horarios, no que
+  // dejara de responder). Si el negocio configuró horarios y ahora está
+  // cerrado, se manda un aviso fijo en vez de llamar a GPT — pero no en
+  // cada mensaje mientras sigue cerrado: solo si el último saliente no fue
+  // ya este mismo aviso en las últimas 3 horas.
+  if (isWithinBusinessHours(orgProfile?.hours, timezone) === false) {
+    const { data: lastOut } = await sb
+      .from('messages')
+      .select('content, created_at')
+      .eq('conversation_id', conversation_id)
+      .eq('direction', 'outbound')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const alreadyNotified = lastOut?.content === OUT_OF_HOURS_TEXT
+      && (Date.now() - new Date(lastOut.created_at).getTime()) < 3 * 3600_000
+    if (!alreadyNotified) {
+      const oohRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: OUT_OF_HOURS_TEXT } }),
+      })
+      const oohData = await oohRes.json().catch(() => ({}))
+      await sb.from('messages').insert({
+        conversation_id, organization_id, direction: 'outbound', content: OUT_OF_HOURS_TEXT,
+        media_type: 'text', wa_message_id: oohData.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+      })
+    }
+    return
+  }
+
   const calendarToken = await getGoogleAccessToken(sb, organization_id)
 
   // ── 6b. Stripe conectado + catálogo (Inventario) para links de pago ────────

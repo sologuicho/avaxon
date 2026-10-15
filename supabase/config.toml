@@ -14,6 +14,13 @@ verify_jwt = false
 # cada 6 horas
 cron = "0 */6 * * *"
 
+[functions.resume-paused-conversations]
+verify_jwt = false
+# cada 15 min — retoma conversaciones needs_human si nadie respondió dentro
+# del tiempo configurado por la org (organization_profile.
+# human_handoff_timeout_hours, 2h por defecto)
+cron = "*/15 * * * *"
+
 [functions.pay]
 verify_jwt = false
 # Link corto de pago (avaxon.lat/p/<id> → checkout_url). Público.

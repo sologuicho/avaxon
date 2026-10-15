@@ -4,9 +4,14 @@ import { sendEmail } from './email.ts'
 // ── Bandeja de atención humana ──────────────────────────────────────────────
 // Marca una conversación como "necesita humano" y avisa al dueño del negocio
 // (correo de Configuración → Preferencias, y por WhatsApp si tiene una
-// plantilla aprobada configurada para esto). Solo notifica la PRIMERA vez
-// que se marca — mensajes repetidos de la misma espera no vuelven a avisar
-// ni mueven needs_human_at (eso es lo que mide "hace cuánto espera").
+// plantilla aprobada configurada para esto).
+//
+// Se (re)marca y notifica cuando needs_human=false, O cuando ya estaba en
+// true pero el bot la retomó por timeout (bot_resumed_at no nulo — ver
+// resume-paused-conversations) — un nuevo "quiero hablar con alguien" del
+// cliente después de que el bot retomó es una solicitud nueva, no un eco de
+// la anterior. Mientras siga true y sin retomar, no se vuelve a notificar
+// ni se mueve needs_human_at (eso es lo que mide "hace cuánto espera").
 export async function flagNeedsHuman(
   sb: ReturnType<typeof createClient>,
   conversationId: string,
@@ -16,14 +21,14 @@ export async function flagNeedsHuman(
   try {
     const { data: updated, error } = await sb
       .from('conversations')
-      .update({ needs_human: true, needs_human_at: new Date().toISOString(), needs_human_reason: reason })
+      .update({ needs_human: true, needs_human_at: new Date().toISOString(), needs_human_reason: reason, bot_resumed_at: null })
       .eq('id', conversationId)
-      .eq('needs_human', false)
+      .or('needs_human.eq.false,bot_resumed_at.not.is.null')
       .select('id')
       .maybeSingle()
 
     if (error) { console.error('flagNeedsHuman: error actualizando conversación:', error); return }
-    if (!updated) return // ya estaba marcada — no se vuelve a notificar
+    if (!updated) return // ya estaba marcada y pausada — no se vuelve a notificar
 
     await notifyOwnerNeedsHuman(sb, organizationId, conversationId, reason)
   } catch (e) {

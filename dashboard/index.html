@@ -2667,6 +2667,16 @@
                       </div>
                     </div>
                   </div>
+                  <!-- Plantilla de aviso de atención humana -->
+                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+                    <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px">
+                      <span style="font-size:14px;font-weight:600;color:var(--text)">Aviso por WhatsApp de atención humana</span>
+                      <span style="font-size:13px;color:var(--text-muted)">Cuando una conversación necesita a alguien del equipo, te avisamos con esta plantilla (además del correo)</span>
+                    </div>
+                    <select id="wa-handoff-template-select" onchange="saveWaHandoffTemplate(this.value)" class="cfg-field-select" style="max-width:260px;flex-shrink:0">
+                      <option value="">Sin aviso por WhatsApp</option>
+                    </select>
+                  </div>
                 </div>
 
                 <!-- Footer -->
@@ -3568,7 +3578,12 @@
                 <div>
                   <label class="cfg-field-label">Correo para notificaciones</label>
                   <input id="cfg-notification-email" type="email" class="cfg-field-input" placeholder="Por defecto, el del dueño de la cuenta" />
-                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Aquí llegan los avisos de citas nuevas, reagendadas y canceladas.</div>
+                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Aquí llegan los avisos de citas nuevas, reagendadas y canceladas, y de atención humana.</div>
+                </div>
+                <div>
+                  <label class="cfg-field-label">El bot retoma tras (horas sin respuesta del equipo)</label>
+                  <input id="cfg-handoff-timeout-hours" type="number" min="1" max="72" class="cfg-field-input" placeholder="2" />
+                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Si una conversación marcada "necesita humano" no se atiende en este tiempo, el bot vuelve a contestar (la conversación sigue marcada para que el equipo la revise).</div>
                 </div>
               </div>
             </div>
@@ -4447,7 +4462,44 @@
       : phone
       ? `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13px;color:var(--text-muted)">Pendiente</span>`
       : `<span style="width:7px;height:7px;border-radius:50%;background:var(--text-dim)"></span><span style="font-size:13px;color:var(--text-muted)">Sin configurar</span>`;
+
+    if (phones.length) loadWaHandoffTemplateSelect();
   }
+
+  // Selector de la plantilla APPROVED que se manda al dueño por WhatsApp
+  // cuando una conversación necesita atención humana (integrations
+  // (provider='whatsapp').config.handoff_template_name — ver _shared/
+  // humanHandoff.ts).
+  async function loadWaHandoffTemplateSelect() {
+    const sel = $('wa-handoff-template-select');
+    if (!sel) return;
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+
+    const [{ data: templates }, { data: integ }] = await Promise.all([
+      sb.from('message_templates').select('name').eq('organization_id', orgId).eq('status', 'APPROVED').order('name'),
+      sb.from('integrations').select('config').eq('organization_id', orgId).eq('provider', 'whatsapp').maybeSingle(),
+    ]);
+    const current = integ?.config?.handoff_template_name || '';
+    sel.innerHTML = '<option value="">Sin aviso por WhatsApp</option>' +
+      (templates || []).map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('');
+    if (current && !(templates || []).some(t => t.name === current)) {
+      // La plantilla configurada ya no existe o dejó de estar aprobada.
+      sel.innerHTML += `<option value="${current}" selected>${current} (ya no disponible)</option>`;
+    }
+  }
+
+  async function saveWaHandoffTemplate(templateName) {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const result = await callIntegrationSave({
+      organization_id: orgId, provider: 'whatsapp', action: 'update_config',
+      config: { handoff_template_name: templateName || null },
+    });
+    if (result.error) { showToast('Error al guardar: ' + result.error, 4000); return; }
+    showToast(templateName ? 'Aviso por WhatsApp activado' : 'Aviso por WhatsApp desactivado');
+  }
+  window.saveWaHandoffTemplate = saveWaHandoffTemplate;
 
   // ── Conversaciones ─────────────────────────────────────────────
   const convState = { all: [], filtered: [], activeId: null, realtimeSub: null, activeTab: 'all', activeStage: 'all', mineOnly: false };
@@ -8702,6 +8754,7 @@
     if ($('cfg-contact-whatsapp')) $('cfg-contact-whatsapp').value = profile?.whatsapp || '';
     if ($('cfg-contact-email'))    $('cfg-contact-email').value    = profile?.email || '';
     if ($('cfg-notification-email')) $('cfg-notification-email').value = profile?.notification_email || '';
+    if ($('cfg-handoff-timeout-hours')) $('cfg-handoff-timeout-hours').value = profile?.human_handoff_timeout_hours || 2;
     if ($('cfg-contact-website'))  $('cfg-contact-website').value  = profile?.website || '';
     if ($('cfg-contact-address'))  $('cfg-contact-address').value  = profile?.address || '';
     if ($('cfg-contact-maps'))     $('cfg-contact-maps').value     = profile?.maps_url || '';
@@ -8759,6 +8812,7 @@
       whatsapp:    ($('cfg-contact-whatsapp').value  || '').trim() || null,
       email:       ($('cfg-contact-email').value     || '').trim() || null,
       notification_email: ($('cfg-notification-email').value || '').trim() || null,
+      human_handoff_timeout_hours: Math.min(72, Math.max(1, parseInt($('cfg-handoff-timeout-hours').value) || 2)),
       website:     ($('cfg-contact-website').value   || '').trim() || null,
       address:     ($('cfg-contact-address').value   || '').trim() || null,
       maps_url:    ($('cfg-contact-maps').value      || '').trim() || null,
