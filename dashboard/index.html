@@ -2606,258 +2606,199 @@
 
           <!-- PANEL: Canales -->
           <div id="conn-panel-canales">
-            <div class="card bp" style="padding:0;overflow:hidden">
-              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div class="ch-grid">
 
-              <!-- ── ESTADO: Sin número (setup) ── -->
-              <div id="wa-setup-view">
-                <!-- ── Sección gradiente: título + pasos + requisitos ── -->
-                <div style="background:linear-gradient(135deg,color-mix(in srgb,#10b981 8%,var(--card-bg)),color-mix(in srgb,#22c55e 5%,var(--card-bg)));border-bottom:1px solid color-mix(in srgb,#22c55e 18%,var(--border));padding:20px 20px 18px">
-                  <!-- Título -->
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
-                    <span style="font-size:18px;line-height:1">📱</span>
-                    <div>
-                      <div style="font-size:14px;font-weight:700;color:var(--text)">Conecta tu WhatsApp Business</div>
-                      <div style="font-size:11px;color:var(--text-muted);margin-top:1px">Meta Business API · ~5 minutos</div>
+              <!-- ─────────────── WhatsApp Business ─────────────── -->
+              <div class="ch-card">
+
+                <!-- STATE: Sin número (setup) -->
+                <div id="wa-setup-view">
+                  <div class="ch-card-head">
+                    <div class="ch-logo" style="background:#25D366">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    </div>
+                    <div style="flex:1;min-width:0">
+                      <div class="ch-head-name">WhatsApp Business</div>
+                      <div class="ch-head-sub">Meta Business API · ~5 min</div>
+                    </div>
+                    <span class="pill pill-amber no-dot">No conectado</span>
+                  </div>
+                  <div class="ch-setup">
+                    <p class="ch-setup-desc">Atiende clientes automáticamente desde tu número de WhatsApp Business con IA. Sin cambiar de número ni de app.</p>
+                    <div class="ch-benefits">
+                      <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#25D366"></i>Tu mismo número, sigues usando la app</div>
+                      <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#25D366"></i>Respuestas automáticas 24/7</div>
+                      <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#25D366"></i>Sin capturar credenciales en Avaxon</div>
+                    </div>
+                    <div class="ch-steps">
+                      <div class="ch-step">
+                        <div class="ch-step-num" style="background:#1877f2">1</div>
+                        <div><div class="ch-step-label">Inicia sesión con Facebook</div><div class="ch-step-sub">Con tu cuenta Meta / Business</div></div>
+                      </div>
+                      <div class="ch-step">
+                        <div class="ch-step-num" style="background:#25D366">2</div>
+                        <div><div class="ch-step-label">Elige tu número WA Business</div><div class="ch-step-sub">El que ya usas en la app</div></div>
+                      </div>
+                      <div class="ch-step">
+                        <div class="ch-step-num" style="background:#8b5cf6">3</div>
+                        <div><div class="ch-step-label">Bot activo al instante</div><div class="ch-step-sub">El agente empieza a responder</div></div>
+                      </div>
+                    </div>
+                    <button id="wa-embedded-btn" onclick="launchEmbeddedSignup()" class="ch-cta" style="background:#25D366;color:#fff">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                      Conectar con Meta
+                    </button>
+                    <details>
+                      <summary style="font-size:11.5px;color:var(--text-muted);cursor:pointer;list-style:none;user-select:none;text-align:center">¿Lo conecta tu técnico con credenciales? <span style="text-decoration:underline">Ver opción</span></summary>
+                      <button onclick="showConnectModal()" style="margin-top:8px;width:100%;text-align:left;padding:11px 13px;border-radius:11px;border:1.5px solid var(--border);background:var(--card-bg);cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
+                        <div style="display:flex;align-items:center;gap:10px">
+                          <div style="width:34px;height:34px;background:var(--hover-bg);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fa fa-key" style="font-size:13px;color:var(--text-muted)"></i></div>
+                          <div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--text)">Ya tengo mis credenciales</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">Phone Number ID, WABA ID y Access Token</div></div>
+                          <i class="fa fa-arrow-right" style="font-size:12px;color:var(--text-dim)"></i>
+                        </div>
+                      </button>
+                    </details>
+                    <div style="text-align:center">
+                      <button onclick="copyOnboardingLink()" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">
+                        <i class="fa fa-link" style="font-size:9px"></i> Compartir guía con tu cliente
+                      </button>
                     </div>
                   </div>
-                  <!-- 3 pasos -->
-                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;position:relative">
-                    <div style="position:absolute;top:20px;left:calc(16.6% + 10px);right:calc(16.6% + 10px);height:1px;background:color-mix(in srgb,#22c55e 30%,var(--border));z-index:0"></div>
-                    <div style="text-align:center;position:relative;z-index:1">
-                      <div style="width:40px;height:40px;background:var(--card-bg);border:2px solid color-mix(in srgb,#22c55e 45%,var(--border));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
-                      </div>
-                      <div style="font-size:11.5px;font-weight:700;color:var(--text)">1. Inicia sesión</div>
-                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4">Con tu cuenta de Meta / Facebook</div>
-                    </div>
-                    <div style="text-align:center;position:relative;z-index:1">
-                      <div style="width:40px;height:40px;background:var(--card-bg);border:2px solid color-mix(in srgb,#22c55e 45%,var(--border));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                      </div>
-                      <div style="font-size:11.5px;font-weight:700;color:var(--text)">2. Selecciona número</div>
-                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4">Elige o agrega tu número WA Business</div>
-                    </div>
-                    <div style="text-align:center;position:relative;z-index:1">
-                      <div style="width:40px;height:40px;background:var(--card-bg);border:2px solid color-mix(in srgb,#22c55e 45%,var(--border));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;box-shadow:0 1px 4px rgba(0,0,0,.06)">
-                        <i class="fa fa-robot" style="font-size:14px;color:#8b5cf6"></i>
-                      </div>
-                      <div style="font-size:11.5px;font-weight:700;color:var(--text)">3. Bot activo</div>
-                      <div style="font-size:10px;color:var(--text-muted);margin-top:2px;line-height:1.4">El chatbot empieza a responder</div>
-                    </div>
-                  </div>
-                  <!-- Requisitos accordion -->
-                  <details>
-                    <summary style="font-size:11.5px;font-weight:600;color:#059669;cursor:pointer;list-style:none;display:flex;align-items:center;gap:5px;user-select:none;margin-bottom:0">
-                      <i class="fa fa-chevron-right" style="font-size:8px;transition:transform .2s"></i> ¿Qué necesito antes de empezar?
-                    </summary>
-                    <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
-                      <div style="display:flex;align-items:flex-start;gap:10px;background:color-mix(in srgb,var(--card-bg) 80%,transparent);border:1px solid var(--border);border-radius:9px;padding:9px 12px">
-                        <i class="fa fa-circle-check" style="color:#10b981;font-size:12px;flex-shrink:0;margin-top:1px"></i>
-                        <div>
-                          <div style="font-size:12px;font-weight:600;color:var(--text)">Cuenta de Facebook / Meta</div>
-                          <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">La misma con la que administras tu página o negocio</div>
-                        </div>
-                      </div>
-                      <div style="display:flex;align-items:flex-start;gap:10px;background:color-mix(in srgb,var(--card-bg) 80%,transparent);border:1px solid var(--border);border-radius:9px;padding:9px 12px">
-                        <i class="fa fa-circle-check" style="color:#10b981;font-size:12px;flex-shrink:0;margin-top:1px"></i>
-                        <div>
-                          <div style="font-size:12px;font-weight:600;color:var(--text)">Número de WhatsApp Business</div>
-                          <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">El que ya usas en la app de WhatsApp Business. Si usas el WhatsApp normal, primero pásate a WA Business (conservas tus chats).</div>
-                        </div>
-                      </div>
-                      <div style="display:flex;align-items:flex-start;gap:10px;background:color-mix(in srgb,var(--card-bg) 80%,transparent);border:1px solid var(--border);border-radius:9px;padding:9px 12px">
-                        <i class="fa fa-clock" style="color:#f59e0b;font-size:12px;flex-shrink:0;margin-top:1px"></i>
-                        <div>
-                          <div style="font-size:12px;font-weight:600;color:var(--text)">~5 minutos y tu celular a la mano</div>
-                          <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">Meta te pide confirmar desde la app de WhatsApp Business</div>
-                        </div>
-                      </div>
-                      <div style="display:flex;align-items:flex-start;gap:10px;background:color-mix(in srgb,var(--card-bg) 80%,transparent);border:1px solid var(--border);border-radius:9px;padding:9px 12px">
-                        <i class="fa fa-credit-card" style="color:#f59e0b;font-size:12px;flex-shrink:0;margin-top:1px"></i>
-                        <div>
-                          <div style="font-size:12px;font-weight:600;color:var(--text)">Una tarjeta en tu cuenta de Meta</div>
-                          <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px">Meta cobra cada mensaje (~$0.16 MXN), directo a tu tarjeta. Avaxon no te cobra eso.</div>
-                        </div>
-                      </div>
-                      <div style="background:color-mix(in srgb,#f59e0b 8%,var(--card-bg));border:1px solid color-mix(in srgb,#f59e0b 25%,var(--border));border-radius:9px;padding:9px 12px;font-size:10.5px;color:var(--text-muted);line-height:1.5">
-                        <i class="fa fa-lightbulb" style="color:#d97706;margin-right:4px"></i>
-                        <strong style="color:var(--text)">Tu número sigue en tu celular:</strong> puedes seguir contestando desde la app de WhatsApp Business al mismo tiempo. Si hoy contestas desde <strong>Meta Business Suite</strong>, desconéctala antes.
-                      </div>
-                    </div>
-                  </details>
                 </div>
 
-                <!-- ── CTAs ── -->
-                <div id="wa-connect-flow" style="padding:16px 18px;display:flex;flex-direction:column;gap:10px">
-                  <!-- Opción 1: Embedded Signup (Recomendado) -->
-                  <button id="wa-embedded-btn" onclick="launchEmbeddedSignup()" style="width:100%;text-align:left;padding:14px 16px;border-radius:14px;border:2px solid color-mix(in srgb,#22c55e 45%,var(--border));background:color-mix(in srgb,#10b981 6%,var(--card-bg));cursor:pointer;transition:all .15s;position:relative;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.background='color-mix(in srgb,#10b981 11%,var(--card-bg))'" onmouseout="this.style.background='color-mix(in srgb,#10b981 6%,var(--card-bg))'">
-                    <span style="position:absolute;top:-9px;right:14px;background:#10b981;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:20px;padding:2px 8px">Recomendado</span>
-                    <div style="display:flex;align-items:center;gap:14px">
-                      <div style="width:44px;height:44px;background:linear-gradient(135deg,#1877f2,#0a5dc2);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 10px rgba(24,119,242,.3)">
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
-                      </div>
-                      <div style="flex:1">
-                        <div style="font-size:13.5px;font-weight:700;color:var(--text)">Conexión con Meta</div>
-                        <div style="font-size:11.5px;color:var(--text-muted);margin-top:3px">Inicia sesión con Facebook, elige tu número y confirma en tu celular. Unos 5 minutos.</div>
-                        <div style="display:flex;align-items:center;gap:12px;margin-top:6px">
-                          <span style="font-size:10px;color:#059669;display:flex;align-items:center;gap:3px"><i class="fa fa-check" style="font-size:8px"></i>Tu mismo número</span>
-                          <span style="font-size:10px;color:#059669;display:flex;align-items:center;gap:3px"><i class="fa fa-check" style="font-size:8px"></i>Sigues usando la app</span>
-                          <span style="font-size:10px;color:#059669;display:flex;align-items:center;gap:3px"><i class="fa fa-check" style="font-size:8px"></i>Sin capturar datos</span>
-                        </div>
-                      </div>
-                      <i class="fa fa-arrow-right" style="font-size:13px;color:color-mix(in srgb,#22c55e 55%,var(--text-muted));flex-shrink:0"></i>
+                <!-- STATE: Con número conectado -->
+                <div id="wa-connected-view" style="display:none">
+                  <div class="ch-card-head" style="border-left:3px solid #25D366;background:color-mix(in srgb,#25D366 5%,var(--page-bg))">
+                    <div class="ch-logo" style="background:#25D366">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     </div>
-                  </button>
-                  <!-- Opción 2: Credenciales manuales (oculto en details) -->
-                  <details>
-                    <summary style="font-size:11.5px;color:var(--text-muted);cursor:pointer;list-style:none;user-select:none;padding:2px 0">
-                      ¿Lo conecta tu técnico con credenciales de Meta? <span style="text-decoration:underline">Ver opción</span>
-                    </summary>
-                    <button onclick="showConnectModal()" style="margin-top:8px;width:100%;text-align:left;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);background:var(--card-bg);cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.background='var(--hover-bg)';this.style.borderColor='var(--border-hover)'" onmouseout="this.style.background='var(--card-bg)';this.style.borderColor='var(--border)'">
-                      <div style="display:flex;align-items:center;gap:12px">
-                        <div style="width:38px;height:38px;background:var(--hover-bg);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                          <i class="fa fa-key" style="font-size:14px;color:var(--text-muted)"></i>
-                        </div>
-                        <div style="flex:1">
-                          <div style="font-size:13px;font-weight:700;color:var(--text)">Ya tengo mis credenciales</div>
-                          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Phone Number ID, WABA ID y Access Token de Meta</div>
-                        </div>
-                        <i class="fa fa-arrow-right" style="font-size:12px;color:var(--text-dim);flex-shrink:0"></i>
-                      </div>
-                    </button>
-                  </details>
-                  <!-- Compartir guía -->
-                  <div style="text-align:center;padding-top:2px">
-                    <button onclick="copyOnboardingLink()" style="background:none;border:none;font-size:11px;color:var(--text-muted);cursor:pointer;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">
-                      <i class="fa fa-link" style="font-size:9px"></i> Compartir guía con tu cliente
-                    </button>
+                    <div style="flex:1;min-width:0">
+                      <div class="ch-head-name">WhatsApp Business</div>
+                      <div class="ch-head-sub">Meta Business API</div>
+                    </div>
+                    <span class="pill pill-green no-dot" style="background:color-mix(in srgb,#16A34A 12%,var(--card-bg));color:#0B7A46">Conectado</span>
                   </div>
-                </div>
-              </div>
-
-              <!-- ── ESTADO: Con número conectado ── -->
-              <div id="wa-connected-view" style="display:none">
-                <!-- Info del número — generado por renderConexiones -->
-                <div id="wa-numbers-list"></div>
-
-                <!-- Filas de configuración -->
-                <div style="border-top:1px solid var(--border)">
-                  <!-- Toggle: Recibir mensajes -->
-                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border)">
-                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                      <span style="font-size:14px;font-weight:600;color:var(--text)">Recibir mensajes</span>
-                      <span style="font-size:13px;color:var(--text-muted)">Pausa temporalmente sin perder la configuración</span>
-                    </div>
+                  <!-- Info del número — generado por renderConexiones -->
+                  <div id="wa-numbers-list"></div>
+                  <!-- Ajustes -->
+                  <div class="ch-setting-row">
+                    <div class="ch-setting-label"><span class="ch-setting-title">Recibir mensajes</span><span class="ch-setting-sub">Pausa temporalmente sin perder la configuración</span></div>
                     <button id="wa-active-btn" onclick="waToggleActive()" aria-label="Recibir mensajes" style="width:40px;height:24px;flex:none;border-radius:999px;border:none;padding:2px;display:flex;cursor:pointer;transition:background .15s;background:#16A34A;justify-content:flex-end"><span style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></button>
                   </div>
-                  <!-- Toggle: Firma Avaxon -->
-                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border)">
-                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                      <span style="font-size:14px;font-weight:600;color:var(--text)">Mostrar "Enviado con Avaxon"</span>
-                      <span style="font-size:13px;color:var(--text-muted)">Pie de página discreto en mensajes automáticos</span>
-                    </div>
+                  <div class="ch-setting-row">
+                    <div class="ch-setting-label"><span class="ch-setting-title">Mostrar "Enviado con Avaxon"</span><span class="ch-setting-sub">Pie de página discreto en mensajes automáticos</span></div>
                     <button id="wa-firma-btn" onclick="waTogglePoweredBy()" aria-label="Firma Avaxon" style="width:40px;height:24px;flex:none;border-radius:999px;border:none;padding:2px;display:flex;cursor:pointer;transition:background .15s;background:#16A34A;justify-content:flex-end"><span style="width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2)"></span></button>
                   </div>
-                  <!-- Perfil de negocio (collapsible) -->
-                  <button onclick="waToggleProfileCard()" style="width:100%;display:flex;align-items:center;gap:14px;padding:14px 22px;background:none;border:none;border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;text-align:left;cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'">
-                    <div style="flex:1;display:flex;flex-direction:column;gap:2px">
-                      <span style="font-size:14px;font-weight:600;color:var(--text)">Perfil de negocio</span>
-                      <span style="font-size:13px;color:var(--text-muted)">Información visible para tus clientes en WhatsApp</span>
-                    </div>
-                    <i id="wa-profile-chevron" class="fa fa-chevron-down" style="color:var(--text-muted);font-size:14px;transition:transform .2s;flex-shrink:0"></i>
+                  <button class="ch-setting-row ch-setting-btn" onclick="waToggleProfileCard()">
+                    <div class="ch-setting-label"><span class="ch-setting-title">Perfil de negocio</span><span class="ch-setting-sub">Información visible para tus clientes en WhatsApp</span></div>
+                    <i id="wa-profile-chevron" class="fa fa-chevron-down" style="color:var(--text-muted);font-size:13px;transition:transform .2s;flex-shrink:0"></i>
                   </button>
-                  <div id="wa-profile-content" style="display:none;border-bottom:1px solid var(--border);padding:16px 22px;background:var(--page-bg)">
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px 24px">
-                      <div style="display:flex;flex-direction:column;gap:3px">
-                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Nombre</span>
-                        <span style="font-size:13px;color:var(--text)">Avaxon</span>
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:3px">
-                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Categoría</span>
-                        <span style="font-size:13px;color:var(--text)">Software y tecnología</span>
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:3px">
-                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Horario</span>
-                        <span style="font-size:13px;color:var(--text)">Lun–Vie · 9:00–19:00</span>
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:3px">
-                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Sitio web</span>
-                        <span style="font-size:13px;color:var(--text)">avaxon.lat</span>
-                      </div>
+                  <div id="wa-profile-content" style="display:none;border-bottom:1px solid var(--border);padding:14px 18px;background:var(--page-bg)">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px 20px">
+                      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Nombre</span><span style="font-size:13px;color:var(--text)">Avaxon</span></div>
+                      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Categoría</span><span style="font-size:13px;color:var(--text)">Software y tecnología</span></div>
+                      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Horario</span><span style="font-size:13px;color:var(--text)">Lun–Vie · 9–19 h</span></div>
+                      <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Sitio web</span><span style="font-size:13px;color:var(--text)">avaxon.lat</span></div>
                     </div>
                   </div>
-                  <!-- Plantilla de aviso de atención humana -->
-                  <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap">
-                    <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:2px">
-                      <span style="font-size:14px;font-weight:600;color:var(--text)">Aviso por WhatsApp de atención humana</span>
-                      <span style="font-size:13px;color:var(--text-muted)">Cuando una conversación necesita a alguien del equipo, te avisamos con esta plantilla (además del correo)</span>
-                    </div>
-                    <select id="wa-handoff-template-select" onchange="saveWaHandoffTemplate(this.value)" class="cfg-field-select" style="max-width:260px;flex-shrink:0">
+                  <div class="ch-setting-row" style="flex-wrap:wrap;gap:8px;border-bottom:none">
+                    <div class="ch-setting-label" style="min-width:180px"><span class="ch-setting-title">Aviso de atención humana</span><span class="ch-setting-sub">Plantilla de WA cuando el equipo debe tomar el chat</span></div>
+                    <select id="wa-handoff-template-select" onchange="saveWaHandoffTemplate(this.value)" class="cfg-field-select" style="max-width:220px;flex-shrink:0;font-size:12px">
                       <option value="">Sin aviso por WhatsApp</option>
                     </select>
                   </div>
-                </div>
-
-                <!-- Footer -->
-                <div style="display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--page-bg);flex-wrap:wrap">
-                  <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex:1;min-width:200px">
-                    <i class="fa fa-shield-halved" style="color:#16A34A;font-size:15px"></i>Tu token se guarda cifrado y nunca se muestra en el panel.
-                  </span>
-                  <button onclick="launchEmbeddedSignup()" style="display:flex;align-items:center;gap:6px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
-                    <i class="fa fa-plus" style="font-size:10px"></i> Agregar número
-                  </button>
-                  <button onclick="waDisconnectCurrent()" style="display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--red);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;padding:6px 4px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
-                    <i class="fa fa-unlink" style="font-size:11px"></i> Desconectar
-                  </button>
+                  <!-- Footer -->
+                  <div class="ch-footer">
+                    <span style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-muted);flex:1;min-width:160px"><i class="fa fa-shield-halved" style="color:#16A34A;font-size:13px"></i>Token cifrado</span>
+                    <button onclick="launchEmbeddedSignup()" style="display:flex;align-items:center;gap:5px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='var(--card-bg)'">
+                      <i class="fa fa-plus" style="font-size:10px"></i> Agregar número
+                    </button>
+                    <button onclick="waDisconnectCurrent()" style="display:flex;align-items:center;gap:5px;background:none;border:none;color:var(--red);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;padding:5px 2px" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+                      <i class="fa fa-unlink" style="font-size:11px"></i> Desconectar
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Otros canales -->
-            <div class="integ-full-grid" style="margin-top:14px">
-
-              <!-- Instagram Direct -->
-              <div class="integ-full-card" id="ig-conexion-card">
-                <div class="integ-full-card-top">
-                  <div class="integ-full-logo" style="background:linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d,#fcaf45)">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              <!-- ─────────────── Instagram Direct ─────────────── -->
+              <div class="ch-card" id="ig-conexion-card">
+                <div class="ch-card-head">
+                  <div class="ch-logo" style="background:linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d,#fcaf45)">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div class="ch-head-name">Instagram Direct</div>
+                    <div class="ch-head-sub">Meta Business Platform</div>
                   </div>
                   <span class="pill pill-amber no-dot" id="ig-status-pill">No conectado</span>
                 </div>
-                <div>
-                  <div class="integ-full-name">Instagram Direct</div>
-                  <div class="integ-full-desc">Automatiza respuestas a mensajes directos de Instagram desde el mismo bot que atiende WhatsApp</div>
-                </div>
-                <div class="integ-full-footer">
-                  <span class="integ-full-status" id="ig-integ-status">
-                    <span class="dot"></span>Sin conexión
-                  </span>
-                  <button id="ig-connect-btn" onclick="showToast('Conecta primero tu cuenta de Instagram en Configuración → Redes sociales')" class="btn-primary" style="font-size:13px;padding:7px 16px">
-                    <i class="fab fa-instagram" style="font-size:11px;margin-right:5px"></i>Conectar
+                <div class="ch-setup">
+                  <p class="ch-setup-desc">Automatiza respuestas a DMs de Instagram con el mismo agente de IA que atiende WhatsApp. Un bot, todos los canales.</p>
+                  <div class="ch-benefits">
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#e1306c"></i>DMs automáticos 24/7</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#e1306c"></i>Misma IA que atiende WhatsApp</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#e1306c"></i>Conecta en minutos vía Facebook</div>
+                  </div>
+                  <div class="ch-steps">
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:#1877f2">1</div>
+                      <div><div class="ch-step-label">Inicia sesión con Facebook</div><div class="ch-step-sub">Con tu cuenta Meta / Business</div></div>
+                    </div>
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:linear-gradient(135deg,#833ab4,#e1306c)">2</div>
+                      <div><div class="ch-step-label">Conecta tu cuenta de Instagram</div><div class="ch-step-sub">La vinculada a tu página de Facebook</div></div>
+                    </div>
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:#8b5cf6">3</div>
+                      <div><div class="ch-step-label">Bot activo en Instagram</div><div class="ch-step-sub">El agente responde DMs al instante</div></div>
+                    </div>
+                  </div>
+                  <button id="ig-connect-btn" onclick="launchIgEmbeddedSignup()" class="ch-cta" style="background:linear-gradient(135deg,#833ab4,#e1306c);color:#fff">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    Conectar con Meta
                   </button>
+                  <span id="ig-integ-status" style="display:none;font-size:11.5px;color:var(--text-muted);text-align:center"></span>
                 </div>
               </div>
 
-              <!-- Facebook Messenger -->
-              <div class="integ-full-card" id="fb-conexion-card">
-                <div class="integ-full-card-top">
-                  <div class="integ-full-logo" style="background:linear-gradient(135deg,#1877f2,#0a5dc2)">
+              <!-- ─────────────── Facebook Messenger ─────────────── -->
+              <div class="ch-card" id="fb-conexion-card">
+                <div class="ch-card-head">
+                  <div class="ch-logo" style="background:linear-gradient(135deg,#1877f2,#0a5dc2)">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.652V24l4.088-2.242c1.092.3 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/></svg>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div class="ch-head-name">Facebook Messenger</div>
+                    <div class="ch-head-sub">Meta Business Platform</div>
                   </div>
                   <span class="pill pill-amber no-dot" id="fb-status-pill">No conectado</span>
                 </div>
-                <div>
-                  <div class="integ-full-name">Facebook Messenger</div>
-                  <div class="integ-full-desc">Recibe y responde mensajes de tu página de Facebook de forma automática con el mismo agente de IA</div>
-                </div>
-                <div class="integ-full-footer">
-                  <span class="integ-full-status" id="fb-integ-status">
-                    <span class="dot"></span>Sin conexión
-                  </span>
-                  <button id="fb-connect-btn" onclick="showToast('Conecta primero tu página de Facebook en Configuración → Redes sociales')" class="btn-primary" style="font-size:13px;padding:7px 16px">
-                    <i class="fab fa-facebook" style="font-size:11px;margin-right:5px"></i>Conectar
+                <div class="ch-setup">
+                  <p class="ch-setup-desc">Responde los mensajes de tu página de Facebook de forma automática con el mismo agente de IA que atiende WhatsApp.</p>
+                  <div class="ch-benefits">
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>Tu página siempre activa, 24/7</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>Misma IA que atiende WhatsApp</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>Conecta vía Facebook en minutos</div>
+                  </div>
+                  <div class="ch-steps">
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:#1877f2">1</div>
+                      <div><div class="ch-step-label">Inicia sesión con Facebook</div><div class="ch-step-sub">Con tu cuenta Meta / Business</div></div>
+                    </div>
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:#1877f2">2</div>
+                      <div><div class="ch-step-label">Elige tu página de Facebook</div><div class="ch-step-sub">La que atiende mensajes de clientes</div></div>
+                    </div>
+                    <div class="ch-step">
+                      <div class="ch-step-num" style="background:#8b5cf6">3</div>
+                      <div><div class="ch-step-label">Bot activo en Messenger</div><div class="ch-step-sub">El agente responde al instante</div></div>
+                    </div>
+                  </div>
+                  <button id="fb-connect-btn" onclick="launchFbEmbeddedSignup()" class="ch-cta" style="background:linear-gradient(135deg,#1877f2,#0a5dc2);color:#fff">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.62 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
+                    Conectar con Meta
                   </button>
+                  <span id="fb-integ-status" style="display:none;font-size:11.5px;color:var(--text-muted);text-align:center"></span>
                 </div>
               </div>
 
@@ -5889,6 +5830,38 @@
     });
   }
   window.launchEmbeddedSignup = launchEmbeddedSignup;
+
+  /* ── Embedded Signup: Instagram Direct ── */
+  function launchIgEmbeddedSignup() {
+    if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
+    window.FB.login(function(response) {
+      if (response.authResponse) {
+        showToast('Instagram conectado correctamente', 3000);
+      } else {
+        showToast('Conexión cancelada', 2500);
+      }
+    }, {
+      scope: 'instagram_manage_messages,instagram_basic,pages_show_list,pages_manage_metadata',
+      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' }
+    });
+  }
+  window.launchIgEmbeddedSignup = launchIgEmbeddedSignup;
+
+  /* ── Embedded Signup: Facebook Messenger ── */
+  function launchFbEmbeddedSignup() {
+    if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
+    window.FB.login(function(response) {
+      if (response.authResponse) {
+        showToast('Facebook Messenger conectado correctamente', 3000);
+      } else {
+        showToast('Conexión cancelada', 2500);
+      }
+    }, {
+      scope: 'pages_manage_metadata,pages_messaging,pages_show_list,public_profile',
+      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' }
+    });
+  }
+  window.launchFbEmbeddedSignup = launchFbEmbeddedSignup;
 
   /* ── Conectar número WhatsApp (modal manual) ── */
   function showConnectModal() {
