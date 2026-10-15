@@ -6357,6 +6357,32 @@
     const text  = input.value.trim();
     if (!text || !convState.activeId) return;
 
+    // ── Note mode (Item 9) ─────────────────────────────────────────
+    if (noteMode) {
+      btn.disabled = true; btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+      input.disabled = true;
+      try {
+        const orgId = state.currentOrgId || state.userOrgId;
+        const { error } = await sb.from('conversation_notes').insert({
+          conversation_id: state.activeId || convState.activeId,
+          organization_id: orgId,
+          author_id: state.userId,
+          body: text,
+        });
+        if (error) throw error;
+        appendNoteToDOM(text, state.userFullName || state.userEmail?.split('@')[0] || 'Tú');
+        input.value = '';
+        // Exit note mode after send
+        toggleNoteMode();
+      } catch (e) {
+        showToast('Error al guardar nota: ' + e.message, 5000);
+      } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fa fa-paper-plane"></i>';
+        input.disabled = false; input.focus();
+      }
+      return;
+    }
+
     btn.disabled = true;
     btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     input.disabled = true;
@@ -6372,7 +6398,10 @@
         body: JSON.stringify({ conversation_id: convState.activeId, message: text }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Error al enviar');
+      if (!res.ok) {
+        await log_bot_error(state.currentOrgId || state.userOrgId, convState.activeId, 'send_message_error', data.error || 'HTTP ' + res.status, String(res.status), 'dashboard/sendMessage');
+        throw new Error(data.error ?? 'Error al enviar');
+      }
       input.value = '';
     } catch (e) {
       showToast('Error: ' + e.message, 5000);
