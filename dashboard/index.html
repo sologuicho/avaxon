@@ -3051,40 +3051,7 @@
                 </div>
               </div>
 
-              <!-- Meta Lead Ads -->
-              <div class="integ-full-card" style="cursor:pointer" onclick="openIntegModal('meta_leads')">
-                <div class="integ-full-card-top">
-                  <div class="integ-full-logo" style="background:linear-gradient(135deg,#1877f2,#833ab4)">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
-                  </div>
-                  <span id="meta_leads-integ-pill" class="pill pill-amber no-dot">No conectado</span>
-                </div>
-                <div>
-                  <div class="integ-full-name">Facebook & Instagram Leads</div>
-                  <div class="integ-full-desc">Captura leads de tus anuncios y páginas de Meta directamente en el agente para darles seguimiento automático</div>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--border);padding-top:10px">
-                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-                    <span style="font-size:12px;color:var(--text-muted)">Estado</span>
-                    <span id="meta_leads-detail-status" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted)">Sin conexión</span>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
-                    <span style="font-size:12px;color:var(--text-muted)">Página</span>
-                    <span id="meta_leads-detail-account" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--text-muted);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="">—</span>
-                  </div>
-                </div>
-                <div class="integ-full-footer" style="margin-top:auto">
-                  <span style="font-size:12px;color:var(--text-muted)">Meta Business · Lead Ads</span>
-                  <span style="font-size:12px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px">Configurar <i class="fa fa-arrow-right" style="font-size:10px"></i></span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- ── Solicitar herramienta ── -->
-            <div style="margin-top:6px">
-
-              <!-- Tarjeta CTA -->
+              <!-- ¿Necesitas otra herramienta? -->
               <div class="integ-full-card" style="cursor:pointer;border-style:dashed;border-color:color-mix(in srgb,var(--accent) 35%,var(--border));background:color-mix(in srgb,var(--accent) 3%,var(--card-bg))" onclick="openRequisitionPanel()" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='color-mix(in srgb,var(--accent) 35%,var(--border))'">
                 <div class="integ-full-card-top">
                   <div class="integ-full-logo" style="background:color-mix(in srgb,var(--accent) 15%,var(--card-bg));border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--border))">
@@ -3101,14 +3068,14 @@
                 </div>
               </div>
 
-              <!-- Mis requisiciones (solo si hay alguna) -->
-              <div id="req-list-section" style="display:none;margin-top:16px">
-                <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px">
-                  <i class="fa fa-inbox" style="color:var(--accent)"></i> Mis solicitudes de herramientas
-                </div>
-                <div id="req-list-rows" style="display:flex;flex-direction:column;gap:8px"></div>
-              </div>
+            </div>
 
+            <!-- Mis solicitudes de herramientas -->
+            <div id="req-list-section" style="display:none;margin-top:16px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                <i class="fa fa-inbox" style="color:var(--accent)"></i> Mis solicitudes de herramientas
+              </div>
+              <div id="req-list-rows" style="display:flex;flex-direction:column;gap:8px"></div>
             </div>
 
           </div>
