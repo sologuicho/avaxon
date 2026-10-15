@@ -6233,20 +6233,8 @@
   let noteMode = false;
 
   function toggleNoteMode() {
-    noteMode = !noteMode;
-    const input  = $('chat-input');
-    const btn    = $('chat-note-btn');
-    const bar    = $('chat-input-bar');
-    if (!input) return;
-    if (noteMode) {
-      input.placeholder = 'Nota interna (solo tu equipo, nunca se envía al cliente)…';
-      if (btn) btn.style.background = 'rgba(202,138,4,.15)';
-      if (bar) bar.style.background = '#fefce8';
-    } else {
-      input.placeholder = 'Escribe para intervenir — el bot se pausa 30 min…';
-      if (btn) btn.style.background = '';
-      if (bar) bar.style.background = '#fff';
-    }
+    // Note system uses the existing modal — this function just opens it
+    if (typeof openNoteModal === 'function') openNoteModal();
   }
   window.toggleNoteMode = toggleNoteMode;
 
