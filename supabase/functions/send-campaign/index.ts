@@ -163,6 +163,15 @@ async function runCampaign(
   for (const contact of contacts) {
     if (!contact.phone) { failed++; continue }
 
+    // Build template components from variables JSONB {"1": "nombre", "2": "negocio", ...}
+    let templateComponents: any[] = []
+    if (camp.message_type === 'template' && templateName && contact.variables) {
+      const vars = contact.variables as Record<string, string>
+      const params = Object.keys(vars).sort((a, b) => Number(a) - Number(b))
+        .map(k => ({ type: 'text', text: vars[k] ?? '' }))
+      if (params.length > 0) templateComponents = [{ type: 'body', parameters: params }]
+    }
+
     const waPayload = camp.message_type === 'template' && templateName
       ? {
           messaging_product: 'whatsapp',
@@ -171,7 +180,7 @@ async function runCampaign(
           template: {
             name:       templateName,
             language:   { code: templateLang },
-            components: [],
+            components: templateComponents,
           },
         }
       : {
