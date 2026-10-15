@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Broadcast a múltiples contactos ─────────────────────────────────────────
 // Envía un mensaje de texto libre a todos los contactos de la org que coincidan
@@ -54,6 +55,26 @@ Deno.serve(async (req: Request) => {
   let orgId = profile?.organization_id
   if (profile?.role === 'super_admin' && body.org_id) orgId = body.org_id
   if (!orgId) return json({ error: 'No se encontró organización' }, 404)
+
+  try {
+    return await runBroadcast(adminSb, orgId, body, WA_TOKEN)
+  } catch (e) {
+    console.error('send-broadcast: excepción no controlada:', e)
+    await logBotError(adminSb, {
+      organization_id: orgId, type: 'edge_function_500',
+      detail: `send-broadcast: excepción no controlada: ${(e as Error)?.message ?? e}`,
+      source: 'send-broadcast',
+    })
+    return json({ error: 'Error inesperado enviando el broadcast' }, 500)
+  }
+})
+
+async function runBroadcast(
+  adminSb: ReturnType<typeof createClient>,
+  orgId: string,
+  body: { message?: string; template_name?: string; template_language?: string; filter: 'all' | 'new' | 'qualified' | 'active_24h'; preview?: boolean },
+  WA_TOKEN: string,
+): Promise<Response> {
 
   const { message, template_name, template_language = 'es_MX', filter = 'all', preview = false } = body
   const isTemplate = !!template_name?.trim()
@@ -130,6 +151,12 @@ Deno.serve(async (req: Request) => {
       failed++
       const err = await waRes.text()
       console.error(`Broadcast falló para ${contact.phone}:`, err)
+      await logBotError(adminSb, {
+        organization_id: orgId,
+        type: 'meta_rejected', error_code: String(waRes.status),
+        detail: `Broadcast falló para ${contact.phone}: ${err}`,
+        source: 'send-broadcast',
+      })
     }
 
     // Pausa breve para no saturar la API de Meta
@@ -137,4 +164,4 @@ Deno.serve(async (req: Request) => {
   }
 
   return json({ ok: true, sent, failed, total })
-})
+}

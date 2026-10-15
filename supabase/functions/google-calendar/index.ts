@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getGoogleAccessToken } from '../_shared/google.ts'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Sincroniza una cita de `appointments` con Google Calendar ───────────────
 // El dashboard llama aquí tras crear/editar/eliminar una cita. Usa
@@ -105,6 +106,10 @@ Deno.serve(async (req: Request) => {
       let msg = `Google Calendar respondió ${delRes.status}`
       try { const errData = await delRes.json(); msg = errData.error?.message || msg } catch { /* sin cuerpo */ }
       console.error('Error eliminando evento de Google Calendar:', msg)
+      await logBotError(adminClient, {
+        organization_id: organizationId, type: 'calendar_failed', error_code: String(delRes.status),
+        detail: `No se pudo eliminar el evento de la cita ${appt.id}: ${msg}`, source: 'google-calendar:delete',
+      })
       return json({ ok: false, error: msg }, 502)
     }
     return json({ ok: true })
@@ -149,6 +154,10 @@ Deno.serve(async (req: Request) => {
     const patchData = await patchRes.json()
     if (!patchRes.ok) {
       console.error('Error actualizando evento en Google Calendar:', JSON.stringify(patchData))
+      await logBotError(adminClient, {
+        organization_id: organizationId, type: 'calendar_failed', error_code: String(patchRes.status),
+        detail: `No se pudo actualizar el evento de la cita ${appt.id}: ${JSON.stringify(patchData)}`, source: 'google-calendar:update',
+      })
       return json({ ok: false, error: patchData.error?.message || `Google Calendar respondió ${patchRes.status}` }, 502)
     }
     return json({ ok: true, event_id: patchData.id, html_link: patchData.htmlLink })
@@ -164,6 +173,10 @@ Deno.serve(async (req: Request) => {
   const postData = await postRes.json()
   if (!postRes.ok) {
     console.error('Error creando evento en Google Calendar:', JSON.stringify(postData))
+    await logBotError(adminClient, {
+      organization_id: organizationId, type: 'calendar_failed', error_code: String(postRes.status),
+      detail: `No se pudo crear el evento de la cita ${appt.id}: ${JSON.stringify(postData)}`, source: 'google-calendar:create',
+    })
     return json({ ok: false, error: postData.error?.message || `Google Calendar respondió ${postRes.status}` }, 502)
   }
 

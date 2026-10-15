@@ -7,6 +7,7 @@ import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
 import { flagNeedsHuman } from '../_shared/humanHandoff.ts'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -136,6 +137,7 @@ async function agendarCita(
   sb: ReturnType<typeof createClient>,
   calendarToken: string,
   timezone: string,
+  conversationId: string,
 ): Promise<string> {
   const duracion = args.duracion_minutos || 60
   const scheduledAt = fechaHoraToUtcIso(args.fecha, args.hora, timezone)
@@ -209,8 +211,24 @@ async function agendarCita(
       await sb.from('appointments')
         .update({ google_event_id: googleEventId, updated_at: new Date().toISOString() })
         .eq('id', appt.id)
+    } else {
+      const errData = await eventRes.json().catch(() => ({}))
+      await logBotError(sb, {
+        organization_id: organizationId, conversation_id: conversationId,
+        type: 'calendar_failed', error_code: String(eventRes.status),
+        detail: `No se pudo crear el evento en Google Calendar para la cita ${appt.id}: ${JSON.stringify(errData)}`,
+        source: 'webhook-wa:agendar_cita',
+      })
     }
-  } catch { /* continuar aunque Google falle */ }
+  } catch (e) {
+    // Se sigue devolviendo la cita como agendada (ya quedó en nuestra BD) —
+    // solo el evento de Google falló, no la cita en sí.
+    await logBotError(sb, {
+      organization_id: organizationId, conversation_id: conversationId,
+      type: 'calendar_failed', detail: `Error creando evento en Google Calendar para la cita ${appt.id}: ${(e as Error).message}`,
+      source: 'webhook-wa:agendar_cita',
+    })
+  }
 
   return `Cita agendada correctamente. ID: ${appt.id}. Fecha: ${args.fecha} a las ${args.hora}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
 }
@@ -222,6 +240,7 @@ async function cancelarOReagendarCita(
   sb: ReturnType<typeof createClient>,
   calendarToken: string,
   timezone: string,
+  conversationId: string,
 ): Promise<string> {
   const { data: appt } = await sb
     .from('appointments')
@@ -246,17 +265,34 @@ async function cancelarOReagendarCita(
     if (appt.google_event_id) {
       const duracion = 60
       const endAt = new Date(new Date(newScheduledAt).getTime() + duracion * 60000).toISOString()
-      await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
-        {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            start: { dateTime: newScheduledAt, timeZone: timezone },
-            end:   { dateTime: endAt, timeZone: timezone },
-          }),
-        },
-      ).catch(() => {})
+      try {
+        const patchRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
+          {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              start: { dateTime: newScheduledAt, timeZone: timezone },
+              end:   { dateTime: endAt, timeZone: timezone },
+            }),
+          },
+        )
+        if (!patchRes.ok) {
+          const errData = await patchRes.json().catch(() => ({}))
+          await logBotError(sb, {
+            organization_id: organizationId, conversation_id: conversationId,
+            type: 'calendar_failed', error_code: String(patchRes.status),
+            detail: `No se pudo reagendar el evento de Google Calendar de la cita ${appt.id}: ${JSON.stringify(errData)}`,
+            source: 'webhook-wa:reagendar_cita',
+          })
+        }
+      } catch (e) {
+        await logBotError(sb, {
+          organization_id: organizationId, conversation_id: conversationId,
+          type: 'calendar_failed', detail: `Error reagendando evento de Google Calendar de la cita ${appt.id}: ${(e as Error).message}`,
+          source: 'webhook-wa:reagendar_cita',
+        })
+      }
     }
     await notifyAppointment(sb, appt.id, 'rescheduled', 'whatsapp')
     return `Cita reagendada para el ${args.nueva_fecha} a las ${args.nueva_hora}.`
@@ -266,10 +302,29 @@ async function cancelarOReagendarCita(
       .eq('id', appt.id)
 
     if (appt.google_event_id) {
-      await fetch(
-        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${calendarToken}` } },
-      ).catch(() => {})
+      try {
+        const delRes = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/primary/events/${appt.google_event_id}`,
+          { method: 'DELETE', headers: { Authorization: `Bearer ${calendarToken}` } },
+        )
+        // 410/404 = Google ya no tiene el evento (borrado antes, etc.) — no es
+        // una falla real, la cita de todos modos ya quedó cancelada en la BD.
+        if (!delRes.ok && delRes.status !== 404 && delRes.status !== 410) {
+          const errData = await delRes.json().catch(() => ({}))
+          await logBotError(sb, {
+            organization_id: organizationId, conversation_id: conversationId,
+            type: 'calendar_failed', error_code: String(delRes.status),
+            detail: `No se pudo borrar el evento de Google Calendar de la cita ${appt.id}: ${JSON.stringify(errData)}`,
+            source: 'webhook-wa:cancelar_cita',
+          })
+        }
+      } catch (e) {
+        await logBotError(sb, {
+          organization_id: organizationId, conversation_id: conversationId,
+          type: 'calendar_failed', detail: `Error borrando evento de Google Calendar de la cita ${appt.id}: ${(e as Error).message}`,
+          source: 'webhook-wa:cancelar_cita',
+        })
+      }
     }
     await notifyAppointment(sb, appt.id, 'cancelled', 'whatsapp')
     return `Cita cancelada correctamente.`
@@ -287,6 +342,7 @@ async function crearLinkPago(
   contactId: string,
   sb: ReturnType<typeof createClient>,
   stripeSecretKey: string,
+  conversationId: string,
 ): Promise<string> {
   const { data: integ } = await sb
     .from('integrations')
@@ -349,6 +405,11 @@ async function crearLinkPago(
 
     if (insErr || !payment) {
       console.error('Error guardando payment (bot):', insErr)
+      await logBotError(sb, {
+        organization_id: organizationId, conversation_id: conversationId,
+        type: 'payment_link_failed', detail: `Error guardando el payment en la base: ${insErr?.message ?? 'desconocido'}`,
+        source: 'webhook-wa:crear_link_pago',
+      })
       return 'Hubo un error guardando el cobro. Dile al cliente que un asesor le ayudará con el pago.'
     }
 
@@ -357,6 +418,11 @@ async function crearLinkPago(
     return `Link de pago creado correctamente. Dile al cliente: "Aquí tienes tu link de pago por *${product.name}* ($${amountFmt} MXN): ${shortUrl}"`
   } catch (e) {
     console.error('Error creando Checkout Session (bot):', e)
+    await logBotError(sb, {
+      organization_id: organizationId, conversation_id: conversationId,
+      type: 'payment_link_failed', detail: `Error con Stripe creando el checkout session: ${(e as Error).message}`,
+      source: 'webhook-wa:crear_link_pago',
+    })
     return 'Hubo un error con Stripe al crear el link. Dile al cliente que un asesor le ayudará con el pago.'
   }
 }
@@ -849,25 +915,41 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const MAX_TOOL_LOOPS = 5
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
-    const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model:           'gpt-4o',
-        response_format: { type: 'json_object' },
-        messages,
-        tools,
-        max_tokens:  600,
-        temperature: 0.7,
-      }),
-    })
+    let aiRes: Response
+    try {
+      aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:           'gpt-4o',
+          response_format: { type: 'json_object' },
+          messages,
+          tools,
+          max_tokens:  600,
+          temperature: 0.7,
+        }),
+      })
+    } catch (e) {
+      console.error('Error de red llamando a OpenAI:', e)
+      await logBotError(sb, {
+        organization_id, conversation_id, type: 'model_error',
+        detail: `Error de red llamando a OpenAI: ${(e as Error).message}`, source: 'webhook-wa:openai',
+      })
+      break
+    }
 
-    const aiData  = await aiRes.json()
+    const aiData  = await aiRes.json().catch(() => ({}))
     const choice  = aiData.choices?.[0]
     const message = choice?.message
 
-    if (!message) {
+    if (!aiRes.ok || !message) {
       console.error('GPT no devolvió mensaje:', JSON.stringify(aiData))
+      await logBotError(sb, {
+        organization_id, conversation_id, type: 'model_error',
+        error_code: !aiRes.ok ? String(aiRes.status) : (aiData?.error?.code ?? null),
+        detail: `OpenAI no devolvió una respuesta usable: ${JSON.stringify(aiData).slice(0, 1500)}`,
+        source: 'webhook-wa:openai',
+      })
       break
     }
 
@@ -881,7 +963,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           if (toolCall.function.name === 'consultar_disponibilidad') {
             toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone)
           } else if (toolCall.function.name === 'agendar_cita') {
-            toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone)
+            toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone, conversation_id)
             sendZapierEvent(sb, organization_id, 'appointment_booked', {
               contact_name:  args.nombre,
               contact_phone: fromPhone,
@@ -890,14 +972,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
               hora:          args.hora,
             })
           } else if (toolCall.function.name === 'cancelar_o_reagendar_cita') {
-            toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone)
+            toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone, conversation_id)
           } else if (toolCall.function.name === 'crear_link_pago') {
-            toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY)
+            toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY, conversation_id)
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
         } catch (e) {
           toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
+          await logBotError(sb, {
+            organization_id: organization_id, conversation_id: conversation_id,
+            type: 'edge_function_500', detail: `Falla inesperada ejecutando ${toolCall.function.name}: ${(e as Error).message}`,
+            source: 'webhook-wa:tool_call',
+          })
         }
 
         messages.push({
@@ -969,7 +1056,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify(waPayload),
   })
-  const waData = await waRes.json()
+  const waData = await waRes.json().catch(() => ({}))
+  if (!waRes.ok) {
+    console.error('Meta rechazó la respuesta del bot:', JSON.stringify(waData))
+    await logBotError(sb, {
+      organization_id, conversation_id, type: 'meta_rejected',
+      error_code: String(waData?.error?.code ?? waRes.status),
+      detail: `Meta rechazó la respuesta del bot: ${JSON.stringify(waData).slice(0, 1500)}`,
+      source: 'webhook-wa:send_reply',
+    })
+  }
 
   // ── 14. Marcar como procesados los IDs de este batch ──────────────────────
   await sb.from('messages')
@@ -1096,7 +1192,17 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 })
   }
 
-  EdgeRuntime.waitUntil(handleIncoming(body, env))
+  EdgeRuntime.waitUntil(
+    handleIncoming(body, env).catch(e => {
+      console.error('handleIncoming: excepción no controlada:', e)
+      const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+      return logBotError(sb, {
+        type: 'edge_function_500',
+        detail: `webhook-wa: excepción no controlada procesando el mensaje: ${(e as Error)?.message ?? e}`,
+        source: 'webhook-wa:handleIncoming',
+      })
+    }),
+  )
   return new Response('ok', { status: 200 })
 })
 

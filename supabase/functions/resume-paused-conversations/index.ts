@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Retoma el bot si nadie del equipo atendió a tiempo ──────────────────────
 // Corre cada 15 min (pg_cron). Busca conversaciones marcadas needs_human que
@@ -75,6 +76,12 @@ Deno.serve(async (req: Request) => {
       if (!waRes.ok) {
         const errData = await waRes.json().catch(() => ({}))
         console.error(`resume-paused-conversations: Meta rechazó envío a conv ${conv.id}:`, JSON.stringify(errData))
+        await logBotError(sb, {
+          organization_id: conv.organization_id, conversation_id: conv.id,
+          type: 'meta_rejected', error_code: String(errData?.error?.code ?? waRes.status),
+          detail: `Meta rechazó el mensaje de retoma automática: ${JSON.stringify(errData)}`,
+          source: 'resume-paused-conversations',
+        })
         continue
       }
       const waData = await waRes.json()
@@ -97,6 +104,11 @@ Deno.serve(async (req: Request) => {
       resumed++
     } catch (e) {
       console.error(`resume-paused-conversations: error en conv ${conv.id}:`, e)
+      await logBotError(sb, {
+        organization_id: conv.organization_id, conversation_id: conv.id,
+        type: 'edge_function_500', detail: `Error inesperado reanudando la conversación: ${(e as Error).message}`,
+        source: 'resume-paused-conversations',
+      })
     }
   }
 

@@ -4232,6 +4232,23 @@
     if (view === 'config')      loadConfig();
   }
 
+  // Link directo desde el Registro del bot (panel admin): ?conv=<id> — el
+  // super_admin puede estar viendo cualquier org o "Todos los clientes", así
+  // que primero hay que averiguar a cuál pertenece esa conversación y
+  // cambiar a ella antes de abrirla (un usuario normal ya está en su única
+  // org, así que ahí el cambio de org es un no-op).
+  async function openConversationDeepLink(convId) {
+    const { data: conv, error } = await sb.from('conversations').select('organization_id').eq('id', convId).maybeSingle();
+    if (error || !conv) { showToast('No se encontró esa conversación', 4000); return; }
+    if (state.isSuperAdmin && conv.organization_id !== state.currentOrgId) {
+      await selectOrg(conv.organization_id);
+    }
+    switchView('conversaciones');
+    await loadConversaciones();
+    openConversacion(convId);
+  }
+  window.openConversationDeepLink = openConversationDeepLink;
+
   const KPI_COLORS = ['#5980a6', '#10b981', '#f59e0b', '#6366f1', '#ef4444'];
 
   function buildKpiGrid(kpis) {
@@ -6890,6 +6907,11 @@
 
     // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
     const _urlParams = new URLSearchParams(window.location.search)
+    const _convParam = _urlParams.get('conv')
+    if (_convParam) {
+      window.history.replaceState({}, '', window.location.pathname)
+      openConversationDeepLink(_convParam)
+    }
     const _conexion  = _urlParams.get('conexion')
     if (_conexion) {
       window.history.replaceState({}, '', window.location.pathname)

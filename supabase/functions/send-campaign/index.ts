@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 const cors = {
   'Access-Control-Allow-Origin':  '*',
@@ -49,6 +50,26 @@ Deno.serve(async (req: Request) => {
 
   const orgId = camp.organization_id
 
+  try {
+    return await runCampaign(adminSb, camp, campaign_id, orgId, WA_TOKEN)
+  } catch (e) {
+    console.error('send-campaign: excepción no controlada:', e)
+    await logBotError(adminSb, {
+      organization_id: orgId, type: 'edge_function_500',
+      detail: `send-campaign: excepción no controlada: ${(e as Error)?.message ?? e}`,
+      source: 'send-campaign',
+    })
+    return json({ error: 'Error inesperado procesando la campaña' }, 500)
+  }
+})
+
+async function runCampaign(
+  adminSb: ReturnType<typeof createClient>,
+  camp: any,
+  campaign_id: string,
+  orgId: string,
+  WA_TOKEN: string,
+): Promise<Response> {
   // Get active phone number
   const { data: pn } = await adminSb
     .from('phone_numbers')
@@ -169,6 +190,12 @@ Deno.serve(async (req: Request) => {
       const errTxt = await waRes.text()
       console.error(`send-campaign: fallo para ${contact.phone}:`, errTxt)
       if (ccId) await adminSb.from('campaign_contacts').update({ status: 'failed', error_msg: errTxt.slice(0, 500) }).eq('id', ccId)
+      await logBotError(adminSb, {
+        organization_id: orgId,
+        type: 'meta_rejected', error_code: String(waRes.status),
+        detail: `send-campaign (${camp.name ?? campaign_id}): fallo para ${contact.phone}: ${errTxt.slice(0, 500)}`,
+        source: 'send-campaign',
+      })
     }
 
     // Check if campaign was paused/cancelled externally
@@ -190,4 +217,4 @@ Deno.serve(async (req: Request) => {
   }).eq('id', campaign_id)
 
   return json({ ok: true, sent, failed, total: contacts.length })
-})
+}

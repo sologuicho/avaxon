@@ -796,6 +796,14 @@
         <span id="solicitudes-clientes-badge" style="display:none;margin-left:auto;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;line-height:1.6"></span>
       </div>
 
+      <div class="nav-item" data-view="bot-errors">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+        Registro del bot
+      </div>
+
       <div class="nav-item" data-view="sistema">
         <span class="nav-dot"></span>
         <span class="nav-icon">
@@ -1068,6 +1076,41 @@
         </div>
         <div class="card" style="padding:0">
           <div id="src-list"></div>
+        </div>
+      </div>
+
+      <!-- VISTA: REGISTRO DEL BOT -->
+      <div class="view" id="view-bot-errors">
+        <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <select class="field-select" id="bot-err-filter-org" style="max-width:260px" onchange="loadBotErrors()">
+            <option value="">Todos los clientes</option>
+          </select>
+          <select class="field-select" id="bot-err-filter-type" style="max-width:240px" onchange="loadBotErrors()">
+            <option value="">Todos los tipos</option>
+            <option value="meta_rejected">Mensaje rechazado por Meta</option>
+            <option value="calendar_failed">Falla de Google Calendar</option>
+            <option value="payment_link_failed">Link de pago fallido</option>
+            <option value="model_error">Error del modelo</option>
+            <option value="edge_function_500">Edge function (500)</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Cliente</th>
+                  <th>Tipo</th>
+                  <th>Detalle</th>
+                  <th>Conversación</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-bot-errors">
+                <tr><td colspan="5"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1459,7 +1502,7 @@
 
   const VIEW_TITLES = {
     overview: 'Resumen', clientes: 'Clientes', usuarios: 'Usuarios', solicitudes: 'Solicitudes',
-    agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes', sistema: 'Sistema',
+    agentes: 'Agentes', 'solicitudes-clientes': 'Solicitudes de clientes', 'bot-errors': 'Registro del bot', sistema: 'Sistema',
   };
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
@@ -1558,6 +1601,7 @@
     if (name === 'solicitudes') loadSolicitudes();
     if (name === 'agentes')     loadAgentesOrgList();
     if (name === 'solicitudes-clientes') loadSolicitudesClientes();
+    if (name === 'bot-errors') loadBotErrors();
   }
   function switchViewWithOrg(name, orgId) {
     switchView(name);
@@ -1825,25 +1869,28 @@
   async function loadOverview() {
     const today = new Date();
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const [activeRes, trialRes, msgsRes, usersRes, allOrgsRes, profileCountsRes] = await Promise.all([
+    const [activeRes, trialRes, msgsRes, usersRes, allOrgsRes, profileCountsRes, botErrors24hRes] = await Promise.all([
       sb.from('organizations').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       sb.from('organizations').select('*', { count: 'exact', head: true }).eq('status', 'trial'),
       sb.from('messages').select('*', { count: 'exact', head: true }).gte('created_at', monthStart),
       sb.from('profiles').select('*', { count: 'exact', head: true }),
       sb.from('organizations').select('id,name,industry,plan_id,status,trial_ends_at,created_at').order('created_at', { ascending: false }),
       sb.from('profiles').select('organization_id').not('organization_id', 'is', null),
+      sb.from('bot_error_logs').select('*', { count: 'exact', head: true }).gte('created_at', last24h),
     ]);
 
-    const KPI_COLORS = ['#5980a6', '#10b981', '#f59e0b', '#6366f1'];
+    const KPI_COLORS = ['#5980a6', '#10b981', '#f59e0b', '#6366f1', '#ef4444'];
     const kpis = [
       { label: 'Clientes activos',  value: activeRes.count ?? 0,  foot: 'Suscripción vigente' },
       { label: 'En trial',          value: trialRes.count  ?? 0,  foot: 'Período de prueba' },
       { label: 'Mensajes este mes', value: msgsRes.count   ?? 0,  foot: new Date().toLocaleDateString('es-MX',{month:'long',year:'numeric'}) },
       { label: 'Usuarios totales',  value: usersRes.count  ?? 0,  foot: 'Todos los tenants' },
+      { label: 'Errores del bot',   value: botErrors24hRes.count ?? 0, foot: 'Últimas 24 h', onclick: "switchView('bot-errors')" },
     ];
     $('overview-kpis').innerHTML = kpis.map((k, i) => `
-      <div class="kpi-card">
+      <div class="kpi-card"${k.onclick ? ` style="cursor:pointer" onclick="${k.onclick}"` : ''}>
         <div class="kpi-accent-bar" style="background:${KPI_COLORS[i]}"></div>
         <div class="kpi-label">${k.label}</div>
         <div class="kpi-row"><div class="kpi-value">${k.value.toLocaleString('es-MX')}</div></div>
@@ -2569,6 +2616,65 @@
     }).join('');
   }
   window.loadSolicitudesClientes = loadSolicitudesClientes;
+
+  // ── Registro del bot (bot_error_logs) ───────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  const BOT_ERR_TYPE_LABELS = {
+    meta_rejected:       ['pill-red no-dot',   'Rechazado por Meta'],
+    calendar_failed:     ['pill-amber no-dot', 'Google Calendar'],
+    payment_link_failed: ['pill-amber no-dot', 'Link de pago'],
+    model_error:         ['pill-red no-dot',   'Modelo (IA)'],
+    edge_function_500:   ['pill-red no-dot',   'Edge function (500)'],
+  };
+
+  async function loadBotErrors() {
+    const orgSel = $('bot-err-filter-org');
+    if (orgSel.options.length <= 1) {
+      let orgs = state.orgsCache;
+      if (!orgs) { const { data } = await sb.from('organizations').select('id,name').order('name'); orgs = data || []; state.orgsCache = orgs; }
+      orgs.forEach(o => { const opt = document.createElement('option'); opt.value = o.id; opt.textContent = o.name; orgSel.appendChild(opt); });
+    }
+
+    const tbody = $('tbody-bot-errors');
+    tbody.innerHTML = `<tr><td colspan="5"><div class="inner-loading"><div class="spinner-light"></div></div></td></tr>`;
+
+    let q = sb.from('bot_error_logs')
+      .select('id,organization_id,conversation_id,type,error_code,detail,source,created_at,organizations(name)')
+      .order('created_at', { ascending: false })
+      .limit(300);
+    const orgFilter  = $('bot-err-filter-org').value;
+    const typeFilter = $('bot-err-filter-type').value;
+    if (orgFilter)  q = q.eq('organization_id', orgFilter);
+    if (typeFilter) q = q.eq('type', typeFilter);
+
+    const { data, error } = await q;
+    if (error) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--red);padding:20px">${escapeHtml(error.message)}</td></tr>`; return; }
+
+    const rows = data || [];
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">✅</div>Sin errores con estos filtros</div></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const [cls, label] = BOT_ERR_TYPE_LABELS[r.type] || ['pill-muted no-dot', r.type];
+      const detail = r.error_code ? `[${escapeHtml(r.error_code)}] ${escapeHtml(r.detail)}` : escapeHtml(r.detail);
+      const convLink = r.conversation_id
+        ? `<a href="../dashboard/?conv=${r.conversation_id}" target="_blank" rel="noopener" style="font-size:12.5px;font-weight:600;color:#5980a6">Ver chat →</a>`
+        : '<span style="color:var(--text-dim)">—</span>';
+      return `<tr>
+        <td style="font-size:12px;color:var(--text-muted);white-space:nowrap">${new Date(r.created_at).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</td>
+        <td style="font-size:13px;font-weight:600;color:#1a2535">${escapeHtml(r.organizations?.name || '—')}</td>
+        <td><span class="pill ${cls}">${label}</span></td>
+        <td style="font-size:12.5px;color:var(--text-muted);max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${detail}">${detail}</td>
+        <td>${convLink}</td>
+      </tr>`;
+    }).join('');
+  }
+  window.loadBotErrors = loadBotErrors;
 
   async function openSolicitudClienteModal(id) {
     const r = srcCache.find(x => x.id === id);

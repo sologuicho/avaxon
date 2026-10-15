@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { stripeFetch } from '../_shared/stripe.ts'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Crea un link de pago (Stripe Checkout) en la cuenta conectada ──────────
 // Cargo directo: el header Stripe-Account hace que la cuenta conectada sea
@@ -110,12 +111,22 @@ Deno.serve(async (req: Request) => {
 
     if (insErr) {
       console.error('Error guardando payment:', insErr)
+      await logBotError(adminClient, {
+        organization_id: organizationId, type: 'payment_link_failed',
+        detail: `Link creado en Stripe pero no se pudo guardar: ${insErr.message}`,
+        source: 'stripe-payment-link',
+      })
       return json({ error: 'Link creado pero no se pudo guardar: ' + insErr.message }, 500)
     }
 
     return json({ ok: true, url: session.url, payment_id: payment.id })
   } catch (e) {
     console.error('Error creando Checkout Session:', e)
+    await logBotError(adminClient, {
+      organization_id: organizationId, type: 'payment_link_failed',
+      detail: `Error con Stripe creando el checkout session: ${e instanceof Error ? e.message : String(e)}`,
+      source: 'stripe-payment-link',
+    })
     return json({ error: e instanceof Error ? e.message : 'Error de Stripe' }, 502)
   }
 })

@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logBotError } from '../_shared/botErrorLog.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,6 +40,25 @@ Deno.serve(async (req: Request) => {
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
+  try {
+    return await handleSend(adminClient, { conversation_id, message, payment_id, template_id }, user, WA_TOKEN)
+  } catch (e) {
+    console.error('send-message: excepción no controlada:', e)
+    await logBotError(adminClient, {
+      type: 'edge_function_500',
+      detail: `send-message: excepción no controlada: ${(e as Error)?.message ?? e}`,
+      source: 'send-message',
+    })
+    return json({ error: 'Error inesperado enviando el mensaje' }, 500)
+  }
+})
+
+async function handleSend(
+  adminClient: ReturnType<typeof createClient>,
+  { conversation_id, message, payment_id, template_id }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string },
+  user: { id: string },
+  WA_TOKEN: string,
+): Promise<Response> {
   // Get conversation → contact phone + org phone_number_id + per-client token
   const { data: conv, error: convErr } = await adminClient
     .from('conversations')
@@ -110,6 +130,12 @@ Deno.serve(async (req: Request) => {
 
       const templateName = (integ?.config as any)?.payment_link_template_name
       if (!templateName) {
+        await logBotError(adminClient, {
+          organization_id: conv.organization_id, conversation_id,
+          type: 'payment_link_failed', error_code: '131026',
+          detail: 'Contacto fuera de la ventana de 24h y sin plantilla de link de pago configurada (integrations.config.payment_link_template_name)',
+          source: 'send-message',
+        })
         return json({ error: 'El contacto está fuera de la ventana de 24h y no hay plantilla de link de pago configurada (integrations.config.payment_link_template_name)' }, 422)
       }
 
@@ -182,6 +208,13 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!waRes.ok) {
+    await logBotError(adminClient, {
+      organization_id: conv.organization_id, conversation_id,
+      type: payment_id ? 'payment_link_failed' : 'meta_rejected',
+      error_code: String(waData?.error?.code ?? waRes.status),
+      detail: `WhatsApp API error: ${waData.error?.message ?? JSON.stringify(waData)}`,
+      source: 'send-message',
+    })
     return json({ error: `WhatsApp API error: ${waData.error?.message ?? JSON.stringify(waData)}` }, 502)
   }
 
@@ -229,4 +262,4 @@ Deno.serve(async (req: Request) => {
   await adminClient.from('conversations').update(convUpdate).eq('id', conversation_id)
 
   return json({ ok: true, wa_message_id: waMessageId })
-})
+}
