@@ -12200,6 +12200,26 @@
     integModalProvider = null;
   }
 
+  function setPaypalMode(mode) {
+    const sandbox = document.getElementById('paypal-mode-sandbox');
+    const live    = document.getElementById('paypal-mode-live');
+    if (!sandbox || !live) return;
+    const active   = 'border:1.5px solid var(--accent);background:var(--accent-100);color:var(--accent)';
+    const inactive = 'border:1.5px solid var(--border);background:var(--card-bg);color:var(--text-muted)';
+    sandbox.style.cssText += ';' + (mode === 'sandbox' ? active : inactive);
+    live.style.cssText    += ';' + (mode === 'live'    ? active : inactive);
+    sandbox.dataset.selected = mode === 'sandbox' ? '1' : '';
+    live.dataset.selected    = mode === 'live'    ? '1' : '';
+    document.getElementById('im-paypal-mode-val') && (document.getElementById('im-paypal-mode-val').value = mode);
+    if (!document.getElementById('im-paypal-mode-val')) {
+      const h = document.createElement('input');
+      h.type = 'hidden'; h.id = 'im-paypal-mode-val'; h.value = mode;
+      document.getElementById('integ-modal-body').appendChild(h);
+    } else {
+      document.getElementById('im-paypal-mode-val').value = mode;
+    }
+  }
+
   async function saveIntegModal() {
     const provider = integModalProvider;
     if (!provider) return;
