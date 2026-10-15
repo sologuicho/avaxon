@@ -6100,21 +6100,8 @@
   }
 
   async function marcarAtendida() {
-    if (!convState.activeId) return;
-    try {
-      const { error } = await sb.from('conversations')
-        .update({ needs_human: false, needs_human_at: null, needs_human_reason: null })
-        .eq('id', convState.activeId);
-      if (error) throw error;
-      const conv = convState.all.find(c => c.id === convState.activeId);
-      if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; }
-      const btn = $('chat-btn-atender');
-      if (btn) btn.style.display = 'none';
-      updateHumanBadge();
-      showToast('Marcado como atendido');
-    } catch (e) {
-      showToast('Error: ' + e.message, 4000);
-    }
+    // Delegates to the existing markConvAttended which handles all state + badges
+    await markConvAttended(convState.activeId);
   }
   window.marcarAtendida = marcarAtendida;
 
