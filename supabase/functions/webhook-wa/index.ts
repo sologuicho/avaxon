@@ -1240,6 +1240,36 @@ function cleanTemplateReason(reason: unknown): string | null {
   return r && r !== 'NONE' ? r : null
 }
 
+async function handleStatuses(statuses: any[], env: Env): Promise<void> {
+  const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+  for (const s of statuses) {
+    const status      = s.status       // 'sent' | 'delivered' | 'read' | 'failed'
+    const recipientId = s.recipient_id // E.164 phone we sent to
+    if (!recipientId || (status !== 'delivered' && status !== 'read')) continue
+
+    const updateField = status === 'delivered' ? 'delivered_at' : 'read_at'
+    const countField  = status === 'delivered' ? 'delivered_count' : 'read_count'
+    const now = new Date().toISOString()
+
+    const { data: cc } = await sb
+      .from('campaign_contacts')
+      .select('id, campaign_id')
+      .eq('phone', recipientId)
+      .eq('status', 'sent')
+      .is(updateField, null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!cc) continue
+
+    await sb.from('campaign_contacts').update({ [updateField]: now }).eq('id', cc.id)
+
+    const { data: camp } = await sb.from('campaigns').select(countField).eq('id', cc.campaign_id).single()
+    if (camp) await sb.from('campaigns').update({ [countField]: ((camp as any)[countField] ?? 0) + 1, updated_at: now }).eq('id', cc.campaign_id)
+  }
+}
+
 async function handleTemplateStatusUpdate(value: any, env: Env): Promise<void> {
   const newStatus = value?.event
   const metaId    = value?.message_template_id ? String(value.message_template_id) : null
