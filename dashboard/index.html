@@ -6462,7 +6462,7 @@
       try {
         const orgId = state.currentOrgId || state.userOrgId;
         const { error } = await sb.from('conversation_notes').insert({
-          conversation_id: state.activeId || convState.activeId,
+          conversation_id: convState.activeId,
           organization_id: orgId,
           author_id: state.userId,
           body: text,
