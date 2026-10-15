@@ -11639,7 +11639,10 @@
 
   function updateSheetsZapierDetails() {
     updateIntegDetail('google_sheets', 'gsheets-detail-status', 'gsheets-detail-account', integ => integ?.config?.email);
-    updateIntegDetail('zapier', 'zapier-detail-status', 'zapier-detail-account', integ => integ?.config?.webhook_url);
+    updateIntegDetail('zapier',        'zapier-detail-status',  'zapier-detail-account',  integ => integ?.config?.webhook_url);
+    updateIntegDetail('paypal',        'paypal-detail-status',  'paypal-detail-account',  integ => integ?.config?.client_id ? integ.config.client_id.slice(0,18) + '…' : null);
+    updateIntegDetail('make',          'make-detail-status',    'make-detail-account',    integ => integ?.config?.webhook_url);
+    updateIntegDetail('meta_leads',    'meta_leads-detail-status', 'meta_leads-detail-account', integ => integ?.config?.page_name || integ?.config?.page_id);
   }
 
   // Única puerta de salida hacia la Edge Function integration-save — todo
