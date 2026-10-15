@@ -29,12 +29,12 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await callerClient.auth.getUser()
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
-  let body: { conversation_id: string; message?: string; payment_id?: string }
+  let body: { conversation_id: string; message?: string; payment_id?: string; template_id?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const { conversation_id, message, payment_id } = body
-  if (!conversation_id?.trim() || (!message?.trim() && !payment_id?.trim())) {
-    return json({ error: 'conversation_id y (message o payment_id) son requeridos' }, 422)
+  const { conversation_id, message, payment_id, template_id } = body
+  if (!conversation_id?.trim() || (!message?.trim() && !payment_id?.trim() && !template_id?.trim())) {
+    return json({ error: 'conversation_id y (message, payment_id o template_id) son requeridos' }, 422)
   }
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
   // Get conversation → contact phone + org phone_number_id + per-client token
   const { data: conv, error: convErr } = await adminClient
     .from('conversations')
-    .select('id, organization_id, contact_id, phone_number_id, needs_human, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
+    .select('id, organization_id, contact_id, phone_number_id, needs_human, contacts(name, phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
     .eq('id', conversation_id)
     .single()
 
@@ -127,6 +127,45 @@ Deno.serve(async (req: Request) => {
       waData = await waRes.json()
       savedContent = `[Plantilla ${templateName}] ${bodyText}\n${shortUrl}`
     }
+  } else if (template_id) {
+    // ── Plantilla aprobada (ventana de 24h cerrada) ──────────────────────────
+    const { data: tpl } = await adminClient
+      .from('message_templates')
+      .select('id, organization_id, name, language, status, components')
+      .eq('id', template_id)
+      .maybeSingle()
+
+    if (!tpl || tpl.organization_id !== conv.organization_id) {
+      return json({ error: 'Plantilla no encontrada para esta organización' }, 404)
+    }
+    if (tpl.status !== 'APPROVED') {
+      return json({ error: 'Esta plantilla no está aprobada por Meta todavía' }, 422)
+    }
+
+    const bodyComp  = (tpl.components || []).find((c: any) => c.type === 'BODY')
+    const varNames: string[] = bodyComp?.variables || []
+
+    const { data: org } = await adminClient.from('organizations').select('name').eq('id', conv.organization_id).maybeSingle()
+    const contactName = (conv.contacts as any)?.name || (conv.contacts as any)?.phone || 'cliente'
+    const resolveVar = (v: string) => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : v)
+
+    const filledText = varNames.reduce(
+      (text, v) => text.split(`[${v}]`).join(resolveVar(v)),
+      bodyComp?.text || tpl.name,
+    )
+
+    waRes = await sendWA({
+      type: 'template',
+      template: {
+        name: tpl.name,
+        language: { code: tpl.language || 'es_MX' },
+        components: varNames.length
+          ? [{ type: 'body', parameters: varNames.map(v => ({ type: 'text', text: resolveVar(v) })) }]
+          : [],
+      },
+    })
+    waData = await waRes.json()
+    savedContent = `[Plantilla ${tpl.name}] ${filledText}`
   } else {
     waRes = await sendWA({ type: 'text', text: { body: message!.trim() } })
     waData = await waRes.json()
@@ -139,27 +178,40 @@ Deno.serve(async (req: Request) => {
 
   const waMessageId = waData.messages?.[0]?.id ?? null
 
-  // Store message in DB
+  // Store message in DB — sent_by queda para mostrar en el panel quién del
+  // equipo lo mandó (nunca lo pone el bot, que inserta sus mensajes desde
+  // webhook-wa sin pasar por este endpoint).
   const { error: insertErr } = await adminClient.from('messages').insert({
     conversation_id,
     organization_id: conv.organization_id,
     direction:       'outbound',
     content:         savedContent,
     media_type:      'text',
+    sent_by:         user.id,
   })
 
   if (insertErr) {
     return json({ error: `Mensaje enviado pero falló el registro: ${insertErr.message}` }, 500)
   }
 
-  // Update conversation last_message_at — y si alguien del equipo le
-  // escribió de verdad (este endpoint es el que usa "Escribir yo" en el
-  // dashboard) mientras estaba marcada needs_human, eso YA es la atención
-  // humana que se estaba esperando: se quita la marca (así
-  // resume-paused-conversations deja de contarla, no manda el "Perdón por
-  // la espera" a las 2h) y queda un rastro de que se resolvió sola, sin
-  // que nadie tuviera que darle a "Marcar como atendida".
-  const convUpdate: Record<string, unknown> = { last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+  // Pausa al bot en esta conversación mientras el equipo responde a mano
+  // (configurable por org, 30 min por defecto) — y si estaba marcada
+  // needs_human, esta respuesta manual YA es la atención humana que se
+  // esperaba: se quita la marca (así resume-paused-conversations deja de
+  // contarla) y queda un rastro de que se resolvió sola, sin que nadie
+  // tuviera que darle a "Marcar como atendida".
+  const { data: orgProfile } = await adminClient
+    .from('organization_profile')
+    .select('manual_reply_pause_minutes')
+    .eq('organization_id', conv.organization_id)
+    .maybeSingle()
+  const pauseMinutes = orgProfile?.manual_reply_pause_minutes || 30
+
+  const convUpdate: Record<string, unknown> = {
+    last_message_at:   new Date().toISOString(),
+    updated_at:         new Date().toISOString(),
+    human_pause_until: new Date(Date.now() + pauseMinutes * 60_000).toISOString(),
+  }
   if (conv.needs_human) {
     convUpdate.needs_human = false
     convUpdate.bot_resumed_at = null

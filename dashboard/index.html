@@ -1208,6 +1208,12 @@
     .msg-bubble.inbound  { background: #fff; color: #1a2535; border: 1px solid #e6e7e9; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .msg-time { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; opacity: 0.6; margin-top: 3px; display: block; text-align: right; letter-spacing: .02em; }
     .msg-date-sep { text-align: center; font-family: 'Barlow Condensed',sans-serif; font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 6px 0; }
+    .msg-sender-tag { font-size: 10.5px; opacity: .75; margin-top: 3px; display: block; text-align: right; }
+    /* Nota interna — nunca se envía al cliente, por eso se ve distinta
+       (ancho completo, amarilla) a los mensajes reales de WhatsApp. */
+    .msg-row.note { justify-content: center; }
+    .msg-note-bubble { max-width: 85%; padding: 9px 13px; font-size: 12.5px; line-height: 1.5; word-break: break-word; border-radius: 10px; background: #fef9e7; border: 1px solid #fde68a; color: #78350f; }
+    .msg-note-head { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #b45309; margin-bottom: 4px; }
 
     .contact-panel { width: 300px; flex-shrink: 0; border-left: 1px solid var(--border); overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; background: #f4f5f6; }
     /* Arranca oculto en pantallas angostas para dejarle su espacio al chat —
@@ -1949,6 +1955,9 @@
                   <button id="chat-wa-btn" title="Abrir en WhatsApp" style="width:32px;height:32px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;font-size:14px;color:#16a34a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">
                     <i class="fab fa-whatsapp"></i>
                   </button>
+                  <button class="chat-icon-btn" id="chat-note-btn" title="Agregar nota interna (solo la ve tu equipo)" onclick="openNoteModal()" style="width:32px;height:32px;border-radius:8px;border:1px solid #e6e7e9;font-size:14px;color:#b45309">
+                    <i class="fa fa-note-sticky"></i>
+                  </button>
                   <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado" style="width:32px;height:32px;border-radius:8px;border:1px solid #e6e7e9;font-size:14px;color:#2c455d">
                     <i class="fa fa-check-circle"></i>
                   </button>
@@ -1979,17 +1988,22 @@
                 </div>
               </div>
               <!-- Input bar -->
-              <div class="chat-input-bar" style="padding:12px 14px;border-top:1px solid #eef0f2;background:#fff">
+              <div class="chat-input-bar" id="chat-input-bar" style="padding:12px 14px;border-top:1px solid #eef0f2;background:#fff">
                 <button class="chat-input-icon" title="Adjuntar archivo" onclick="showToast('Próximamente: adjuntar archivos')">
                   <i class="fa fa-paperclip"></i>
                 </button>
                 <button class="chat-input-icon" title="Usar plantilla" onclick="showToast('Próximamente: plantillas de mensajes')">
                   <i class="fa fa-file-alt"></i>
                 </button>
-                <textarea id="chat-input" rows="1" placeholder="Escribe para intervenir — el bot se pausa 30 min…"></textarea>
+                <textarea id="chat-input" rows="1" placeholder="Escribe para intervenir — el bot se pausa unos minutos…"></textarea>
                 <button id="chat-send-btn" class="chat-send-round" title="Enviar">
                   <i class="fa fa-paper-plane"></i>
                 </button>
+              </div>
+              <!-- Ventana de 24h cerrada: plantillas aprobadas en vez del cuadro -->
+              <div id="chat-templates-panel" style="display:none;flex-direction:column;gap:8px;padding:12px 14px;border-top:1px solid #eef0f2;background:#fff;max-height:280px;overflow-y:auto;flex-shrink:0">
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#8c939b;text-transform:uppercase;letter-spacing:.08em">Ventana de 24h cerrada — envía una plantilla aprobada</div>
+                <div id="chat-tpl-list"></div>
               </div>
             </div>
           </div>
@@ -2445,6 +2459,24 @@
           <div style="display:flex;gap:10px">
             <button id="confirm-modal-cancel-btn" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer">No, volver</button>
             <button id="confirm-modal-ok-btn" style="flex:1;padding:10px;border-radius:9px;border:none;color:#fff;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">Sí, continuar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Nota interna (conversaciones) -->
+      <div id="note-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2300;align-items:center;justify-content:center;padding:20px">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:440px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.3)">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="width:34px;height:34px;border-radius:9px;background:rgba(245,158,11,.14);display:flex;align-items:center;justify-content:center;color:#b45309;font-size:14px;flex-shrink:0"><i class="fa fa-note-sticky"></i></div>
+            <div>
+              <div style="font-size:15.5px;font-weight:700;color:var(--text)">Nota interna</div>
+              <div style="font-size:12px;color:var(--text-muted)">Solo la ve tu equipo — nunca se envía al cliente</div>
+            </div>
+          </div>
+          <textarea id="note-modal-text" rows="4" placeholder="Ej. Ya confirmó por teléfono, falta cobrar el anticipo…" style="width:100%;box-sizing:border-box;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text);background:var(--input-bg);outline:none;font-family:'Plus Jakarta Sans',sans-serif;resize:vertical;min-height:90px"></textarea>
+          <div style="display:flex;gap:10px;margin-top:16px">
+            <button onclick="closeNoteModal()" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Cancelar</button>
+            <button id="note-modal-save-btn" onclick="saveNote()" style="flex:1;padding:10px;border-radius:9px;border:none;background:#f59e0b;color:#fff;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif">Guardar nota</button>
           </div>
         </div>
       </div>
@@ -3598,6 +3630,11 @@
                   <input id="cfg-handoff-timeout-hours" type="number" min="1" max="72" class="cfg-field-input" placeholder="2" />
                   <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Si una conversación marcada "necesita humano" no se atiende en este tiempo, el bot vuelve a contestar (la conversación sigue marcada para que el equipo la revise).</div>
                 </div>
+                <div>
+                  <label class="cfg-field-label">Pausa del bot tras una respuesta manual (minutos)</label>
+                  <input id="cfg-manual-pause-minutes" type="number" min="1" max="180" class="cfg-field-input" placeholder="30" />
+                  <div style="font-size:11.5px;color:var(--text-dim);margin-top:4px">Cada vez que alguien del equipo escribe y manda un mensaje en Conversaciones, el bot se queda calladito en esa conversación durante este tiempo.</div>
+                </div>
               </div>
             </div>
           </div>
@@ -4523,7 +4560,7 @@
     $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
 
     let q = sb.from('conversations')
-      .select('id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, bot_resumed_at, contacts(id, name, phone, email, status, tags)')
+      .select('id, organization_id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, bot_resumed_at, human_pause_until, contacts(id, name, phone, email, status, tags)')
       .order('updated_at', { ascending: false });
     if (orgId) q = q.eq('organization_id', orgId);
     const { data: convs } = await q;
@@ -4582,6 +4619,7 @@
         conv.needs_human_at = payload.new.needs_human_at;
         conv.needs_human_reason = payload.new.needs_human_reason;
         conv.bot_resumed_at = payload.new.bot_resumed_at;
+        conv.human_pause_until = payload.new.human_pause_until;
         conv.status = payload.new.status;
         updateNeedsHumanBadges();
         applyConvFilters();
@@ -4589,6 +4627,11 @@
           updateConvDetailNeedsHuman(conv);
           renderChatBanner(getLastInboundFromDOM(), conv.id, undefined);
         }
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_notes' }, payload => {
+        // Nota de otro miembro del equipo (otra pestaña/persona) en la
+        // conversación que tengo abierta — se intercala en vivo.
+        if (payload.new.conversation_id === convState.activeId) appendNote(payload.new);
       })
       .subscribe();
   }
@@ -4738,13 +4781,14 @@
     $('wa-window-banner').classList.remove('visible');
     document.querySelector('.conv-panel')?.classList.add('chat-active'); // móvil: pasa a vista de hilo
 
-    // Load messages
+    // Load messages + notes internas
     $('chat-messages').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:8px;align-items:center;justify-content:center"><div class="spinner-light"></div></div>';
-    const { data: msgsData } = await sb.from('messages')
-      .select('id, direction, content, media_type, created_at')
-      .eq('conversation_id', convId)
-      .order('created_at', { ascending: true });
-    renderMessages(msgsData || []);
+    await ensureTeamNames(conv?.organization_id);
+    const [{ data: msgsData }, { data: notesData }] = await Promise.all([
+      sb.from('messages').select('id, direction, content, media_type, created_at, sent_by').eq('conversation_id', convId).order('created_at', { ascending: true }),
+      sb.from('conversation_notes').select('id, body, author_id, created_at').eq('conversation_id', convId).order('created_at', { ascending: true }),
+    ]);
+    renderChatTimeline(msgsData || [], notesData || []);
 
     // 24h window check — last inbound message
     const lastInbound = (msgsData || []).filter(m => m.direction === 'inbound').at(-1);
@@ -4863,14 +4907,14 @@
     convId = convId || convState.activeId;
     if (!convId) return;
     const { data, error } = await sb.from('conversations')
-      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null, bot_resumed_at: null })
+      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null, bot_resumed_at: null, human_pause_until: null })
       .eq('id', convId)
       .select('id')
       .maybeSingle();
     if (error) { showToast('Error al marcar como atendida: ' + error.message, 5000); return; }
     if (!data) { showToast('No se pudo marcar como atendida: no tienes permiso sobre esta conversación.', 5000); return; }
     const conv = convState.all.find(c => c.id === convId);
-    if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; conv.bot_resumed_at = null; }
+    if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; conv.bot_resumed_at = null; conv.human_pause_until = null; }
     updateNeedsHumanBadges();
     applyConvFilters();
     if (convId === convState.activeId) {
@@ -4892,6 +4936,12 @@
     const actionsEl = $('chat-mode-actions')
     const chatInput = $('chat-input')
     const sendBtn   = $('chat-send-btn')
+    const inputBar  = $('chat-input-bar')
+    const tplPanel  = $('chat-templates-panel')
+    const conv      = convState.all.find(c => c.id === convId)
+
+    inputBar.style.display = 'flex'
+    tplPanel.style.display = 'none'
 
     if (!lastInbound) {
       banner.classList.remove('visible')
@@ -4909,11 +4959,11 @@
     if (!windowOpen) {
       bar.classList.add('closed')
       labelEl.textContent   = 'Ventana de 24h cerrada'
-      timerEl.innerHTML     = 'Solo puedes usar <a onclick="showToast(\'Próximamente: plantillas de mensajes\')">plantillas aprobadas</a>'
+      timerEl.textContent   = 'usa una plantilla aprobada abajo'
       actionsEl.innerHTML   = ''
-      chatInput.disabled    = true
-      chatInput.placeholder = 'Ventana cerrada — usa una plantilla aprobada'
-      sendBtn.disabled      = true
+      inputBar.style.display = 'none'
+      tplPanel.style.display = 'flex'
+      loadChatTemplatesPanel(convId, conv)
       return
     }
 
@@ -4921,15 +4971,23 @@
     const hLeft     = Math.floor(minsLeft / 60)
     const mLeft     = minsLeft % 60
     const timeLabel = hLeft > 0 ? `${hLeft}h ${mLeft}min` : `${mLeft}min`
-    const isHuman   = chatHumanConvs.has(convId)
-    const conv      = convState.all.find(c => c.id === convId)
-    const botPaused = !!conv?.needs_human && !conv?.bot_resumed_at
+    const isHumanLocal  = chatHumanConvs.has(convId)
+    const pauseUntil    = conv?.human_pause_until ? new Date(conv.human_pause_until).getTime() : 0
+    const pauseActive   = pauseUntil > Date.now()
+    const botPaused     = !!conv?.needs_human && !conv?.bot_resumed_at
 
-    if (isHuman) {
-      // Current user manually took over
+    if (isHumanLocal || pauseActive) {
+      // El equipo está escribiendo ahora ("Escribir yo") o acaba de
+      // responder a mano hace poco — mientras dure, el bot no contesta en
+      // esta conversación (ver human_pause_until / send-message).
       bar.classList.add('human')
-      labelEl.textContent   = 'Tú estás respondiendo'
-      timerEl.textContent   = `ventana abierta ${timeLabel} más`
+      labelEl.textContent   = isHumanLocal ? 'Tú estás respondiendo' : 'Tu equipo respondió hace poco — bot en pausa'
+      if (pauseActive) {
+        const pauseMinLeft = Math.max(1, Math.round((pauseUntil - Date.now()) / 60000))
+        timerEl.textContent = `el bot retoma en ${pauseMinLeft}min`
+      } else {
+        timerEl.textContent = `ventana abierta ${timeLabel} más`
+      }
       actionsEl.innerHTML   = `<button class="btn-mode" onclick="returnBotChat()">Volver al agente</button>`
       chatInput.disabled    = false
       chatInput.placeholder = 'Escribe un mensaje…'
@@ -4998,12 +5056,80 @@
     }
   }
 
-  function returnBotChat() {
+  async function returnBotChat() {
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.delete(convId)
+    const conv = convState.all.find(c => c.id === convId)
+    const { error } = await sb.from('conversations')
+      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null, bot_resumed_at: null, human_pause_until: null })
+      .eq('id', convId)
+    if (!error && conv) {
+      conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; conv.bot_resumed_at = null; conv.human_pause_until = null
+      updateNeedsHumanBadges()
+      if (convId === convState.activeId) updateConvDetailNeedsHuman(conv)
+    }
     renderChatBanner(getLastInboundFromDOM(), convId, undefined)
   }
+
+  // ── Plantillas aprobadas cuando la ventana de 24h está cerrada ──────────
+  let chatTplLoadingFor = null
+  async function loadChatTemplatesPanel(convId, conv) {
+    chatTplLoadingFor = convId
+    const orgId = conv?.organization_id
+    const list  = $('chat-tpl-list')
+    if (!orgId) { list.innerHTML = '<div style="font-size:12.5px;color:var(--text-dim)">No se encontró la organización de esta conversación.</div>'; return }
+
+    list.innerHTML = '<div style="padding:10px 0;color:var(--text-dim);font-size:12.5px">Cargando plantillas…</div>'
+    const [{ data: templates }, { data: org }] = await Promise.all([
+      sb.from('message_templates').select('id,name,language,components').eq('organization_id', orgId).eq('status', 'APPROVED').order('name'),
+      sb.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+    ])
+    if (chatTplLoadingFor !== convId) return // cambiaron de conversación mientras cargaba
+
+    if (!templates || !templates.length) {
+      list.innerHTML = '<div style="font-size:12.5px;color:var(--text-dim);padding:6px 0">No hay plantillas aprobadas todavía. Crea y aprueba una en Configuración → Plantillas.</div>'
+      return
+    }
+
+    const contact = convState.all.find(c => c.id === convId)?.contacts
+    const contactName = contact?.name || contact?.phone || 'cliente'
+    const resolveVar = v => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : `[${v}]`)
+
+    list.innerHTML = templates.map(t => {
+      const bodyComp = (t.components || []).find(c => c.type === 'BODY')
+      const varNames = bodyComp?.variables || []
+      const filled = varNames.reduce((text, v) => text.split(`[${v}]`).join(resolveVar(v)), bodyComp?.text || t.name)
+      return `<div style="padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;display:flex;flex-direction:column;gap:7px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text)">${escapeHtml(t.name)}</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.5">${escapeHtml(filled)}</div>
+        <button style="align-self:flex-end;padding:5px 14px;border-radius:7px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onclick="sendTemplateToConv('${t.id}', this)">Enviar</button>
+      </div>`
+    }).join('')
+  }
+
+  async function sendTemplateToConv(templateId, btn) {
+    const convId = convState.activeId
+    if (!convId) return
+    btn.disabled = true
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'
+    const { data: { session } } = await sb.auth.getSession()
+    try {
+      const res = await fetch(`${EDGE_BASE}/send-message`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_id: convId, template_id: templateId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Error al enviar la plantilla')
+      showToast('Plantilla enviada')
+    } catch (e) {
+      showToast('Error: ' + e.message, 5000)
+      btn.disabled = false
+      btn.textContent = 'Enviar'
+    }
+  }
+  window.sendTemplateToConv = sendTemplateToConv
 
   window.takeoverChat   = takeoverChat
   window.returnBotChat  = returnBotChat
@@ -5276,30 +5402,70 @@
     return { text: content, buttons: [] };
   }
 
-  function buildMsgBubble(dir, text, buttons, time, isoTs = '') {
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ── Quién mandó cada mensaje/nota ────────────────────────────────────────
+  // messages.sent_by (uuid) solo lo llena send-message cuando lo manda una
+  // persona del equipo (el bot inserta sus mensajes desde webhook-wa sin ese
+  // campo) — aquí resolvemos el nombre para mostrarlo en el panel.
+  const teamNameById = {};
+  let teamNamesOrgLoaded = null;
+  async function ensureTeamNames(orgId) {
+    if (!orgId || teamNamesOrgLoaded === orgId) return;
+    const { data } = await sb.from('profiles').select('id, full_name').eq('organization_id', orgId);
+    (data || []).forEach(p => { teamNameById[p.id] = p.full_name || 'Alguien del equipo'; });
+    teamNamesOrgLoaded = orgId;
+  }
+  function teamName(id) { return id ? (teamNameById[id] || 'Alguien del equipo') : null; }
+
+  function buildMsgBubble(dir, text, buttons, time, isoTs = '', senderName = null) {
     const btns = buttons.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px">${buttons.map(b =>
           `<span style="display:inline-block;padding:4px 10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;font-size:11.5px;font-weight:600;line-height:1.4">${b}</span>`
         ).join('')}</div>`
       : '';
-    return `<div class="msg-bubble ${dir}" data-dir="${dir}" data-ts="${isoTs}">${text}${btns}<span class="msg-time">${time}</span></div>`;
+    const senderTag = senderName ? `<span class="msg-sender-tag">${escapeHtml(senderName)}</span>` : '';
+    return `<div class="msg-bubble ${dir}" data-dir="${dir}" data-ts="${isoTs}">${text}${btns}${senderTag}<span class="msg-time">${time}</span></div>`;
   }
 
-  function renderMessages(msgs) {
-    if (!msgs.length) {
+  function buildNoteBubble(authorName, body, time) {
+    return `<div class="msg-note-bubble">
+      <div class="msg-note-head"><i class="fa fa-note-sticky"></i>Nota interna · ${escapeHtml(authorName)} · ${time}</div>
+      ${escapeHtml(body).replace(/\n/g, '<br>')}
+    </div>`;
+  }
+
+  // Mensajes y notas comparten una sola línea de tiempo, ordenados por hora.
+  function renderChatTimeline(msgs, notes) {
+    const items = [
+      ...msgs.map(m => ({ kind: 'msg', created_at: m.created_at, data: m })),
+      ...(notes || []).map(n => ({ kind: 'note', created_at: n.created_at, data: n })),
+    ].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+    if (!items.length) {
       $('chat-messages').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:13px;padding:40px">Sin mensajes en esta conversación</div>';
       return;
     }
     let lastDateKey = '';
-    $('chat-messages').innerHTML = msgs.map(m => {
-      const d = new Date(m.created_at);
+    $('chat-messages').innerHTML = items.map(item => {
+      const d = new Date(item.created_at);
       const dk = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
       let sep = '';
       if (dk !== lastDateKey) { sep = `<div class="msg-date-sep">${dk}</div>`; lastDateKey = dk; }
       const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+
+      if (item.kind === 'note') {
+        const n = item.data;
+        return `${sep}<div class="msg-row note">${buildNoteBubble(teamName(n.author_id), n.body, time)}</div>`;
+      }
+
+      const m = item.data;
       const dir  = m.direction === 'outbound' ? 'outbound' : 'inbound';
       const { text, buttons } = parseMsgContent(m.content, m.media_type);
-      return `${sep}<div class="msg-row ${dir}">${buildMsgBubble(dir, text, buttons, time, m.created_at)}</div>`;
+      const senderName = m.sent_by ? teamName(m.sent_by) : null;
+      return `${sep}<div class="msg-row ${dir}">${buildMsgBubble(dir, text, buttons, time, m.created_at, senderName)}</div>`;
     }).join('');
     $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
   }
@@ -5311,12 +5477,58 @@
     const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     const dir  = msg.direction === 'outbound' ? 'outbound' : 'inbound';
     const { text, buttons } = parseMsgContent(msg.content, msg.media_type);
+    const senderName = msg.sent_by ? teamName(msg.sent_by) : null;
     const el = document.createElement('div');
     el.className = `msg-row ${dir}`;
-    el.innerHTML = buildMsgBubble(dir, text, buttons, time);
+    el.innerHTML = buildMsgBubble(dir, text, buttons, time, msg.created_at, senderName);
     $('chat-messages').appendChild(el);
     $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
   }
+
+  function appendNote(note) {
+    const existing = $('chat-messages').querySelector('[style*="Sin mensajes"]');
+    if (existing) $('chat-messages').innerHTML = '';
+    const time = new Date(note.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+    const el = document.createElement('div');
+    el.className = 'msg-row note';
+    el.innerHTML = buildNoteBubble(teamName(note.author_id), note.body, time);
+    $('chat-messages').appendChild(el);
+    $('chat-messages').scrollTop = $('chat-messages').scrollHeight;
+  }
+
+  // ── Modal: nota interna ──────────────────────────────────────────────────
+  function openNoteModal() {
+    if (!convState.activeId) return;
+    $('note-modal-text').value = '';
+    $('note-modal').style.display = 'flex';
+    $('note-modal-text').focus();
+  }
+  function closeNoteModal() { $('note-modal').style.display = 'none'; }
+
+  async function saveNote() {
+    const convId = convState.activeId;
+    if (!convId) return;
+    const body = ($('note-modal-text').value || '').trim();
+    if (!body) return;
+    const conv = convState.all.find(c => c.id === convId);
+    if (!conv?.organization_id) { showToast('No se encontró la organización de esta conversación', 4000); return; }
+
+    const btn = $('note-modal-save-btn');
+    btn.disabled = true;
+    const { data, error } = await sb.from('conversation_notes')
+      .insert({ conversation_id: convId, organization_id: conv.organization_id, author_id: state.userId, body })
+      .select('id, body, author_id, created_at')
+      .single();
+    btn.disabled = false;
+
+    if (error) { showToast('Error al guardar la nota: ' + error.message, 5000); return; }
+    closeNoteModal();
+    if (convId === convState.activeId) appendNote(data);
+    showToast('Nota guardada');
+  }
+  window.openNoteModal  = openNoteModal;
+  window.closeNoteModal = closeNoteModal;
+  window.saveNote        = saveNote;
 
   async function toggleConvStatus(convId, currentStatus) {
     const newStatus = currentStatus === 'open' ? 'closed' : 'open';
@@ -8832,6 +9044,7 @@
     if ($('cfg-contact-email'))    $('cfg-contact-email').value    = profile?.email || '';
     if ($('cfg-notification-email')) $('cfg-notification-email').value = profile?.notification_email || '';
     if ($('cfg-handoff-timeout-hours')) $('cfg-handoff-timeout-hours').value = profile?.human_handoff_timeout_hours || 2;
+    if ($('cfg-manual-pause-minutes')) $('cfg-manual-pause-minutes').value = profile?.manual_reply_pause_minutes || 30;
     if ($('cfg-contact-website'))  $('cfg-contact-website').value  = profile?.website || '';
     if ($('cfg-contact-address'))  $('cfg-contact-address').value  = profile?.address || '';
     if ($('cfg-contact-maps'))     $('cfg-contact-maps').value     = profile?.maps_url || '';
@@ -8890,6 +9103,7 @@
       email:       ($('cfg-contact-email').value     || '').trim() || null,
       notification_email: ($('cfg-notification-email').value || '').trim() || null,
       human_handoff_timeout_hours: Math.min(72, Math.max(1, parseInt($('cfg-handoff-timeout-hours').value) || 2)),
+      manual_reply_pause_minutes: Math.min(180, Math.max(1, parseInt($('cfg-manual-pause-minutes').value) || 30)),
       website:     ($('cfg-contact-website').value   || '').trim() || null,
       address:     ($('cfg-contact-address').value   || '').trim() || null,
       maps_url:    ($('cfg-contact-maps').value      || '').trim() || null,

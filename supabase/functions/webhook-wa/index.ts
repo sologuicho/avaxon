@@ -547,9 +547,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   let conversation_id: string
   let needsHumanBefore = false
   let botResumedBefore = false
+  let humanPauseActive = false
   const { data: existing } = await sb
     .from('conversations')
-    .select('id, needs_human, bot_resumed_at')
+    .select('id, needs_human, bot_resumed_at, human_pause_until')
     .eq('organization_id', organization_id)
     .eq('contact_id', contact_row.id)
     .eq('status', 'open')
@@ -561,6 +562,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     conversation_id = existing.id
     needsHumanBefore = !!existing.needs_human
     botResumedBefore = !!existing.bot_resumed_at
+    humanPauseActive = !!existing.human_pause_until && new Date(existing.human_pause_until as string).getTime() > Date.now()
     await sb.from('conversations')
       .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', conversation_id)
@@ -642,6 +644,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // este turno, se marca, se manda un acuse fijo (no depende de que el
   // system_prompt de la org sepa manejar esto) y tampoco se llama a GPT.
   if (needsHumanBefore && !botResumedBefore) return
+
+  // Alguien del equipo escribió manualmente hace poco (send-message marca
+  // human_pause_until) — el bot se queda calladito un rato aunque needs_human
+  // ya esté en false, para no pisarle la conversación a la persona mientras
+  // sigue escribiendo. Se retoma solo, sin aviso, cuando el plazo pasa.
+  if (humanPauseActive) return
 
   if (HUMAN_HANDOFF_REGEX.test(incomingBatchText)) {
     await flagNeedsHuman(sb, conversation_id, organization_id, 'El cliente pidió hablar con alguien')
