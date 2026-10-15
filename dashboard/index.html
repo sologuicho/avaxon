@@ -1189,6 +1189,11 @@
     .chat-mode-bar.transferred .mode-dot { background:#a855f7; box-shadow:0 0 0 3px #e9d5ff; }
     .chat-mode-bar.transferred .btn-mode { padding:5px 13px; border-radius:7px; border:1.5px solid #a855f7; background:#fff; color:#a855f7; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:background .12s; }
     .chat-mode-bar.transferred .btn-mode:hover { background:#faf5ff; }
+    /* paused: bot en pausa esperando a que el equipo atienda (needs_human) */
+    .chat-mode-bar.paused { background:#fffbeb; color:#92400e; border-bottom:1px solid #fde68a; }
+    .chat-mode-bar.paused .mode-dot { background:#f59e0b; box-shadow:0 0 0 3px #fde68a; }
+    .chat-mode-bar.paused .btn-mode { padding:5px 13px; border-radius:7px; border:1.5px solid #f59e0b; background:#fff; color:#f59e0b; font-size:11.5px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:background .12s; }
+    .chat-mode-bar.paused .btn-mode:hover { background:#fef3c7; }
     /* closed state */
     .chat-mode-bar.closed { background:#fef2f2; color:#991b1b; border-bottom:1px solid #fecaca; }
     .chat-mode-bar.closed .mode-dot { background:#f87171; }
@@ -1961,7 +1966,7 @@
                     · <span id="needs-human-time">—</span>
                   </span>
                 </div>
-                <button onclick="markConvAttended(convState.activeId)" style="padding:7px 14px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Marcar como atendida</button>
+                <button onclick="markConvAttended()" style="padding:7px 14px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Marcar como atendida</button>
               </div>
               <!-- Bot / Human / 24h banner -->
               <div class="wa-window-banner" id="wa-window-banner">
@@ -4518,7 +4523,7 @@
     $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
 
     let q = sb.from('conversations')
-      .select('id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, contacts(id, name, phone, email, status, tags)')
+      .select('id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, bot_resumed_at, contacts(id, name, phone, email, status, tags)')
       .order('updated_at', { ascending: false });
     if (orgId) q = q.eq('organization_id', orgId);
     const { data: convs } = await q;
@@ -4576,10 +4581,14 @@
         conv.needs_human = payload.new.needs_human;
         conv.needs_human_at = payload.new.needs_human_at;
         conv.needs_human_reason = payload.new.needs_human_reason;
+        conv.bot_resumed_at = payload.new.bot_resumed_at;
         conv.status = payload.new.status;
         updateNeedsHumanBadges();
         applyConvFilters();
-        if (payload.new.id === convState.activeId) updateConvDetailNeedsHuman(conv);
+        if (payload.new.id === convState.activeId) {
+          updateConvDetailNeedsHuman(conv);
+          renderChatBanner(getLastInboundFromDOM(), conv.id, undefined);
+        }
       })
       .subscribe();
   }
@@ -4812,16 +4821,29 @@
   }
 
   async function markConvAttended(convId) {
+    // Sin argumento (el botón del banner llama markConvAttended() a secas):
+    // un onclick inline NO puede leer convState porque es una const del
+    // cierre del IIFE, no una global — markConvAttended(convState.activeId)
+    // tronaba con "convState is not defined" antes de siquiera llamar a la
+    // función, así que el botón no hacía nada. Ahora la función misma lee
+    // convState.activeId desde adentro, donde sí es visible.
+    convId = convId || convState.activeId;
     if (!convId) return;
-    const { error } = await sb.from('conversations')
-      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null })
-      .eq('id', convId);
-    if (error) { showToast('Error al marcar como atendida: ' + error.message, 4000); return; }
+    const { data, error } = await sb.from('conversations')
+      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null, bot_resumed_at: null })
+      .eq('id', convId)
+      .select('id')
+      .maybeSingle();
+    if (error) { showToast('Error al marcar como atendida: ' + error.message, 5000); return; }
+    if (!data) { showToast('No se pudo marcar como atendida: no tienes permiso sobre esta conversación.', 5000); return; }
     const conv = convState.all.find(c => c.id === convId);
-    if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; }
+    if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; conv.bot_resumed_at = null; }
     updateNeedsHumanBadges();
     applyConvFilters();
-    if (convId === convState.activeId) updateConvDetailNeedsHuman(conv);
+    if (convId === convState.activeId) {
+      updateConvDetailNeedsHuman(conv);
+      renderChatBanner(getLastInboundFromDOM(), convId, undefined);
+    }
     showToast('Conversación marcada como atendida');
   }
   window.markConvAttended = markConvAttended;
@@ -4867,6 +4889,8 @@
     const mLeft     = minsLeft % 60
     const timeLabel = hLeft > 0 ? `${hLeft}h ${mLeft}min` : `${mLeft}min`
     const isHuman   = chatHumanConvs.has(convId)
+    const conv      = convState.all.find(c => c.id === convId)
+    const botPaused = !!conv?.needs_human && !conv?.bot_resumed_at
 
     if (isHuman) {
       // Current user manually took over
@@ -4885,6 +4909,17 @@
       actionsEl.innerHTML   = `<button class="btn-mode" onclick="takeoverChat()">Tomar chat</button>`
       chatInput.disabled    = true
       chatInput.placeholder = `Chat asignado a ${agent.full_name} — pulsa "Tomar chat" para escribir`
+      sendBtn.disabled      = true
+    } else if (botPaused) {
+      // Marcada "necesita humano" y el bot todavía no fue retomado por
+      // timeout (resume-paused-conversations) — antes esto seguía mostrando
+      // "Agente IA respondiendo" aunque el bot ya no estuviera contestando.
+      bar.classList.add('paused')
+      labelEl.textContent   = 'Bot en pausa: esperando a tu equipo'
+      timerEl.textContent   = `ventana libre ${timeLabel} más`
+      actionsEl.innerHTML   = `<button class="btn-mode" onclick="takeoverChat()">Escribir yo</button>`
+      chatInput.disabled    = true
+      chatInput.placeholder = 'El bot está en pausa — pulsa "Escribir yo" para responder'
       sendBtn.disabled      = true
     } else {
       // Bot is handling
