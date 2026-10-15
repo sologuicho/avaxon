@@ -12109,6 +12109,86 @@
           <span style="font-size:12.5px;color:var(--text-muted)">Avaxon también puede recibir acciones desde Zapier con tu API key.</span>
           <button type="button" onclick="testZapierWebhook()" id="zapier-test-btn" style="flex-shrink:0;padding:7px 12px;border:1.5px solid var(--border);background:var(--card-bg);color:var(--text);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Enviar evento de prueba</button>
         </div>` : ''}`;
+
+    } else if (provider === 'paypal') {
+      const clientId = integ?.config?.client_id || '';
+      const mode = integ?.config?.mode || 'sandbox';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(0,48,135,.07);border:1px solid rgba(0,48,135,.2);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Ve a <strong style="color:var(--text)">developer.paypal.com → My Apps &amp; Credentials</strong>, crea una app y copia el Client ID y Secret. Cada cliente usa sus propias credenciales.
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" id="paypal-mode-sandbox" onclick="setPaypalMode('sandbox')"
+            style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ${mode==='sandbox'?'var(--accent)':'var(--border)'};background:${mode==='sandbox'?'var(--accent-100)':'var(--card-bg)'};color:${mode==='sandbox'?'var(--accent)':'var(--text-muted)'}">
+            Sandbox (pruebas)
+          </button>
+          <button type="button" id="paypal-mode-live" onclick="setPaypalMode('live')"
+            style="flex:1;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ${mode==='live'?'var(--accent)':'var(--border)'};background:${mode==='live'?'var(--accent-100)':'var(--card-bg)'};color:${mode==='live'?'var(--accent)':'var(--text-muted)'}">
+            Live (producción)
+          </button>
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Client ID</span>
+          <input id="im-paypal-client-id" type="text" placeholder="AaBbCcDd..."
+            value="${clientId}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Client Secret</span>
+          <input id="im-paypal-client-secret" type="password" placeholder="••••••••••••••••"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          <span style="font-size:11.5px;color:var(--text-dim)">Se guarda cifrado. Déjalo vacío si solo quieres actualizar el Client ID.</span>
+        </label>`;
+
+    } else if (provider === 'make') {
+      const webhookUrl = integ?.config?.webhook_url || '';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(109,0,204,.07);border:1px solid rgba(109,0,204,.2);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          En Make.com, crea un escenario con el módulo <strong style="color:var(--text)">Webhooks → Custom webhook</strong>, actívalo y pega aquí la URL que te da.
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Webhook URL de Make</span>
+          <input id="im-make-url" type="url" placeholder="https://hook.eu2.make.com/..."
+            value="${webhookUrl}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          <span style="font-size:11.5px;color:var(--text-dim)">Debe empezar con https://hook.</span>
+        </label>
+        ${connected ? `
+        <div style="padding:10px 13px;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:10px;font-size:12.5px;color:var(--text-muted)">
+          <i class="fa fa-circle-check" style="color:var(--accent);margin-right:6px"></i>Avaxon enviará eventos (leads calificados, citas, pagos) al escenario de Make cuando ocurran.
+        </div>` : ''}`;
+
+    } else if (provider === 'meta_leads') {
+      const pageId   = integ?.config?.page_id   || '';
+      const pageName = integ?.config?.page_name  || '';
+      body.innerHTML = `
+        <div style="padding:12px 14px;background:rgba(24,119,242,.07);border:1px solid rgba(24,119,242,.2);border-radius:10px;font-size:12.5px;color:var(--text-muted);line-height:1.6">
+          Ve a <strong style="color:var(--text)">business.facebook.com → Configuración → Integraciones → Leads Access</strong>. Necesitas el Page Access Token de la página donde corren tus anuncios de Facebook o Instagram.
+        </div>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">ID de página de Facebook</span>
+          <input id="im-meta-page-id" type="text" placeholder="123456789012345"
+            value="${pageId}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Nombre de la página <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></span>
+          <input id="im-meta-page-name" type="text" placeholder="Mi Negocio"
+            value="${pageName}"
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:5px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Page Access Token</span>
+          <input id="im-meta-token" type="password" placeholder="EAABwzLixnjY..."
+            style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:13px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          <span style="font-size:11.5px;color:var(--text-dim)">Se guarda cifrado. Déjalo vacío si ya hay uno guardado y solo quieres actualizar el Page ID.</span>
+        </label>`;
     }
 
     const modal = document.getElementById('integ-modal');
