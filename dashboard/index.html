@@ -6090,11 +6090,13 @@
   // ══════════════════════════════════════════════════════════════════
 
   function updateHumanBadge() {
-    const count = convState.all.filter(c => c.needs_human).length;
-    const badge    = $('conv-human-badge');
+    // Also updates the existing needshuman badge (updateNeedsHumanBadges handles that)
+    updateNeedsHumanBadges();
     const navBadge = $('nav-human-badge');
-    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline' : 'none'; }
+    const count = convState.all.filter(c => c.needs_human).length;
     if (navBadge) navBadge.style.display = count > 0 ? 'inline-block' : 'none';
+    // Render the Inicio human card
+    renderHumanCard();
   }
 
   async function marcarAtendida() {
