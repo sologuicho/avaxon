@@ -1308,11 +1308,7 @@
         </div>
         <div class="field-group">
           <label class="field-label" for="editar-plan">Plan</label>
-          <select class="field-select" id="editar-plan">
-            <option value="starter">Starter</option>
-            <option value="pro">Pro</option>
-            <option value="enterprise">Enterprise</option>
-          </select>
+          <select class="field-select" id="editar-plan"></select>
         </div>
       </div>
       <div class="two-col-fields">
@@ -1476,11 +1472,7 @@
       </div>
       <div class="field-group" style="margin-bottom:0">
         <label class="field-label">Plan</label>
-        <select class="field-select" id="activar-plan">
-          <option value="starter">Starter</option>
-          <option value="pro" selected>Pro</option>
-          <option value="enterprise">Enterprise</option>
-        </select>
+        <select class="field-select" id="activar-plan"></select>
       </div>
     </div>
     <div class="modal-footer">
@@ -1507,13 +1499,42 @@
   let state = { userId: null, userEmail: '', orgsCache: [], usersCache: [], usersMap: {} };
 
   // ── Nuevo cliente state ──────────────────────────────────────────────────────
-  const ncState = { plan: 'pro', ciclo: 'mensual', modo: 'Trial', extras: {} };
+  const ncState = { plan: null, ciclo: 'mensual', modo: 'Trial', extras: {} };
 
-  const PLANES_AV = [
-    { id:'starter',    nombre:'Starter',    precio:2999, detalle:'1 canal WA · 1 usuario · esencial',          incluye:['bot','wa','crm'] },
-    { id:'pro',        nombre:'Pro',        precio:4999, detalle:'1 canal WA · 5 usuarios · reportes',         incluye:['bot','wa','crm','agenda','reportes'] },
-    { id:'enterprise', nombre:'Enterprise', precio:8999, detalle:'Multicanal · sin límites · soporte',         incluye:['bot','wa','crm','agenda','reportes','multiagente','api'] },
-  ];
+  // Planes reales — se llenan desde la tabla `plans` (loadPlanesReales,
+  // llamado en bootstrap) en vez de vivir fijos aquí. PLANES_AV son los
+  // vendibles (active=true, arranque/mostrador/sucursal/cadena);
+  // ENTERPRISE_PLAN es la fila 'enterprise' (active=false — no es una
+  // tarjeta más, es la opción "a la medida" aparte).
+  let PLANES_AV = [];
+  let ENTERPRISE_PLAN = null;
+
+  async function loadPlanesReales() {
+    const { data, error } = await sb.from('plans').select('id,name,price_monthly,price_yearly,max_users,max_conversations,active').order('price_monthly');
+    if (error) { console.error('loadPlanesReales:', error.message); return; }
+    const rows = data || [];
+    PLANES_AV = rows.filter(p => p.active && p.id !== 'enterprise');
+    ENTERPRISE_PLAN = rows.find(p => p.id === 'enterprise') || null;
+    if (!ncState.plan && PLANES_AV.length) ncState.plan = PLANES_AV[0].id;
+  }
+
+  // Opciones de <select> de plan para Editar cliente / Activar — a
+  // diferencia de la grilla de Nuevo cliente, aquí SÍ se puede elegir
+  // Enterprise directo (ya es un cliente real, puede tener un trato a
+  // la medida ya negociado).
+  function planSelectOptionsHtml(selectedId) {
+    const rows = PLANES_AV.map(p => ({ id: p.id, label: `${p.name} — $${Number(p.price_monthly).toLocaleString('es-MX')}` }));
+    if (ENTERPRISE_PLAN) rows.push({ id: 'enterprise', label: 'Enterprise — a la medida' });
+    return rows.map(r => `<option value="${r.id}"${r.id === selectedId ? ' selected' : ''}>${r.label}</option>`).join('');
+  }
+
+  function planDetalle(p) {
+    if (!p) return '';
+    const users = Number(p.max_users), convs = Number(p.max_conversations);
+    const usersTxt = users >= 999999 ? 'usuarios ilimitados' : `${users} usuario${users === 1 ? '' : 's'}`;
+    const convsTxt = convs >= 999999 ? 'conversaciones sin límite' : `${convs.toLocaleString('es-MX')} conversaciones/mes`;
+    return `${usersTxt} · ${convsTxt}`;
+  }
 
   const MODULOS_AV = [
     { id:'bot',         nombre:'Bot IA (GPT-4o)',     desc:'Agente conversacional 24/7',   precio:0    },
@@ -1577,7 +1598,8 @@
   function openModal(id) { $(id).classList.add('open'); }
   function closeModal(id) { $(id).classList.remove('open'); }
 
-  function openNuevoClientePage() {
+  async function openNuevoClientePage() {
+    if (!PLANES_AV.length) await loadPlanesReales();
     renderNC();
     $('page-nuevo-cliente').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -1611,33 +1633,56 @@
   }
 
   // ── Render Nuevo Cliente ────────────────────────────────────────────────────
-  function renderNC() {
-    const planActual = PLANES_AV.find(p => p.id === ncState.plan) ?? PLANES_AV[1];
-    const factorCiclo = ncState.ciclo === 'anual' ? 0.85 : 1;
+  // Precio mensual a mostrar para un plan real, según el ciclo elegido —
+  // "anual" usa plans.price_yearly/12 (el descuento real guardado en la
+  // base, no un 15% fijo inventado en el código).
+  function planPrecioMostrado(p) {
+    const monthly = Number(p.price_monthly);
+    if (ncState.ciclo !== 'anual') return Math.round(monthly);
+    return Math.round(Number(p.price_yearly) / 12);
+  }
 
-    $('nc-plan-grid').innerHTML = PLANES_AV.map(p => {
-      const precio = Math.round(p.precio * factorCiclo);
+  function renderNC() {
+    const esEnterprise = ncState.plan === 'enterprise';
+    const planActual = esEnterprise ? ENTERPRISE_PLAN : (PLANES_AV.find(p => p.id === ncState.plan) ?? PLANES_AV[0]);
+
+    const planCardsHtml = PLANES_AV.map(p => {
+      const precio = planPrecioMostrado(p);
       const isActive = p.id === ncState.plan;
       return `
         <button class="nc-plan-card${isActive ? ' active' : ''}" data-plan="${p.id}">
           <div class="nc-plan-card-top">
-            <span class="nc-plan-name">${p.nombre}</span>
+            <span class="nc-plan-name">${p.name}</span>
             <span class="nc-plan-radio"></span>
           </div>
           <span class="nc-plan-price">$${precio.toLocaleString('es-MX')}<span style="font-size:13px;font-weight:500;color:var(--text-muted)">/mes</span></span>
-          <span class="nc-plan-detail">${p.detalle}</span>
+          <span class="nc-plan-detail">${planDetalle(p)}</span>
         </button>`;
     }).join('');
+    // Enterprise no es una tarjeta vendible más — es la opción "a la
+    // medida" aparte, solo para cuando ya se negoció un trato especial.
+    const enterpriseHtml = ENTERPRISE_PLAN ? `
+        <button class="nc-plan-card${esEnterprise ? ' active' : ''}" data-plan="enterprise" style="border-style:dashed">
+          <div class="nc-plan-card-top">
+            <span class="nc-plan-name">Enterprise</span>
+            <span class="nc-plan-radio"></span>
+          </div>
+          <span class="nc-plan-price" style="font-size:20px">A la medida</span>
+          <span class="nc-plan-detail">Solo si ya se negoció el trato con el cliente</span>
+        </button>` : '';
+    $('nc-plan-grid').innerHTML = planCardsHtml + enterpriseHtml;
 
+    // Los módulos sin costo (bot, wa, crm) son parte base del producto —
+    // siempre van, no se negocian. Los que sí tienen precio ($) son
+    // extras libres por trato, sin un "incluido por plan" inventado (la
+    // tabla plans no tiene ese desglose por módulo, solo flags generales
+    // en plans.features).
     $('nc-modules-list').innerHTML = MODULOS_AV.map(m => {
-      const incluidoEnPlan = planActual.incluye.includes(m.id);
-      const hasOverride = ncState.extras.hasOwnProperty(m.id);
-      const isActive = hasOverride ? ncState.extras[m.id] : incluidoEnPlan;
+      const siempreIncluido = m.precio === 0;
+      const isActive = siempreIncluido || !!ncState.extras[m.id];
 
       let tagHtml = '';
-      if (incluidoEnPlan) {
-        tagHtml = `<span class="nc-modulo-tag incluido">Incluido</span>`;
-      } else if (m.precio === 0) {
+      if (siempreIncluido) {
         tagHtml = `<span class="nc-modulo-tag incluido">Incluido</span>`;
       } else if (isActive) {
         tagHtml = `<span class="nc-modulo-tag extra-on">+$${m.precio.toLocaleString('es-MX')}/mes</span>`;
@@ -1646,7 +1691,7 @@
       }
 
       return `
-        <button class="nc-modulo-row${isActive ? ' active' : ''}" data-modulo="${m.id}">
+        <button class="nc-modulo-row${isActive ? ' active' : ''}" data-modulo="${m.id}"${siempreIncluido ? ' disabled' : ''}>
           <span class="nc-modulo-check">${isActive ? '✓' : ''}</span>
           <span class="nc-modulo-info">
             <span class="nc-modulo-nombre">${m.nombre}</span>
@@ -1656,28 +1701,26 @@
         </button>`;
     }).join('');
 
-    const precioBase = Math.round(planActual.precio * factorCiclo);
+    const precioBase = esEnterprise ? null : planPrecioMostrado(planActual);
     let extrasTotal = 0;
     const extraLines = [];
+    const cicloFactor = ncState.ciclo === 'anual' ? (10 / 12) : 1; // mismo "2 meses gratis" que price_yearly real
 
     MODULOS_AV.forEach(m => {
       if (m.precio === 0) return;
-      const incluidoEnPlan = planActual.incluye.includes(m.id);
-      const hasOverride = ncState.extras.hasOwnProperty(m.id);
-      const isActive = hasOverride ? ncState.extras[m.id] : incluidoEnPlan;
-      if (isActive && !incluidoEnPlan) {
-        const precio = Math.round(m.precio * factorCiclo);
+      if (ncState.extras[m.id]) {
+        const precio = Math.round(m.precio * cicloFactor);
         extrasTotal += precio;
         extraLines.push({ nombre: m.nombre, precio });
       }
     });
 
-    const total = precioBase + extrasTotal;
+    const total = (precioBase ?? 0) + extrasTotal;
 
     $('nc-resumen').innerHTML = `
       <div class="nc-resumen-row">
-        <span class="nc-resumen-label">Plan ${planActual.nombre} (${ncState.ciclo})</span>
-        <span class="nc-resumen-val">$${precioBase.toLocaleString('es-MX')}/mes</span>
+        <span class="nc-resumen-label">Plan ${planActual?.name ?? '—'} (${ncState.ciclo})</span>
+        <span class="nc-resumen-val">${esEnterprise ? 'A cotizar' : `$${precioBase.toLocaleString('es-MX')}/mes`}</span>
       </div>
       ${extraLines.map(e => `
         <div class="nc-resumen-row">
@@ -1687,9 +1730,9 @@
       <div class="nc-resumen-divider"></div>
       <div class="nc-resumen-row">
         <span class="nc-total-label">Total mensual</span>
-        <span class="nc-total-val">$${total.toLocaleString('es-MX')}<span style="font-size:14px;font-weight:500;color:var(--text-muted)">/mes</span></span>
+        <span class="nc-total-val">${esEnterprise ? 'A cotizar' : `$${total.toLocaleString('es-MX')}<span style="font-size:14px;font-weight:500;color:var(--text-muted)">/mes</span>`}</span>
       </div>
-      ${ncState.ciclo === 'anual' ? `<p class="nc-nota">Precio anual con descuento del 15% ya aplicado.</p>` : ''}
+      ${ncState.ciclo === 'anual' && !esEnterprise ? `<p class="nc-nota">Precio anual: 10 meses (2 meses gratis), igual que en la tabla de planes.</p>` : ''}
     `;
 
     document.querySelectorAll('.nc-plan-card').forEach(btn => {
@@ -1700,14 +1743,10 @@
       });
     });
 
-    document.querySelectorAll('.nc-modulo-row').forEach(btn => {
+    document.querySelectorAll('.nc-modulo-row:not([disabled])').forEach(btn => {
       btn.addEventListener('click', () => {
         const moduloId = btn.dataset.modulo;
-        const planActualInner = PLANES_AV.find(p => p.id === ncState.plan);
-        const incluidoEnPlan = planActualInner.incluye.includes(moduloId);
-        const hasOverride = ncState.extras.hasOwnProperty(moduloId);
-        const currentActive = hasOverride ? ncState.extras[moduloId] : incluidoEnPlan;
-        ncState.extras[moduloId] = !currentActive;
+        ncState.extras[moduloId] = !ncState.extras[moduloId];
         renderNC();
       });
     });
@@ -1766,7 +1805,7 @@
 
       ['nc-empresa','nc-giro','nc-dueno','nc-email','nc-notas','nc-tarifa-fija'].forEach(id => { const el = $(id); if (el) el.value = ''; });
       $('nc-trial-dias').value = '14';
-      ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
+      ncState.plan = PLANES_AV[0]?.id ?? null; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
       renderNC();
 
       setTimeout(() => {
@@ -1824,6 +1863,8 @@
     $('sidebar-email').textContent = user.email;
     $('sidebar-user-avatar').textContent = initials(user.email || '?');
     showScreen('app');
+
+    loadPlanesReales();
 
     // Deep link desde el dashboard: ?view=agentes[&org=<id>] o ?view=solicitudes-clientes
     const params = new URLSearchParams(window.location.search);
@@ -1920,9 +1961,9 @@
         </tr>`).join('');
 
     // Plan distribution
-    const planColors = { starter: '#5980a6', pro: '#10b981', enterprise: '#2c455d' };
+    const planColors = { arranque: '#8c939b', mostrador: '#5980a6', sucursal: '#10b981', cadena: '#2c455d', enterprise: '#6366f1' };
     const planCount = {};
-    allOrgs.forEach(o => { const p = o.plan_id || 'starter'; planCount[p] = (planCount[p] ?? 0) + 1; });
+    allOrgs.forEach(o => { const p = o.plan_id || 'sin plan'; planCount[p] = (planCount[p] ?? 0) + 1; });
     const total = allOrgs.length || 1;
     const plans = Object.entries(planCount).sort((a,b) => b[1]-a[1]);
     $('plan-bar').innerHTML = plans.map(([plan, count]) =>
@@ -2042,13 +2083,14 @@
     });
   }
 
-  function openEditModal(orgId) {
+  async function openEditModal(orgId) {
     const org = state.orgsCache.find(o => o.id === orgId);
     if (!org) return;
+    if (!PLANES_AV.length) await loadPlanesReales();
     $('editar-org-id').value    = org.id;
     $('editar-org-name').value  = org.name;
     $('editar-industry').value  = org.industry ?? '';
-    $('editar-plan').value      = org.plan_id  ?? 'starter';
+    $('editar-plan').innerHTML  = planSelectOptionsHtml(org.plan_id ?? PLANES_AV[0]?.id);
     $('editar-status').value    = org.status   ?? 'active';
     $('editar-trial').value     = org.trial_ends_at ? org.trial_ends_at.split('T')[0] : '';
     $('editar-error').style.display = 'none';
@@ -2734,8 +2776,9 @@
     loadSolicitudesClientes();
   });
 
-  function openActivarModal(requestId, bizName, phone, pnid, waba, email) {
+  async function openActivarModal(requestId, bizName, phone, pnid, waba, email) {
     activarState.requestId = requestId;
+    if (!PLANES_AV.length) await loadPlanesReales();
     $('activar-modal-title').textContent = `Activar — ${bizName}`;
     $('activar-request-id').value = requestId;
     $('activar-info-biz').textContent   = bizName || '—';
@@ -2743,7 +2786,7 @@
     $('activar-info-pnid').textContent  = pnid    || '—';
     $('activar-info-waba').textContent  = waba    || '—';
     $('activar-email').value = email || '';
-    $('activar-plan').value  = 'pro';
+    $('activar-plan').innerHTML = planSelectOptionsHtml(PLANES_AV[0]?.id);
     $('activar-error').style.display = 'none';
     openModal('modal-activar');
   }
@@ -2813,7 +2856,7 @@
 
   // Nuevo cliente — overlay
   $('btn-nuevo-cliente').addEventListener('click', () => {
-    ncState.plan = 'pro'; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
+    ncState.plan = PLANES_AV[0]?.id ?? null; ncState.ciclo = 'mensual'; ncState.modo = 'Trial'; ncState.extras = {};
     $('nc-empresa').value = '';
     $('nc-giro').value = '';
     $('nc-dueno').value = '';

@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
       name: org_name.trim(),
       slug,
       industry: industry?.trim() || null,
-      plan_id: plan_id || 'starter',
+      plan_id: plan_id || 'mostrador',
       status: 'active',
       trial_ends_at: trial_ends_at || null,
     })

@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   let body: { request_id: string; client_email: string; plan_id?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const { request_id, client_email, plan_id = 'pro' } = body
+  const { request_id, client_email, plan_id = 'mostrador' } = body
   if (!request_id || !client_email) return json({ error: 'request_id y client_email son requeridos' }, 422)
 
   // Get onboarding request
