@@ -4796,6 +4796,7 @@
 
     convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
     updateNeedsHumanBadges();
+    renderHumanCard(); // Item 8: update Inicio "Necesita humano" card
     filterConvs(convState.activeTab ?? 'all');
 
     // Realtime: new messages + new conversations
