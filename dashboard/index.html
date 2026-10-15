@@ -11751,13 +11751,14 @@
   // son solo un acceso rápido a su card grande de detalle (misma vista) — no
   // repiten la información, por eso solo hacen scroll + un resalte breve.
   function switchConnTab(tab) {
-    if (tab === 'api' && !state.isSuperAdmin) return; // solo super_admin ve webhook/verify token
+    if (tab === 'api' && !state.isSuperAdmin) return;
     ['canales','herramientas','api'].forEach(t => {
       const btn = document.getElementById('conn-tab-' + t);
       const panel = document.getElementById('conn-panel-' + t);
       if (btn)   btn.classList.toggle('active', t === tab);
       if (panel) panel.style.display = t === tab ? '' : 'none';
     });
+    if (tab === 'herramientas') loadRequisitions();
   }
   window.switchConnTab = switchConnTab;
 
