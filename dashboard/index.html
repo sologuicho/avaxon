@@ -1095,11 +1095,20 @@
     .section-divider-label { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em; white-space:nowrap; }
     .section-divider-line { flex:1; height:1px; background:var(--border); }
 
-    /* ── Inbox ── */
+    /* ── Inbox ──
+       Mientras se ve Conversaciones, body.conv-view-active fija el alto de
+       .main-content a 100vh y quita el padding de .page-area — así
+       .conv-panel llena exactamente lo que queda bajo la barra superior
+       (sin importar si son 56px de escritorio o 52px de móvil, flexbox lo
+       resuelve solo) y nada hace scroll salvo las columnas de adentro. */
     .conv-panel { height: calc(100vh - 152px); min-height: 500px; display: flex; align-items: stretch; gap: 0; border: 1px solid #e6e7e9; border-radius: 13px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 4px rgba(26,37,53,.06); }
+    body.conv-view-active .main-content { height: 100vh; overflow: hidden; }
+    body.conv-view-active .page-area { padding: 0; overflow: hidden; height: 100%; }
+    body.conv-view-active .page-area .view.active { height: 100%; }
+    body.conv-view-active .conv-panel { height: 100%; min-height: 0; border: 0; border-radius: 0; box-shadow: none; }
 
     /* Sidebar */
-    .conv-sidebar { width: 330px; flex-shrink: 0; border-right: 1px solid #eef0f2; display: flex; flex-direction: column; background: #fff; }
+    .conv-sidebar { width: 320px; flex-shrink: 0; border-right: 1px solid #eef0f2; display: flex; flex-direction: column; background: #fff; }
     .conv-sidebar-top { padding: 14px 14px 12px; border-bottom: 1px solid #eef0f2; display: flex; flex-direction: column; gap: 10px; }
 
     /* Tabs */
@@ -1189,13 +1198,17 @@
     .msg-row { display: flex; }
     .msg-row.outbound { justify-content: flex-end; }
     .msg-row.inbound  { justify-content: flex-start; }
-    .msg-bubble { max-width: 72%; padding: 8px 12px; font-size: 13px; line-height: 1.5; word-break: break-word; border-radius: 12px; }
+    .msg-bubble { max-width: 70%; padding: 8px 12px; font-size: 13px; line-height: 1.5; word-break: break-word; border-radius: 12px; }
     .msg-bubble.outbound { background: #2c455d; color: #fff; border-bottom-right-radius: 4px; }
     .msg-bubble.inbound  { background: #fff; color: #1a2535; border: 1px solid #e6e7e9; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .msg-time { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; opacity: 0.6; margin-top: 3px; display: block; text-align: right; letter-spacing: .02em; }
     .msg-date-sep { text-align: center; font-family: 'Barlow Condensed',sans-serif; font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 6px 0; }
 
-    .contact-panel { width: 270px; flex-shrink: 0; border-left: 1px solid var(--border); overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; background: #f4f5f6; }
+    .contact-panel { width: 300px; flex-shrink: 0; border-left: 1px solid var(--border); overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; background: #f4f5f6; }
+    /* Arranca oculto en pantallas angostas para dejarle su espacio al chat —
+       el botón "Ver contacto" lo abre con un estilo inline que gana sobre
+       esta regla, así que seguir pudiendo ocultarlo/mostrarlo no cambia. */
+    @media (max-width: 1279px) { .contact-panel { display: none; } }
     .cpanel-section-title { font-family: 'Barlow Condensed',sans-serif; font-size: 11.5px; font-weight: 600; color: #8c939b; text-transform: uppercase; letter-spacing: .16em; margin-bottom: 7px; }
 
     /* ── Buttons ── */
@@ -1289,7 +1302,7 @@
       /* Inbox de conversaciones: maestro-detalle en vez de 3 columnas fijas
          (300px + hilo + 248px no cabe en un teléfono) — se ve un panel a la
          vez y el botón de "volver" regresa a la lista. */
-      .conv-panel { position: relative; height: calc(100vh - 86px); border-radius: 0; border-left: 0; border-right: 0; }
+      .conv-panel { position: relative; border-radius: 0; border-left: 0; border-right: 0; }
       .conv-sidebar { width: 100%; }
       .conv-panel:not(.chat-active) .chat-area { display: none; }
       .conv-panel.chat-active .conv-sidebar { display: none; }
@@ -1915,31 +1928,26 @@
             <!-- Active conversation (hidden until one is selected) -->
             <div id="chat-input-area" style="display:none;flex-direction:column;flex:1;min-height:0">
               <!-- Chat header -->
-              <div class="chat-header" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f2;background:#fff;flex-shrink:0">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+              <div class="chat-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-bottom:1px solid #eef0f2;background:#fff;flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">
                   <button class="chat-icon-btn chat-back-btn" id="chat-back-btn" title="Volver a la lista" onclick="closeConversacionMobile()">
                     <i class="fa fa-arrow-left"></i>
                   </button>
-                  <div id="chat-header-avatar" style="width:40px;height:40px;background:#eef6ff;color:#2c455d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;flex-shrink:0"></div>
-                  <div style="min-width:0">
-                    <div style="font-size:15.5px;font-weight:700;letter-spacing:-0.01em;color:#1a2535">
-                      <span id="chat-header-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
-                      <span id="chat-header-status" style="margin-left:8px"></span>
-                    </div>
-                    <div style="font-size:12.5px;color:#8c939b">
-                      <span id="chat-header-phone"></span>
-                      <span style="color:#8c939b"> · respondiendo el bot</span>
-                    </div>
+                  <div id="chat-header-avatar" style="width:34px;height:34px;background:#eef6ff;color:#2c455d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;flex-shrink:0"></div>
+                  <div style="min-width:0;display:flex;align-items:baseline;gap:7px;flex-wrap:nowrap;overflow:hidden">
+                    <span id="chat-header-name" style="font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1a2535;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1"></span>
+                    <span id="chat-header-status" style="flex-shrink:0"></span>
+                    <span id="chat-header-phone" style="font-size:12.5px;color:#8c939b;flex-shrink:0"></span>
                   </div>
                 </div>
-                <div class="chat-header-actions" style="display:flex;gap:8px">
-                  <button id="chat-wa-btn" title="Abrir en WhatsApp" style="padding:8px 13px;border-radius:9px;border:1px solid #e6e7e9;background:#fff;font-size:13px;font-weight:600;color:#2c455d;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-                    <i class="fab fa-whatsapp"></i> WhatsApp
+                <div class="chat-header-actions" style="display:flex;gap:5px;flex-shrink:0">
+                  <button id="chat-wa-btn" title="Abrir en WhatsApp" style="width:32px;height:32px;border-radius:8px;border:1px solid #e6e7e9;background:#fff;font-size:14px;color:#16a34a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center">
+                    <i class="fab fa-whatsapp"></i>
                   </button>
-                  <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado" style="padding:8px 13px;width:auto;border-radius:9px;border:1px solid #e6e7e9;font-size:13px;font-weight:600;color:#2c455d">
+                  <button class="chat-icon-btn" id="chat-btn-toggle" title="Cambiar estado" style="width:32px;height:32px;border-radius:8px;border:1px solid #e6e7e9;font-size:14px;color:#2c455d">
                     <i class="fa fa-check-circle"></i>
                   </button>
-                  <button onclick="document.querySelector('.contact-panel').style.display=document.querySelector('.contact-panel').style.display==='none'?'flex':'none'" style="padding:8px 16px;border-radius:9px;border:0;background:#2c455d;color:#fff;font-size:13px;font-weight:600;cursor:pointer" id="chat-btn-info" title="Info del contacto">Ver contacto</button>
+                  <button onclick="document.querySelector('.contact-panel').style.display=document.querySelector('.contact-panel').style.display==='none'?'flex':'none'" style="padding:0 12px;height:32px;border-radius:8px;border:0;background:#2c455d;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap" id="chat-btn-info" title="Info del contacto">Ver contacto</button>
                 </div>
               </div>
               <!-- Messages -->
@@ -3983,6 +3991,7 @@
       el.classList.toggle('active', el.id === 'view-' + name);
     });
     $('topbar-title').textContent = VIEW_TITLES[name] ?? name;
+    document.body.classList.toggle('conv-view-active', name === 'conversaciones');
     closeSidebarMobile();
     state.currentView = name;
     try { localStorage.setItem('avx_last_view', name); } catch(e) {}
@@ -4737,7 +4746,7 @@
     $('cpanel-empty').style.display   = 'none';
     $('cpanel-content').style.display = 'flex';
     $('cpanel-name').textContent  = contact?.name || '—';
-    $('cpanel-phone').textContent = contact?.phone || '—';
+    $('cpanel-phone').textContent = maskPhone(contact?.phone);
     $('cpanel-email').textContent = contact?.email || '—';
     $('cpanel-status').innerHTML  = statusPill(contact?.status);
     $('cpanel-tags').innerHTML    = renderTags(contact?.tags);
@@ -4761,7 +4770,7 @@
       $('cpanel-apts').innerHTML = (apts && apts.length)
         ? apts.map(a => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
             <div style="font-size:13px;font-weight:600;color:var(--text)">${a.title || 'Cita'}</div>
-            <div style="font-size:11.5px;color:var(--text-muted)">${fmtAptDate(a.scheduled_at)} · ${statusPill(a.status)}</div>
+            <div style="font-size:11.5px;color:var(--text-muted)">${fmtAptDate(a.scheduled_at)} · <span class="apt-status-pill ${a.status}">${APT_STATUS_LABELS[a.status] || a.status}</span></div>
           </div>`).join('')
         : '<div style="font-size:12.5px;color:var(--text-dim)">Sin citas registradas</div>';
 
