@@ -12804,6 +12804,66 @@
     </div>
   </div>
 
+  <!-- Panel flotante: Solicitar herramienta -->
+  <div id="req-panel-overlay" onclick="closeRequisitionPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2200;align-items:flex-end;justify-content:center;padding:0">
+    <div onclick="event.stopPropagation()" style="background:var(--card-bg);border:1px solid var(--border);border-top-left-radius:22px;border-top-right-radius:22px;width:100%;max-width:600px;box-shadow:0 -12px 48px rgba(0,0,0,.25);display:flex;flex-direction:column;max-height:90vh">
+      <!-- Handle + header -->
+      <div style="padding:12px 24px 0;display:flex;flex-direction:column;gap:0;flex-shrink:0">
+        <div style="width:36px;height:4px;background:var(--border);border-radius:999px;margin:0 auto 16px"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:12px;background:color-mix(in srgb,var(--accent) 15%,var(--card-bg));border:1.5px solid color-mix(in srgb,var(--accent) 30%,var(--border));display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <i class="fa fa-screwdriver-wrench" style="color:var(--accent);font-size:15px"></i>
+            </div>
+            <div>
+              <div style="font-size:17px;font-weight:700;color:var(--text)">Solicitar herramienta</div>
+              <div style="font-size:12px;color:var(--text-muted)">El equipo Avaxon revisará tu solicitud y te responderá</div>
+            </div>
+          </div>
+          <button onclick="closeRequisitionPanel()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:20px;padding:4px;line-height:1;flex-shrink:0"><i class="fa fa-xmark"></i></button>
+        </div>
+      </div>
+      <!-- Body (scrollable) -->
+      <div id="req-panel-body" style="flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+        <!-- Estado: formulario (default) -->
+        <div id="req-form-state">
+          <label style="display:flex;flex-direction:column;gap:5px">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">Nombre de la herramienta o integración</span>
+            <input id="req-tool-name" type="text" placeholder="Ej. HubSpot, Shopify, Mercado Libre…"
+              style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:inherit"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:5px;margin-top:12px">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">¿Para qué la necesitas? <span style="font-weight:400;color:var(--text-muted)">(describe el caso de uso)</span></span>
+            <textarea id="req-use-case" rows="3" placeholder="Ej. Quiero que cuando un cliente confirme una compra en Shopify, el bot le envíe un mensaje de seguimiento automático por WhatsApp…"
+              style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:inherit;resize:vertical;line-height:1.5"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:5px;margin-top:12px">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">Descripción adicional <span style="font-weight:400;color:var(--text-muted)">(opcional)</span></span>
+            <textarea id="req-description" rows="2" placeholder="Cualquier detalle técnico, volumen esperado, urgencia, etc."
+              style="padding:10px 13px;border:1.5px solid var(--border);background:var(--page-bg);border-radius:10px;font-size:14px;color:var(--text);outline:none;font-family:inherit;resize:vertical;line-height:1.5"
+              onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          </label>
+          <div id="req-form-error" style="display:none;margin-top:10px;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+          <button id="req-submit-btn" onclick="submitRequisition()" class="btn-primary" style="margin-top:16px;width:100%;padding:12px;font-size:14px">
+            <i class="fa fa-paper-plane" style="margin-right:6px;font-size:12px"></i>Enviar solicitud
+          </button>
+        </div>
+        <!-- Estado: enviado con éxito -->
+        <div id="req-success-state" style="display:none;text-align:center;padding:24px 0">
+          <div style="width:56px;height:56px;background:rgba(16,185,129,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <i class="fa fa-circle-check" style="font-size:26px;color:#10b981"></i>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">¡Solicitud enviada!</div>
+          <div id="req-success-id" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.08em;margin-bottom:12px"></div>
+          <div style="font-size:13px;color:var(--text-muted);line-height:1.6;max-width:340px;margin:0 auto">El equipo de Avaxon revisará tu solicitud y te avisará cuando haya novedades. Puedes seguir el estado desde esta misma sección.</div>
+          <button onclick="closeRequisitionPanel()" class="btn-primary" style="margin-top:20px;padding:10px 28px">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: API key de Zapier (revelado único) -->
   <div id="zapier-key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;align-items:center;justify-content:center;padding:20px">
     <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;padding:32px;box-shadow:0 24px 64px rgba(0,0,0,.3)">
