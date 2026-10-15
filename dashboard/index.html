@@ -3800,6 +3800,13 @@
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
   const $ = id => document.getElementById(id);
 
+  // message_templates.components no siempre trae el BODY primero —
+  // hello_world (plantilla de ejemplo de Meta) trae HEADER antes — así que
+  // nunca asumir components[0]; buscar siempre por type.
+  function getBodyComponent(components) {
+    return (components || []).find(c => c.type === 'BODY') || components?.[0] || null;
+  }
+
   let state = {
     isSuperAdmin: false,
     userEmail: '',
@@ -5097,16 +5104,25 @@
 
     const contact = convState.all.find(c => c.id === convId)?.contacts
     const contactName = contact?.name || contact?.phone || 'cliente'
+    // Solo sabemos rellenar nombre/negocio con datos reales del contacto —
+    // plantillas con variables de datos específicos (cita, pago…) las
+    // manda automáticamente el flujo correspondiente (Recordatorios, Link
+    // de pago), nunca con un dato inventado desde aquí.
+    const KNOWN_VARS = new Set(['nombre', 'negocio'])
     const resolveVar = v => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : `[${v}]`)
 
     list.innerHTML = templates.map(t => {
       const bodyComp = (t.components || []).find(c => c.type === 'BODY')
       const varNames = bodyComp?.variables || []
       const filled = varNames.reduce((text, v) => text.split(`[${v}]`).join(resolveVar(v)), bodyComp?.text || t.name)
+      const sendable = varNames.every(v => KNOWN_VARS.has(v))
+      const action = sendable
+        ? `<button style="align-self:flex-end;padding:5px 14px;border-radius:7px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onclick="sendTemplateToConv('${t.id}', this)">Enviar</button>`
+        : `<span style="align-self:flex-end;font-size:11px;color:var(--text-dim);font-style:italic" title="Usa datos específicos (cita, pago…) — se manda sola desde el flujo correspondiente, no con un dato inventado aquí">Se manda automático</span>`
       return `<div style="padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;display:flex;flex-direction:column;gap:7px">
         <div style="font-size:12.5px;font-weight:700;color:var(--text)">${escapeHtml(t.name)}</div>
         <div style="font-size:12px;color:var(--text-muted);line-height:1.5">${escapeHtml(filled)}</div>
-        <button style="align-self:flex-end;padding:5px 14px;border-radius:7px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);font-size:11.5px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif" onclick="sendTemplateToConv('${t.id}', this)">Enviar</button>
+        ${action}
       </div>`
     }).join('')
   }
@@ -8040,7 +8056,7 @@
       return
     }
     container.innerHTML = templates.map(t => {
-      const bodyText = t.components?.[0]?.text ?? ''
+      const bodyText = getBodyComponent(t.components)?.text ?? ''
       const isApproved = t.status === 'APPROVED'
       return `<div onclick="selectWizTemplate('${t.id}','${(t.name||'').replace(/'/g,"\\'")}','${(bodyText||'').replace(/'/g,"\\'").replace(/\n/g,'\\n')}')"
         id="wiz-tpl-${t.id}"
@@ -8814,9 +8830,10 @@
     el.innerHTML = '<div style="display:flex;flex-direction:column;gap:0">' + configTemplates.map(t => {
       const st       = TEMPLATE_STATUS[t.status] ?? TEMPLATE_STATUS.DRAFT
       const catColor = CAT_COLORS[t.category] ?? { color: '#64748b', bg: 'rgba(100,116,139,.12)' }
-      const bodyText = t.components?.[0]?.text ?? '—'
-      const vars     = t.components?.[0]?.variables ?? []
-      const useCase  = t.components?.[0]?.use_case ?? ''
+      const bodyComp = getBodyComponent(t.components)
+      const bodyText = bodyComp?.text ?? '—'
+      const vars     = bodyComp?.variables ?? []
+      const useCase  = bodyComp?.use_case ?? ''
       // El estado y meta_template_id solo los pone Meta (webhook) o
       // "Sincronizar con Meta" — nunca un botón que lo marque a mano.
       const sentToMeta = !!t.meta_template_id
@@ -8918,7 +8935,7 @@
       $('cfg-tpl-name').value     = existing.name ?? ''
       $('cfg-tpl-category').value = existing.category ?? 'MARKETING'
       $('cfg-tpl-language').value = existing.language ?? 'es_MX'
-      $('cfg-tpl-body').value     = existing.components?.[0]?.text ?? ''
+      $('cfg-tpl-body').value     = getBodyComponent(existing.components)?.text ?? ''
     }
     $('modal-cfg-template').style.display = 'flex'
     setTimeout(() => $('cfg-tpl-name').focus(), 80)
@@ -8944,7 +8961,7 @@
     // Antes editar una plantilla borraba silenciosamente sus variables
     // (siempre guardaba components:[{type:'BODY', text}] sin ese campo).
     const variables = [...new Set((body.match(/\[([a-zA-Z0-9_]+)\]/g) || []).map(m => m.slice(1, -1)))]
-    const useCase   = configEditId ? (configTemplates.find(x => x.id === configEditId)?.components?.[0]?.use_case ?? '') : ''
+    const useCase   = configEditId ? (getBodyComponent(configTemplates.find(x => x.id === configEditId)?.components)?.use_case ?? '') : ''
     const payload  = {
       organization_id: orgId,
       name,

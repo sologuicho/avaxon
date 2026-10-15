@@ -145,6 +145,15 @@ Deno.serve(async (req: Request) => {
     const bodyComp  = (tpl.components || []).find((c: any) => c.type === 'BODY')
     const varNames: string[] = bodyComp?.variables || []
 
+    // Solo sabemos rellenar nombre/negocio con datos reales del contacto —
+    // una plantilla con variables de datos específicos (cita, pago…) nunca
+    // se manda desde aquí con un valor inventado; eso lo hace el flujo que
+    // sí tiene esos datos (send-reminders, send-message con payment_id).
+    const KNOWN_VARS = new Set(['nombre', 'negocio'])
+    if (!varNames.every(v => KNOWN_VARS.has(v))) {
+      return json({ error: 'Esta plantilla usa datos específicos que no se pueden llenar desde aquí' }, 422)
+    }
+
     const { data: org } = await adminClient.from('organizations').select('name').eq('id', conv.organization_id).maybeSingle()
     const contactName = (conv.contacts as any)?.name || (conv.contacts as any)?.phone || 'cliente'
     const resolveVar = (v: string) => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : v)
