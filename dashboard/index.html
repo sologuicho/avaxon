@@ -447,6 +447,7 @@
     }
     .nav-badge-green { background: #10b981; color: #06261c; }
     .nav-badge-blue  { background: #2c455d; color: #c3cedb; }
+    .nav-badge-red   { background: #ef4444; color: #fff; }
 
     /* Sidebar bottom */
     /* Compacta — en pantallas bajas (~760px de alto) esta tarjeta tapaba los
@@ -1578,6 +1579,7 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         </span>
         Conversaciones
+        <span id="nav-needs-human-badge" class="nav-badge nav-badge-red" style="display:none" title="Necesitan atención humana"></span>
         <span id="nav-unread-badge" class="nav-badge nav-badge-green" style="display:none"></span>
       </div>
       <div class="nav-item" data-view="leads">
@@ -1863,6 +1865,12 @@
                 <button id="conv-tab-open"   data-tab="open"   onclick="filterConvs('open')"   class="conv-tab">Abiertas</button>
                 <button id="conv-tab-closed" data-tab="closed" onclick="filterConvs('closed')" class="conv-tab">Cerradas</button>
               </div>
+              <div class="conv-tabs" style="margin-top:6px">
+                <button id="conv-tab-needshuman" data-tab="needshuman" onclick="filterConvs('needshuman')" class="conv-tab" style="display:flex;align-items:center;justify-content:center;gap:6px">
+                  Necesita humano
+                  <span id="conv-needshuman-count" class="nav-badge nav-badge-red" style="display:none;margin-left:0">0</span>
+                </button>
+              </div>
               <!-- Stage chips -->
               <div class="conv-chips" id="conv-chips">
                 <button class="conv-chip active" data-stage="all"         onclick="filterConvStage(this,'all')">Todas</button>
@@ -1936,6 +1944,17 @@
               </div>
               <!-- Messages -->
               <div id="chat-messages" class="chat-messages" style="background:#fafbfc"></div>
+              <!-- Necesita atención humana -->
+              <div id="needs-human-banner" style="display:none;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:10px 18px;background:rgba(239,68,68,.07);border-top:1px solid rgba(239,68,68,.2);flex-shrink:0">
+                <div style="display:flex;align-items:center;gap:9px;min-width:0">
+                  <i class="fa fa-triangle-exclamation" style="color:#ef4444;font-size:13px;flex-shrink:0"></i>
+                  <span style="font-size:13px;color:#b91c1c;min-width:0">
+                    <strong id="needs-human-reason">Necesita atención humana</strong>
+                    · <span id="needs-human-time">—</span>
+                  </span>
+                </div>
+                <button onclick="markConvAttended(convState.activeId)" style="padding:7px 14px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">Marcar como atendida</button>
+              </div>
               <!-- Bot / Human / 24h banner -->
               <div class="wa-window-banner" id="wa-window-banner">
                 <div class="chat-mode-bar" id="chat-mode-bar">
@@ -4438,7 +4457,7 @@
     $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
 
     let q = sb.from('conversations')
-      .select('id, status, created_at, updated_at, assigned_to, contacts(id, name, phone, email, status, tags)')
+      .select('id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, contacts(id, name, phone, email, status, tags)')
       .order('updated_at', { ascending: false });
     if (orgId) q = q.eq('organization_id', orgId);
     const { data: convs } = await q;
@@ -4462,7 +4481,8 @@
     });
 
     convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
-    filterConvs('all');
+    updateNeedsHumanBadges();
+    filterConvs(convState.activeTab ?? 'all');
 
     // Realtime: new messages + new conversations
     if (convState.realtimeSub) sb.removeChannel(convState.realtimeSub);
@@ -4487,6 +4507,19 @@
         // New conversation from a brand-new contact — reload the list
         await loadConversaciones();
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversations' }, payload => {
+        // Capta needs_human marcado por el bot (webhook-wa) o "Marcar como
+        // atendida" desde otra pestaña, sin esperar a recargar toda la lista.
+        const conv = convState.all.find(c => c.id === payload.new.id);
+        if (!conv) return;
+        conv.needs_human = payload.new.needs_human;
+        conv.needs_human_at = payload.new.needs_human_at;
+        conv.needs_human_reason = payload.new.needs_human_reason;
+        conv.status = payload.new.status;
+        updateNeedsHumanBadges();
+        applyConvFilters();
+        if (payload.new.id === convState.activeId) updateConvDetailNeedsHuman(conv);
+      })
       .subscribe();
   }
 
@@ -4500,7 +4533,7 @@
   }
 
   function filterConvs(tab, resetScroll = true) {
-    ['all','open','closed'].forEach(t => {
+    ['all','open','closed','needshuman'].forEach(t => {
       const btn = $('conv-tab-' + t);
       if (!btn) return;
       btn.classList.toggle('active', t === tab);
@@ -4510,6 +4543,21 @@
     applyConvFilters();
   }
   window.filterConvs = filterConvs;
+
+  // Contador rojo en la pestaña "Necesita humano" y en el menú lateral.
+  function updateNeedsHumanBadges() {
+    const count = convState.all.filter(c => c.needs_human).length;
+    const tabBadge = $('conv-needshuman-count');
+    if (tabBadge) {
+      tabBadge.textContent = count;
+      tabBadge.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+    const navBadge = $('nav-needs-human-badge');
+    if (navBadge) {
+      navBadge.textContent = count > 99 ? '99+' : String(count);
+      navBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  }
 
   function filterConvStage(el, stage) {
     document.querySelectorAll('.conv-chip').forEach(c => c.classList.remove('active'));
@@ -4532,7 +4580,7 @@
     const mine  = convState.mineOnly    ?? false;
     const q     = ($('conv-search')?.value ?? '').toLowerCase();
     convState.filtered = convState.all
-      .filter(c => tab === 'all' || c.status === tab)
+      .filter(c => tab === 'all' || (tab === 'needshuman' ? c.needs_human : c.status === tab))
       .filter(c => stage === 'all' || (c.contacts?.stage ?? '') === stage)
       .filter(c => !mine /* future: filter by assigned_to === currentUser */)
       .filter(c => !q || (c.contacts?.name ?? '').toLowerCase().includes(q) || (c.contacts?.phone ?? '').includes(q));
@@ -4567,13 +4615,14 @@
       const ini      = initials(name);
       const isActive = c.id === convState.activeId;
       const [g1, g2] = avatarColors[name.charCodeAt(0) % avatarColors.length];
+      const needsHumanDot = c.needs_human ? '<span title="Necesita atención humana" style="width:9px;height:9px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px var(--card-bg)"></span>' : '';
       return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openConversacion('${c.id}')">
         <div class="conv-item-avatar-wrap">
           <div class="conv-item-avatar" style="background:linear-gradient(135deg,${g1},${g2})">${ini}</div>
         </div>
         <div class="conv-item-body">
           <div class="conv-item-row">
-            <div class="conv-item-name">${name}</div>
+            <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${name}</div>
             <div class="conv-item-time">${time}</div>
           </div>
           <div class="conv-item-preview">${senderPfx}${preview.slice(0, 55)}</div>
@@ -4596,6 +4645,7 @@
     $('chat-header-name').textContent  = name;
     $('chat-header-phone').textContent = maskPhone(contact?.phone);
     $('chat-header-status').innerHTML  = statusPill(conv?.status);
+    updateConvDetailNeedsHuman(conv);
     const toggleBtn = $('chat-btn-toggle');
     if (state.isReviewer) {
       toggleBtn.style.display = 'none';
@@ -4691,6 +4741,30 @@
   // Store assigned agent per conv so takeover/return can still access it
   const convAssignedAgent = {}
 
+  function updateConvDetailNeedsHuman(conv) {
+    const banner = $('needs-human-banner');
+    if (!banner) return;
+    if (!conv?.needs_human) { banner.style.display = 'none'; return; }
+    banner.style.display = 'flex';
+    $('needs-human-reason').textContent = conv.needs_human_reason || 'Necesita atención humana';
+    $('needs-human-time').textContent = conv.needs_human_at ? 'espera ' + timeAgo(conv.needs_human_at) : '';
+  }
+
+  async function markConvAttended(convId) {
+    if (!convId) return;
+    const { error } = await sb.from('conversations')
+      .update({ needs_human: false, needs_human_at: null, needs_human_reason: null })
+      .eq('id', convId);
+    if (error) { showToast('Error al marcar como atendida: ' + error.message, 4000); return; }
+    const conv = convState.all.find(c => c.id === convId);
+    if (conv) { conv.needs_human = false; conv.needs_human_at = null; conv.needs_human_reason = null; }
+    updateNeedsHumanBadges();
+    applyConvFilters();
+    if (convId === convState.activeId) updateConvDetailNeedsHuman(conv);
+    showToast('Conversación marcada como atendida');
+  }
+  window.markConvAttended = markConvAttended;
+
   function renderChatBanner(lastInbound, convId, assignedAgent) {
     if (assignedAgent !== undefined) convAssignedAgent[convId] = assignedAgent
     const agent     = convAssignedAgent[convId] ?? null
@@ -4769,12 +4843,30 @@
     return ts ? { created_at: ts } : null
   }
 
-  function takeoverChat() {
+  async function takeoverChat() {
     const convId = convState.activeId
     if (!convId) return
     chatHumanConvs.add(convId)
     renderChatBanner(getLastInboundFromDOM(), convId, undefined)
     $('chat-input').focus()
+
+    // "Escribir yo" antes solo cambiaba la UI local — el bot seguía
+    // contestando de verdad en el servidor. Ahora también marca needs_human
+    // para que webhook-wa se calle en esta conversación hasta "Marcar como
+    // atendida".
+    const conv = convState.all.find(c => c.id === convId)
+    if (conv && !conv.needs_human) {
+      const { error } = await sb.from('conversations')
+        .update({ needs_human: true, needs_human_at: new Date().toISOString(), needs_human_reason: 'Un miembro del equipo tomó la conversación' })
+        .eq('id', convId)
+      if (!error) {
+        conv.needs_human = true
+        conv.needs_human_at = new Date().toISOString()
+        conv.needs_human_reason = 'Un miembro del equipo tomó la conversación'
+        updateNeedsHumanBadges()
+        if (convId === convState.activeId) updateConvDetailNeedsHuman(conv)
+      }
+    }
   }
 
   function returnBotChat() {
@@ -5622,7 +5714,7 @@
         phonesRes,
         orgsRes,
         orgsCount,
-        recentMsgs,
+        needsHumanConvs,
       ] = await Promise.all([
         // Messages today by direction
         withOrg(sb.from('messages').select('direction').gte('created_at', today.toISOString())),
@@ -5645,8 +5737,8 @@
         // Orgs (super admin)
         sb.from('organizations').select('id,name,industry,status,plan_id,trial_ends_at,created_at').order('created_at',{ascending:false}),
         sb.from('organizations').select('*',{count:'exact',head:true}),
-        // Recent messages for unanswered detection
-        withOrg(sb.from('messages').select('direction,conversation_id,created_at,conversations(id,status,contacts(name,phone))').eq('conversations.status','open').order('created_at',{ascending:false}).limit(200)),
+        // Conversaciones que necesitan atención humana (bandeja — ver webhook-wa)
+        withOrg(sb.from('conversations').select('id,needs_human_at,needs_human_reason,contacts(name,phone)').eq('needs_human', true).order('needs_human_at',{ascending:true}).limit(8)),
       ])
 
       // ── Compute KPI values ──────────────────────────────────────────────────
@@ -5722,18 +5814,12 @@
       const contacts = allContacts.data ?? []
       renderDashPipeline(contacts)
 
-      // ── Sin respuesta ───────────────────────────────────────────────────────
-      // Find open conversations whose last message was inbound
-      const convLastMsg = {}
-      ;(recentMsgs.data ?? []).forEach(m => {
-        if (!m.conversation_id || !m.conversations) return
-        if (!convLastMsg[m.conversation_id]) convLastMsg[m.conversation_id] = m
-      })
-      const needsReply = Object.values(convLastMsg)
-        .filter(m => m.direction === 'inbound')
-        .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-        .slice(0, 8)
-      renderSinRespuesta(needsReply)
+      // ── Esperando respuesta ──────────────────────────────────────────────────
+      // Conversaciones marcadas needs_human (bandeja de atención humana) —
+      // no el viejo heurístico de "último mensaje fue inbound", que marcaba
+      // "esperando" cualquier cosa sin filtrar por lo que de verdad necesita
+      // que alguien entre, con motivo y fecha reales.
+      renderSinRespuesta(needsHumanConvs.data ?? [])
 
       // ── Orgs (super admin) ──────────────────────────────────────────────────
       if (isAll && state.isSuperAdmin) {
@@ -5854,33 +5940,41 @@
     </div>`
   }
 
-  function renderSinRespuesta(msgs) {
+  function renderSinRespuesta(convs) {
     const listEl   = $('dash-sinresp-list')
     const countEl  = $('dash-sinresp-count')
     if (!listEl) return
 
-    if (countEl) countEl.textContent = `${msgs.length}`
+    if (countEl) countEl.textContent = `${convs.length}`
 
-    if (!msgs.length) {
+    if (!convs.length) {
       listEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:12px 0;color:var(--text-dim);font-size:13px"><i class="fa fa-circle-check" style="color:#22c55e"></i> Todo atendido</div>`
       return
     }
-    listEl.innerHTML = msgs.map(m => {
-      const contact = m.conversations?.contacts
+    listEl.innerHTML = convs.map(c => {
+      const contact = c.contacts
       const name    = contact?.name || contact?.phone || 'Desconocido'
       const phone   = contact?.phone || ''
-      const ago     = timeAgo(m.created_at)
+      const ago     = timeAgo(c.needs_human_at)
+      const reason  = c.needs_human_reason || 'Necesita atención humana'
       const initls  = initials(name)
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--hover-bg);cursor:pointer" onclick="switchView('conversaciones')" title="Ir a conversaciones">
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--hover-bg);cursor:pointer" onclick="goToConversacion('${c.id}')" title="Abrir conversación">
         <div style="width:32px;height:32px;border-radius:50%;background:rgba(248,113,113,.15);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#f87171;flex-shrink:0">${initls}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
-          <div style="font-size:11px;color:var(--text-dim);font-family:'JetBrains Mono',monospace">${maskPhone(phone)}</div>
+          <div style="font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${reason}</div>
         </div>
-        <div style="font-size:11px;font-weight:700;color:#f87171;white-space:nowrap">${ago}</div>
+        <div style="font-size:11px;font-weight:700;color:#f87171;white-space:nowrap;flex-shrink:0">espera ${ago}</div>
       </div>`
     }).join('')
   }
+
+  async function goToConversacion(convId) {
+    switchView('conversaciones')
+    await loadConversaciones() // asegura que convState.all ya tenga datos antes de abrir
+    openConversacion(convId)
+  }
+  window.goToConversacion = goToConversacion;
 
   function timeAgo(dateStr) {
     if (!dateStr) return '—'

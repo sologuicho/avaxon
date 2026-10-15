@@ -6,6 +6,7 @@ import { getGoogleAccessToken } from '../_shared/google.ts'
 import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
+import { flagNeedsHuman } from '../_shared/humanHandoff.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -21,6 +22,10 @@ import { stripeFetch } from '../_shared/stripe.ts'
 // El bot confirma con el usuario antes de agendar (instrucción en las tools).
 
 const DEBOUNCE_MS = 5000
+
+// Detecta cuando el cliente pide explícitamente hablar con una persona —
+// independiente de si el system_prompt de la org sabe usar notify_owner.
+const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
 const APPOINTMENT_TOOLS = [
@@ -523,9 +528,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   // ── 3. Obtener o crear conversación abierta ────────────────────────────────
   let conversation_id: string
+  let needsHumanBefore = false
   const { data: existing } = await sb
     .from('conversations')
-    .select('id')
+    .select('id, needs_human')
     .eq('organization_id', organization_id)
     .eq('contact_id', contact_row.id)
     .eq('status', 'open')
@@ -535,6 +541,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (existing) {
     conversation_id = existing.id
+    needsHumanBefore = !!existing.needs_human
     await sb.from('conversations')
       .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', conversation_id)
@@ -563,6 +570,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   let lastInsertedAt: string | null = null
   let lastImageDataUrl: string | null = null
   let lastImageCaption = ''
+  let incomingBatchText = ''
 
   for (const rawMsg of rawMessages) {
     const waMessageId = rawMsg?.id as string | undefined
@@ -598,6 +606,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     }
 
     lastInsertedAt = inserted.created_at
+    incomingBatchText += ' ' + parsedMsg.content
     if (parsedMsg.imageDataUrl) {
       lastImageDataUrl = parsedMsg.imageDataUrl
       lastImageCaption  = parsedMsg.imageCaption
@@ -605,6 +614,30 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   if (!lastInsertedAt) return
+
+  // ── 4b. Bandeja de atención humana ──────────────────────────────────────
+  // Si la conversación YA necesitaba humano, el bot se queda callado (el
+  // mensaje de arriba ya se guardó, así que sigue viéndose en el dashboard)
+  // hasta que alguien la marque "atendida". Si el cliente lo pide apenas
+  // ahora en este turno, se marca, se manda un acuse fijo (no depende de que
+  // el system_prompt de la org sepa manejar esto) y tampoco se llama a GPT.
+  if (needsHumanBefore) return
+
+  if (HUMAN_HANDOFF_REGEX.test(incomingBatchText)) {
+    await flagNeedsHuman(sb, conversation_id, organization_id, 'El cliente pidió hablar con alguien')
+    const ackText = 'Ya anoté tu solicitud — en un momento una persona de nuestro equipo te atiende por aquí mismo. 🙌'
+    const ackRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: ackText } }),
+    })
+    const ackData = await ackRes.json().catch(() => ({}))
+    await sb.from('messages').insert({
+      conversation_id, organization_id, direction: 'outbound', content: ackText,
+      media_type: 'text', wa_message_id: ackData.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+    })
+    return
+  }
 
   // ── 5. Bot IA (solo si está habilitado) ────────────────────────────────────
   const { data: botConfig } = await sb
@@ -834,6 +867,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .replace(/^#{1,6}\s+/gm, '')
   const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3)
   const notifyOwner  = aiParsed.notify_owner === true
+
+  // Bandeja de atención humana — para cualquier org (no solo Avaxon). La
+  // respuesta de este turno SÍ se manda (ver abajo): notify_owner describe
+  // el cierre del bot para este turno, no cancela lo que ya iba a decir.
+  if (notifyOwner) {
+    await flagNeedsHuman(sb, conversation_id, organization_id, 'El agente marcó que el cliente necesita atención')
+  }
 
   // ── 13. Enviar respuesta por WhatsApp ──────────────────────────────────────
   let waPayload: any
