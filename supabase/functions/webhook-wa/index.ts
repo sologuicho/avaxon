@@ -1192,6 +1192,13 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 })
   }
 
+  // Delivery/read receipts for campaigns
+  const statuses = change?.value?.statuses
+  if (statuses?.length) {
+    EdgeRuntime.waitUntil(handleStatuses(statuses, env).catch(e => console.error('handleStatuses error:', e)))
+    return new Response('ok', { status: 200 })
+  }
+
   EdgeRuntime.waitUntil(
     handleIncoming(body, env).catch(e => {
       console.error('handleIncoming: excepción no controlada:', e)
