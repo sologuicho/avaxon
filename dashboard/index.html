@@ -7446,17 +7446,12 @@
     }
 
     // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
-    const _isDemo = user.email === 'gnarciso@gmail.com';
-    if (!state.isSuperAdmin && !_isDemo) {
+    if (!state.isSuperAdmin) {
       if (!profileData?.terms_accepted_at) {
         showTermsModal();
         return; // bootstrap continúa desde acceptTerms()
       }
-      if (!profileData?.onboarding_done_at) {
-        await finishBootstrap(profileData);
-        showWelcomeModal(profileData?.full_name);
-        return;
-      }
+      // onboarding_done_at: ya no muestra popup — el checklist vive en Inicio
     }
 
     await finishBootstrap(profileData);
