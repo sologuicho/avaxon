@@ -612,7 +612,10 @@ function isWithinBusinessHours(hours: any, timezone: string, at: Date = new Date
   if (!h || h.closed || !h.open || !h.close) return false
 
   const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
-  return hhmm >= h.open && hhmm <= h.close
+  // "00:00" como cierre significa medianoche = fin del día (24:00), no el
+  // inicio — si no, "09:00–00:00" se compara como cerrado todo el día.
+  const closeCmp = h.close === '00:00' ? '24:00' : h.close
+  return hhmm >= h.open && hhmm <= closeCmp
 }
 
 async function handleIncoming(body: any, env: Env): Promise<void> {

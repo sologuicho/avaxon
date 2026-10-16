@@ -9957,6 +9957,20 @@
     return hours;
   }
 
+  // "00:00" de cierre significa medianoche = fin del día, no inicio — es
+  // válido aunque sea "menor" que la apertura. Cualquier otro cierre <=
+  // apertura es un error real de captura (el bot lo malinterpretaría).
+  function validateHoursForm(hours) {
+    for (const [key, label] of CFG_HOURS_DAYS) {
+      const h = hours[key];
+      if (!h || h.closed) continue;
+      if (h.close !== '00:00' && h.close <= h.open) {
+        return `${label}: el cierre (${h.close}) no puede ser antes o igual que la apertura (${h.open}). Si cierran a medianoche, pon 00:00.`;
+      }
+    }
+    return null;
+  }
+
   async function uploadOrgLogo() {
     const fileInput = $('cfg-logo-file');
     const file = fileInput?.files?.[0];
@@ -10042,6 +10056,11 @@
   async function saveOrgConfig() {
     const orgId = getActiveOrgId();
     if (!orgId) return;
+
+    const hoursToSave = collectHoursFromForm();
+    const hoursError = validateHoursForm(hoursToSave);
+    if (hoursError) { showToast(hoursError, 5000); return; }
+
     const btn = $('cfg-save-btn');
     if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
 
@@ -10069,7 +10088,7 @@
         instagram: ($('cfg-social-instagram').value || '').trim() || null,
         tiktok:    ($('cfg-social-tiktok').value     || '').trim() || null,
       },
-      hours: collectHoursFromForm(),
+      hours: hoursToSave,
       language: $('cfg-org-language').value || 'es',
       updated_at: new Date().toISOString(),
     };
@@ -10930,7 +10949,8 @@
     const hoursCfg = calView.orgHours?.[dayKey];
     const closed = !!hoursCfg?.closed;
     const openMin  = (hoursCfg && !closed) ? timeToMinutes(hoursCfg.open)  : 8*60;
-    const closeMin = (hoursCfg && !closed) ? timeToMinutes(hoursCfg.close) : 20*60;
+    // "00:00" de cierre = medianoche = fin del día (24:00), no inicio.
+    const closeMin = (hoursCfg && !closed) ? (hoursCfg.close === '00:00' ? 24*60 : timeToMinutes(hoursCfg.close)) : 20*60;
 
     const duration = calView.formDuration || 60;
     const dayApts = calView.appointments.filter(a => aptDateKey(a.scheduled_at) === dateStr && a.status !== 'cancelled' && a.id !== calView.editingId);
