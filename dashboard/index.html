@@ -7597,9 +7597,6 @@
     await loadOrgTimezone(state.currentOrgId);
     loadConversaciones();
     loadIntegrations();
-    if (!p?.onboarding_done_at) {
-      showWelcomeModal(p?.full_name);
-    }
   }
 
   // ── Onboarding tour ──────────────────────────────────────────────────────
