@@ -886,7 +886,11 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     return
   }
   const { organization_id } = pn
-  const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
+  const clientToken = (pn.whatsapp_accounts as any)?.access_token
+  if (!clientToken) {
+    console.error('No hay access_token para la organización', organization_id, '— phone_number_id:', phoneNumberId, '. Conectar WhatsApp desde el dashboard.')
+    return
+  }
 
   // ── Track campaign reply (responded_at) ────────────────────────────────────
   const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
