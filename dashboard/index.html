@@ -2020,10 +2020,12 @@
                     <i class="fa fa-arrow-left"></i>
                   </button>
                   <div id="chat-header-avatar" style="width:34px;height:34px;background:#eef6ff;color:#2c455d;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;flex-shrink:0"></div>
-                  <div style="min-width:0;display:flex;align-items:baseline;gap:7px;flex-wrap:nowrap;overflow:hidden">
-                    <span id="chat-header-name" style="font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1a2535;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:40px"></span>
-                    <span id="chat-header-status" style="flex-shrink:0"></span>
-                    <span id="chat-header-phone" style="font-size:12.5px;color:#8c939b;flex-shrink:4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                  <div style="min-width:0;display:flex;flex-direction:column;overflow:hidden;flex:1">
+                    <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:nowrap;overflow:hidden;min-width:0">
+                      <span id="chat-header-name" style="font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1a2535;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0"></span>
+                      <span id="chat-header-status" style="flex-shrink:0"></span>
+                    </div>
+                    <span id="chat-header-phone" style="font-size:11px;color:#8c939b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
                   </div>
                 </div>
                 <div class="chat-header-actions" style="display:flex;gap:5px;flex-shrink:0">
@@ -4905,7 +4907,7 @@
       const senderPfx = c.lastMsg
         ? (c.lastMsg.direction === 'outbound' ? '<span class="conv-item-sender">Tú: </span>' : '')
         : '';
-      const preview  = c.lastMsg ? (c.lastMsg.content || '[media]') : 'Sin mensajes';
+      const preview  = c.lastMsg ? stripWaMarkdown(c.lastMsg.content || '[media]') : 'Sin mensajes';
       const time     = c.lastMsg ? fmtRelTime(c.lastMsg.created_at) : '';
       const ini      = initials(name);
       const isActive = c.id === convState.activeId;
@@ -4924,7 +4926,7 @@
             <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${name}</div>
             <div class="conv-item-time">${time}</div>
           </div>
-          <div class="conv-item-preview">${senderPfx}${preview.slice(0, 55)}</div>
+          <div class="conv-item-preview">${senderPfx}${escapeHtml(preview.slice(0, 55))}</div>
         </div>
       </div>`;
     }).join('');
@@ -4968,11 +4970,13 @@
 
   async function cpanelCancelApt(id) {
     const orgId = getActiveOrgId();
+    const { data: appt } = await sb.from('appointments').select('id, contact_id, contact_name, service, title, scheduled_at').eq('id', id).maybeSingle();
     await syncAppointmentWithGoogle(orgId, id, 'delete');
     await sb.from('appointments').update({ status: 'cancelled', google_event_id: null, updated_at: new Date().toISOString() }).eq('id', id);
     notifyAppointmentEmail(id, 'cancelled');
     showToast('Cita cancelada');
     if (cpanelContactId) await renderCpanelAppointments(cpanelContactId);
+    if (appt) askNotifyCustomerCancelled(appt);
   }
   window.cpanelCancelApt = cpanelCancelApt;
 
@@ -5691,6 +5695,12 @@
     teamNamesOrgLoaded = orgId;
   }
   function teamName(id) { return id ? (teamNameById[id] || 'Alguien del equipo') : null; }
+
+  // Para vistas previas de solo texto (lista de conversaciones) — quita los
+  // */_ en vez de convertirlos a HTML, porque ahí no se renderiza markdown.
+  function stripWaMarkdown(text) {
+    return String(text ?? '').replace(/\*([^*\n]+)\*/g, '$1').replace(/_([^_\n]+)_/g, '$1');
+  }
 
   // Formato de WhatsApp (*negrita*, _cursiva_) a HTML — siempre sobre texto
   // ya escapado, nunca al revés (si no, un mensaje con < o > se renderizaría
@@ -11316,6 +11326,7 @@
     aptUndoTimer = setTimeout(() => { aptUndoSnapshot = null; }, 6000);
 
     await loadCalendarData();
+    askNotifyCustomerCancelled(a);
   }
   window.confirmCancelAppointment = confirmCancelAppointment;
 
@@ -12616,6 +12627,67 @@
     } catch (e) {
       console.error('notifyAppointmentEmail error:', e);
     }
+  }
+
+  // Conversación más reciente de un contacto (prioriza una abierta) — para
+  // mandarle un aviso de WhatsApp sin depender de que ya esté abierta en
+  // Conversaciones.
+  async function resolveConversationIdForContact(contactId) {
+    if (!contactId) return null;
+    const { data } = await sb.from('conversations').select('id, status').eq('contact_id', contactId).order('created_at', { ascending: false }).limit(5);
+    const chosen = data?.find(c => c.status === 'open') ?? data?.[0];
+    return chosen?.id || null;
+  }
+
+  // Avisa al CLIENTE por WhatsApp que su cita fue cancelada — texto libre si
+  // la ventana de 24h está abierta, o la plantilla aprobada configurada en
+  // integrations(provider='whatsapp').config.appointment_cancel_template_name
+  // si no (send-message hace el fallback solo, vía fallback_template_name).
+  async function notifyCustomerAppointmentCancelled(appt) {
+    const conversationId = await resolveConversationIdForContact(appt.contact_id);
+    if (!conversationId) { showToast('No se encontró una conversación con este cliente para avisarle', 4000); return; }
+
+    const orgId = getActiveOrgId();
+    const { data: integ } = await sb.from('integrations').select('config').eq('organization_id', orgId).eq('provider', 'whatsapp').maybeSingle();
+    const fallbackTemplate = integ?.config?.appointment_cancel_template_name || undefined;
+
+    const dateLabel = fmtAptDate(appt.scheduled_at);
+    const message = `Tu cita${appt.service ? ' de ' + appt.service : ''} del ${dateLabel} fue cancelada. Si quieres reagendar, contáctanos por aquí.`;
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const resp = await fetch(EDGE_BASE + '/send-message', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversation_id: conversationId, message, fallback_template_name: fallbackTemplate }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const windowClosed = data.error_code === '131026' || data.error_code === 131026;
+        showToast(windowClosed && !fallbackTemplate
+          ? 'No se pudo avisar: la ventana de 24h está cerrada y no hay plantilla configurada para esto'
+          : 'No se pudo avisar al cliente: ' + (data.error || resp.status), 5000);
+        return;
+      }
+      showToast('Se avisó al cliente por WhatsApp');
+    } catch (e) {
+      console.error('notifyCustomerAppointmentCancelled error:', e);
+      showToast('No se pudo avisar al cliente', 4000);
+    }
+  }
+
+  // Diálogo "¿Avisar al cliente?" después de cancelar — nunca se manda el
+  // aviso sin que alguien del equipo lo confirme primero.
+  function askNotifyCustomerCancelled(appt) {
+    showConfirmModal({
+      title: '¿Avisar al cliente?',
+      text: `¿Quieres avisarle a ${appt.contact_name || 'el cliente'} por WhatsApp que su cita fue cancelada?`,
+      confirmLabel: 'Sí, avisar',
+      cancelLabel: 'No avisar',
+      danger: false,
+      onConfirm: () => notifyCustomerAppointmentCancelled(appt),
+    });
   }
 
   async function testZapierWebhook() {

@@ -30,10 +30,10 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await callerClient.auth.getUser()
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
-  let body: { conversation_id: string; message?: string; payment_id?: string; template_id?: string }
+  let body: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const { conversation_id, message, payment_id, template_id } = body
+  const { conversation_id, message, payment_id, template_id, fallback_template_name } = body
   if (!conversation_id?.trim() || (!message?.trim() && !payment_id?.trim() && !template_id?.trim())) {
     return json({ error: 'conversation_id y (message, payment_id o template_id) son requeridos' }, 422)
   }
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
   try {
-    return await handleSend(adminClient, { conversation_id, message, payment_id, template_id }, user, WA_TOKEN)
+    return await handleSend(adminClient, { conversation_id, message, payment_id, template_id, fallback_template_name }, user, WA_TOKEN)
   } catch (e) {
     console.error('send-message: excepción no controlada:', e)
     await logBotError(adminClient, {
@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
 
 async function handleSend(
   adminClient: ReturnType<typeof createClient>,
-  { conversation_id, message, payment_id, template_id }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string },
+  { conversation_id, message, payment_id, template_id, fallback_template_name }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string },
   user: { id: string },
   WA_TOKEN: string,
 ): Promise<Response> {
@@ -205,6 +205,42 @@ async function handleSend(
     waRes = await sendWA({ type: 'text', text: { body: message!.trim() } })
     waData = await waRes.json()
     savedContent = message!.trim()
+
+    // Fuera de la ventana de 24h (131026) → reintentar con la plantilla de
+    // respaldo que mandó el caller, si la hay (ej. aviso de cita cancelada
+    // cuando ya no se puede mandar texto libre).
+    if (!waRes.ok && waData?.error?.code === 131026 && fallback_template_name) {
+      const { data: tpl } = await adminClient
+        .from('message_templates')
+        .select('name, language, components')
+        .eq('organization_id', conv.organization_id)
+        .eq('name', fallback_template_name)
+        .eq('status', 'APPROVED')
+        .maybeSingle()
+
+      const bodyComp  = (tpl?.components || []).find((c: any) => c.type === 'BODY')
+      const varNames: string[] = bodyComp?.variables || []
+      const KNOWN_VARS = new Set(['nombre', 'negocio'])
+
+      if (tpl && varNames.every(v => KNOWN_VARS.has(v))) {
+        const { data: org } = await adminClient.from('organizations').select('name').eq('id', conv.organization_id).maybeSingle()
+        const contactName = (conv.contacts as any)?.name || (conv.contacts as any)?.phone || 'cliente'
+        const resolveVar = (v: string) => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : v)
+
+        waRes = await sendWA({
+          type: 'template',
+          template: {
+            name: tpl.name,
+            language: { code: tpl.language || 'es_MX' },
+            components: varNames.length
+              ? [{ type: 'body', parameters: varNames.map(v => ({ type: 'text', text: resolveVar(v) })) }]
+              : [],
+          },
+        })
+        waData = await waRes.json()
+        savedContent = `[Plantilla ${tpl.name}] ${message!.trim()}`
+      }
+    }
   }
 
   if (!waRes.ok) {
@@ -215,7 +251,10 @@ async function handleSend(
       detail: `WhatsApp API error: ${waData.error?.message ?? JSON.stringify(waData)}`,
       source: 'send-message',
     })
-    return json({ error: `WhatsApp API error: ${waData.error?.message ?? JSON.stringify(waData)}` }, 502)
+    return json({
+      error: `WhatsApp API error: ${waData.error?.message ?? JSON.stringify(waData)}`,
+      error_code: waData?.error?.code ?? null,
+    }, 502)
   }
 
   const waMessageId = waData.messages?.[0]?.id ?? null
