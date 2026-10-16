@@ -60,7 +60,7 @@ const APPOINTMENT_TOOLS = [
           fecha:    { type: 'string', description: 'Fecha en formato YYYY-MM-DD' },
           hora:     { type: 'string', description: 'Hora en formato HH:MM (24h), ej: 14:30' },
           servicio: { type: 'string', description: 'Nombre del servicio o motivo de la cita' },
-          nombre:   { type: 'string', description: 'Nombre completo del cliente' },
+          nombre:   { type: 'string', description: 'Nombre completo REAL del cliente, tal como él lo dijo en la conversación. Si no lo sabes, pregúntaselo ANTES de llamar esta herramienta — nunca pongas un nombre genérico como "Cliente" o "Sin nombre".' },
           duracion_minutos: { type: 'number', description: 'Duración de la cita en minutos, por defecto 60' },
         },
         required: ['fecha', 'hora', 'servicio', 'nombre'],
@@ -253,6 +253,27 @@ async function agendarCita(
     return `No se puede agendar el ${args.fecha} a las ${args.hora} porque está fuera del horario de atención del negocio. Consulta disponibilidad y propónle al cliente un horario dentro del horario configurado.`
   }
 
+  // El nombre REAL del contacto siempre manda sobre lo que haya puesto el
+  // modelo — nunca se guarda un nombre genérico inventado ("Cliente", etc.)
+  // como si fuera el nombre real. Si no hay nombre real ni uno válido en
+  // args.nombre, se rechaza el agendado para que el bot primero lo pregunte.
+  const GENERIC_NAME_REGEX = /^(cliente|sin nombre|n\/?a|desconocido|cliente de whatsapp|whatsapp)$/i
+  const { data: contactNameRow } = await sb.from('contacts').select('name, phone').eq('id', contactId).maybeSingle()
+  const realName = (contactNameRow?.name || '').trim()
+  const contactPhone = contactNameRow?.phone || ''
+  const providedName = (args.nombre || '').trim()
+
+  let finalName: string
+  if (realName) {
+    finalName = realName
+  } else if (providedName && !GENERIC_NAME_REGEX.test(providedName)) {
+    finalName = providedName
+    // Se guarda en el contacto para que la próxima vez ya se sepa su nombre.
+    await sb.from('contacts').update({ name: finalName, updated_at: new Date().toISOString() }).eq('id', contactId)
+  } else {
+    return 'No se puede agendar todavía: no tienes el nombre completo del cliente. Pregúntaselo primero y vuelve a intentar el agendado cuando te lo diga — no uses un nombre genérico como "Cliente".'
+  }
+
   // Guardar en DB — las citas agendadas por el bot quedan "pending": las
   // confirma el negocio, no quedan como confirmadas automáticamente.
   const { data: appt, error: apptErr } = await sb
@@ -260,7 +281,7 @@ async function agendarCita(
     .insert({
       organization_id: organizationId,
       contact_id:      contactId,
-      contact_name:    args.nombre,
+      contact_name:    finalName,
       title:           args.servicio,
       service:         args.servicio,
       scheduled_at:    scheduledAt,
@@ -309,8 +330,8 @@ async function agendarCita(
       method: 'POST',
       headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        summary:     `${args.servicio} — ${args.nombre}`,
-        description: `Cita agendada por WhatsApp vía Avaxon`,
+        summary:     `${args.servicio} — ${finalName}`,
+        description: `Cita agendada por WhatsApp vía Avaxon.\nTeléfono: ${contactPhone || 'sin teléfono'}`,
         start: { dateTime: scheduledAt, timeZone: timezone },
         end:   { dateTime: endAt, timeZone: timezone },
       }),
