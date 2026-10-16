@@ -1441,6 +1441,62 @@
       .cfg-hours-row { grid-template-columns: 70px 1fr 1fr auto; }
       .cfg-save-bar { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
     }
+
+    /* ── Bot view layout ── */
+    .bot-layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ── Mobile fixes (≤768px) ── */
+    @media (max-width: 768px) {
+      /* Bot view: stack sidebar card below the form */
+      .bot-layout-grid { grid-template-columns: 1fr; }
+
+      /* Conexiones tabs: full width, wrap evenly */
+      .conn-tabs { width: 100%; }
+      .conn-tab { flex: 1; justify-content: center; padding: 8px 10px; font-size: 12px; }
+
+      /* KPI value: scale down so 2-col fits comfortably */
+      .kpi-value { font-size: 36px; }
+
+      /* Chat: safe area padding on iPhone home indicator */
+      .chat-input-bar {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* Sidebar: bottom inset so user avatar isn't hidden behind home bar */
+      .sidebar {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      /* Chat messages: give a bit more width to bubbles */
+      .msg-bubble { max-width: 82%; }
+
+      /* Page area: reduce horizontal padding on tiny screens */
+      .page-area { padding: 16px 12px 60px; }
+    }
+
+    /* ── Small phones (≤480px) ── */
+    @media (max-width: 480px) {
+      /* KPI grid: 1 column on very small phones */
+      .kpi-grid { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 40px; }
+
+      /* Topbar title fits without truncating */
+      .topbar-h1 { font-size: 15px; }
+
+      /* Connection tabs: show icons only to save space */
+      .conn-tab span { display: none; }
+
+      /* Chat bubbles: wider on small screens */
+      .msg-bubble { max-width: 88%; }
+
+      /* Bot view info card goes after form naturally */
+      .bot-layout-grid > div:last-child { order: -1; }
+    }
   </style>
 </head>
 <body>
