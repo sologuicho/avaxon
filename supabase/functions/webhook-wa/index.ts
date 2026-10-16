@@ -28,6 +28,11 @@ const DEBOUNCE_MS = 5000
 // independiente de si el system_prompt de la org sabe usar notify_owner.
 const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
 
+// Respuestas del bot rechazando un horario/cita por fuera de atención — se
+// quitan del historial que ve el modelo (ver chatHistory abajo) para que no
+// copie la conclusión de un rechazo viejo en vez de volver a evaluarla.
+const BOT_SCHEDULE_REJECTION_REGEX = /no podemos agendar|no se puede agendar|fuera del horario de atenci[oó]n|fuera de horario|horario de atenci[oó]n es de/i
+
 // ── Tool definitions ─────────────────────────────────────────────────────────
 const APPOINTMENT_TOOLS = [
   {
@@ -139,6 +144,90 @@ async function consultarDisponibilidad(
     return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}; ${windowLabel}. Ofrece un hueco libre dentro de ese rango.`
   } catch (e) {
     return `Error consultando el calendario: ${(e as Error).message}`
+  }
+}
+
+// ── Detección en código de una fecha/hora pedida en el mensaje ─────────────
+// El modelo puede copiar la conclusión de un rechazo viejo del historial en
+// vez de volver a evaluar el horario — para que la decisión de disponibilidad
+// NUNCA dependa solo del prompt, esto extrae la fecha/hora con una llamada
+// aparte y chica a OpenAI (temperatura 0, sin herramientas), y el código
+// mismo (no el modelo) decide si está dentro de horario y libre en el
+// calendario. El resultado se inyecta como dato obligatorio más abajo.
+async function extractAppointmentSlot(
+  combinedText: string,
+  nowLabel: string,
+  timezone: string,
+  openaiKey: string,
+): Promise<{ fecha: string; hora: string | null } | null> {
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+        temperature: 0,
+        max_tokens: 100,
+        messages: [
+          {
+            role: 'system',
+            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha. Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null}. "hora" en formato 24h; si menciona el día pero no una hora concreta, deja "hora": null. Si no hay fecha concreta, "solicita_horario": false y "fecha": null.`,
+          },
+          { role: 'user', content: combinedText },
+        ],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
+    if (!parsed?.solicita_horario || !parsed?.fecha) return null
+    return { fecha: parsed.fecha, hora: parsed.hora || null }
+  } catch (e) {
+    console.error('extractAppointmentSlot: error inesperado:', e)
+    return null
+  }
+}
+
+// Decide en código (no en el modelo) si una fecha+hora concreta está
+// disponible: dentro de horario de atención Y sin choque en Google Calendar.
+async function checkRequestedSlot(
+  fecha: string,
+  hora: string,
+  calendarToken: string,
+  timezone: string,
+  hours: any,
+): Promise<string> {
+  const atDate = new Date(fechaHoraToUtcIso(fecha, hora + ':00', timezone))
+  const within = isWithinBusinessHours(hours, timezone, atDate)
+
+  if (within === false) {
+    const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(atDate).toLowerCase().slice(0, 3)
+    const h = hours?.[dayKey]
+    const windowTxt = (!h || h.closed || !h.open || !h.close)
+      ? 'el negocio no atiende ese día'
+      : `el horario de atención ese día es de ${h.open} a ${h.close}`
+    return `${hora} del ${fecha}: FUERA DE HORARIO (${windowTxt}).`
+  }
+
+  try {
+    const timeMin = fechaHoraToUtcIso(fecha, '00:00:00', timezone)
+    const timeMax = fechaHoraToUtcIso(fecha, '23:59:59', timezone)
+    const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timeMin, timeMax, timeZone: timezone, items: [{ id: 'primary' }] }),
+    })
+    if (!res.ok) return `${hora} del ${fecha}: no se pudo verificar el calendario (error ${res.status}) — de todos modos está dentro del horario de atención.`
+    const data = await res.json()
+    const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
+    const slotStart = atDate.getTime()
+    const slotEnd = slotStart + 60 * 60 * 1000
+    const overlap = busy.find(b => new Date(b.start).getTime() < slotEnd && new Date(b.end).getTime() > slotStart)
+    if (overlap) return `${hora} del ${fecha}: OCUPADO — ya hay algo agendado en ese horario, propón otra hora.`
+    return `${hora} del ${fecha}: DISPONIBLE (dentro de horario y sin citas registradas en ese momento).`
+  } catch (e) {
+    return `${hora} del ${fecha}: no se pudo verificar el calendario (${(e as Error).message}) — de todos modos está dentro del horario de atención.`
   }
 }
 
@@ -964,6 +1053,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     // Los mensajes que mandó un humano del equipo (sent_by) no son del bot — nunca se le
     // muestran como si fueran compromisos u ofrecimientos que él mismo hizo.
     .filter(m => !(m.direction === 'outbound' && m.sent_by))
+    // Las respuestas viejas del bot rechazando un horario se quitan del historial —
+    // si no, el modelo copia la CONCLUSIÓN de un rechazo pasado en vez de volver a
+    // evaluarla, y el horario pudo haber cambiado desde entonces.
+    .filter(m => !(m.direction === 'outbound' && BOT_SCHEDULE_REJECTION_REGEX.test(m.content)))
     .slice(0, 14)
     .reverse()
     .map(m => ({ role: m.direction === 'inbound' ? 'user' : 'assistant', content: m.content }))
@@ -980,11 +1073,26 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     chatHistory.push({ role: 'user', content: combinedText })
   }
 
+  // ── 10b. Disponibilidad forzada en código ──────────────────────────────────
+  // No depende de que el modelo decida llamar la herramienta: si el mensaje
+  // pide una fecha+hora concreta, el CÓDIGO extrae esa fecha/hora y decide
+  // disponibilidad (horario + Google Calendar) ANTES de generar la respuesta,
+  // y se la pasa al modelo como dato obligatorio que no puede contradecir.
+  let forcedAvailabilityCtx = ''
+  if (calendarToken) {
+    const slot = await extractAppointmentSlot(combinedText, `${todayLabel}, ${nowTimeLabel}`, timezone, OPENAI_KEY)
+    if (slot?.fecha && slot.hora) {
+      const result = await checkRequestedSlot(slot.fecha, slot.hora, calendarToken, timezone, orgProfile?.hours)
+      forcedAvailabilityCtx = `\n\nDISPONIBILIDAD YA VERIFICADA PARA LO QUE PIDE EL CLIENTE EN ESTE MENSAJE (dato real del calendario y el horario, obtenido en este mismo turno — NO lo contradigas, NO copies una conclusión distinta de respuestas anteriores, básate solo en esto): ${result}`
+    }
+  }
+
   // ── 11. Loop GPT-4o con function calling ───────────────────────────────────
   const messages: any[] = [
     { role: 'system', content: systemPrompt },
     ...chatHistory,
   ]
+  if (forcedAvailabilityCtx) messages.push({ role: 'system', content: forcedAvailabilityCtx })
 
   const toolsArr = [
     ...(calendarToken ? APPOINTMENT_TOOLS : []),
