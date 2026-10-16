@@ -714,7 +714,7 @@ async function crearLinkPago(
 }
 
 async function getMediaUrl(mediaId: string, token: string): Promise<{ url: string; mime: string } | null> {
-  const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+  const res = await fetch(`https://graph.facebook.com/v22.0/${mediaId}`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) return null
@@ -1055,7 +1055,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     const ackText = outOfHours
       ? 'Ya anoté tu solicitud — ahorita estamos fuera de nuestro horario de atención, pero en cuanto abramos una persona de nuestro equipo te contesta por aquí mismo. Mientras tanto, sigo aquí para ayudarte en lo que pueda. 🙌'
       : 'Ya anoté tu solicitud — en un momento una persona de nuestro equipo te atiende por aquí mismo. 🙌'
-    const ackRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+    const ackRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: ackText } }),
@@ -1242,7 +1242,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         const isConfirm      = /^(si|sí|ya|listo|eso es todo|correcto|ok|okay|nada\s*m[aá]s|ya es todo|as[ií]\s*es|eso|todo|fin|nada)[\s!.]*$/i.test(combinedText.trim())
 
         const sendKitchenReply = async (text: string) => {
-          const r = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+          const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: text } }),
@@ -1613,7 +1613,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     }
   }
 
-  const waRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+  const waRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
     method:  'POST',
     headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
     body:    JSON.stringify(waPayload),
@@ -1637,7 +1637,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     const leadName    = contactName ?? fromPhone
     const AVAXON_PHONE = '528991709336'
     const notifText   = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
-    await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
       method:  'POST',
       headers: { 'Authorization': `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
