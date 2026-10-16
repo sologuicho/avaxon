@@ -5899,7 +5899,7 @@
 
   async function launchEmbeddedSignup() {
     if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     if (!WA_EMBEDDED_CONFIG_ID) {
       showToast('Falta el Configuration ID de Meta. Configúralo en Meta Developers → Facebook Login for Business.');
@@ -5969,7 +5969,7 @@
   /* ── Embedded Signup: Instagram Direct ── */
   async function launchIgEmbeddedSignup() {
     if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     const btn = $('ig-connect-btn');
     const setLoading = (on) => {
@@ -6014,7 +6014,7 @@
   /* ── Embedded Signup: Facebook Messenger ── */
   async function launchFbEmbeddedSignup() {
     if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     const btn = $('fb-connect-btn');
     const setLoading = (on) => {
