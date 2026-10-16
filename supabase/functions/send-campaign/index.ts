@@ -86,17 +86,26 @@ async function runCampaign(
   // Mark campaign as running
   await adminSb.from('campaigns').update({ status: 'running', launched_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', campaign_id)
 
+  // Normalize phone to E.164. Handles MX local (10 digits), MX with code (12), US (11).
+  function normalizePhone(raw: string): string {
+    const d = raw.replace(/\D/g, '')
+    if (d.length === 10) return '+52' + d
+    if (d.length === 12 && d.startsWith('52')) return '+' + d
+    if (d.length === 11 && d.startsWith('1'))  return '+' + d
+    return d ? '+' + d : raw
+  }
+
   // Resolve contacts: if CSV campaign, use campaign_contacts; otherwise fetch from contacts table
-  let contacts: { id?: string; phone: string; name?: string }[] = []
+  let contacts: { id?: string; phone: string; name?: string; variables?: Record<string, string> | null }[] = []
 
   if (camp.source_type === 'csv' || camp.source_type === 'manual') {
     // Read pre-inserted campaign_contacts
     const { data: cc } = await adminSb
       .from('campaign_contacts')
-      .select('id, phone, name')
+      .select('id, phone, name, variables')
       .eq('campaign_id', campaign_id)
       .eq('status', 'pending')
-    contacts = cc ?? []
+    contacts = (cc ?? []).map(c => ({ ...c, phone: normalizePhone(c.phone) }))
   } else {
     const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     let q = adminSb.from('contacts').select('id, phone, name').eq('organization_id', orgId).not('phone', 'is', null)
@@ -154,6 +163,15 @@ async function runCampaign(
   for (const contact of contacts) {
     if (!contact.phone) { failed++; continue }
 
+    // Build template components from variables JSONB {"1": "nombre", "2": "negocio", ...}
+    let templateComponents: any[] = []
+    if (camp.message_type === 'template' && templateName && contact.variables) {
+      const vars = contact.variables as Record<string, string>
+      const params = Object.keys(vars).sort((a, b) => Number(a) - Number(b))
+        .map(k => ({ type: 'text', text: vars[k] ?? '' }))
+      if (params.length > 0) templateComponents = [{ type: 'body', parameters: params }]
+    }
+
     const waPayload = camp.message_type === 'template' && templateName
       ? {
           messaging_product: 'whatsapp',
@@ -162,7 +180,7 @@ async function runCampaign(
           template: {
             name:       templateName,
             language:   { code: templateLang },
-            components: [],
+            components: templateComponents,
           },
         }
       : {

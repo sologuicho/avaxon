@@ -611,6 +611,23 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const { organization_id } = pn
   const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
 
+  // ── Track campaign reply (responded_at) ────────────────────────────────────
+  const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
+  const { data: ccReply } = await sb
+    .from('campaign_contacts')
+    .select('id, campaign_id')
+    .eq('phone', normalizedFrom)
+    .is('responded_at', null)
+    .order('sent_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (ccReply) {
+    const now = new Date().toISOString()
+    await sb.from('campaign_contacts').update({ responded_at: now }).eq('id', ccReply.id)
+    const { data: camp } = await sb.from('campaigns').select('responded_count').eq('id', ccReply.campaign_id).single()
+    if (camp) await sb.from('campaigns').update({ responded_count: (camp.responded_count ?? 0) + 1, updated_at: now }).eq('id', ccReply.campaign_id)
+  }
+
   // ── 2. Upsert contacto ─────────────────────────────────────────────────────
   const { data: contact_row } = await sb
     .from('contacts')
@@ -1192,6 +1209,13 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 })
   }
 
+  // Delivery/read receipts for campaigns
+  const statuses = change?.value?.statuses
+  if (statuses?.length) {
+    EdgeRuntime.waitUntil(handleStatuses(statuses, env).catch(e => console.error('handleStatuses error:', e)))
+    return new Response('ok', { status: 200 })
+  }
+
   EdgeRuntime.waitUntil(
     handleIncoming(body, env).catch(e => {
       console.error('handleIncoming: excepción no controlada:', e)
@@ -1214,6 +1238,36 @@ Deno.serve(async (req: Request) => {
 function cleanTemplateReason(reason: unknown): string | null {
   const r = typeof reason === 'string' ? reason.trim() : ''
   return r && r !== 'NONE' ? r : null
+}
+
+async function handleStatuses(statuses: any[], env: Env): Promise<void> {
+  const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+  for (const s of statuses) {
+    const status      = s.status       // 'sent' | 'delivered' | 'read' | 'failed'
+    const recipientId = s.recipient_id // E.164 phone we sent to
+    if (!recipientId || (status !== 'delivered' && status !== 'read')) continue
+
+    const updateField = status === 'delivered' ? 'delivered_at' : 'read_at'
+    const countField  = status === 'delivered' ? 'delivered_count' : 'read_count'
+    const now = new Date().toISOString()
+
+    const { data: cc } = await sb
+      .from('campaign_contacts')
+      .select('id, campaign_id')
+      .eq('phone', recipientId)
+      .eq('status', 'sent')
+      .is(updateField, null)
+      .order('sent_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!cc) continue
+
+    await sb.from('campaign_contacts').update({ [updateField]: now }).eq('id', cc.id)
+
+    const { data: camp } = await sb.from('campaigns').select(countField).eq('id', cc.campaign_id).single()
+    if (camp) await sb.from('campaigns').update({ [countField]: ((camp as any)[countField] ?? 0) + 1, updated_at: now }).eq('id', cc.campaign_id)
+  }
 }
 
 async function handleTemplateStatusUpdate(value: any, env: Env): Promise<void> {
