@@ -30,10 +30,10 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await callerClient.auth.getUser()
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
-  let body: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string }
+  let body: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string; template_vars?: Record<string, string> }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const { conversation_id, message, payment_id, template_id, fallback_template_name } = body
+  const { conversation_id, message, payment_id, template_id, fallback_template_name, template_vars } = body
   if (!conversation_id?.trim() || (!message?.trim() && !payment_id?.trim() && !template_id?.trim())) {
     return json({ error: 'conversation_id y (message, payment_id o template_id) son requeridos' }, 422)
   }
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
   try {
-    return await handleSend(adminClient, { conversation_id, message, payment_id, template_id, fallback_template_name }, user, WA_TOKEN)
+    return await handleSend(adminClient, { conversation_id, message, payment_id, template_id, fallback_template_name, template_vars }, user, WA_TOKEN)
   } catch (e) {
     console.error('send-message: excepción no controlada:', e)
     await logBotError(adminClient, {
@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
 
 async function handleSend(
   adminClient: ReturnType<typeof createClient>,
-  { conversation_id, message, payment_id, template_id, fallback_template_name }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string },
+  { conversation_id, message, payment_id, template_id, fallback_template_name, template_vars }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string; fallback_template_name?: string; template_vars?: Record<string, string> },
   user: { id: string },
   WA_TOKEN: string,
 ): Promise<Response> {
@@ -221,11 +221,15 @@ async function handleSend(
       const bodyComp  = (tpl?.components || []).find((c: any) => c.type === 'BODY')
       const varNames: string[] = bodyComp?.variables || []
       const KNOWN_VARS = new Set(['nombre', 'negocio'])
+      // Variables que el caller ya sabe rellenar con datos reales (ej. servicio/
+      // fecha/hora de una cita) tienen prioridad sobre las conocidas genéricas.
+      const explicitVars = template_vars || {}
 
-      if (tpl && varNames.every(v => KNOWN_VARS.has(v))) {
+      if (tpl && varNames.every(v => KNOWN_VARS.has(v) || v in explicitVars)) {
         const { data: org } = await adminClient.from('organizations').select('name').eq('id', conv.organization_id).maybeSingle()
         const contactName = (conv.contacts as any)?.name || (conv.contacts as any)?.phone || 'cliente'
-        const resolveVar = (v: string) => (v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : v)
+        const resolveVar = (v: string) =>
+          v in explicitVars ? explicitVars[v] : v === 'nombre' ? contactName : v === 'negocio' ? (org?.name || 'nuestro negocio') : v
 
         waRes = await sendWA({
           type: 'template',

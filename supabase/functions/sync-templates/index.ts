@@ -27,6 +27,9 @@ const META_API = 'https://graph.facebook.com/v20.0'
 function exampleForVar(v: string, orgName: string): string {
   if (v === 'nombre') return 'Juan Pérez'
   if (v === 'negocio') return orgName || 'Mi Negocio'
+  if (v === 'servicio') return 'Consulta general'
+  if (v === 'fecha') return '16 de octubre'
+  if (v === 'hora') return '3:00 p.m.'
   return 'Ejemplo'
 }
 

@@ -2703,10 +2703,16 @@
                       <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase">Sitio web</span><span style="font-size:13px;color:var(--text)">avaxon.lat</span></div>
                     </div>
                   </div>
-                  <div class="ch-setting-row" style="flex-wrap:wrap;gap:8px;border-bottom:none">
+                  <div class="ch-setting-row" style="flex-wrap:wrap;gap:8px">
                     <div class="ch-setting-label" style="min-width:180px"><span class="ch-setting-title">Aviso de atención humana</span><span class="ch-setting-sub">Plantilla de WA cuando el equipo debe tomar el chat</span></div>
                     <select id="wa-handoff-template-select" onchange="saveWaHandoffTemplate(this.value)" class="cfg-field-select" style="max-width:220px;flex-shrink:0;font-size:12px">
                       <option value="">Sin aviso por WhatsApp</option>
+                    </select>
+                  </div>
+                  <div class="ch-setting-row" style="flex-wrap:wrap;gap:8px;border-bottom:none">
+                    <div class="ch-setting-label" style="min-width:180px"><span class="ch-setting-title">Aviso de cita cancelada</span><span class="ch-setting-sub">Plantilla de WA al cliente si la ventana de 24h ya cerró</span></div>
+                    <select id="wa-apt-cancel-template-select" onchange="saveApptCancelTemplate(this.value)" class="cfg-field-select" style="max-width:220px;flex-shrink:0;font-size:12px">
+                      <option value="">Sin aviso fuera de ventana</option>
                     </select>
                   </div>
                   <!-- Footer -->
@@ -4697,7 +4703,7 @@
       ? `<span style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span style="font-size:13px;color:var(--text-muted)">Pendiente</span>`
       : `<span style="width:7px;height:7px;border-radius:50%;background:var(--text-dim)"></span><span style="font-size:13px;color:var(--text-muted)">Sin configurar</span>`;
 
-    if (phones.length) loadWaHandoffTemplateSelect();
+    if (phones.length) { loadWaHandoffTemplateSelect(); loadApptCancelTemplateSelect(); }
   }
 
   // Selector de la plantilla APPROVED que se manda al dueño por WhatsApp
@@ -4734,6 +4740,40 @@
     showToast(templateName ? 'Aviso por WhatsApp activado' : 'Aviso por WhatsApp desactivado');
   }
   window.saveWaHandoffTemplate = saveWaHandoffTemplate;
+
+  // Selector de la plantilla APPROVED que se usa para avisarle al CLIENTE
+  // que su cita se canceló, cuando la ventana de 24h ya está cerrada
+  // (integrations(provider='whatsapp').config.appointment_cancel_template_name
+  // — ver notifyCustomerAppointmentCancelled).
+  async function loadApptCancelTemplateSelect() {
+    const sel = $('wa-apt-cancel-template-select');
+    if (!sel) return;
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+
+    const [{ data: templates }, { data: integ }] = await Promise.all([
+      sb.from('message_templates').select('name').eq('organization_id', orgId).eq('status', 'APPROVED').order('name'),
+      sb.from('integrations').select('config').eq('organization_id', orgId).eq('provider', 'whatsapp').maybeSingle(),
+    ]);
+    const current = integ?.config?.appointment_cancel_template_name || '';
+    sel.innerHTML = '<option value="">Sin aviso fuera de ventana</option>' +
+      (templates || []).map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('');
+    if (current && !(templates || []).some(t => t.name === current)) {
+      sel.innerHTML += `<option value="${current}" selected>${current} (ya no disponible)</option>`;
+    }
+  }
+
+  async function saveApptCancelTemplate(templateName) {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const result = await callIntegrationSave({
+      organization_id: orgId, provider: 'whatsapp', action: 'update_config',
+      config: { appointment_cancel_template_name: templateName || null },
+    });
+    if (result.error) { showToast('Error al guardar: ' + result.error, 4000); return; }
+    showToast(templateName ? 'Aviso de cancelación activado' : 'Aviso de cancelación desactivado');
+  }
+  window.saveApptCancelTemplate = saveApptCancelTemplate;
 
   // ── Conversaciones ─────────────────────────────────────────────
   const convState = { all: [], filtered: [], activeId: null, realtimeSub: null, activeTab: 'all', activeStage: 'all', mineOnly: false };
@@ -12651,7 +12691,11 @@
     const { data: integ } = await sb.from('integrations').select('config').eq('organization_id', orgId).eq('provider', 'whatsapp').maybeSingle();
     const fallbackTemplate = integ?.config?.appointment_cancel_template_name || undefined;
 
+    const tz = getAppointmentTimezone();
+    const d = new Date(appt.scheduled_at);
     const dateLabel = fmtAptDate(appt.scheduled_at);
+    const fechaOnly = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', timeZone: tz });
+    const horaOnly  = d.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', timeZone: tz });
     const message = `Tu cita${appt.service ? ' de ' + appt.service : ''} del ${dateLabel} fue cancelada. Si quieres reagendar, contáctanos por aquí.`;
 
     try {
@@ -12660,7 +12704,10 @@
       const resp = await fetch(EDGE_BASE + '/send-message', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + session.access_token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversation_id: conversationId, message, fallback_template_name: fallbackTemplate }),
+        body: JSON.stringify({
+          conversation_id: conversationId, message, fallback_template_name: fallbackTemplate,
+          template_vars: { servicio: appt.service || appt.title || 'tu cita', fecha: fechaOnly, hora: horaOnly },
+        }),
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
