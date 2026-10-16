@@ -8,6 +8,7 @@ import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
 import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
 import { logBotError } from '../_shared/botErrorLog.ts'
+import { logToolTrace } from '../_shared/toolTraceLog.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -22,7 +23,9 @@ import { logBotError } from '../_shared/botErrorLog.ts'
 // llamar a consultar_disponibilidad, agendar_cita y cancelar_o_reagendar_cita.
 // El bot confirma con el usuario antes de agendar (instrucción en las tools).
 
-const DEBOUNCE_MS = 5000
+const SLIDE_MS     = 7000  // se reinicia con cada mensaje nuevo del cliente
+const MAX_BATCH_MS = 20000 // tope absoluto desde el primer mensaje del lote
+const POLL_MS      = 1000  // granularidad del sondeo mientras se espera
 
 // Detecta cuando el cliente pide explícitamente hablar con una persona —
 // independiente de si el system_prompt de la org sabe usar notify_owner.
@@ -160,7 +163,7 @@ async function extractAppointmentSlot(
   nowLabel: string,
   timezone: string,
   openaiKey: string,
-): Promise<{ fecha: string; hora: string | null } | null> {
+): Promise<{ fecha: string; hora: string | null; horaAmbigua: boolean; horaAlt: string | null } | null> {
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -169,11 +172,11 @@ async function extractAppointmentSlot(
         model: 'gpt-4o',
         response_format: { type: 'json_object' },
         temperature: 0,
-        max_tokens: 100,
+        max_tokens: 150,
         messages: [
           {
             role: 'system',
-            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo, confirmando o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha.${lastBotMessage ? ` Si el mensaje del cliente es solo una CONFIRMACIÓN sin fecha/hora propia (ej. "sí", "confirmo", "agenda", o tocó un botón como "Agendar cita"), usa la fecha/hora que el bot ya había propuesto en su último mensaje: "${lastBotMessage.replace(/"/g, "'")}".` : ''} Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null}. "hora" en formato 24h; si menciona o confirma el día pero no se puede determinar una hora concreta, deja "hora": null. Si no hay fecha concreta (ni propia ni confirmando la del bot), "solicita_horario": false y "fecha": null.`,
+            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo, confirmando o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha.${lastBotMessage ? ` Si el mensaje del cliente es solo una CONFIRMACIÓN sin fecha/hora propia (ej. "sí", "confirmo", "agenda", o tocó un botón como "Agendar cita"), usa la fecha/hora que el bot ya había propuesto en su último mensaje: "${lastBotMessage.replace(/"/g, "'")}".` : ''} Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null, "hora_ambigua": true|false, "hora_alt": "HH:MM"|null}. "hora" y "hora_alt" en formato 24h. Si el cliente dio un número de 1 a 11 SIN decir "de la mañana/tarde/noche" ni "am/pm" (ej. "a las 7"), es ambigua: "hora_ambigua": true, "hora" = esa hora interpretada como AM, y "hora_alt" = la misma hora interpretada como PM (+12h). Si especificó claramente AM/PM o mañana/tarde/noche, o es una hora de las 13 a 23 (ya sin ambigüedad posible), "hora_ambigua": false y "hora_alt": null. Si menciona o confirma el día pero no se puede determinar ninguna hora, deja "hora": null. Si no hay fecha concreta (ni propia ni confirmando la del bot), "solicita_horario": false y "fecha": null.`,
           },
           { role: 'user', content: combinedText },
         ],
@@ -183,7 +186,12 @@ async function extractAppointmentSlot(
     const data = await res.json()
     const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
     if (!parsed?.solicita_horario || !parsed?.fecha) return null
-    return { fecha: parsed.fecha, hora: parsed.hora || null }
+    return {
+      fecha: parsed.fecha,
+      hora: parsed.hora || null,
+      horaAmbigua: !!parsed.hora_ambigua,
+      horaAlt: parsed.hora_alt || null,
+    }
   } catch (e) {
     console.error('extractAppointmentSlot: error inesperado:', e)
     return null
@@ -1134,6 +1142,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // "[texto](url)" o "# título" se ven los corchetes/almohadillas tal cual.
   const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks.`
 
+  // notify_owner pausa la conversación y le avisa al dueño — no es un botón
+  // de "ya no sé qué responder". Antes del fix, un mensaje fragmentado y
+  // confuso (varios mensajes cortos seguidos) llevó al modelo a activarlo sin
+  // que el cliente hubiera pedido nada de esto.
+  const notifyOwnerScopeCtx = `\n\nUSO DE notify_owner (son las ÚNICAS razones válidas, no hay otras): 1) el cliente pide explícitamente hablar con una persona, 2) el cliente se queja o está molesto, 3) el cliente tiene un problema real que de verdad no puedes resolver con tus herramientas. NUNCA lo actives solo porque el mensaje del cliente te resulte confuso, fragmentado, incompleto o ambiguo — en esos casos SIEMPRE haz una pregunta clara y concreta para entender qué necesita, en vez de responder a medias o pasarlo a una persona. Tu confusión no es motivo para activar notify_owner.`
+
   const systemPrompt = [
     botConfig.system_prompt,
     businessContext,
@@ -1142,36 +1156,65 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     outOfHoursCtx,
     noPromisesCtx,
     formatCtx,
+    notifyOwnerScopeCtx,
   ].filter(Boolean).join('\n\n')
 
-  // ── 8. Debounce ────────────────────────────────────────────────────────────
-  await new Promise(resolve => setTimeout(resolve, DEBOUNCE_MS))
-
-  const { data: newer } = await sb
+  // ── 8. Debounce deslizante con tope ─────────────────────────────────────────
+  // Cada mensaje nuevo reinicia la espera de SLIDE_MS (para juntar ráfagas de
+  // mensajes cortos en una sola respuesta), pero nunca se espera más de
+  // MAX_BATCH_MS desde el primer mensaje del lote — si el cliente no deja de
+  // escribir, de todos modos se procesa lo que haya en cuanto se cumple el tope.
+  const { data: firstPendingRow } = await sb
     .from('messages')
-    .select('id')
-    .eq('conversation_id', conversation_id)
-    .eq('direction', 'inbound')
-    .is('processed_at', null)
-    .gt('created_at', lastInsertedAt)
-    .limit(1)
-
-  if (newer && newer.length > 0) return
-
-  // ── 9. Snapshot de mensajes pendientes ────────────────────────────────────
-  const { data: pending } = await sb
-    .from('messages')
-    .select('id, content, created_at')
+    .select('created_at')
     .eq('conversation_id', conversation_id)
     .eq('direction', 'inbound')
     .is('processed_at', null)
     .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  const batchStartMs = firstPendingRow ? new Date(firstPendingRow.created_at).getTime() : new Date(lastInsertedAt).getTime()
 
-  if (!pending || pending.length === 0) return
+  let anchor = lastInsertedAt
+  while (true) {
+    const elapsedTotal = Date.now() - batchStartMs
+    const sinceAnchor  = Date.now() - new Date(anchor).getTime()
+    if (elapsedTotal >= MAX_BATCH_MS || sinceAnchor >= SLIDE_MS) break
+
+    const step = Math.max(50, Math.min(POLL_MS, SLIDE_MS - sinceAnchor, MAX_BATCH_MS - elapsedTotal))
+    await new Promise(resolve => setTimeout(resolve, step))
+
+    const { data: newer } = await sb
+      .from('messages')
+      .select('id, created_at')
+      .eq('conversation_id', conversation_id)
+      .eq('direction', 'inbound')
+      .is('processed_at', null)
+      .gt('created_at', anchor)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (newer && newer.length > 0) return // alguien más nuevo ya llegó — esa invocación se encarga
+  }
+
+  // ── 9. Reclamo atómico de los mensajes pendientes ───────────────────────────
+  // processed_at se marca AQUÍ, antes de llamar a GPT, no solo al final — así,
+  // si dos invocaciones llegan a este punto casi juntas (ej. por el tope de
+  // MAX_BATCH_MS), el UPDATE solo le entrega filas a una; la otra recibe un
+  // arreglo vacío y se retira sin mandar nada ni duplicar la respuesta.
+  const { data: pendingRaw } = await sb
+    .from('messages')
+    .update({ processed_at: new Date().toISOString() })
+    .eq('conversation_id', conversation_id)
+    .eq('direction', 'inbound')
+    .is('processed_at', null)
+    .select('id, content, created_at')
+
+  if (!pendingRaw || pendingRaw.length === 0) return
+  const pending = [...pendingRaw].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
   // Solo los mensajes recientes forman el turno actual; los atrasados (de hace rato)
-  // se marcan como procesados pero quedan en el historial como contexto normal —
-  // nunca se retoman como si fueran la solicitud actual, salvo que el cliente los repita.
+  // quedan en el historial como contexto normal — nunca se retoman como si
+  // fueran la solicitud actual, salvo que el cliente los repita.
   const STALE_THRESHOLD_MS = 15 * 60 * 1000
   const newestAt = new Date(pending[pending.length - 1].created_at).getTime()
   let current = pending.filter(m => newestAt - new Date(m.created_at).getTime() <= STALE_THRESHOLD_MS)
@@ -1231,8 +1274,33 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   if (calendarToken) {
     const slot = await extractAppointmentSlot(combinedText, lastBotMessage, `${todayLabel}, ${nowTimeLabel}`, timezone, OPENAI_KEY)
     if (slot?.fecha && slot.hora) {
-      const result = await checkRequestedSlot(slot.fecha, slot.hora, calendarToken, timezone, orgProfile?.hours)
-      forcedAvailabilityCtx = `\n\nDISPONIBILIDAD YA VERIFICADA PARA LO QUE PIDE EL CLIENTE EN ESTE MENSAJE (dato real del calendario y el horario, obtenido en este mismo turno — NO lo contradigas, NO copies una conclusión distinta de respuestas anteriores, básate solo en esto): ${result.message}`
+      let resolvedHora = slot.hora
+      let ambiguityNote = ''
+
+      // "A las 7" sin AM/PM: si solo una de las dos interpretaciones cae
+      // dentro del horario configurado, se asume esa (y se le pide al bot
+      // que la confirme explícitamente) — solo se pregunta cuando de
+      // verdad hay dos opciones viables (o ninguna).
+      if (slot.horaAmbigua && slot.horaAlt) {
+        const atA = new Date(fechaHoraToUtcIso(slot.fecha, slot.hora + ':00', timezone))
+        const atB = new Date(fechaHoraToUtcIso(slot.fecha, slot.horaAlt + ':00', timezone))
+        const withinA = isWithinBusinessHours(orgProfile?.hours, timezone, atA)
+        const withinB = isWithinBusinessHours(orgProfile?.hours, timezone, atB)
+
+        if (withinA === true && withinB !== true) {
+          ambiguityNote = ` El cliente no dijo si era AM o PM — como ${to12hLabel(slot.horaAlt)} está fuera de horario y ${to12hLabel(slot.hora)} sí está dentro, ASUME ${to12hLabel(slot.hora)} pero DÍSELO explícitamente en tu respuesta (confírmale esa hora exacta) antes de agendar.`
+        } else if (withinB === true && withinA !== true) {
+          resolvedHora = slot.horaAlt
+          ambiguityNote = ` El cliente no dijo si era AM o PM — como ${to12hLabel(slot.hora)} está fuera de horario y ${to12hLabel(slot.horaAlt)} sí está dentro, ASUME ${to12hLabel(slot.horaAlt)} pero DÍSELO explícitamente en tu respuesta (confírmale esa hora exacta) antes de agendar.`
+        } else {
+          forcedAvailabilityCtx = `\n\nHORA AMBIGUA: el cliente dijo una hora sin aclarar AM o PM, y tanto ${to12hLabel(slot.hora)} como ${to12hLabel(slot.horaAlt)} son posibles según el horario configurado. PREGÚNTALE explícitamente si es de la mañana o de la tarde/noche antes de ofrecer o confirmar cualquier horario — no asumas ni agendes todavía.`
+        }
+      }
+
+      if (!forcedAvailabilityCtx) {
+        const result = await checkRequestedSlot(slot.fecha, resolvedHora, calendarToken, timezone, orgProfile?.hours)
+        forcedAvailabilityCtx = `\n\nDISPONIBILIDAD YA VERIFICADA PARA LO QUE PIDE EL CLIENTE EN ESTE MENSAJE (dato real del calendario y el horario, obtenido en este mismo turno — NO lo contradigas, NO copies una conclusión distinta de respuestas anteriores, básate solo en esto): ${result.message}${ambiguityNote}`
+      }
     }
   }
 
@@ -1249,6 +1317,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   ]
   const tools = toolsArr.length > 0 ? toolsArr : undefined
   let rawReply = ''
+  let finishReasonFinal = ''
   let paymentLinkUrl: string | null = null
   const MAX_TOOL_LOOPS = 5
 
@@ -1328,6 +1397,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           }
 
           console.log(`[tool_trace] conv=${conversation_id} tool=${toolCall.function.name} result=${toolResult.slice(0, 300)}`)
+          logToolTrace(sb, { organization_id, conversation_id, tool_name: toolCall.function.name, args, result: toolResult })
         } catch (e) {
           toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
           await logBotError(sb, {
@@ -1346,7 +1416,29 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       // continuar el loop para obtener la respuesta final
     } else {
       rawReply = message.content?.trim() ?? ''
+      finishReasonFinal = choice.finish_reason
       break
+    }
+  }
+
+  // Nunca se manda un texto roto ni se deja al cliente sin respuesta por
+  // esto — si quedó vacía o Open AI la cortó por el límite de tokens
+  // (finish_reason 'length'), se reintenta UNA vez con una llamada directa
+  // (sin herramientas, para no repetir el loop completo) antes de mandar algo.
+  if (!rawReply || finishReasonFinal === 'length') {
+    console.log(`[tool_trace] conv=${conversation_id} respuesta vacía o cortada (finish_reason=${finishReasonFinal || 'vacío'}) — reintentando una vez`)
+    try {
+      const retryMessages = [...messages, { role: 'system', content: 'Tu respuesta anterior quedó vacía o se cortó a la mitad. Respóndele de nuevo al cliente, completa y coherente, en una sola respuesta clara — no la dejes a medias.' }]
+      const retryRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o', response_format: { type: 'json_object' }, messages: retryMessages, max_tokens: 600, temperature: 0.7 }),
+      })
+      const retryData = await retryRes.json().catch(() => ({}))
+      const retryContent = retryData.choices?.[0]?.message?.content?.trim()
+      if (retryRes.ok && retryContent) rawReply = retryContent
+    } catch (e) {
+      console.error('Reintento de respuesta vacía/cortada falló:', e)
     }
   }
 
@@ -1444,10 +1536,8 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
-  // ── 14. Marcar como procesados todos los pendientes (actuales y atrasados) ─
-  await sb.from('messages')
-    .update({ processed_at: new Date().toISOString() })
-    .in('id', allPendingIds)
+  // (Los pendientes ya quedaron marcados como procesados en el paso 9, al
+  // reclamarlos — no hace falta un segundo UPDATE aquí.)
 
   // ── 15. Notificar al dueño si el lead quiere agendar (Avaxon) ─────────────
   if (notifyOwner) {
