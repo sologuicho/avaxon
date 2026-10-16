@@ -886,6 +886,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // o simplemente no se menciona que se va a revisar/checar nada.
   const noPromisesCtx = `\n\nNUNCA prometas que vas a hacer algo después ("voy a verificar y te digo", "dame un momento para checar", "en un rato te confirmo"). Si necesitas información de una herramienta (disponibilidad, precio, estado de una cita, etc.), úsala en este mismo turno y responde con el resultado real. Si no puedes resolverlo ahora, no menciones que lo vas a revisar — responde con lo que sí sabes, o activa notify_owner para que una persona del equipo lo atienda.`
 
+  // WhatsApp no renderiza markdown de links ni encabezados — si el bot escribe
+  // "[texto](url)" o "# título" se ven los corchetes/almohadillas tal cual.
+  const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks.`
+
   const systemPrompt = [
     botConfig.system_prompt,
     businessContext,
@@ -893,6 +897,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     catalogCtx,
     outOfHoursCtx,
     noPromisesCtx,
+    formatCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce ────────────────────────────────────────────────────────────
@@ -974,6 +979,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   ]
   const tools = toolsArr.length > 0 ? toolsArr : undefined
   let rawReply = ''
+  let paymentLinkUrl: string | null = null
   const MAX_TOOL_LOOPS = 5
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
@@ -1037,6 +1043,8 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone, conversation_id, orgProfile?.hours)
           } else if (toolCall.function.name === 'crear_link_pago') {
             toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY, conversation_id)
+            const urlMatch = toolResult.match(/https:\/\/avaxon\.lat\/p\/[a-zA-Z0-9-]+/)
+            if (urlMatch) paymentLinkUrl = urlMatch[0]
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
@@ -1073,6 +1081,8 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   const replyText = (aiParsed.text ?? rawReply)
+    // markdown de links "[texto](url)" -> solo la URL suelta (WhatsApp no lo renderiza)
+    .replace(/\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '$2')
     .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
     .replace(/~~([^~\n]+)~~/g, '~$1~')
     .replace(/^#{1,6}\s+/gm, '')
@@ -1087,8 +1097,26 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   // ── 13. Enviar respuesta por WhatsApp ──────────────────────────────────────
+  // Si esta respuesta trae el link de pago que se generó en este turno, se manda
+  // como botón de URL nativo de WhatsApp (cta_url) en vez de un link suelto en el texto.
   let waPayload: any
-  if (buttonLabels.length > 0) {
+  if (paymentLinkUrl && replyText.includes(paymentLinkUrl)) {
+    const bodyText = replyText.replace(paymentLinkUrl, '').replace(/[:\-–—]\s*$/, '').trim()
+      || 'Aquí tienes tu link de pago:'
+    waPayload = {
+      messaging_product: 'whatsapp',
+      to:   fromPhone,
+      type: 'interactive',
+      interactive: {
+        type: 'cta_url',
+        body: { text: bodyText },
+        action: {
+          name:       'cta_url',
+          parameters: { display_text: 'Pagar ahora', url: paymentLinkUrl },
+        },
+      },
+    }
+  } else if (buttonLabels.length > 0) {
     waPayload = {
       messaging_product: 'whatsapp',
       to:   fromPhone,
