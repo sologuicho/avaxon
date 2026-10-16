@@ -103,10 +103,25 @@ async function consultarDisponibilidad(
   fecha: string,
   calendarToken: string,
   timezone: string,
+  hours?: any,
 ): Promise<string> {
   try {
     const timeMin = fechaHoraToUtcIso(fecha, '00:00:00', timezone)
     const timeMax = fechaHoraToUtcIso(fecha, '23:59:59', timezone)
+
+    // Ventana real de atención para ESE día — para que el bot nunca ofrezca
+    // horas fuera de ella, ni siquiera cuando no hay citas registradas.
+    let windowLabel: string
+    if (hours && typeof hours === 'object') {
+      const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(new Date(timeMin)).toLowerCase().slice(0, 3)
+      const h = hours[dayKey]
+      windowLabel = (!h || h.closed || !h.open || !h.close)
+        ? `el negocio está CERRADO ese día (${fecha}) — no ofrezcas ningún horario ese día, propón otro día`
+        : `el horario de atención ese día (${fecha}) es de ${h.open} a ${h.close} — SOLO puedes ofrecer horas dentro de ese rango`
+    } else {
+      windowLabel = 'no hay horario de atención configurado — no inventes ni asumas uno, dile al cliente que un asesor le confirmará el horario'
+    }
+
     const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
       method: 'POST',
       headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
@@ -115,13 +130,13 @@ async function consultarDisponibilidad(
     if (!res.ok) return `No se pudo consultar el calendario (error ${res.status}).`
     const data = await res.json()
     const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
-    if (busy.length === 0) return `El día ${fecha} no tiene citas registradas. Puedes ofrecer cualquier horario dentro del horario de atención del negocio.`
+    if (busy.length === 0) return `El día ${fecha} no tiene citas registradas; ${windowLabel}.`
     // Google regresa start/end en UTC (sufijo Z) — convertir a la hora local
     // de la org, no cortar el string asumiendo que ya viene en esa zona.
     const toLocalHour = (iso: string) =>
       new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone })
     const slots = busy.map(b => `${toLocalHour(b.start)}–${toLocalHour(b.end)}`).join(', ')
-    return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}. Puedes agendar en cualquier hueco libre dentro del horario del negocio.`
+    return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}; ${windowLabel}. Ofrece un hueco libre dentro de ese rango.`
   } catch (e) {
     return `Error consultando el calendario: ${(e as Error).message}`
   }
@@ -373,11 +388,21 @@ async function crearLinkPago(
     .select('id, name, price, status')
     .eq('organization_id', organizationId)
     .neq('status', 'agotado')
-    .ilike('name', args.producto.trim())
+    .ilike('name', `%${args.producto.trim()}%`)
 
   const product = products?.[0]
   if (!product) {
-    return `"${args.producto}" no está en el catálogo (o está agotado) — NO inventes un precio ni crees un link. Dile al cliente que un asesor le confirmará el monto, y marca notify_owner en true.`
+    const { data: allProducts } = await sb
+      .from('products')
+      .select('name')
+      .eq('organization_id', organizationId)
+      .neq('status', 'agotado')
+      .order('name')
+    const catalogList = (allProducts ?? []).map(p => p.name).join(', ')
+
+    return catalogList
+      ? `"${args.producto}" no está en el catálogo (o está agotado) — NO inventes un precio ni crees un link. Dile al cliente que eso no está disponible, pero que sí puedes cobrarle: ${catalogList}. Si de verdad quiere algo que no está en esa lista, dile que un asesor le confirmará el monto y marca notify_owner en true.`
+      : `No hay ningún producto/servicio configurado todavía para cobro automático — NO inventes un precio ni crees un link. Dile al cliente que un asesor le confirmará el monto, y marca notify_owner en true.`
   }
 
   const cantidad = args.cantidad && args.cantidad > 0 ? args.cantidad : 1
@@ -844,7 +869,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
 
   const calendarCtx = calendarToken
-    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación — si propones o confirmas una hora fuera del horario de atención, la herramienta la va a rechazar. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.`
+    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación — si propones o confirmas una hora fuera del horario de atención, la herramienta la va a rechazar. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.${hasBusinessHours ? ' NUNCA propongas, menciones como posible ni aceptes un día u hora fuera del horario de atención del negocio (ver "Horarios de atención" arriba) en NINGÚN momento de la conversación, aunque el cliente la pida o insista — ni siquiera como opción tentativa. Si pide un horario fuera de eso, dile claramente que ese día/hora no está dentro del horario de atención y ofrécele una alternativa que sí lo esté.' : ''}`
     : ''
 
   // Respondes 24/7 sin importar el horario — esto solo le avisa al modelo
@@ -855,12 +880,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\nFUERA DE HORARIO AHORA: según el horario configurado, el negocio está cerrado en este momento (${todayLabel}, ${nowTimeLabel}). Sigue respondiendo y ayudando normalmente — nunca dejes de contestar por esto, y nunca le digas al cliente que "no puedes atenderlo" por el horario. Si decides activar notify_owner porque el cliente necesita que una persona del equipo le atienda, acláraselo en tu propio texto: que el negocio está fuera de horario ahorita y que una persona le escribe en cuanto abran — no prometas que alguien le contesta "en un momento".`
     : ''
 
+  // Regla global, siempre activa: nunca prometer una acción futura sin haberla
+  // hecho ya en este mismo turno (p. ej. "voy a verificar, un momento") —
+  // o se usa la herramienta correspondiente AHORA y se da el resultado real,
+  // o simplemente no se menciona que se va a revisar/checar nada.
+  const noPromisesCtx = `\n\nNUNCA prometas que vas a hacer algo después ("voy a verificar y te digo", "dame un momento para checar", "en un rato te confirmo"). Si necesitas información de una herramienta (disponibilidad, precio, estado de una cita, etc.), úsala en este mismo turno y responde con el resultado real. Si no puedes resolverlo ahora, no menciones que lo vas a revisar — responde con lo que sí sabes, o activa notify_owner para que una persona del equipo lo atienda.`
+
   const systemPrompt = [
     botConfig.system_prompt,
     businessContext,
     calendarCtx,
     catalogCtx,
     outOfHoursCtx,
+    noPromisesCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce ────────────────────────────────────────────────────────────
@@ -887,20 +919,33 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .order('created_at', { ascending: true })
 
   if (!pending || pending.length === 0) return
-  const batchIds     = pending.map(m => m.id)
-  const combinedText = pending.map(m => m.content).join('\n')
+
+  // Solo los mensajes recientes forman el turno actual; los atrasados (de hace rato)
+  // se marcan como procesados pero quedan en el historial como contexto normal —
+  // nunca se retoman como si fueran la solicitud actual, salvo que el cliente los repita.
+  const STALE_THRESHOLD_MS = 15 * 60 * 1000
+  const newestAt = new Date(pending[pending.length - 1].created_at).getTime()
+  let current = pending.filter(m => newestAt - new Date(m.created_at).getTime() <= STALE_THRESHOLD_MS)
+  if (current.length === 0) current = [pending[pending.length - 1]]
+
+  const batchIds      = current.map(m => m.id)
+  const allPendingIds  = pending.map(m => m.id)
+  const combinedText  = current.map(m => m.content).join('\n')
 
   // ── 10. Historial previo + turno actual ────────────────────────────────────
   const batchIdSet = new Set(batchIds)
   const { data: historyRaw } = await sb
     .from('messages')
-    .select('id, direction, content')
+    .select('id, direction, content, sent_by')
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: false })
-    .limit(14 + batchIds.length)
+    .limit(14 + allPendingIds.length)
 
   const chatHistory: any[] = (historyRaw ?? [])
     .filter(m => !batchIdSet.has(m.id))
+    // Los mensajes que mandó un humano del equipo (sent_by) no son del bot — nunca se le
+    // muestran como si fueran compromisos u ofrecimientos que él mismo hizo.
+    .filter(m => !(m.direction === 'outbound' && m.sent_by))
     .slice(0, 14)
     .reverse()
     .map(m => ({ role: m.direction === 'inbound' ? 'user' : 'assistant', content: m.content }))
@@ -978,7 +1023,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         try {
           const args = JSON.parse(toolCall.function.arguments)
           if (toolCall.function.name === 'consultar_disponibilidad') {
-            toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone)
+            toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone, orgProfile?.hours)
           } else if (toolCall.function.name === 'agendar_cita') {
             toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone, conversation_id, orgProfile?.hours)
             sendZapierEvent(sb, organization_id, 'appointment_booked', {
@@ -1084,10 +1129,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
-  // ── 14. Marcar como procesados los IDs de este batch ──────────────────────
+  // ── 14. Marcar como procesados todos los pendientes (actuales y atrasados) ─
   await sb.from('messages')
     .update({ processed_at: new Date().toISOString() })
-    .in('id', batchIds)
+    .in('id', allPendingIds)
 
   // ── 15. Notificar al dueño si el lead quiere agendar (Avaxon) ─────────────
   if (notifyOwner) {
