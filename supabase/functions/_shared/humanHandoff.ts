@@ -67,6 +67,17 @@ async function resolveOwnerEmail(
   return notifyEmail
 }
 
+// Fecha y hora legibles en la zona horaria del NEGOCIO (nunca UTC crudo) —
+// ej. "jueves 15 de octubre de 2026, 11:34 p. m.".
+async function resolveNowLabel(sb: ReturnType<typeof createClient>, organizationId: string): Promise<string> {
+  const { data: org } = await sb.from('organizations').select('timezone').eq('id', organizationId).maybeSingle()
+  const timezone = org?.timezone || 'America/Matamoros'
+  const now = new Date()
+  const dateLabel = now.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: timezone }).replace(',', '')
+  const timeLabel = now.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', timeZone: timezone })
+  return `${dateLabel}, ${timeLabel}`
+}
+
 // Avisa al dueño por correo SIN pausar al bot ni tocar needs_human — para
 // alertas informativas (p. ej. el cliente pidió algo que no está en el
 // catálogo) donde el bot debe seguir contestando normal. La pausa total
@@ -97,6 +108,9 @@ export async function notifyOwnerAlert(
       return
     }
 
+    const nowLabel = await resolveNowLabel(sb, organizationId)
+    const convUrl = `https://avaxon.lat/dashboard/?conv=${conversationId}`
+
     const html = `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;padding:32px 16px">
   <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
@@ -109,16 +123,17 @@ export async function notifyOwnerAlert(
         <tr><td style="padding:6px 0;color:#64748b;width:120px">Negocio</td><td style="padding:6px 0;font-weight:600">${escapeHtml(orgName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Contacto</td><td style="padding:6px 0;font-weight:600">${escapeHtml(contactName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">WhatsApp</td><td style="padding:6px 0">${escapeHtml(contactPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Fecha y hora</td><td style="padding:6px 0">${escapeHtml(nowLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Motivo</td><td style="padding:6px 0">${escapeHtml(reason)}</td></tr>
       </table>
       <div style="margin-top:24px">
-        <a href="https://avaxon.lat/dashboard/" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
+        <a href="${convUrl}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
       </div>
     </div>
   </div>
 </div>`.trim()
 
-    const result = await sendEmail({ to: notifyEmail, subject: title, html })
+    const result = await sendEmail({ to: notifyEmail, subject: `${title} — ${contactName}`, html })
     if (!result.ok) console.error('notifyOwnerAlert: Resend no pudo enviar:', result.error)
   } catch (e) {
     console.error('notifyOwnerAlert: error inesperado:', e)
@@ -148,6 +163,13 @@ async function notifyOwnerNeedsHuman(
     const notifyEmail = await resolveOwnerEmail(sb, organizationId)
 
     if (notifyEmail) {
+      const nowLabel = await resolveNowLabel(sb, organizationId)
+      const convUrl = `https://avaxon.lat/dashboard/?conv=${conversationId}`
+      // El asunto describe el evento real, no el mecanismo interno — "pidió
+      // hablar con alguien" (regex/botón) se distingue de que el AGENTE
+      // decidió escalar por su cuenta (notify_owner).
+      const subjectBase = /pidi[oó] hablar/i.test(reason) ? 'Cliente pide hablar con alguien' : 'Necesita atención humana'
+
       const html = `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;padding:32px 16px">
   <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
@@ -155,21 +177,22 @@ async function notifyOwnerNeedsHuman(
       <span style="color:#fff;font-size:17px;font-weight:700">Avaxon</span>
     </div>
     <div style="padding:24px">
-      <h2 style="margin:0 0 16px;font-size:18px;color:#0f172a">🔔 Un cliente necesita atención humana</h2>
+      <h2 style="margin:0 0 16px;font-size:18px;color:#0f172a">${escapeHtml(subjectBase)}</h2>
       <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#64748b;width:120px">Negocio</td><td style="padding:6px 0;font-weight:600">${escapeHtml(orgName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Contacto</td><td style="padding:6px 0;font-weight:600">${escapeHtml(contactName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">WhatsApp</td><td style="padding:6px 0">${escapeHtml(contactPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Fecha y hora</td><td style="padding:6px 0">${escapeHtml(nowLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Motivo</td><td style="padding:6px 0">${escapeHtml(reason)}</td></tr>
       </table>
       <div style="margin-top:24px">
-        <a href="https://avaxon.lat/dashboard/" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
+        <a href="${convUrl}" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
       </div>
     </div>
   </div>
 </div>`.trim()
 
-      const result = await sendEmail({ to: notifyEmail, subject: `🔔 ${contactName} necesita atención humana`, html })
+      const result = await sendEmail({ to: notifyEmail, subject: `${subjectBase} — ${contactName}`, html })
       if (!result.ok) console.error('notifyOwnerNeedsHuman: Resend no pudo enviar:', result.error)
     } else {
       console.warn(`notifyOwnerNeedsHuman: sin correo de notificaciones para org ${organizationId}`)

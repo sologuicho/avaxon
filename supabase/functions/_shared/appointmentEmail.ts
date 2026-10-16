@@ -5,7 +5,7 @@ export type AppointmentEvent = 'created' | 'rescheduled' | 'cancelled'
 export type AppointmentOrigin = 'whatsapp' | 'dashboard'
 
 const SUBJECT_PREFIX: Record<AppointmentEvent, string> = {
-  created: 'Nueva cita',
+  created: 'Nueva cita agendada',
   rescheduled: 'Cita reagendada',
   cancelled: 'Cita cancelada',
 }
@@ -25,6 +25,7 @@ function buildHtml(opts: {
   dateLabel: string
   timeLabel: string
   origin: AppointmentOrigin
+  convUrl: string
 }): string {
   const originLabel = opts.origin === 'whatsapp' ? 'WhatsApp (agendada por el bot)' : 'Dashboard'
   const title = SUBJECT_PREFIX[opts.event]
@@ -44,7 +45,7 @@ function buildHtml(opts: {
         <tr><td style="padding:6px 0;color:#64748b">Origen</td><td style="padding:6px 0">${escapeHtml(originLabel)}</td></tr>
       </table>
       <div style="margin-top:24px">
-        <a href="${DASHBOARD_URL}" style="display:inline-block;background:${ACCENT};color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver en el dashboard</a>
+        <a href="${opts.convUrl}" style="display:inline-block;background:${ACCENT};color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
       </div>
     </div>
   </div>
@@ -109,9 +110,25 @@ export async function notifyAppointment(
     const dt = new Date(appt.scheduled_at)
     const dateLabel = dt.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: timezone })
     const timeLabel = dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone })
+    // Fecha corta para el asunto (sin año, mes abreviado) — ej. "viernes 16 oct, 3:00 p. m."
+    const shortDateLabel = dt.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short', timeZone: timezone }).replace(/\./g, '')
 
-    const subject = `${SUBJECT_PREFIX[event]}: ${clientName} — ${dateLabel}, ${timeLabel}`
-    const html = buildHtml({ event, clientName, phone, service, dateLabel, timeLabel, origin })
+    // Deep link a la conversación del contacto (?conv=<id>), si existe una —
+    // si no, el botón cae al dashboard general.
+    let convUrl = DASHBOARD_URL
+    if (appt.contact_id) {
+      const { data: conv } = await sb
+        .from('conversations')
+        .select('id, status')
+        .eq('contact_id', appt.contact_id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      const chosen = conv?.find(c => c.status === 'open') ?? conv?.[0]
+      if (chosen?.id) convUrl = `${DASHBOARD_URL}?conv=${chosen.id}`
+    }
+
+    const subject = `${SUBJECT_PREFIX[event]}: ${shortDateLabel}, ${timeLabel}`
+    const html = buildHtml({ event, clientName, phone, service, dateLabel, timeLabel, origin, convUrl })
 
     const result = await sendEmail({ to: notifyEmail, subject, html })
     if (!result.ok) {
