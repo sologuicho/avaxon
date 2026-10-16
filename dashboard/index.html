@@ -11514,14 +11514,17 @@
 
     const pagos = data || [];
     pagosCache = pagos;
-    const paidTotal = pagos.filter(p => p.status === 'paid').reduce((s,p) => s + Number(p.amount), 0);
-    const pendingTotal = pagos.filter(p => p.status === 'pending').reduce((s,p) => s + Number(p.amount), 0);
-    $('pagos-kpi-paid').textContent = '$' + paidTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-    $('pagos-kpi-pending').textContent = '$' + pendingTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
-    $('pagos-kpi-total').textContent = pagos.length;
 
+    // Las 3 tarjetas de arriba respetan el mismo filtro que la lista — si se
+    // ocultan cancelados/expirados, tampoco cuentan en "Total de cobros".
     const hideClosed = $('pagos-hide-closed')?.checked ?? true;
     const visible = hideClosed ? pagos.filter(p => p.status !== 'cancelled' && p.status !== 'expired') : pagos;
+
+    const paidTotal = visible.filter(p => p.status === 'paid').reduce((s,p) => s + Number(p.amount), 0);
+    const pendingTotal = visible.filter(p => p.status === 'pending').reduce((s,p) => s + Number(p.amount), 0);
+    $('pagos-kpi-paid').textContent = '$' + paidTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    $('pagos-kpi-pending').textContent = '$' + pendingTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    $('pagos-kpi-total').textContent = visible.length;
 
     if (!pagos.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros todavía</div>'; return; }
     if (!visible.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros visibles (hay cancelados/expirados ocultos)</div>'; return; }
