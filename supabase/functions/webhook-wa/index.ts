@@ -1224,6 +1224,99 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const allPendingIds  = pending.map(m => m.id)
   const combinedText  = current.map(m => m.content).join('\n')
 
+  // ── 9b. Cocina: routing para el número de cocina (Home Food y orgs similares) ─
+  {
+    const invCfg = (botConfig as any)?.inventory_config as Record<string, any> | null ?? {}
+    const kitchenRaw = invCfg?.kitchen_phone as string | undefined
+
+    if (kitchenRaw) {
+      const kitchenNorm = kitchenRaw.replace(/^\+/, '')
+      const fromNorm    = fromPhone.replace(/^\+/, '')
+
+      if (fromNorm === kitchenNorm) {
+        const kitchenState = (invCfg?.kitchen_state as string) ?? 'idle'
+        const prevText     = (invCfg?.pending_kitchen_text as string) ?? ''
+
+        const isNoChanges    = /mismo\s*men[uú]|todo\s*bien/i.test(combinedText)
+        const isChangesBtn   = /hay\s*cambios/i.test(combinedText)
+        const isConfirm      = /^(si|sí|ya|listo|eso es todo|correcto|ok|okay|nada\s*m[aá]s|ya es todo|as[ií]\s*es|eso|todo|fin|nada)[\s!.]*$/i.test(combinedText.trim())
+
+        const sendKitchenReply = async (text: string) => {
+          const r = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: text } }),
+          })
+          const d = await r.json().catch(() => ({}))
+          await sb.from('messages').insert({
+            conversation_id, organization_id, direction: 'outbound', content: text,
+            media_type: 'text', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+          })
+        }
+
+        const applyInventoryUpdate = async (updateText: string) => {
+          const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+          const marker = '[Este apartado se actualiza automáticamente'
+          let newPrompt = botConfig!.system_prompt
+          const idx = newPrompt.indexOf(marker)
+          if (idx !== -1) {
+            const endIdx = newPrompt.indexOf(']', idx)
+            if (endIdx !== -1) {
+              newPrompt = newPrompt.slice(0, idx) + `Última actualización: ${today}.\n${updateText}` + newPrompt.slice(endIdx + 1)
+            }
+          }
+          await sb.from('bot_configs').update({
+            system_prompt: newPrompt,
+            inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, last_updated: new Date().toISOString(), last_update_text: updateText },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', organization_id)
+        }
+
+        if (kitchenState === 'idle') {
+          if (isNoChanges) {
+            await sb.from('bot_configs').update({
+              inventory_config: { ...invCfg, kitchen_state: 'idle', last_updated: new Date().toISOString(), last_update_text: 'Sin cambios' },
+              updated_at: new Date().toISOString(),
+            }).eq('organization_id', organization_id)
+            await sendKitchenReply('✅ ¡Perfecto! Sin cambios en el menú. ¡Buen día! 😊')
+          } else if (isChangesBtn) {
+            await sb.from('bot_configs').update({
+              inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: '' },
+              updated_at: new Date().toISOString(),
+            }).eq('organization_id', organization_id)
+            await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+          } else {
+            await sb.from('bot_configs').update({
+              inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
+              updated_at: new Date().toISOString(),
+            }).eq('organization_id', organization_id)
+            await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+          }
+        } else if (kitchenState === 'collecting') {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', organization_id)
+          await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+        } else if (kitchenState === 'awaiting_confirmation') {
+          if (isConfirm) {
+            await applyInventoryUpdate(prevText || combinedText)
+            await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
+          } else {
+            const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
+            await sb.from('bot_configs').update({
+              inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: accumulated },
+              updated_at: new Date().toISOString(),
+            }).eq('organization_id', organization_id)
+            await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+          }
+        }
+
+        return // no pasar por GPT-4o
+      }
+    }
+  }
+
   // ── 10. Historial previo + turno actual ────────────────────────────────────
   const batchIdSet = new Set(batchIds)
   const { data: historyRaw } = await sb
