@@ -1481,21 +1481,14 @@
 
     /* ── Small phones (≤480px) ── */
     @media (max-width: 480px) {
-      /* KPI grid: 1 column on very small phones */
-      .kpi-grid { grid-template-columns: 1fr; }
-      .kpi-value { font-size: 40px; }
-
       /* Topbar title fits without truncating */
       .topbar-h1 { font-size: 15px; }
-
-      /* Connection tabs: show icons only to save space */
-      .conn-tab span { display: none; }
 
       /* Chat bubbles: wider on small screens */
       .msg-bubble { max-width: 88%; }
 
-      /* Bot view info card goes after form naturally */
-      .bot-layout-grid > div:last-child { order: -1; }
+      /* conn-tabs: shrink padding on 320-390px phones */
+      .conn-tab { padding: 7px 8px; font-size: 11.5px; }
     }
   </style>
 </head>
