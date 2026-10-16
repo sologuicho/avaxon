@@ -58,7 +58,7 @@ const APPOINTMENT_TOOLS = [
         type: 'object',
         properties: {
           fecha:    { type: 'string', description: 'Fecha en formato YYYY-MM-DD' },
-          hora:     { type: 'string', description: 'Hora en formato HH:MM (24h), ej: 14:30' },
+          hora:     { type: 'string', description: 'Hora EXACTA con AM o PM explícito, formato "HH:MM AM/PM" (ej: "05:00 PM", "09:00 AM") — NUNCA uses formato 24h aquí. Si el cliente dijo la hora sin aclarar AM/PM y no puedes saberlo con certeza del historial (ej. porque tú mismo ya propusiste esa hora con AM o PM antes), PREGÚNTASELO antes de llamar esta función — nunca adivines ni asumas.' },
           servicio: { type: 'string', description: 'Nombre del servicio o motivo de la cita' },
           nombre:   { type: 'string', description: 'Nombre completo REAL del cliente, tal como él lo dijo en la conversación. Si no lo sabes, pregúntaselo ANTES de llamar esta herramienta — nunca pongas un nombre genérico como "Cliente" o "Sin nombre".' },
           duracion_minutos: { type: 'number', description: 'Duración de la cita en minutos, por defecto 60' },
@@ -77,7 +77,7 @@ const APPOINTMENT_TOOLS = [
         properties: {
           appointment_id: { type: 'string', description: 'ID de la cita a modificar' },
           nueva_fecha:    { type: 'string', description: 'Nueva fecha YYYY-MM-DD (solo para reagendar)' },
-          nueva_hora:     { type: 'string', description: 'Nueva hora HH:MM (solo para reagendar)' },
+          nueva_hora:     { type: 'string', description: 'Nueva hora con AM o PM explícito, formato "HH:MM AM/PM" (ej: "03:00 PM") — solo para reagendar. Nunca uses formato 24h ni adivines AM/PM; si hay duda, pregúntale al cliente primero.' },
         },
         required: ['appointment_id'],
       },
@@ -156,6 +156,7 @@ async function consultarDisponibilidad(
 // calendario. El resultado se inyecta como dato obligatorio más abajo.
 async function extractAppointmentSlot(
   combinedText: string,
+  lastBotMessage: string,
   nowLabel: string,
   timezone: string,
   openaiKey: string,
@@ -172,7 +173,7 @@ async function extractAppointmentSlot(
         messages: [
           {
             role: 'system',
-            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha. Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null}. "hora" en formato 24h; si menciona el día pero no una hora concreta, deja "hora": null. Si no hay fecha concreta, "solicita_horario": false y "fecha": null.`,
+            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo, confirmando o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha.${lastBotMessage ? ` Si el mensaje del cliente es solo una CONFIRMACIÓN sin fecha/hora propia (ej. "sí", "confirmo", "agenda", o tocó un botón como "Agendar cita"), usa la fecha/hora que el bot ya había propuesto en su último mensaje: "${lastBotMessage.replace(/"/g, "'")}".` : ''} Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null}. "hora" en formato 24h; si menciona o confirma el día pero no se puede determinar una hora concreta, deja "hora": null. Si no hay fecha concreta (ni propia ni confirmando la del bot), "solicita_horario": false y "fecha": null.`,
           },
           { role: 'user', content: combinedText },
         ],
@@ -189,27 +190,99 @@ async function extractAppointmentSlot(
   }
 }
 
+// ── Helpers de hora: 12h↔24h y aritmética en minutos-del-día ────────────────
+// Todo esto existe para que la conversión AM/PM nunca dependa de que el
+// modelo la haga bien sola — un "5:00 PM" mal convertido a "05:00" fue
+// justo la causa de que el bot dijera "las 5pm están fuera de horario".
+function minutesOfDay(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + (m || 0)
+}
+
+function minutesTo24h(mins: number): string {
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function to12hLabel(hhmm24: string): string {
+  const [h, m] = hhmm24.split(':').map(Number)
+  const period = h < 12 ? 'a.m.' : 'p.m.'
+  let h12 = h % 12
+  if (h12 === 0) h12 = 12
+  return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
+// "00:00" de cierre = fin del día (24:00) — mismo criterio que isWithinBusinessHours.
+function closeMinutesFor(h: { close: string }): number {
+  return h.close === '00:00' ? 24 * 60 : minutesOfDay(h.close)
+}
+
+function toMinutesOfDayInZone(iso: string, timezone: string): number {
+  const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(iso))
+  return minutesOfDay(hhmm)
+}
+
+// Convierte "5:00 PM" / "05:00 pm" / "12:30 AM" → "17:00" / "17:00" / "00:30".
+// Exige AM/PM explícito a propósito — null si no lo trae, para que quien
+// llame esto rechace y le pregunte al cliente en vez de adivinar.
+function parse12hTo24h(raw: string): string | null {
+  const m = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((raw || '').trim())
+  if (!m) return null
+  let h = parseInt(m[1], 10)
+  const mm = m[2]
+  if (h < 1 || h > 12 || Number(mm) > 59) return null
+  const mer = m[3].toUpperCase()
+  h = mer === 'AM' ? (h === 12 ? 0 : h) : (h === 12 ? 12 : h + 12)
+  return `${String(h).padStart(2, '0')}:${mm}`
+}
+
+// De los huecos libres de ese día, los `count` más cercanos a targetMin —
+// para que las "alternativas" que ofrece el bot sean reales y cercanas a lo
+// que pidió el cliente, no horarios fijos inventados o copiados de un ejemplo.
+function findNearbySlots(
+  targetMin: number,
+  openMin: number,
+  closeMin: number,
+  busy: { startMin: number; endMin: number }[],
+  durationMin: number,
+  count: number,
+): number[] {
+  const candidates: number[] = []
+  for (let m = openMin; m + durationMin <= closeMin; m += 30) {
+    const overlap = busy.some(b => m < b.endMin && (m + durationMin) > b.startMin)
+    if (!overlap) candidates.push(m)
+  }
+  candidates.sort((a, b) => Math.abs(a - targetMin) - Math.abs(b - targetMin))
+  return candidates.slice(0, count).sort((a, b) => a - b)
+}
+
 // Decide en código (no en el modelo) si una fecha+hora concreta está
 // disponible: dentro de horario de atención Y sin choque en Google Calendar.
+// `ok` distingue claramente "sí se puede" de "no" para que agendarCita /
+// cancelarOReagendarCita puedan usar esta MISMA función como su única
+// validación, en vez de repetir la lógica cada una por su lado.
 async function checkRequestedSlot(
   fecha: string,
-  hora: string,
+  hora: string, // "HH:MM" 24h, ya validada
   calendarToken: string,
   timezone: string,
   hours: any,
-): Promise<string> {
+): Promise<{ ok: boolean; message: string }> {
+  const DURATION = 60
   const atDate = new Date(fechaHoraToUtcIso(fecha, hora + ':00', timezone))
   const within = isWithinBusinessHours(hours, timezone, atDate)
+  const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(atDate).toLowerCase().slice(0, 3)
+  const h = hours?.[dayKey]
+  const label = to12hLabel(hora)
+  const targetMin = minutesOfDay(hora)
 
-  if (within === false) {
-    const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(atDate).toLowerCase().slice(0, 3)
-    const h = hours?.[dayKey]
-    const windowTxt = (!h || h.closed || !h.open || !h.close)
-      ? 'el negocio no atiende ese día'
-      : `el horario de atención ese día es de ${h.open} a ${h.close}`
-    return `${hora} del ${fecha}: FUERA DE HORARIO (${windowTxt}).`
+  if (within === false && (!h || h.closed || !h.open || !h.close)) {
+    return { ok: false, message: `${label} del ${fecha}: FUERA DE HORARIO — el negocio no atiende ese día. Propónle al cliente otro día de atención.` }
   }
 
+  let busyMin: { startMin: number; endMin: number }[] = []
+  let fetchError: string | null = null
   try {
     const timeMin = fechaHoraToUtcIso(fecha, '00:00:00', timezone)
     const timeMax = fechaHoraToUtcIso(fecha, '23:59:59', timezone)
@@ -218,17 +291,51 @@ async function checkRequestedSlot(
       headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ timeMin, timeMax, timeZone: timezone, items: [{ id: 'primary' }] }),
     })
-    if (!res.ok) return `${hora} del ${fecha}: no se pudo verificar el calendario (error ${res.status}) — de todos modos está dentro del horario de atención.`
-    const data = await res.json()
-    const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
-    const slotStart = atDate.getTime()
-    const slotEnd = slotStart + 60 * 60 * 1000
-    const overlap = busy.find(b => new Date(b.start).getTime() < slotEnd && new Date(b.end).getTime() > slotStart)
-    if (overlap) return `${hora} del ${fecha}: OCUPADO — ya hay algo agendado en ese horario, propón otra hora.`
-    return `${hora} del ${fecha}: DISPONIBLE (dentro de horario y sin citas registradas en ese momento).`
+    if (!res.ok) {
+      fetchError = `error ${res.status}`
+    } else {
+      const data = await res.json()
+      const busyRaw: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
+      busyMin = busyRaw.map(b => ({ startMin: toMinutesOfDayInZone(b.start, timezone), endMin: toMinutesOfDayInZone(b.end, timezone) }))
+    }
   } catch (e) {
-    return `${hora} del ${fecha}: no se pudo verificar el calendario (${(e as Error).message}) — de todos modos está dentro del horario de atención.`
+    fetchError = (e as Error).message
   }
+
+  if (within === false) {
+    const openMin = minutesOfDay(h.open)
+    const closeMin = closeMinutesFor(h)
+    const base = `${label} del ${fecha}: FUERA DE HORARIO (el horario de atención ese día es de ${h.open} a ${h.close}).`
+    if (fetchError) return { ok: false, message: `${base} No se pudo consultar el calendario para sugerir horas (${fetchError}) — propónle al cliente un horario dentro de ese rango.` }
+    const alt = findNearbySlots(targetMin, openMin, closeMin, busyMin, DURATION, 3).map(m => to12hLabel(minutesTo24h(m)))
+    return {
+      ok: false,
+      message: alt.length
+        ? `${base} Horarios disponibles más cercanos a lo que pidió ese día: ${alt.join(', ')}. Ofrécele EXACTAMENTE esas horas, no inventes otras.`
+        : `${base} No hay huecos disponibles ese día — propónle otro día de atención.`,
+    }
+  }
+
+  if (fetchError) {
+    return { ok: true, message: `${label} del ${fecha}: no se pudo verificar el calendario (${fetchError}) — de todos modos está dentro del horario de atención.` }
+  }
+
+  const overlap = busyMin.some(b => targetMin < b.endMin && (targetMin + DURATION) > b.startMin)
+  if (overlap) {
+    // h puede no existir si el negocio no tiene horario configurado (within
+    // === null, no false) — en ese caso no hay rango del que sugerir cercanas.
+    const alt = (h && h.open && h.close)
+      ? findNearbySlots(targetMin, minutesOfDay(h.open), closeMinutesFor(h), busyMin, DURATION, 3).map(m => to12hLabel(minutesTo24h(m)))
+      : []
+    return {
+      ok: false,
+      message: alt.length
+        ? `${label} del ${fecha}: OCUPADO — ya hay algo agendado en ese horario. Horarios libres más cercanos: ${alt.join(', ')}. Ofrécele EXACTAMENTE esas horas, no inventes otras.`
+        : `${label} del ${fecha}: OCUPADO — ya hay algo agendado en ese horario, propón otra hora.`,
+    }
+  }
+
+  return { ok: true, message: `${label} del ${fecha}: DISPONIBLE (dentro de horario y sin citas registradas en ese momento).` }
 }
 
 // ── Herramienta: agendar cita ────────────────────────────────────────────────
@@ -242,15 +349,24 @@ async function agendarCita(
   conversationId: string,
   hours: any,
 ): Promise<string> {
+  // La hora tiene que traer AM/PM explícito — nunca se adivina. Esto es lo
+  // que de verdad causaba el bug "5pm fuera de horario": el modelo convertía
+  // "5:00 p.m." a 24h él mismo y a veces lo mandaba como "05:00".
+  const hora24 = parse12hTo24h(args.hora)
+  if (!hora24) {
+    return `La hora "${args.hora}" no viene en un formato claro con AM o PM. Pregúntale al cliente la hora exacta, aclarando si es de la mañana o de la tarde/noche, antes de agendar — nunca asumas ni adivines.`
+  }
   const duracion = args.duracion_minutos || 60
-  const scheduledAt = fechaHoraToUtcIso(args.fecha, args.hora, timezone)
+  const scheduledAt = fechaHoraToUtcIso(args.fecha, hora24, timezone)
   const endAt = new Date(new Date(scheduledAt).getTime() + duracion * 60000).toISOString()
 
-  // El cliente puede escribir a cualquier hora, pero la CITA tiene que
-  // caer dentro del horario de atención del negocio — no basta con que
-  // el system_prompt se lo pida a GPT, aquí se rechaza de verdad.
-  if (isWithinBusinessHours(hours, timezone, new Date(scheduledAt)) === false) {
-    return `No se puede agendar el ${args.fecha} a las ${args.hora} porque está fuera del horario de atención del negocio. Consulta disponibilidad y propónle al cliente un horario dentro del horario configurado.`
+  // El cliente puede escribir a cualquier hora, pero la CITA tiene que caer
+  // dentro del horario de atención Y estar libre en Google Calendar — misma
+  // función que usa la verificación anticipada (ver checkRequestedSlot), así
+  // nunca hay dos lógicas de validación que puedan desincronizarse.
+  const slotCheck = await checkRequestedSlot(args.fecha, hora24, calendarToken, timezone, hours)
+  if (!slotCheck.ok) {
+    return `No se puede agendar: ${slotCheck.message} Usa EXACTAMENTE esa hora (${to12hLabel(hora24)}) al explicarle al cliente por qué no se pudo — no la reinterpretes ni la cambies por otra.`
   }
 
   // El nombre REAL del contacto siempre manda sobre lo que haya puesto el
@@ -361,7 +477,7 @@ async function agendarCita(
     })
   }
 
-  return `Cita agendada correctamente. ID: ${appt.id}. Fecha: ${args.fecha} a las ${args.hora}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
+  return `Cita agendada correctamente. ID: ${appt.id}. Fecha: ${args.fecha} a las ${to12hLabel(hora24)}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
 }
 
 // ── Herramienta: cancelar o reagendar ────────────────────────────────────────
@@ -387,11 +503,16 @@ async function cancelarOReagendarCita(
   const isReschedule = !!(args.nueva_fecha && args.nueva_hora)
 
   if (isReschedule) {
-    const newScheduledAt = fechaHoraToUtcIso(args.nueva_fecha!, args.nueva_hora!, timezone)
-    // Misma regla que al agendar por primera vez: la nueva hora tiene que
-    // caer dentro del horario de atención, sin importar a qué hora se pida.
-    if (isWithinBusinessHours(hours, timezone, new Date(newScheduledAt)) === false) {
-      return `No se puede reagendar al ${args.nueva_fecha} a las ${args.nueva_hora} porque está fuera del horario de atención del negocio. Consulta disponibilidad y propónle al cliente un horario dentro del horario configurado.`
+    const nuevaHora24 = parse12hTo24h(args.nueva_hora!)
+    if (!nuevaHora24) {
+      return `La hora "${args.nueva_hora}" no viene en un formato claro con AM o PM. Pregúntale al cliente la hora exacta, aclarando si es de la mañana o de la tarde/noche, antes de reagendar — nunca asumas ni adivines.`
+    }
+    const newScheduledAt = fechaHoraToUtcIso(args.nueva_fecha!, nuevaHora24, timezone)
+    // Misma regla y misma función que al agendar por primera vez: la nueva
+    // hora tiene que caer dentro del horario de atención y estar libre.
+    const slotCheck = await checkRequestedSlot(args.nueva_fecha!, nuevaHora24, calendarToken, timezone, hours)
+    if (!slotCheck.ok) {
+      return `No se puede reagendar: ${slotCheck.message} Usa EXACTAMENTE esa hora (${to12hLabel(nuevaHora24)}) al explicarle al cliente — no la reinterpretes ni la cambies por otra.`
     }
     // Reagendar por el bot también deja la cita "pending" — requiere
     // reconfirmación del negocio, igual que al agendarla por primera vez.
@@ -432,7 +553,7 @@ async function cancelarOReagendarCita(
       }
     }
     await notifyAppointment(sb, appt.id, 'rescheduled', 'whatsapp')
-    return `Cita reagendada para el ${args.nueva_fecha} a las ${args.nueva_hora}.`
+    return `Cita reagendada para el ${args.nueva_fecha} a las ${to12hLabel(nuevaHora24)}.`
   } else {
     await sb.from('appointments')
       .update({ status: 'cancelled', updated_at: new Date().toISOString() })
@@ -992,7 +1113,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
 
   const calendarCtx = calendarToken
-    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cada vez que el cliente pida o pregunte por una cita, vuelve a evaluar la disponibilidad y el horario DESDE CERO en este mismo turno (usa consultar_disponibilidad y compara contra "Horarios de atención" de arriba) — NUNCA copies ni repitas una respuesta de disponibilidad u horario que diste antes en esta conversación sin volver a verificarla: el horario pudo haber cambiado, y repetir un rechazo viejo sin revisarlo puede contradecir el horario actual. Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación — si propones o confirmas una hora fuera del horario de atención, la herramienta la va a rechazar. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.${hasBusinessHours ? ' NUNCA propongas, menciones como posible ni aceptes un día u hora fuera del horario de atención del negocio (ver "Horarios de atención" arriba) en NINGÚN momento de la conversación, aunque el cliente la pida o insista — ni siquiera como opción tentativa. Si pide un horario fuera de eso: 1) Dile explícitamente los días y horas reales de atención (ej. "atendemos martes a jueves de 9:00 a 12:00", agrupando días consecutivos con el mismo horario — usa la lista de "Horarios de atención" de arriba). 2) Usa consultar_disponibilidad en ESTE MISMO turno para ese día u otro día de atención próximo, y ofrécele 2 o 3 horarios concretos ya disponibles (ej. "tengo libre el martes a las 9:00, 10:00 o 11:00"). NUNCA respondas solo con una pregunta abierta como "¿te gustaría otro horario?" sin antes decir el horario real y ofrecer opciones concretas.' : ''}`
+    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cada vez que el cliente pida o pregunte por una cita, vuelve a evaluar la disponibilidad y el horario DESDE CERO en este mismo turno (usa consultar_disponibilidad y compara contra "Horarios de atención" de arriba) — NUNCA copies ni repitas una respuesta de disponibilidad u horario que diste antes en esta conversación sin volver a verificarla: el horario pudo haber cambiado, y repetir un rechazo viejo sin revisarlo puede contradecir el horario actual. Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación — si propones o confirmas una hora fuera del horario de atención, la herramienta la va a rechazar. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.${hasBusinessHours ? ' NUNCA propongas, menciones como posible ni aceptes un día u hora fuera del horario de atención del negocio (ver "Horarios de atención" arriba) en NINGÚN momento de la conversación, aunque el cliente la pida o insista — ni siquiera como opción tentativa. Si pide un horario fuera de eso: 1) Dile explícitamente los días y horas reales de atención (ej. "atendemos martes a jueves de 9:00 a 12:00", agrupando días consecutivos con el mismo horario — usa la lista de "Horarios de atención" de arriba). 2) Usa consultar_disponibilidad en ESTE MISMO turno para ese día u otro día de atención próximo, y ofrécele 2 o 3 horarios REALES que la herramienta devuelva — los más cercanos a la hora que pidió el cliente, nunca horas fijas ni copiadas de un ejemplo. NUNCA respondas solo con una pregunta abierta como "¿te gustaría otro horario?" sin antes decir el horario real y ofrecer opciones concretas.' : ''}`
     : ''
 
   // Respondes 24/7 sin importar el horario — esto solo le avisa al modelo
@@ -1082,6 +1203,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .reverse()
     .map(m => ({ role: m.direction === 'inbound' ? 'user' : 'assistant', content: m.content }))
 
+  // Último mensaje del bot ANTES del turno actual — para resolver cuando el
+  // cliente solo confirma (ej. toca el botón "Agendar cita") sin repetir la
+  // fecha/hora: el bot ya la había propuesto, así que el código la retoma de
+  // ahí en vez de dejar que el modelo la reconstruya (y arriesgue un AM/PM).
+  const lastBotMessage = [...chatHistory].reverse().find(m => m.role === 'assistant' && typeof m.content === 'string')?.content || ''
+
   if (lastImageDataUrl) {
     chatHistory.push({
       role: 'user',
@@ -1096,15 +1223,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   // ── 10b. Disponibilidad forzada en código ──────────────────────────────────
   // No depende de que el modelo decida llamar la herramienta: si el mensaje
-  // pide una fecha+hora concreta, el CÓDIGO extrae esa fecha/hora y decide
-  // disponibilidad (horario + Google Calendar) ANTES de generar la respuesta,
-  // y se la pasa al modelo como dato obligatorio que no puede contradecir.
+  // pide una fecha+hora concreta (o solo confirma una que el bot ya propuso),
+  // el CÓDIGO extrae esa fecha/hora y decide disponibilidad (horario +
+  // Google Calendar) ANTES de generar la respuesta, y se la pasa al modelo
+  // como dato obligatorio que no puede contradecir.
   let forcedAvailabilityCtx = ''
   if (calendarToken) {
-    const slot = await extractAppointmentSlot(combinedText, `${todayLabel}, ${nowTimeLabel}`, timezone, OPENAI_KEY)
+    const slot = await extractAppointmentSlot(combinedText, lastBotMessage, `${todayLabel}, ${nowTimeLabel}`, timezone, OPENAI_KEY)
     if (slot?.fecha && slot.hora) {
       const result = await checkRequestedSlot(slot.fecha, slot.hora, calendarToken, timezone, orgProfile?.hours)
-      forcedAvailabilityCtx = `\n\nDISPONIBILIDAD YA VERIFICADA PARA LO QUE PIDE EL CLIENTE EN ESTE MENSAJE (dato real del calendario y el horario, obtenido en este mismo turno — NO lo contradigas, NO copies una conclusión distinta de respuestas anteriores, básate solo en esto): ${result}`
+      forcedAvailabilityCtx = `\n\nDISPONIBILIDAD YA VERIFICADA PARA LO QUE PIDE EL CLIENTE EN ESTE MENSAJE (dato real del calendario y el horario, obtenido en este mismo turno — NO lo contradigas, NO copies una conclusión distinta de respuestas anteriores, básate solo en esto): ${result.message}`
     }
   }
 
@@ -1170,6 +1298,14 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         let toolResult: string
         try {
           const args = JSON.parse(toolCall.function.arguments)
+
+          // Traza de cada llamada a herramienta (sin nombre del cliente) —
+          // para poder depurar casos como "dijo que 5pm estaba fuera de
+          // horario" viendo exactamente qué argumentos mandó el modelo.
+          const argsForLog = { ...args }
+          if ('nombre' in argsForLog) argsForLog.nombre = argsForLog.nombre ? '[provisto]' : '[vacío]'
+          console.log(`[tool_trace] conv=${conversation_id} tool=${toolCall.function.name} args=${JSON.stringify(argsForLog)}`)
+
           if (toolCall.function.name === 'consultar_disponibilidad') {
             toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone, orgProfile?.hours)
           } else if (toolCall.function.name === 'agendar_cita') {
@@ -1190,6 +1326,8 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
+
+          console.log(`[tool_trace] conv=${conversation_id} tool=${toolCall.function.name} result=${toolResult.slice(0, 300)}`)
         } catch (e) {
           toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
           await logBotError(sb, {
