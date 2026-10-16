@@ -1114,8 +1114,15 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // como botón de URL nativo de WhatsApp (cta_url) en vez de un link suelto en el texto.
   let waPayload: any
   if (paymentLinkUrl && replyText.includes(paymentLinkUrl)) {
-    const bodyText = replyText.replace(paymentLinkUrl, '').replace(/[:\-–—]\s*$/, '').trim()
-      || 'Aquí tienes tu link de pago:'
+    // Se reemplaza la URL por una frase (no se borra a secas) para no dejar
+    // huecos como "($300.00 MXN): . Si necesitas..." cuando hay texto después
+    // del link — y si queda un ":" o "-" pegado justo antes, se cambia a ".".
+    const bodyText = replyText
+      .replace(paymentLinkUrl, 'Toca el botón para pagar')
+      .replace(/[:\-–—]\s*(Toca el botón para pagar)/, '. $1')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      || 'Toca el botón para pagar.'
     waPayload = {
       messaging_product: 'whatsapp',
       to:   fromPhone,
