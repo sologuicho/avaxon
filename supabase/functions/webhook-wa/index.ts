@@ -6,7 +6,7 @@ import { getGoogleAccessToken } from '../_shared/google.ts'
 import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
-import { flagNeedsHuman } from '../_shared/humanHandoff.ts'
+import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
 import { logBotError } from '../_shared/botErrorLog.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
@@ -400,9 +400,19 @@ async function crearLinkPago(
       .order('name')
     const catalogList = (allProducts ?? []).map(p => p.name).join(', ')
 
+    // Avisa al dueño por correo directamente (no por notify_owner) — esto NO
+    // debe pausar al bot ni marcar la conversación como "necesita humano".
+    // El bot sigue contestando normal; la pausa total es solo para cuando el
+    // cliente pide explícitamente hablar con una persona.
+    notifyOwnerAlert(
+      sb, organizationId, conversationId,
+      '⚠️ Un cliente pidió cobrar algo fuera del catálogo',
+      `El cliente pidió pagar "${args.producto}", que no está en el catálogo (Inventario).`,
+    )
+
     return catalogList
-      ? `"${args.producto}" no está en el catálogo (o está agotado) — NO inventes un precio ni crees un link. Dile al cliente que eso no está disponible, pero que sí puedes cobrarle: ${catalogList}. Si de verdad quiere algo que no está en esa lista, dile que un asesor le confirmará el monto y marca notify_owner en true.`
-      : `No hay ningún producto/servicio configurado todavía para cobro automático — NO inventes un precio ni crees un link. Dile al cliente que un asesor le confirmará el monto, y marca notify_owner en true.`
+      ? `"${args.producto}" no está en el catálogo (o está agotado) — NO inventes un precio ni crees un link. Dile al cliente que eso no está disponible, pero que sí puedes cobrarle: ${catalogList}. Si de verdad quiere algo que no está en esa lista, dile que un asesor le confirmará el monto. NO actives notify_owner por esto — ya se le avisó al dueño automáticamente y esto no debe pausar la conversación.`
+      : `No hay ningún producto/servicio configurado todavía para cobro automático — NO inventes un precio ni crees un link. Dile al cliente que un asesor le confirmará el monto. NO actives notify_owner por esto — ya se le avisó al dueño automáticamente y esto no debe pausar la conversación.`
   }
 
   const cantidad = args.cantidad && args.cantidad > 0 ? args.cantidad : 1
@@ -852,9 +862,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
     if (products && products.length > 0) {
       const lines = products.map(p => `- ${p.name}: $${Number(p.price).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN`)
-      catalogCtx = `\n\nCATÁLOGO (Inventario — estos son los ÚNICOS productos/servicios para los que puedes generar un link de pago, con el precio exacto de aquí):\n${lines.join('\n')}\n\nCuando el cliente quiera pagar algo de esta lista, usa la herramienta crear_link_pago con el nombre EXACTO del producto. Si pide algo que NO está en esta lista, o un monto libre/personalizado/"lo que sea", NUNCA inventes un precio ni uses la herramienta — dile que un asesor le confirmará el monto y activa notify_owner en true.`
+      catalogCtx = `\n\nCATÁLOGO (Inventario — estos son los ÚNICOS productos/servicios para los que puedes generar un link de pago, con el precio exacto de aquí):\n${lines.join('\n')}\n\nCuando el cliente quiera pagar algo de esta lista, usa la herramienta crear_link_pago con el nombre EXACTO del producto. Si pide algo que NO está en esta lista, o un monto libre/personalizado/"lo que sea", NUNCA inventes un precio ni uses la herramienta — dile qué sí puedes cobrar de la lista, y que si de verdad quiere algo fuera de catálogo un asesor le confirmará el monto. NO actives notify_owner por esto — un cobro fuera de catálogo no pausa la conversación, solo se avisa al dueño automáticamente; sigue contestando normal.`
     } else {
-      catalogCtx = `\n\nSin catálogo configurado: no tienes ningún producto/servicio con precio para generar links de pago. Si el cliente pide pagar algo, dile que un asesor le confirmará el monto y activa notify_owner en true. Nunca inventes un precio ni generes un link.`
+      catalogCtx = `\n\nSin catálogo configurado: no tienes ningún producto/servicio con precio para generar links de pago. Si el cliente pide pagar algo, dile que un asesor le confirmará el monto. NO actives notify_owner por esto — no pausa la conversación, solo se avisa al dueño automáticamente; sigue contestando normal. Nunca inventes un precio ni generes un link.`
     }
   }
 

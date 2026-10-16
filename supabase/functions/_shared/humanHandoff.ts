@@ -40,6 +40,91 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 }
 
+async function resolveOwnerEmail(
+  sb: ReturnType<typeof createClient>,
+  organizationId: string,
+): Promise<string | null> {
+  const { data: profile } = await sb
+    .from('organization_profile')
+    .select('notification_email')
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+  let notifyEmail: string | null = profile?.notification_email || null
+
+  if (!notifyEmail) {
+    const { data: owner } = await sb
+      .from('profiles')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('role', 'owner')
+      .limit(1)
+      .maybeSingle()
+    if (owner?.id) {
+      const { data: ownerUser } = await sb.auth.admin.getUserById(owner.id)
+      notifyEmail = ownerUser?.user?.email || null
+    }
+  }
+  return notifyEmail
+}
+
+// Avisa al dueño por correo SIN pausar al bot ni tocar needs_human — para
+// alertas informativas (p. ej. el cliente pidió algo que no está en el
+// catálogo) donde el bot debe seguir contestando normal. La pausa total
+// (flagNeedsHuman, abajo) es solo para cuando el cliente pide explícitamente
+// hablar con una persona o toca el botón "Hablar con alguien".
+export async function notifyOwnerAlert(
+  sb: ReturnType<typeof createClient>,
+  organizationId: string,
+  conversationId: string,
+  title: string,
+  reason: string,
+): Promise<void> {
+  try {
+    const { data: conv } = await sb
+      .from('conversations')
+      .select('contacts(name, phone)')
+      .eq('id', conversationId)
+      .maybeSingle()
+    const contactName  = (conv?.contacts as any)?.name || (conv?.contacts as any)?.phone || 'Un cliente'
+    const contactPhone = (conv?.contacts as any)?.phone || ''
+
+    const { data: org } = await sb.from('organizations').select('name').eq('id', organizationId).maybeSingle()
+    const orgName = org?.name || 'tu negocio'
+
+    const notifyEmail = await resolveOwnerEmail(sb, organizationId)
+    if (!notifyEmail) {
+      console.warn(`notifyOwnerAlert: sin correo de notificaciones para org ${organizationId}`)
+      return
+    }
+
+    const html = `
+<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;padding:32px 16px">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
+    <div style="background:#f97316;padding:20px 24px">
+      <span style="color:#fff;font-size:17px;font-weight:700">Avaxon</span>
+    </div>
+    <div style="padding:24px">
+      <h2 style="margin:0 0 16px;font-size:18px;color:#0f172a">${escapeHtml(title)}</h2>
+      <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse">
+        <tr><td style="padding:6px 0;color:#64748b;width:120px">Negocio</td><td style="padding:6px 0;font-weight:600">${escapeHtml(orgName)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Contacto</td><td style="padding:6px 0;font-weight:600">${escapeHtml(contactName)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">WhatsApp</td><td style="padding:6px 0">${escapeHtml(contactPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">Motivo</td><td style="padding:6px 0">${escapeHtml(reason)}</td></tr>
+      </table>
+      <div style="margin-top:24px">
+        <a href="https://avaxon.lat/dashboard/" style="display:inline-block;background:#f97316;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:8px">Ver conversación</a>
+      </div>
+    </div>
+  </div>
+</div>`.trim()
+
+    const result = await sendEmail({ to: notifyEmail, subject: title, html })
+    if (!result.ok) console.error('notifyOwnerAlert: Resend no pudo enviar:', result.error)
+  } catch (e) {
+    console.error('notifyOwnerAlert: error inesperado:', e)
+  }
+}
+
 async function notifyOwnerNeedsHuman(
   sb: ReturnType<typeof createClient>,
   organizationId: string,
@@ -60,26 +145,7 @@ async function notifyOwnerNeedsHuman(
   // ── Correo (mismo criterio que notifyAppointment: notification_email de
   // organization_profile, si no, el correo del profile con role='owner') ──
   try {
-    const { data: profile } = await sb
-      .from('organization_profile')
-      .select('notification_email')
-      .eq('organization_id', organizationId)
-      .maybeSingle()
-    let notifyEmail: string | null = profile?.notification_email || null
-
-    if (!notifyEmail) {
-      const { data: owner } = await sb
-        .from('profiles')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .eq('role', 'owner')
-        .limit(1)
-        .maybeSingle()
-      if (owner?.id) {
-        const { data: ownerUser } = await sb.auth.admin.getUserById(owner.id)
-        notifyEmail = ownerUser?.user?.email || null
-      }
-    }
+    const notifyEmail = await resolveOwnerEmail(sb, organizationId)
 
     if (notifyEmail) {
       const html = `
