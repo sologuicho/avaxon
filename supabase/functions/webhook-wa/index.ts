@@ -28,8 +28,6 @@ const DEBOUNCE_MS = 5000
 // independiente de si el system_prompt de la org sabe usar notify_owner.
 const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
 
-const OUT_OF_HOURS_TEXT = 'Gracias por escribirnos — ahorita estamos fuera de nuestro horario de atención. En cuanto abramos, un asesor te contesta por aquí mismo. 🙏'
-
 // ── Tool definitions ─────────────────────────────────────────────────────────
 const APPOINTMENT_TOOLS = [
   {
@@ -138,10 +136,18 @@ async function agendarCita(
   calendarToken: string,
   timezone: string,
   conversationId: string,
+  hours: any,
 ): Promise<string> {
   const duracion = args.duracion_minutos || 60
   const scheduledAt = fechaHoraToUtcIso(args.fecha, args.hora, timezone)
   const endAt = new Date(new Date(scheduledAt).getTime() + duracion * 60000).toISOString()
+
+  // El cliente puede escribir a cualquier hora, pero la CITA tiene que
+  // caer dentro del horario de atención del negocio — no basta con que
+  // el system_prompt se lo pida a GPT, aquí se rechaza de verdad.
+  if (isWithinBusinessHours(hours, timezone, new Date(scheduledAt)) === false) {
+    return `No se puede agendar el ${args.fecha} a las ${args.hora} porque está fuera del horario de atención del negocio. Consulta disponibilidad y propónle al cliente un horario dentro del horario configurado.`
+  }
 
   // Guardar en DB — las citas agendadas por el bot quedan "pending": las
   // confirma el negocio, no quedan como confirmadas automáticamente.
@@ -241,6 +247,7 @@ async function cancelarOReagendarCita(
   calendarToken: string,
   timezone: string,
   conversationId: string,
+  hours: any,
 ): Promise<string> {
   const { data: appt } = await sb
     .from('appointments')
@@ -256,6 +263,11 @@ async function cancelarOReagendarCita(
 
   if (isReschedule) {
     const newScheduledAt = fechaHoraToUtcIso(args.nueva_fecha!, args.nueva_hora!, timezone)
+    // Misma regla que al agendar por primera vez: la nueva hora tiene que
+    // caer dentro del horario de atención, sin importar a qué hora se pida.
+    if (isWithinBusinessHours(hours, timezone, new Date(newScheduledAt)) === false) {
+      return `No se puede reagendar al ${args.nueva_fecha} a las ${args.nueva_hora} porque está fuera del horario de atención del negocio. Consulta disponibilidad y propónle al cliente un horario dentro del horario configurado.`
+    }
     // Reagendar por el bot también deja la cita "pending" — requiere
     // reconfirmación del negocio, igual que al agendarla por primera vez.
     await sb.from('appointments')
@@ -551,18 +563,20 @@ function buildBusinessContextBlock(profile: any): string {
   return `INFORMACIÓN DEL NEGOCIO (de Configuración — usa esto para responder sobre contacto, ubicación y horarios; no inventes datos que no estén aquí):\n${lines.join('\n')}`
 }
 
-// null = el negocio no configuró horarios (no se puede saber si está abierto)
-function isWithinBusinessHours(hours: any, timezone: string): boolean | null {
+// null = el negocio no configuró horarios (no se puede saber si está abierto).
+// `at` por defecto es ahora — pero también se usa con la hora de una cita
+// que se quiere agendar, para no dejar agendar fuera de horario aunque se
+// pida a cualquier hora (ver agendarCita/cancelarOReagendarCita).
+function isWithinBusinessHours(hours: any, timezone: string, at: Date = new Date()): boolean | null {
   if (!hours || typeof hours !== 'object') return null
   const hasAny = DAY_ORDER.some(d => hours[d] && !hours[d].closed && hours[d].open && hours[d].close)
   if (!hasAny) return null
 
-  const now = new Date()
-  const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(now).toLowerCase().slice(0, 3)
+  const dayKey = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(at).toLowerCase().slice(0, 3)
   const h = hours[dayKey]
   if (!h || h.closed || !h.open || !h.close) return false
 
-  const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(now)
+  const hhmm = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(at)
   return hhmm >= h.open && hhmm <= h.close
 }
 
@@ -702,6 +716,25 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!lastInsertedAt) return
 
+  // ── 4a. Horario y zona horaria de la org ────────────────────────────────
+  // Se necesitan ya aquí (antes de la bandeja de atención humana) para
+  // saber si hay que avisar "fuera de horario" al escalar con una persona.
+  // Siempre se resuelve la zona horaria real de la org (no solo cuando hay
+  // Calendar conectado) — la necesita el bot para interpretar "hoy"/"mañana"
+  // y para convertir bien la hora que da el cliente a UTC al agendar.
+  const { data: orgProfile } = await sb
+    .from('organization_profile')
+    .select('description, phone, whatsapp, email, website, address, maps_url, hours, social')
+    .eq('organization_id', organization_id)
+    .maybeSingle()
+  const { data: orgRow } = await sb
+    .from('organizations')
+    .select('timezone')
+    .eq('id', organization_id)
+    .maybeSingle()
+  const timezone  = orgRow?.timezone || 'America/Matamoros'
+  const outOfHours = isWithinBusinessHours(orgProfile?.hours, timezone) === false
+
   // ── 4b. Bandeja de atención humana ──────────────────────────────────────
   // Si la conversación YA necesitaba humano Y nadie la retomó por timeout
   // (ver resume-paused-conversations), el bot se queda callado (el mensaje
@@ -717,9 +750,17 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // sigue escribiendo. Se retoma solo, sin aviso, cuando el plazo pasa.
   if (humanPauseActive) return
 
+  // El bot NUNCA deja de contestar por el horario del negocio (la landing
+  // promete 24/7) — el horario solo afecta el texto de este acuse cuando el
+  // cliente pide explícitamente hablar con alguien, y a qué horas se puede
+  // agendar una cita (ver agendarCita/cancelarOReagendarCita). Después de
+  // este acuse NO se corta la conversación: sigue al bot IA para que ayude
+  // con lo demás que haya preguntado en el mismo mensaje.
   if (HUMAN_HANDOFF_REGEX.test(incomingBatchText)) {
     await flagNeedsHuman(sb, conversation_id, organization_id, 'El cliente pidió hablar con alguien')
-    const ackText = 'Ya anoté tu solicitud — en un momento una persona de nuestro equipo te atiende por aquí mismo. 🙌'
+    const ackText = outOfHours
+      ? 'Ya anoté tu solicitud — ahorita estamos fuera de nuestro horario de atención, pero en cuanto abramos una persona de nuestro equipo te contesta por aquí mismo. Mientras tanto, sigo aquí para ayudarte en lo que pueda. 🙌'
+      : 'Ya anoté tu solicitud — en un momento una persona de nuestro equipo te atiende por aquí mismo. 🙌'
     const ackRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
@@ -730,7 +771,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       conversation_id, organization_id, direction: 'outbound', content: ackText,
       media_type: 'text', wa_message_id: ackData.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
     })
-    return
   }
 
   // ── 5. Bot IA (solo si está habilitado) ────────────────────────────────────
@@ -743,58 +783,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!botConfig) return
 
-  const { data: orgProfile } = await sb
-    .from('organization_profile')
-    .select('description, phone, whatsapp, email, website, address, maps_url, hours, social')
-    .eq('organization_id', organization_id)
-    .maybeSingle()
-
   const businessContext = buildBusinessContextBlock(orgProfile)
 
-  // ── 6. Zona horaria de la org + Google Calendar (si está conectado) ────────
-  // Siempre se resuelve la zona horaria real de la org (no solo cuando hay
-  // Calendar conectado) — la necesita el bot para interpretar "hoy"/"mañana"
-  // y para convertir bien la hora que da el cliente a UTC al agendar.
-  const { data: orgRow } = await sb
-    .from('organizations')
-    .select('timezone')
-    .eq('id', organization_id)
-    .maybeSingle()
-  const timezone = orgRow?.timezone || 'America/Matamoros'
-
-  // ── 6a. Fuera de horario de atención ────────────────────────────────────
-  // Antes el bot contestaba igual 24/7 sin importar el horario configurado
-  // (el system_prompt solo le decía que no inventara horarios, no que
-  // dejara de responder). Si el negocio configuró horarios y ahora está
-  // cerrado, se manda un aviso fijo en vez de llamar a GPT — pero no en
-  // cada mensaje mientras sigue cerrado: solo si el último saliente no fue
-  // ya este mismo aviso en las últimas 3 horas.
-  if (isWithinBusinessHours(orgProfile?.hours, timezone) === false) {
-    const { data: lastOut } = await sb
-      .from('messages')
-      .select('content, created_at')
-      .eq('conversation_id', conversation_id)
-      .eq('direction', 'outbound')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    const alreadyNotified = lastOut?.content === OUT_OF_HOURS_TEXT
-      && (Date.now() - new Date(lastOut.created_at).getTime()) < 3 * 3600_000
-    if (!alreadyNotified) {
-      const oohRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: OUT_OF_HOURS_TEXT } }),
-      })
-      const oohData = await oohRes.json().catch(() => ({}))
-      await sb.from('messages').insert({
-        conversation_id, organization_id, direction: 'outbound', content: OUT_OF_HOURS_TEXT,
-        media_type: 'text', wa_message_id: oohData.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
-      })
-    }
-    return
-  }
-
+  // ── 6. Google Calendar (si está conectado) ──────────────────────────────
   const calendarToken = await getGoogleAccessToken(sb, organization_id)
 
   // ── 6b. Stripe conectado + catálogo (Inventario) para links de pago ────────
@@ -836,7 +827,15 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
 
   const calendarCtx = calendarToken
-    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.`
+    ? `\n\nCALENDARIO ACTIVO: Puedes consultar disponibilidad y agendar citas usando las herramientas disponibles. Ahora mismo es ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}) — usa esta fecha y hora, en esta zona, para interpretar expresiones relativas como "hoy", "mañana" o "en una hora". Cuando el cliente quiera agendar: 1) Consulta disponibilidad. 2) Propón horarios libres dentro del horario de atención del negocio.${hoursGuardrail} 3) Confirma con el cliente fecha, hora y servicio explícitamente. 4) Agénda solo tras esa confirmación — si propones o confirmas una hora fuera del horario de atención, la herramienta la va a rechazar. Las citas que agendas quedan pendientes de confirmación por el negocio, no confirmadas automáticamente — puedes decírselo al cliente.`
+    : ''
+
+  // Respondes 24/7 sin importar el horario — esto solo le avisa al modelo
+  // que ahorita el negocio está cerrado, para que sea honesto si necesita
+  // escalar con una persona (notify_owner), en vez de prometer que alguien
+  // le contesta "en un momento" a media noche.
+  const outOfHoursCtx = (hasBusinessHours && outOfHours)
+    ? `\n\nFUERA DE HORARIO AHORA: según el horario configurado, el negocio está cerrado en este momento (${todayLabel}, ${nowTimeLabel}). Sigue respondiendo y ayudando normalmente — nunca dejes de contestar por esto, y nunca le digas al cliente que "no puedes atenderlo" por el horario. Si decides activar notify_owner porque el cliente necesita que una persona del equipo le atienda, acláraselo en tu propio texto: que el negocio está fuera de horario ahorita y que una persona le escribe en cuanto abran — no prometas que alguien le contesta "en un momento".`
     : ''
 
   const systemPrompt = [
@@ -844,6 +843,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     businessContext,
     calendarCtx,
     catalogCtx,
+    outOfHoursCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce ────────────────────────────────────────────────────────────
@@ -963,7 +963,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           if (toolCall.function.name === 'consultar_disponibilidad') {
             toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone)
           } else if (toolCall.function.name === 'agendar_cita') {
-            toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone, conversation_id)
+            toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone, conversation_id, orgProfile?.hours)
             sendZapierEvent(sb, organization_id, 'appointment_booked', {
               contact_name:  args.nombre,
               contact_phone: fromPhone,
@@ -972,7 +972,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
               hora:          args.hora,
             })
           } else if (toolCall.function.name === 'cancelar_o_reagendar_cita') {
-            toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone, conversation_id)
+            toolResult = await cancelarOReagendarCita(args, organization_id, sb, calendarToken!, timezone, conversation_id, orgProfile?.hours)
           } else if (toolCall.function.name === 'crear_link_pago') {
             toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY, conversation_id)
           } else {
