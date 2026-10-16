@@ -7493,6 +7493,18 @@
       state.currentOrgId = orgId;
       await loadOrgTimezone(orgId);
       await loadDashboard(orgId);
+
+      // Ocultar módulos según plan
+      const { data: orgPlan } = await sb.from('organizations').select('plan_id').eq('id', orgId).single();
+      const plan = orgPlan?.plan_id || '';
+      if (plan === 'arranque' || plan === 'mostrador') {
+        // Módulos que no aplican en plan arranque/mostrador
+        ['nav-campanas','nav-pagos'].forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
+        ['calendario','leads','pipeline','asignacion'].forEach(view => {
+          const el = document.querySelector(`.nav-item[data-view="${view}"]`);
+          if (el) el.style.display = 'none';
+        });
+      }
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
