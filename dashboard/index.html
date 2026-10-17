@@ -7613,6 +7613,7 @@
     if (_savedView !== 'conversaciones') loadConversaciones();
     loadIntegrations();
     handleGoogleOAuthRedirect();
+    handleWaSignupRedirectCallback();
 
     // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
     const _urlParams = new URLSearchParams(window.location.search)
