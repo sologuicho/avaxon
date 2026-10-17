@@ -5948,15 +5948,60 @@
   // Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup
   const WA_EMBEDDED_CONFIG_ID = '2192508524980461';
 
-  async function launchEmbeddedSignup() {
-    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
+  async function handleWaSignupRedirectCallback() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('state') !== 'wa_signup' || !params.get('code')) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    const code           = params.get('code');
+    const waba_id        = params.get('waba_id');
+    const phone_number_id = params.get('phone_number_id');
+    showToast('Procesando conexión de WhatsApp…');
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { showToast('Sesión expirada. Vuelve a iniciar sesión.'); return; }
+      const res = await fetch('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/whatsapp-embedded-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ code, waba_id, phone_number_id, flow_type: 'redirect' }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        showToast('✓ WhatsApp conectado exitosamente');
+        switchView('conexiones');
+        loadDashboard(state.currentOrgId || state.userOrgId);
+      } else {
+        showToast(result.error || 'Error al conectar WhatsApp');
+      }
+    } catch(err) {
+      showToast(err.message || 'Error procesando la conexión');
+    }
+  }
 
+  async function launchEmbeddedSignup() {
     if (!WA_EMBEDDED_CONFIG_ID) {
-      showToast('Falta el Configuration ID de Meta. Configúralo en Meta Developers → Facebook Login for Business.');
-      console.error('WA_EMBEDDED_CONFIG_ID no configurado. Crear en Meta Developers > Facebook Login for Business > Configurations.');
+      showToast('Falta el Configuration ID de Meta.');
       return;
     }
+
+    // En móvil usar redirect en lugar de popup (los popups son bloqueados)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) {
+      const redirectUri = 'https://avaxon.lat/dashboard';
+      const fbParams = new URLSearchParams({
+        client_id:                    '2086225228635820',
+        redirect_uri:                 redirectUri,
+        scope:                        'business_management,whatsapp_business_management,whatsapp_business_messaging',
+        response_type:                'code',
+        config_id:                    WA_EMBEDDED_CONFIG_ID,
+        override_default_response_type: 'true',
+        state:                        'wa_signup',
+      });
+      window.location.href = `https://www.facebook.com/dialog/oauth?${fbParams}`;
+      return;
+    }
+
+    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return; }
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     // Capturar waba_id y phone_number_id del postMessage ANTES de que llegue el code
     window.__waSessionInfo = null;
