@@ -161,13 +161,15 @@ Deno.serve(async (req: Request) => {
     for (const tpl of templates) {
       const metaRow = byMetaId[String(tpl.meta_template_id)]
       if (!metaRow) continue
-      const { error } = await adminClient.from('message_templates').update({
-        status:           metaRow.status,
-        category:         metaRow.category,
-        language:         metaRow.language,
-        rejected_reason:  cleanReason(metaRow.rejected_reason),
-        updated_at:       new Date().toISOString(),
-      }).eq('id', tpl.id)
+      const updatePayload: Record<string, unknown> = {
+        status:          metaRow.status,
+        category:        metaRow.category,
+        language:        metaRow.language,
+        rejected_reason: cleanReason(metaRow.rejected_reason),
+        updated_at:      new Date().toISOString(),
+      }
+      if (metaRow.components) updatePayload.components = metaRow.components
+      const { error } = await adminClient.from('message_templates').update(updatePayload).eq('id', tpl.id)
       if (!error) updated++
     }
 
