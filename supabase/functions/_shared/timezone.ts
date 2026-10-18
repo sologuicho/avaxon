@@ -34,3 +34,43 @@ export function fechaHoraToUtcIso(fecha: string, hora: string, timeZone: string)
   const [hh, mm, ss] = hora.split(':').map(Number)
   return zonedWallTimeToUtcIso(y, m - 1, d, hh, mm, ss || 0, timeZone)
 }
+
+// ── Dirección inversa: UTC → hora de pared, para crons de horario fijo ─────
+// Un cron en pg_cron corre en UTC; para decidir "¿ya es la hora X en
+// America/Matamoros?" sin que el cambio de horario (1 nov) lo desalinee,
+// hay que calcular la hora local en el momento en que corre, no sumar/restar
+// un offset fijo.
+export interface LocalTimeParts {
+  dateStr: string // "YYYY-MM-DD" en timeZone
+  weekday: 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+  hhmm: string // "HH:MM" en timeZone
+  minutesOfDay: number
+}
+
+const WEEKDAY_MAP: Record<string, LocalTimeParts['weekday']> = {
+  Mon: 'mon', Tue: 'tue', Wed: 'wed', Thu: 'thu', Fri: 'fri', Sat: 'sat', Sun: 'sun',
+}
+
+export function getLocalTimeParts(timeZone: string, at: Date = new Date()): LocalTimeParts {
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone, hourCycle: 'h23', weekday: 'short',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
+  const parts = fmt.formatToParts(at).reduce((acc: Record<string, string>, p) => {
+    acc[p.type] = p.value
+    return acc
+  }, {})
+  const hour = Number(parts.hour)
+  const minute = Number(parts.minute)
+  return {
+    dateStr: `${parts.year}-${parts.month}-${parts.day}`,
+    weekday: WEEKDAY_MAP[parts.weekday] ?? 'mon',
+    hhmm: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    minutesOfDay: hour * 60 + minute,
+  }
+}
+
+export function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + (m || 0)
+}

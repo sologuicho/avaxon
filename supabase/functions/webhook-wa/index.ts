@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 import { sendZapierEvent } from '../_shared/zapier.ts'
 import { getGoogleAccessToken } from '../_shared/google.ts'
-import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
+import { fechaHoraToUtcIso, getLocalTimeParts } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
 import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
@@ -1494,6 +1494,43 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         }).eq('organization_id', kitchenOrgId)
 
         return finalMenu
+      }
+
+      // ── Turnos de fin de semana: "chef del día" ──────────────────────────
+      // Solo aplica si el día de hoy (hora local de la org) tiene claim:true
+      // en shift_schedule (sábado/domingo) -- entre semana cada quien tiene
+      // su horario fijo y no se bloquean entre sí.
+      {
+        const shiftSchedule = invCfg?.shift_schedule as any ?? null
+        if (shiftSchedule) {
+          const tz = shiftSchedule.timezone || 'America/Matamoros'
+          const { dateStr, weekday } = getLocalTimeParts(tz)
+          const dayCfg = weekday === 'sat' ? shiftSchedule.saturday
+            : weekday === 'sun' ? shiftSchedule.sunday
+            : shiftSchedule.weekday
+
+          if (dayCfg?.morning?.claim === true) {
+            let shiftToday = invCfg?.shift_today as { date: string; chef_phone: string; chef_name: string } | null ?? null
+            if (!shiftToday || shiftToday.date !== dateStr) shiftToday = null
+
+            const candidates = (dayCfg.morning.recipients as Array<{ phone: string; name: string }>) ?? []
+            const me = candidates.find((r) => r.phone.replace(/^\+/, '') === fromNorm)
+
+            if (me) {
+              if (!shiftToday) {
+                shiftToday = { date: dateStr, chef_phone: fromNorm, chef_name: me.name }
+                invCfg.shift_today = shiftToday
+                await sb.from('bot_configs').update({
+                  inventory_config: { ...invCfg, shift_today: shiftToday },
+                  updated_at: new Date().toISOString(),
+                }).eq('organization_id', kitchenOrgId)
+              } else if (shiftToday.chef_phone !== fromNorm) {
+                await sendKitchenReply(`¡Gracias! 🙏 Hoy está atendiendo ${shiftToday.chef_name || 'tu compañera'}. Que tengas buen día 😊`)
+                return // no se procesa como inventario
+              }
+            }
+          }
+        }
       }
 
       if (kitchenState === 'idle') {
