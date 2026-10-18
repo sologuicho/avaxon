@@ -1151,6 +1151,34 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
+  // ── Handle order confirmation/add-more buttons ────────────────────────────
+  const firstRawMsg  = rawMessages[0]
+  const orderBtnId   = firstRawMsg?.type === 'interactive' ? (firstRawMsg?.interactive?.button_reply?.id ?? '') : ''
+
+  if (orderBtnId.startsWith('confirm_')) {
+    const orderId = orderBtnId.replace('confirm_', '')
+    await sb.from('orders').update({ status: 'confirmada', confirmed_at: new Date().toISOString() }).eq('id', orderId)
+    await sb.from('conversations').update({ current_order_id: null }).eq('id', conversation_id)
+    const { data: ord } = await sb.from('orders').select('order_number').eq('id', orderId).single()
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: `✅ ¡Comanda No. ${ord?.order_number} confirmada! Gracias, tu pedido está registrado. 🍽️` } }),
+    })
+    return
+  }
+
+  if (orderBtnId.startsWith('add_more_')) {
+    const orderId = orderBtnId.replace('add_more_', '')
+    await sb.from('conversations').update({ current_order_id: orderId }).eq('id', conversation_id)
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: '¡Claro! ¿Qué más te gustaría agregar a tu pedido? 😊' } }),
+    })
+    return
+  }
+
   // ── 4. Procesar y guardar CADA mensaje entrante ────────────────────────────
   let lastInsertedAt: string | null = null
   let lastImageDataUrl: string | null = null
