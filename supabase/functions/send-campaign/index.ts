@@ -164,12 +164,15 @@ async function runCampaign(
     if (!contact.phone) { failed++; continue }
 
     // Build template components from variables JSONB {"1": "nombre", "2": "negocio", ...}
+    // contact.variables overrides camp.template_variables (default for all contacts)
     let templateComponents: any[] = []
-    if (camp.message_type === 'template' && templateName && contact.variables) {
-      const vars = contact.variables as Record<string, string>
-      const params = Object.keys(vars).sort((a, b) => Number(a) - Number(b))
-        .map(k => ({ type: 'text', text: vars[k] ?? '' }))
-      if (params.length > 0) templateComponents = [{ type: 'body', parameters: params }]
+    if (camp.message_type === 'template' && templateName) {
+      const vars = (contact.variables ?? camp.template_variables) as Record<string, string> | null
+      if (vars && Object.keys(vars).length > 0) {
+        const params = Object.keys(vars).sort((a, b) => Number(a) - Number(b))
+          .map(k => ({ type: 'text', text: vars[k] ?? '' }))
+        templateComponents = [{ type: 'body', parameters: params }]
+      }
     }
 
     const waPayload = camp.message_type === 'template' && templateName
