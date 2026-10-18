@@ -1738,6 +1738,57 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             toolResult = await crearLinkPago(args, organization_id, contact_row.id, sb, env.STRIPE_SECRET_KEY, conversation_id)
             const urlMatch = toolResult.match(/https:\/\/avaxon\.lat\/p\/[a-zA-Z0-9-]+/)
             if (urlMatch) paymentLinkUrl = urlMatch[0]
+          } else if (toolCall.function.name === 'enviar_comanda') {
+            try {
+              const { items, modality, delivery_address } = args as {
+                items: Array<{ qty: number; name: string; notes?: string; unit_price: number }>
+                modality: 'aqui' | 'recoger' | 'envio'
+                delivery_address?: string
+              }
+              // Match delivery zone by name in address
+              let deliveryCost = 0
+              let deliveryZoneName = ''
+              if (modality === 'envio' && delivery_address && (deliveryZones as any[])?.length) {
+                const matched = (deliveryZones as any[]).find((z: any) =>
+                  delivery_address.toLowerCase().includes(z.zone_name.toLowerCase())
+                )
+                if (matched) { deliveryCost = Number(matched.price); deliveryZoneName = matched.zone_name }
+              }
+              const subtotal = items.reduce((s, i) => s + i.qty * i.unit_price, 0)
+              const total    = subtotal + deliveryCost
+
+              if (currentOrderId) {
+                // Updating an existing in-progress order
+                const { data: existingOrd } = await sb.from('orders').select('order_number').eq('id', currentOrderId).single()
+                const orderNumber = existingOrd?.order_number ?? 0
+                await sb.from('orders').update({ items, modality, delivery_address: delivery_address ?? null, delivery_zone: deliveryZoneName || null, delivery_cost: deliveryCost, subtotal, total, status: 'pendiente' }).eq('id', currentOrderId)
+                pendingComanda = { orderId: currentOrderId, orderNumber, items, modality, delivery_address: delivery_address ?? null, deliveryCost, total }
+                toolResult = JSON.stringify({ ok: true, order_number: orderNumber, delivery_cost: deliveryCost, total })
+              } else {
+                // New order — atomic number increment
+                const { data: orgRow } = await sb.from('organizations').select('last_order_number').eq('id', organization_id).single()
+                const nextNum = ((orgRow as any)?.last_order_number ?? 0) + 1
+                await sb.from('organizations').update({ last_order_number: nextNum }).eq('id', organization_id)
+                const { data: newOrder } = await sb.from('orders').insert({
+                  order_number:    nextNum,
+                  organization_id,
+                  conversation_id,
+                  contact_phone:   fromPhone,
+                  items,
+                  modality,
+                  delivery_address: delivery_address ?? null,
+                  delivery_zone:   deliveryZoneName || null,
+                  delivery_cost:   deliveryCost,
+                  subtotal,
+                  total,
+                  status: 'pendiente',
+                }).select('id').single()
+                if (newOrder) pendingComanda = { orderId: newOrder.id, orderNumber: nextNum, items, modality, delivery_address: delivery_address ?? null, deliveryCost, total }
+                toolResult = JSON.stringify({ ok: true, order_number: nextNum, delivery_cost: deliveryCost, total })
+              }
+            } catch (e) {
+              toolResult = JSON.stringify({ error: (e as Error).message })
+            }
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
