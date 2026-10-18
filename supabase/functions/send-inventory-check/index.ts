@@ -13,7 +13,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const GRAPH = 'https://graph.facebook.com/v22.0'
 
 // Nombres de plantilla en Meta (deben estar aprobadas)
-const TEMPLATE_MORNING           = 'menu_diario_check'
+// menu_diario_check (sin "_v3") quedó aprobada como MARKETING y hardcodea
+// "Narciso" en el saludo — ya no se usa aquí, pero no se borra de Meta por
+// si hace falta revertir.
+const TEMPLATE_MORNING            = 'menu_diario_check_v3'
 // inventario_check_periodico quedó aprobada como MARKETING — ya no se usa.
 // inventario_check_v3 es solo el respaldo del check de mediodía cuando la
 // ventana de 24h está cerrada; si está abierta se manda un mensaje
@@ -112,14 +115,15 @@ Deno.serve(async (req: Request) => {
         })
 
       if (type === 'morning') {
-        const inventory = await getDailyMenu(sb, staff.organization_id)
+        const saludo = staff.name ? `Buenos días, ${staff.name} 👋` : 'Buenos días 👋'
+        const menu = await getDailyMenu(sb, staff.organization_id)
         const res = await sendWA({
           type: 'template',
           template: {
             name: TEMPLATE_MORNING,
             language: { code: 'es_MX' },
             components: [
-              { type: 'body', parameters: [{ type: 'text', text: inventory }] },
+              { type: 'body', parameters: [{ type: 'text', text: sanitizeForTemplate(saludo) }, { type: 'text', text: menu }] },
               { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'INVENTARIO_OK_MORNING' }] },
             ],
           },
