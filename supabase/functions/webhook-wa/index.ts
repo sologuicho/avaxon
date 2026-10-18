@@ -991,7 +991,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .maybeSingle()
 
   if (staffMember) {
-    const incomingText = rawMessages.map((m: any) => m.text?.body ?? '').filter(Boolean).join(' ').trim()
+    // Leer texto de mensajes normales Y de quick reply de plantilla (type: 'button')
+    const incomingText = rawMessages.map((m: any) => m.text?.body ?? m.button?.text ?? '').filter(Boolean).join(' ').trim()
+    const buttonPayload = rawMessages.map((m: any) => m.button?.payload ?? '').filter(Boolean).join(' ').trim()
 
     // Guardar en conversaciones para que aparezca en el dashboard
     const { data: staffContact } = await sb.from('contacts')
