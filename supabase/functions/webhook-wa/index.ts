@@ -221,6 +221,21 @@ function to12hLabel(hhmm24: string): string {
   return `${h12}:${String(m).padStart(2, '0')} ${period}`
 }
 
+// Los botones de WhatsApp tienen un límite DURO de 20 caracteres — la
+// instrucción en el prompt no bastó (el modelo sigue mandando textos más
+// largos), así que esto es la última palabra: para el caso conocido de
+// "quiero otro horario" se usa un texto fijo corto; cualquier otro botón
+// largo se recorta en el último espacio antes del límite (nunca a media
+// palabra, como pasaba con el .slice(0,20) a secas).
+function normalizeButtonLabel(label: string): string {
+  const trimmed = (label || '').trim()
+  if (/^(prefiero\s+)?otr[oa]\s+(horario|hora|fecha|d[ií]a)/i.test(trimmed)) return 'Otro horario'
+  if (trimmed.length <= 20) return trimmed
+  const cut = trimmed.slice(0, 20)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > 10 ? cut.slice(0, lastSpace) : cut).trim()
+}
+
 // "00:00" de cierre = fin del día (24:00) — mismo criterio que isWithinBusinessHours.
 function closeMinutesFor(h: { close: string }): number {
   return h.close === '00:00' ? 24 * 60 : minutesOfDay(h.close)
@@ -1368,6 +1383,23 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     chatHistory.push({ role: 'user', content: combinedText })
   }
 
+  // ── 10a. Saludo ──────────────────────────────────────────────────────────
+  // Se decide en código si el cliente saludó y si el bot YA había saludado
+  // antes en esta conversación — así el modelo no tiene que adivinar ni
+  // depende de que recuerde bien el historial para no saludar dos veces.
+  const GREETING_REGEX = /\b(hola+|buen[oa]s?\s*(d[ií]as|tardes|noches)|qu[eé]\s*tal|hey|saludos)\b/i
+  let greetingCtx = ''
+  if (GREETING_REGEX.test(combinedText)) {
+    const botAlreadyGreeted = chatHistory.some(m => m.role === 'assistant' && typeof m.content === 'string' && GREETING_REGEX.test(m.content))
+    if (botAlreadyGreeted) {
+      greetingCtx = `\n\nEl cliente volvió a saludar, pero tú ya lo saludaste antes en esta conversación — NO lo saludes de nuevo, ve directo a atender lo que pide.`
+    } else {
+      const hourNow = Number(new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', hourCycle: 'h23' }).format(new Date()))
+      const greetingPhrase = hourNow < 12 ? 'Buenos días' : hourNow < 19 ? 'Buenas tardes' : 'Buenas noches'
+      greetingCtx = `\n\nEl cliente te saludó en este mensaje. Responde el saludo en la MISMA respuesta, breve y natural, usando "${greetingPhrase}" (es el saludo correcto para la hora actual) — y justo después atiende lo que te pidió, todo junto en un solo mensaje coherente. No mandes el saludo solo y la respuesta aparte.`
+    }
+  }
+
   // ── 10b. Disponibilidad forzada en código ──────────────────────────────────
   // No depende de que el modelo decida llamar la herramienta: si el mensaje
   // pide una fecha+hora concreta (o solo confirma una que el bot ya propuso),
@@ -1413,6 +1445,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     { role: 'system', content: systemPrompt },
     ...chatHistory,
   ]
+  if (greetingCtx) messages.push({ role: 'system', content: greetingCtx })
   if (forcedAvailabilityCtx) messages.push({ role: 'system', content: forcedAvailabilityCtx })
 
   const toolsArr = [
@@ -1562,7 +1595,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
     .replace(/~~([^~\n]+)~~/g, '~$1~')
     .replace(/^#{1,6}\s+/gm, '')
-  const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3)
+  const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3).map(normalizeButtonLabel)
   const notifyOwner  = aiParsed.notify_owner === true
 
   // Bandeja de atención humana — para cualquier org (no solo Avaxon). La
