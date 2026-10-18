@@ -59,8 +59,9 @@ Deno.serve(async (req: Request) => {
           .eq('organization_id', staff.organization_id)
           .maybeSingle()
 
-        const inventory = botCfg?.daily_inventory?.trim()
+        const rawInventory = botCfg?.daily_inventory?.trim()
           || 'Sin inventario definido — responde con los platillos del día 🍽️'
+        const inventory = rawInventory.replace(/[\n\r\t]+/g, ' • ')
 
         templateName = TEMPLATE_MORNING
         components = [
