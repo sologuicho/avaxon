@@ -1308,13 +1308,14 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     // reciente y se deja constancia en bot_tool_logs.
     const { data: staffRows } = await sb
       .from('org_staff')
-      .select('organization_id, created_at')
+      .select('organization_id, name, created_at')
       .eq('phone', fromNorm)
       .eq('active', true)
       .eq('receives_inventory_check', true)
       .order('created_at', { ascending: false })
 
     let kitchenOrgId: string | null = staffRows?.[0]?.organization_id ?? null
+    const kitchenStaffName: string | null = staffRows?.[0]?.name ?? null
 
     if (staffRows && staffRows.length > 1) {
       await sb.from('bot_tool_logs').insert({
@@ -1358,8 +1359,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
       const normalizedText = normalizeKitchenText(combinedText)
 
-      const isNoChanges  = /mismo\s*men[uú]|todo\s*bien/i.test(combinedText)
+      const isNoChanges  = /mismo\s*men[uú]|todo\s*bien|sin\s*cambios/i.test(combinedText)
       const isChangesBtn = /hay\s*cambios/i.test(combinedText)
+
+      // Saludo/charla/agradecimiento sin contenido de menú ("hola", "buenos
+      // días", "gracias", "ok", "qué tal") — en idle, esto NO debe arrancar
+      // el flujo de inventario, solo mostrar el menú y preguntar si hay
+      // cambios. Si el mensaje también describe un cambio ("hola, se acabó
+      // el mole"), hasChangeIndicator gana y se trata como cambio.
+      const isGreetingOrChat = /\b(hola|buenos?\s*d[ií]as|buenas\s*(tardes|noches)?|qu[eé]\s*tal|c[oó]mo\s*(estas|est[aá]s?)|gracias|^ok$|^okay$|vale|perfecto|entendido)\b/i.test(combinedText)
+      const hasChangeIndicator = /\b(se\s*acab[oó]|agot[oó]|agotad[oa]|ya\s*no\s*hay|no\s*hay|agregamos?|agregar|agreg[oó]|cambio|cambi[oó]|sustituim|quitamos|quitar|nuevo\s*platillo)\b/i.test(combinedText)
 
       // Frases completas que cuentan como "ya terminé" — se compara el texto
       // completo normalizado contra esta lista, no un match parcial, para no
@@ -1419,6 +1428,37 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         })
       }
 
+      // Saludo/charla sin cambios: muestra el menú actual y pregunta si hay
+      // cambios con botones, sin tocar inventory_config (sigue en idle).
+      const sendMenuPrompt = async () => {
+        const menuLabel = ((kitchenCfg as any)?.daily_inventory as string | null)
+          ?.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ') || 'sin inventario definido'
+        const saludo = kitchenStaffName ? `¡Hola, ${kitchenStaffName}! 👋` : '¡Hola! 👋'
+        const bodyText = `${saludo} El menú de hoy es: ${menuLabel}. ¿Hay algún cambio?`
+        const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: fromPhone, type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: { text: bodyText },
+              action: {
+                buttons: [
+                  { type: 'reply', reply: { id: 'cocina_sin_cambios', title: 'Sin cambios' } },
+                  { type: 'reply', reply: { id: 'cocina_hay_cambios', title: 'Hay cambios' } },
+                ],
+              },
+            },
+          }),
+        })
+        const d = await r.json().catch(() => ({}))
+        await sb.from('messages').insert({
+          conversation_id, organization_id, direction: 'outbound', content: bodyText,
+          media_type: 'interactive', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+        })
+      }
+
       // Devuelve el menú final (con \n entre platillos) ya guardado, para
       // que quien llama pueda confirmarle a la chef la lista completa.
       const applyInventoryUpdate = async (updateText: string): Promise<string> => {
@@ -1466,6 +1506,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
           await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+        } else if (isGreetingOrChat && !hasChangeIndicator) {
+          // Saludo/charla sin contenido de menú — no toca inventory_config.
+          await sendMenuPrompt()
         } else {
           await sb.from('bot_configs').update({
             inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText, confirm_prompt_count: 1 },
