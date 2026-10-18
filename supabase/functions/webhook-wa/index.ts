@@ -106,6 +106,45 @@ const PAYMENT_TOOLS = [
   },
 ]
 
+const ORDER_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'enviar_comanda',
+      description: 'Llama esta función UNA SOLA VEZ cuando el cliente haya terminado de pedir y confirmado modalidad (comer aquí / recoger / envío) y acompañamientos. Pasa TODOS los items del pedido incluyendo los previos si el cliente estaba agregando más.',
+      parameters: {
+        type: 'object',
+        properties: {
+          items: {
+            type: 'array',
+            description: 'Todos los items del pedido',
+            items: {
+              type: 'object',
+              properties: {
+                qty:        { type: 'number',  description: 'Cantidad' },
+                name:       { type: 'string',  description: 'Nombre del producto' },
+                notes:      { type: 'string',  description: 'Notas o modificaciones' },
+                unit_price: { type: 'number',  description: 'Precio unitario MXN' },
+              },
+              required: ['qty', 'name', 'unit_price'],
+            },
+          },
+          modality: {
+            type: 'string',
+            enum: ['aqui', 'recoger', 'envio'],
+            description: 'aqui = comer en restaurante, recoger = para llevar, envio = a domicilio',
+          },
+          delivery_address: {
+            type: 'string',
+            description: 'Dirección o colonia, solo si modality es envio',
+          },
+        },
+        required: ['items', 'modality'],
+      },
+    },
+  },
+]
+
 // ── Herramienta: consultar disponibilidad ────────────────────────────────────
 async function consultarDisponibilidad(
   fecha: string,
