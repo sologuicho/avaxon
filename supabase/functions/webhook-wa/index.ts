@@ -1659,11 +1659,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const toolsArr = [
     ...(calendarToken ? APPOINTMENT_TOOLS : []),
     ...(stripeConnected ? PAYMENT_TOOLS : []),
+    ...ORDER_TOOLS,
   ]
   const tools = toolsArr.length > 0 ? toolsArr : undefined
   let rawReply = ''
   let finishReasonFinal = ''
   let paymentLinkUrl: string | null = null
+  let pendingComanda: { orderId: string; orderNumber: number; items: any[]; modality: string; delivery_address: string | null; deliveryCost: number; total: number } | null = null
   const MAX_TOOL_LOOPS = 5
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
