@@ -1384,9 +1384,24 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\n📋 INVENTARIO ACTIVO DE HOY (actualizado por el equipo del restaurante):\n${botConfig.daily_inventory}\n\nOfrece SOLO los platillos listados arriba para la comida del día. No menciones platillos del menú base que no estén en este inventario.`
     : null
 
+  const deliveryCtx = (deliveryZones as any[])?.length
+    ? `\n\n🛵 ZONAS DE ENVÍO:\n${(deliveryZones as any[]).map((z: any) => `• ${z.zone_name}: $${z.price} MXN`).join('\n')}\nPara cualquier zona NO listada, pide la colonia o dirección y di que se confirma el costo. NUNCA inventes una tarifa.`
+    : null
+
+  const currentOrderCtx = currentOrder
+    ? `\n\n📋 PEDIDO EN CURSO (Comanda No. ${currentOrder.order_number}):\n${(currentOrder.items as any[]).map((i: any) => `• ${i.qty}x ${i.name}${i.notes ? ` (${i.notes})` : ''} — $${(i.qty * i.unit_price).toFixed(0)}`).join('\n')}\nModalidad: ${currentOrder.modality}${currentOrder.delivery_address ? ` — ${currentOrder.delivery_address}` : ''}\n\nEl cliente quiere AGREGAR más items. Cuando termines de tomarlos llama enviar_comanda con TODOS los items (los de arriba + los nuevos).`
+    : null
+
+  const shippingFirstCtx = (chatHistory.length === 0 && /envío|envio|mandan|delivery|domicilio|llevan|cobran|reparten/i.test(incomingBatchText))
+    ? `\n\n⚠️ El cliente preguntó sobre envío en su PRIMER mensaje. Primero preséntale el menú completo, luego responde la pregunta de envío usando las tarifas de ZONAS DE ENVÍO. Para zonas no listadas pide la colonia y di que se confirma.`
+    : null
+
   const systemPrompt = [
     botConfig.system_prompt,
     inventoryCtx,
+    deliveryCtx,
+    currentOrderCtx,
+    shippingFirstCtx,
     businessContext,
     calendarCtx,
     catalogCtx,
