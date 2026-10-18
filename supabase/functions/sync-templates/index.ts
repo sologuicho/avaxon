@@ -146,8 +146,6 @@ Deno.serve(async (req: Request) => {
       .eq('organization_id', organizationId)
       .not('meta_template_id', 'is', null)
 
-    if (!templates || !templates.length) return json({ ok: true, updated: 0, checked: 0 })
-
     const metaRes = await metaFetch(`${waAccount.waba_id}/message_templates?fields=id,name,status,category,language,rejected_reason,components&limit=200`)
     const metaData = await metaRes.json()
     if (!metaRes.ok) return json({ error: metaData?.error?.message || 'Error al consultar Meta' }, 502)
