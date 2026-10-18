@@ -7549,11 +7549,6 @@
         showTermsModal();
         return; // bootstrap continúa desde acceptTerms()
       }
-      if (!profileData?.onboarding_done_at) {
-        await finishBootstrap(profileData);
-        showWelcomeModal(profileData?.full_name);
-        return;
-      }
     }
 
     await finishBootstrap(profileData);
