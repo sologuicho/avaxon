@@ -761,11 +761,12 @@ interface ParsedMessage {
 }
 
 async function parseMessage(msg: any, token: string, openaiKey: string): Promise<ParsedMessage | null> {
-  const isText   = msg.type === 'text'
-  const isButton = msg.type === 'interactive' && msg.interactive?.type === 'button_reply'
-  const isImage  = msg.type === 'image'
-  const isAudio  = msg.type === 'audio'
-  if (!isText && !isButton && !isImage && !isAudio) return null
+  const isText        = msg.type === 'text'
+  const isButton      = msg.type === 'interactive' && msg.interactive?.type === 'button_reply'
+  const isQuickReply  = msg.type === 'button'
+  const isImage       = msg.type === 'image'
+  const isAudio       = msg.type === 'audio'
+  if (!isText && !isButton && !isQuickReply && !isImage && !isAudio) return null
 
   let content = ''
   let mediaType: 'text' | 'image' | 'audio' = 'text'
@@ -776,6 +777,8 @@ async function parseMessage(msg: any, token: string, openaiKey: string): Promise
     content = msg.text?.body ?? ''
   } else if (isButton) {
     content = msg.interactive.button_reply.title ?? ''
+  } else if (isQuickReply) {
+    content = msg.button?.text ?? msg.button?.payload ?? ''
   } else if (isImage) {
     mediaType = 'image'
     imageCaption = msg.image?.caption ?? ''
