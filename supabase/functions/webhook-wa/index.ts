@@ -1983,6 +1983,43 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     wa_message_id: waData.messages?.[0]?.id ?? null,
     processed_at:  new Date().toISOString(),
   })
+
+  // ── Enviar comanda con botones de confirmación ─────────────────────────────
+  if (pendingComanda) {
+    const { orderId, orderNumber, items, modality, delivery_address, deliveryCost, total } = pendingComanda
+    const modalityLabel = modality === 'aqui' ? 'Comer aquí' : modality === 'recoger' ? 'Para recoger' : `Envío a ${delivery_address}`
+    const itemLines = items.map((i: any) => `• ${i.qty}x ${i.name}${i.notes ? ` (${i.notes})` : ''} — $${(i.qty * i.unit_price).toFixed(0)}`).join('\n')
+    let comandaText = `🧾 *Comanda No. ${orderNumber}*\n${itemLines}\n\nModalidad: ${modalityLabel}`
+    if (deliveryCost > 0) comandaText += `\nEnvío: $${deliveryCost}`
+    comandaText += `\n*Total: $${total.toFixed(0)}*`
+
+    const comandaRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: fromPhone,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: comandaText },
+          action: {
+            buttons: [
+              { type: 'reply', reply: { id: `confirm_${orderId}`, title: 'Confirmar comanda' } },
+              { type: 'reply', reply: { id: `add_more_${orderId}`,  title: 'Agregar algo más' } },
+            ],
+          },
+        },
+      }),
+    })
+    if (comandaRes.ok) {
+      await sb.from('messages').insert({
+        conversation_id, organization_id, direction: 'outbound',
+        content: `[Comanda No. ${orderNumber}]\n${comandaText}`,
+        processed_at: new Date().toISOString(),
+      })
+    }
+  }
 }
 
 // ── Verifica que el POST venga realmente de Meta ────────────────────────────
