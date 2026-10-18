@@ -1392,7 +1392,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\n📋 PEDIDO EN CURSO (Comanda No. ${currentOrder.order_number}):\n${(currentOrder.items as any[]).map((i: any) => `• ${i.qty}x ${i.name}${i.notes ? ` (${i.notes})` : ''} — $${(i.qty * i.unit_price).toFixed(0)}`).join('\n')}\nModalidad: ${currentOrder.modality}${currentOrder.delivery_address ? ` — ${currentOrder.delivery_address}` : ''}\n\nEl cliente quiere AGREGAR más items. Cuando termines de tomarlos llama enviar_comanda con TODOS los items (los de arriba + los nuevos).`
     : null
 
-  const shippingFirstCtx = (chatHistory.length === 0 && /envío|envio|mandan|delivery|domicilio|llevan|cobran|reparten/i.test(incomingBatchText))
+  const shippingFirstCtx = (!existing && /envío|envio|mandan|delivery|domicilio|llevan|cobran|reparten/i.test(incomingBatchText))
     ? `\n\n⚠️ El cliente preguntó sobre envío en su PRIMER mensaje. Primero preséntale el menú completo, luego responde la pregunta de envío usando las tarifas de ZONAS DE ENVÍO. Para zonas no listadas pide la colonia y di que se confirma.`
     : null
 
