@@ -857,6 +857,65 @@ function isWithinBusinessHours(hours: any, timezone: string, at: Date = new Date
   return hhmm >= h.open && hhmm <= closeCmp
 }
 
+// ── Inventario: respuesta de staff ───────────────────────────────────────────
+async function handleStaffInventoryMessage(
+  text:          string,
+  staffPhone:    string,
+  staffOrgId:    string,
+  staffName:     string | null,
+  phoneNumberId: string,
+  accessToken:   string,
+  sb:            any,
+  openaiKey:     string,
+): Promise<void> {
+  const sendReply = async (body: string) => {
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: staffPhone, type: 'text', text: { body } }),
+    })
+  }
+
+  // Botón "Todo bien" o frases de confirmación → no cambiar inventario
+  const normalized = text.toLowerCase().trim()
+  const isConfirmation = ['todo bien', 'todo sigue igual', '✅', 'sin cambios', 'igual']
+    .some(p => normalized.includes(p))
+
+  if (isConfirmation) {
+    await sendReply('✅ Perfecto, el menú sigue igual. ¡Que vaya muy bien el día! 🍽️')
+    return
+  }
+
+  // Cargar inventario actual
+  const { data: botCfg } = await sb
+    .from('bot_configs')
+    .select('daily_inventory')
+    .eq('organization_id', staffOrgId)
+    .single()
+  const currentInventory = botCfg?.daily_inventory || ''
+
+  // GPT parsea los cambios y devuelve el inventario actualizado
+  const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gpt-4o', temperature: 0, max_tokens: 400,
+      messages: [{
+        role: 'system',
+        content: `Eres el sistema de inventario de un restaurante mexicano. Un miembro del equipo (${staffName ?? 'staff'}) te informa cambios al menú del día.\n\nInventario actual:\n${currentInventory || 'Sin inventario definido aún'}\n\nMensaje del equipo: "${text}"\n\nGenera el inventario actualizado. Si agrega platillos, inclúyelos. Si algo se acabó o ya no hay, quítalo. Responde SOLO con la lista de platillos disponibles del día, uno por línea, sin precios ni explicaciones.`,
+      }],
+    }),
+  })
+  const aiData = await aiRes.json().catch(() => ({}))
+  const newInventory = aiData.choices?.[0]?.message?.content?.trim() || currentInventory
+
+  await sb.from('bot_configs')
+    .update({ daily_inventory: newInventory, last_inventory_update: new Date().toISOString() })
+    .eq('organization_id', staffOrgId)
+
+  await sendReply(`✅ Menú actualizado:\n\n${newInventory}\n\n¡Gracias! El bot ya refleja los cambios 🍽️`)
+}
+
 async function handleIncoming(body: any, env: Env): Promise<void> {
   const { WA_TOKEN, OPENAI_KEY, SUPABASE_URL, SERVICE_KEY } = env
 
