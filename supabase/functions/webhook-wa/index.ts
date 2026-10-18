@@ -1122,11 +1122,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .limit(1)
     .maybeSingle()
 
+  let currentOrderId: string | null = null
+  let currentOrder: { order_number: number; items: any[]; modality: string; delivery_address: string | null } | null = null
+
   if (existing) {
     conversation_id = existing.id
     needsHumanBefore = !!existing.needs_human
     botResumedBefore = !!existing.bot_resumed_at
     humanPauseActive = !!existing.human_pause_until && new Date(existing.human_pause_until as string).getTime() > Date.now()
+    currentOrderId = (existing as any).current_order_id ?? null
+    if (currentOrderId) {
+      const { data: co } = await sb.from('orders').select('order_number, items, modality, delivery_address').eq('id', currentOrderId).single()
+      currentOrder = co ?? null
+    }
     await sb.from('conversations')
       .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', conversation_id)
