@@ -902,18 +902,23 @@ async function handleStaffInventoryMessage(
       model: 'gpt-4o', temperature: 0, max_tokens: 400,
       messages: [{
         role: 'system',
-        content: `Eres el sistema de inventario de un restaurante mexicano. Un miembro del equipo (${staffName ?? 'staff'}) te informa cambios al menú del día.\n\nInventario actual:\n${currentInventory || 'Sin inventario definido aún'}\n\nMensaje del equipo: "${text}"\n\nGenera el inventario actualizado. Si agrega platillos, inclúyelos. Si algo se acabó o ya no hay, quítalo. Responde SOLO con la lista de platillos disponibles del día, uno por línea, sin precios ni explicaciones.`,
+        content: `Eres el sistema de inventario de un restaurante mexicano. Un miembro del equipo (${staffName ?? 'staff'}) te informa cambios al menú del día.\n\nInventario actual:\n${currentInventory || 'Sin inventario definido aún'}\n\nMensaje del equipo: "${text}"\n\nSi el mensaje NO contiene información sobre el menú (es un saludo, pregunta no relacionada, o mensaje sin sentido), responde EXACTAMENTE: NO_CHANGE\n\nSi sí contiene cambios, genera el inventario actualizado. Responde SOLO con la lista de platillos disponibles del día, uno por línea, sin precios ni explicaciones.`,
       }],
     }),
   })
   const aiData = await aiRes.json().catch(() => ({}))
-  const newInventory = aiData.choices?.[0]?.message?.content?.trim() || currentInventory
+  const aiText = aiData.choices?.[0]?.message?.content?.trim() || ''
+
+  if (!aiText || aiText === 'NO_CHANGE') {
+    await sendReply('¿Hay algún cambio en el menú de hoy? Si todo sigue igual, toca el botón o escribe "Todo bien" 🍽️')
+    return
+  }
 
   await sb.from('bot_configs')
-    .update({ daily_inventory: newInventory, last_inventory_update: new Date().toISOString() })
+    .update({ daily_inventory: aiText, last_inventory_update: new Date().toISOString() })
     .eq('organization_id', staffOrgId)
 
-  await sendReply(`✅ Menú actualizado:\n\n${newInventory}\n\n¡Gracias! El bot ya refleja los cambios 🍽️`)
+  await sendReply(`✅ Menú actualizado:\n\n${aiText}\n\n¡Gracias! El bot ya refleja los cambios 🍽️`)
 }
 
 async function handleIncoming(body: any, env: Env): Promise<void> {
