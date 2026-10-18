@@ -9,6 +9,7 @@ import { stripeFetch } from '../_shared/stripe.ts'
 import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
 import { logBotError } from '../_shared/botErrorLog.ts'
 import { logToolTrace } from '../_shared/toolTraceLog.ts'
+import { GREETING_REGEX } from '../_shared/greeting.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -1387,7 +1388,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // Se decide en código si el cliente saludó y si el bot YA había saludado
   // antes en esta conversación — así el modelo no tiene que adivinar ni
   // depende de que recuerde bien el historial para no saludar dos veces.
-  const GREETING_REGEX = /\b(hola+|buen[oa]s?(?:\s*(d[ií]as?|tardes|noches))?|buen\s*d[ií]a|qu[eé]\s*tal|hey|saludos)\b/i
+  // (GREETING_REGEX vive en _shared/greeting.ts — ver _shared/greeting_test.ts)
   const GREETING_LOOKBACK_MS = 6 * 60 * 60 * 1000 // 6 horas — no "para siempre"
   let greetingCtx = ''
   if (GREETING_REGEX.test(combinedText)) {
