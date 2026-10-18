@@ -1173,8 +1173,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // que el cliente hubiera pedido nada de esto.
   const notifyOwnerScopeCtx = `\n\nUSO DE notify_owner (son las ÚNICAS razones válidas, no hay otras): 1) el cliente pide explícitamente hablar con una persona, 2) el cliente se queja o está molesto, 3) el cliente tiene un problema real que de verdad no puedes resolver con tus herramientas. NUNCA lo actives solo porque el mensaje del cliente te resulte confuso, fragmentado, incompleto o ambiguo — en esos casos SIEMPRE haz una pregunta clara y concreta para entender qué necesita, en vez de responder a medias o pasarlo a una persona. Tu confusión no es motivo para activar notify_owner.`
 
+  const inventoryCtx = botConfig.daily_inventory
+    ? `\n\n📋 INVENTARIO ACTIVO DE HOY (actualizado por el equipo del restaurante):\n${botConfig.daily_inventory}\n\nOfrece SOLO los platillos listados arriba para la comida del día. No menciones platillos del menú base que no estén en este inventario.`
+    : null
+
   const systemPrompt = [
     botConfig.system_prompt,
+    inventoryCtx,
     businessContext,
     calendarCtx,
     catalogCtx,
