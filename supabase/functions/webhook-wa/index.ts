@@ -951,11 +951,28 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     return
   }
 
-  // ── Prevenir bot-to-bot: ignorar mensajes de números de bot propios ─────────
-  const { data: botNums } = await sb.from('phone_numbers').select('display_phone_number')
-  const normalizedSender = fromPhone.replace(/\D/g, '')
-  if (botNums?.some(bn => bn.display_phone_number?.replace(/\D/g, '') === normalizedSender)) {
-    return
+  // ── Prevenir bot-to-bot: ignorar mensajes del número que manda plantillas a esta org ──
+  // Solo aplica si la org tiene org_staff con notify_via_phone_number_id configurado.
+  // Avaxon no tiene org_staff, por eso SÍ responde a mensajes de clientes.
+  const { data: orgStaffEntry } = await sb
+    .from('org_staff')
+    .select('notify_via_phone_number_id')
+    .eq('organization_id', organization_id)
+    .eq('active', true)
+    .not('notify_via_phone_number_id', 'is', null)
+    .limit(1)
+    .maybeSingle()
+
+  if (orgStaffEntry?.notify_via_phone_number_id) {
+    const { data: senderPN } = await sb
+      .from('phone_numbers')
+      .select('display_phone_number')
+      .eq('phone_number_id', orgStaffEntry.notify_via_phone_number_id)
+      .maybeSingle()
+    const normalizedSender = fromPhone.replace(/\D/g, '')
+    if (senderPN?.display_phone_number?.replace(/\D/g, '') === normalizedSender) {
+      return
+    }
   }
 
   // ── Detectar staff: flujo de inventario (no flujo de cliente) ───────────────
