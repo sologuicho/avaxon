@@ -1151,6 +1151,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
+  // ── Load delivery zones + in-progress order ───────────────────────────────
+  const { data: deliveryZones } = await sb.from('delivery_zones')
+    .select('zone_name, price')
+    .eq('organization_id', organization_id)
+    .eq('active', true)
+
   // ── Handle order confirmation/add-more buttons ────────────────────────────
   const firstRawMsg  = rawMessages[0]
   const orderBtnId   = firstRawMsg?.type === 'interactive' ? (firstRawMsg?.interactive?.button_reply?.id ?? '') : ''
