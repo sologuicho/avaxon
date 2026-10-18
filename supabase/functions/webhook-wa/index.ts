@@ -1426,7 +1426,6 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         headers: { 'Authorization': `Bearer ${OPENAI_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model:           'gpt-4o',
-          response_format: { type: 'json_object' },
           messages,
           tools,
           max_tokens:  600,
