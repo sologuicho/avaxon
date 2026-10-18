@@ -1347,7 +1347,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const batchIdSet = new Set(batchIds)
   const { data: historyRaw } = await sb
     .from('messages')
-    .select('id, direction, content, sent_by')
+    .select('id, direction, content, sent_by, created_at')
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: false })
     .limit(14 + allPendingIds.length)
@@ -1387,15 +1387,20 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // Se decide en código si el cliente saludó y si el bot YA había saludado
   // antes en esta conversación — así el modelo no tiene que adivinar ni
   // depende de que recuerde bien el historial para no saludar dos veces.
-  const GREETING_REGEX = /\b(hola+|buen[oa]s?\s*(d[ií]as|tardes|noches)|qu[eé]\s*tal|hey|saludos)\b/i
+  const GREETING_REGEX = /\b(hola+|buen[oa]s?(?:\s*(d[ií]as?|tardes|noches))?|buen\s*d[ií]a|qu[eé]\s*tal|hey|saludos)\b/i
+  const GREETING_LOOKBACK_MS = 6 * 60 * 60 * 1000 // 6 horas — no "para siempre"
   let greetingCtx = ''
   if (GREETING_REGEX.test(combinedText)) {
-    const botAlreadyGreeted = chatHistory.some(m => m.role === 'assistant' && typeof m.content === 'string' && GREETING_REGEX.test(m.content))
+    const sixHoursAgo = Date.now() - GREETING_LOOKBACK_MS
+    const botAlreadyGreeted = (historyRaw ?? []).some(m =>
+      m.direction === 'outbound' && !m.sent_by && typeof m.content === 'string' &&
+      GREETING_REGEX.test(m.content) && new Date(m.created_at).getTime() >= sixHoursAgo,
+    )
     if (botAlreadyGreeted) {
-      greetingCtx = `\n\nEl cliente volvió a saludar, pero tú ya lo saludaste antes en esta conversación — NO lo saludes de nuevo, ve directo a atender lo que pide.`
+      greetingCtx = `\n\nEl cliente volvió a saludar, pero tú ya lo saludaste hace poco en esta conversación — NO lo saludes de nuevo, ve directo a atender lo que pide.`
     } else {
       const hourNow = Number(new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', hourCycle: 'h23' }).format(new Date()))
-      const greetingPhrase = hourNow < 12 ? 'Buenos días' : hourNow < 19 ? 'Buenas tardes' : 'Buenas noches'
+      const greetingPhrase = hourNow < 5 ? 'Buenas noches' : hourNow < 12 ? 'Buenos días' : hourNow < 19 ? 'Buenas tardes' : 'Buenas noches'
       greetingCtx = `\n\nEl cliente te saludó en este mensaje. Responde el saludo en la MISMA respuesta, breve y natural, usando "${greetingPhrase}" (es el saludo correcto para la hora actual) — y justo después atiende lo que te pidió, todo junto en un solo mensaje coherente. No mandes el saludo solo y la respuesta aparte.`
     }
   }
