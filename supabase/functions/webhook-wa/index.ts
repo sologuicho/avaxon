@@ -1302,12 +1302,38 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         .maybeSingle()
 
       const invCfg = (kitchenCfg as any)?.inventory_config as Record<string, any> | null ?? {}
-      const kitchenState = (invCfg?.kitchen_state as string) ?? 'idle'
-      const prevText     = (invCfg?.pending_kitchen_text as string) ?? ''
+      const kitchenState  = (invCfg?.kitchen_state as string) ?? 'idle'
+      const prevText      = (invCfg?.pending_kitchen_text as string) ?? ''
+      const promptCount   = (invCfg?.confirm_prompt_count as number) ?? 0
+      // Tope: si ya preguntamos "¿sería todo...?" 2 veces y la respuesta
+      // sigue sin calzar como confirmación ni como botón, se aplica el
+      // cambio de una vez en lugar de seguir preguntando (evita el loop).
+      const MAX_CONFIRM_PROMPTS = 2
 
-      const isNoChanges    = /mismo\s*men[uú]|todo\s*bien/i.test(combinedText)
-      const isChangesBtn   = /hay\s*cambios/i.test(combinedText)
-      const isConfirm      = /^(si|sí|ya|listo|eso es todo|correcto|ok|okay|nada\s*m[aá]s|ya es todo|as[ií]\s*es|eso|todo|fin|nada)[\s!.]*$/i.test(combinedText.trim())
+      // Quita acentos, pasa a minúsculas y le tira la puntuación de encima,
+      // para que "Sería todo", "ES TODO", "no, ya es todo." etc. calcen igual.
+      const normalizeKitchenText = (s: string) =>
+        s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.,!¡¿?]/g, '').trim()
+
+      const normalizedText = normalizeKitchenText(combinedText)
+
+      const isNoChanges  = /mismo\s*men[uú]|todo\s*bien/i.test(combinedText)
+      const isChangesBtn = /hay\s*cambios/i.test(combinedText)
+
+      // Frases completas que cuentan como "ya terminé" — se compara el texto
+      // completo normalizado contra esta lista, no un match parcial, para no
+      // confundir "no, también se acabó el arroz" con un "no" de confirmación.
+      const CONFIRM_PHRASES = new Set([
+        'si', 'ok', 'okay', 'ya', 'listo', 'correcto', 'confirmo',
+        'asi', 'asi es', 'asi esta bien',
+        'eso', 'eso es todo', 'todo', 'es todo', 'seria todo',
+        'ya es todo', 'no ya es todo', 'nada', 'nada mas', 'fin', 'no',
+      ])
+      const isConfirm = CONFIRM_PHRASES.has(normalizedText)
+
+      // Botón "Agregar más" del mensaje de confirmación — vuelve a collecting
+      // sin meter "agregar más" como si fuera un platillo.
+      const isAddMoreBtn = normalizedText === 'agregar mas'
 
       // El mensaje se manda por el número que de verdad recibió esto (Avaxon)
       // y se registra en SU conversación — eso es correcto y no cambia. Lo
@@ -1322,6 +1348,33 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         await sb.from('messages').insert({
           conversation_id, organization_id, direction: 'outbound', content: text,
           media_type: 'text', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+        })
+      }
+
+      // Pregunta de confirmación con botones, para no depender de que el
+      // texto libre calce con la lista de frases de arriba.
+      const sendConfirmPrompt = async () => {
+        const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: fromPhone, type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: { text: '¿Sería todo o hay algo más que agregar? 😊' },
+              action: {
+                buttons: [
+                  { type: 'reply', reply: { id: 'cocina_es_todo', title: 'Es todo' } },
+                  { type: 'reply', reply: { id: 'cocina_agregar_mas', title: 'Agregar más' } },
+                ],
+              },
+            },
+          }),
+        })
+        const d = await r.json().catch(() => ({}))
+        await sb.from('messages').insert({
+          conversation_id, organization_id, direction: 'outbound', content: '¿Sería todo o hay algo más que agregar?',
+          media_type: 'interactive', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
         })
       }
 
@@ -1342,7 +1395,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           // la plantilla matutina — antes esto solo tocaba system_prompt y
           // nunca llegaba a actualizar lo que el cron manda al día siguiente.
           daily_inventory: updateText,
-          inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, last_updated: new Date().toISOString(), last_update_text: updateText },
+          inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, confirm_prompt_count: 0, last_updated: new Date().toISOString(), last_update_text: updateText },
           updated_at: new Date().toISOString(),
         }).eq('organization_id', kitchenOrgId)
       }
@@ -1350,40 +1403,52 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       if (kitchenState === 'idle') {
         if (isNoChanges) {
           await sb.from('bot_configs').update({
-            inventory_config: { ...invCfg, kitchen_state: 'idle', last_updated: new Date().toISOString(), last_update_text: 'Sin cambios' },
+            inventory_config: { ...invCfg, kitchen_state: 'idle', confirm_prompt_count: 0, last_updated: new Date().toISOString(), last_update_text: 'Sin cambios' },
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
           await sendKitchenReply('✅ ¡Perfecto! Sin cambios en el menú. ¡Buen día! 😊')
         } else if (isChangesBtn) {
           await sb.from('bot_configs').update({
-            inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: '' },
+            inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: '', confirm_prompt_count: 0 },
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
           await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
         } else {
           await sb.from('bot_configs').update({
-            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
+            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText, confirm_prompt_count: 1 },
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
-          await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+          await sendConfirmPrompt()
         }
       } else if (kitchenState === 'collecting') {
         await sb.from('bot_configs').update({
-          inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
+          inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText, confirm_prompt_count: 1 },
           updated_at: new Date().toISOString(),
         }).eq('organization_id', kitchenOrgId)
-        await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+        await sendConfirmPrompt()
       } else if (kitchenState === 'awaiting_confirmation') {
         if (isConfirm) {
           await applyInventoryUpdate(prevText || combinedText)
           await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
+        } else if (isAddMoreBtn) {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: prevText, confirm_prompt_count: 0 },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+        } else if (promptCount >= MAX_CONFIRM_PROMPTS) {
+          // Ya preguntamos 2 veces y la respuesta sigue sin calzar — se
+          // aplica con lo que tenemos en vez de preguntar una tercera vez.
+          const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
+          await applyInventoryUpdate(accumulated)
+          await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
         } else {
           const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
           await sb.from('bot_configs').update({
-            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: accumulated },
+            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: accumulated, confirm_prompt_count: promptCount + 1 },
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
-          await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
+          await sendConfirmPrompt()
         }
       }
 
