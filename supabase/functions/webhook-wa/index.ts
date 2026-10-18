@@ -209,7 +209,6 @@ async function extractAppointmentSlot(
       headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
-        response_format: { type: 'json_object' },
         temperature: 0,
         max_tokens: 150,
         messages: [
