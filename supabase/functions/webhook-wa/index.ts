@@ -892,6 +892,27 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     return
   }
 
+  // ── Prevenir bot-to-bot: ignorar mensajes de números de bot propios ─────────
+  const { data: botNums } = await sb.from('phone_numbers').select('display_phone_number')
+  const normalizedSender = fromPhone.replace(/\D/g, '')
+  if (botNums?.some(bn => bn.display_phone_number.replace(/\D/g, '') === normalizedSender)) {
+    return
+  }
+
+  // ── Detectar staff: flujo de inventario (no flujo de cliente) ───────────────
+  const { data: staffMember } = await sb
+    .from('org_staff')
+    .select('organization_id, name')
+    .eq('phone', fromPhone)
+    .eq('active', true)
+    .maybeSingle()
+
+  if (staffMember) {
+    const incomingText = rawMessages.map((m: any) => m.text?.body ?? '').filter(Boolean).join(' ').trim()
+    await handleStaffInventoryMessage(incomingText, fromPhone, staffMember.organization_id, staffMember.name, phoneNumberId, clientToken, sb, OPENAI_KEY)
+    return
+  }
+
   // ── Track campaign reply (responded_at) ────────────────────────────────────
   const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
   const { data: ccReply } = await sb
