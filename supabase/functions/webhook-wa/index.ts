@@ -1140,7 +1140,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   // WhatsApp no renderiza markdown de links ni encabezados — si el bot escribe
   // "[texto](url)" o "# título" se ven los corchetes/almohadillas tal cual.
-  const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks.`
+  const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks. Los botones ("buttons") tienen un límite DURO de 20 caracteres en WhatsApp — si se te pasas, queda cortado y se ve mal. Usa textos cortos (ej. "Otro horario" en vez de "Prefiero otro horario", "Sí, agendar" en vez de "Sí, me gustaría agendar"). Cuenta los caracteres antes de poner cada botón.`
 
   // notify_owner pausa la conversación y le avisa al dueño — no es un botón
   // de "ya no sé qué responder". Antes del fix, un mensaje fragmentado y
@@ -1164,12 +1164,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // mensajes cortos en una sola respuesta), pero nunca se espera más de
   // MAX_BATCH_MS desde el primer mensaje del lote — si el cliente no deja de
   // escribir, de todos modos se procesa lo que haya en cuanto se cumple el tope.
+  // Solo cuenta como "primero del lote" un pendiente dentro de la ventana de
+  // MAX_BATCH_MS antes de este mensaje — si no, un mensaje viejo que se quedó
+  // sin procesar por algún motivo (ej. una corrida anterior interrumpida)
+  // envejece el cálculo del tope y hace que CADA invocación futura dispare el
+  // tope de inmediato, sin esperar nada. Esos pendientes viejos de todos modos
+  // se reclaman y pasan a ser contexto vía STALE_THRESHOLD_MS más abajo.
   const { data: firstPendingRow } = await sb
     .from('messages')
     .select('created_at')
     .eq('conversation_id', conversation_id)
     .eq('direction', 'inbound')
     .is('processed_at', null)
+    .gte('created_at', new Date(new Date(lastInsertedAt).getTime() - MAX_BATCH_MS).toISOString())
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
