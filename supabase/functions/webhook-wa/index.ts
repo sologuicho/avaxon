@@ -976,10 +976,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   // ── Detectar staff: flujo de inventario (no flujo de cliente) ───────────────
+  // notify_via_phone_number_id debe coincidir con el número que recibió el mensaje
   const { data: staffMember } = await sb
     .from('org_staff')
     .select('organization_id, name')
     .eq('phone', fromPhone)
+    .eq('notify_via_phone_number_id', phoneNumberId)
     .eq('active', true)
     .maybeSingle()
 
