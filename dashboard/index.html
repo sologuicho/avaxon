@@ -276,9 +276,10 @@
       color: #2a3f55; pointer-events: none; display: flex; align-items: center;
     }
     .input-toggle {
-      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      background: none; border: none; cursor: pointer; color: #2a3f55;
-      padding: 4px; display: flex; border-radius: 6px; transition: color .15s;
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: rgba(255,255,255,.45);
+      padding: 8px; display: flex; border-radius: 6px; transition: color .15s;
+      min-width: 36px; min-height: 36px; align-items: center; justify-content: center;
     }
     .input-toggle:hover { color: #4ade80; }
 
@@ -1440,6 +1441,55 @@
       .cfg-general-grid { grid-template-columns: 1fr; }
       .cfg-hours-row { grid-template-columns: 70px 1fr 1fr auto; }
       .cfg-save-bar { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+    }
+
+    /* ── Bot view layout ── */
+    .bot-layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    /* ── Mobile fixes (≤768px) ── */
+    @media (max-width: 768px) {
+      /* Bot view: stack sidebar card below the form */
+      .bot-layout-grid { grid-template-columns: 1fr; }
+
+      /* Conexiones tabs: full width, wrap evenly */
+      .conn-tabs { width: 100%; }
+      .conn-tab { flex: 1; justify-content: center; padding: 8px 10px; font-size: 12px; }
+
+      /* KPI value: scale down so 2-col fits comfortably */
+      .kpi-value { font-size: 36px; }
+
+      /* Chat: safe area padding on iPhone home indicator */
+      .chat-input-bar {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* Sidebar: bottom inset so user avatar isn't hidden behind home bar */
+      .sidebar {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      /* Chat messages: give a bit more width to bubbles */
+      .msg-bubble { max-width: 82%; }
+
+      /* Page area: reduce horizontal padding on tiny screens */
+      .page-area { padding: 16px 12px 60px; }
+    }
+
+    /* ── Small phones (≤480px) ── */
+    @media (max-width: 480px) {
+      /* Topbar title fits without truncating */
+      .topbar-h1 { font-size: 15px; }
+
+      /* Chat bubbles: wider on small screens */
+      .msg-bubble { max-width: 88%; }
+
+      /* conn-tabs: shrink padding on 320-390px phones */
+      .conn-tab { padding: 7px 8px; font-size: 11.5px; }
     }
   </style>
 </head>
@@ -2761,9 +2811,8 @@
                       <div><div class="ch-step-label">Bot activo en Instagram</div><div class="ch-step-sub">El agente responde DMs al instante</div></div>
                     </div>
                   </div>
-                  <button id="ig-connect-btn" onclick="launchIgEmbeddedSignup()" class="ch-cta" style="background:linear-gradient(135deg,#833ab4,#e1306c);color:#fff">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                    Conectar con Meta
+                  <button disabled class="ch-cta" style="background:#94a3b8;color:#fff;cursor:not-allowed;opacity:.7">
+                    <i class="fa fa-clock" style="margin-right:6px"></i>Próximamente
                   </button>
                   <span id="ig-integ-status" style="display:none;font-size:11.5px;color:var(--text-muted);text-align:center"></span>
                 </div>
@@ -2802,9 +2851,8 @@
                       <div><div class="ch-step-label">Bot activo en Messenger</div><div class="ch-step-sub">El agente responde al instante</div></div>
                     </div>
                   </div>
-                  <button id="fb-connect-btn" onclick="launchFbEmbeddedSignup()" class="ch-cta" style="background:linear-gradient(135deg,#1877f2,#0a5dc2);color:#fff">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.62 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>
-                    Conectar con Meta
+                  <button disabled class="ch-cta" style="background:#94a3b8;color:#fff;cursor:not-allowed;opacity:.7">
+                    <i class="fa fa-clock" style="margin-right:6px"></i>Próximamente
                   </button>
                   <span id="fb-integ-status" style="display:none;font-size:11.5px;color:var(--text-muted);text-align:center"></span>
                 </div>
@@ -3218,7 +3266,7 @@
             <p style="font-size:13.5px;line-height:1.6;color:var(--text);margin:0">¿Cambió tu menú, tus precios, tus horarios o quieres que tu agente responda diferente? Mándanos tu solicitud y nuestro equipo la aplica. <strong>Incluido en tu plan.</strong></p>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
+          <div class="bot-layout-grid">
             <div class="card bp" style="padding:20px">
               <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
               <div style="font-size:15px;font-weight:700;margin-bottom:16px">Nueva solicitud</div>
@@ -4041,12 +4089,15 @@
     requestAnimationFrame(draw);
   })();
 
+  const EYE_OPEN  = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+  const EYE_SLASH = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
   function togglePwd(inputId, btn) {
     const inp = document.getElementById(inputId)
     if (!inp) return
     const isHidden = inp.type === 'password'
     inp.type = isHidden ? 'text' : 'password'
-    btn.style.color = isHidden ? '#22c55e' : '#3a5068'
+    btn.innerHTML = isHidden ? EYE_SLASH : EYE_OPEN
+    btn.style.color = isHidden ? '#22c55e' : ''
   }
 
   // WhatsApp Cloud API históricamente agregaba un "1" extra para celulares
@@ -5893,55 +5944,122 @@
   const EDGE_BASE = 'https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1';
 
   /* ── WhatsApp Embedded Signup ── */
-  let _embeddedSignupListenerAdded = false;
+  // config_id: Crear en Meta Developers → Tu App → Facebook Login for Business → Configurations
+  // Docs: https://developers.facebook.com/docs/whatsapp/embedded-signup
+  const WA_EMBEDDED_CONFIG_ID = '2192508524980461';
+
+  async function handleWaSignupRedirectCallback() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('state') !== 'wa_signup' || !params.get('code')) return;
+    window.history.replaceState({}, '', window.location.pathname);
+    const code           = params.get('code');
+    const waba_id        = params.get('waba_id');
+    const phone_number_id = params.get('phone_number_id');
+    showToast('Procesando conexión de WhatsApp…');
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { showToast('Sesión expirada. Vuelve a iniciar sesión.'); return; }
+      const res = await fetch('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/whatsapp-embedded-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ code, waba_id, phone_number_id, flow_type: 'redirect' }),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        showToast('✓ WhatsApp conectado exitosamente');
+        switchView('conexiones');
+        loadDashboard(state.currentOrgId || state.userOrgId);
+      } else {
+        showToast(result.error || 'Error al conectar WhatsApp');
+      }
+    } catch(err) {
+      showToast(err.message || 'Error procesando la conexión');
+    }
+  }
 
   async function launchEmbeddedSignup() {
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
-
-    if (!_embeddedSignupListenerAdded) {
-      _embeddedSignupListenerAdded = true;
-      window.addEventListener('message', async function(e) {
-        if (!e.data || e.data.type !== 'WA_EMBEDDED_SIGNUP') return;
-        const { code, waba_id, phone_number_id } = e.data.data || {};
-        if (!code) return;
-
-        const btn = document.getElementById('wa-embedded-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Conectando…'; }
-
-        try {
-          const { data: { session } } = await sb.auth.getSession();
-          const res = await fetch('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/whatsapp-embedded-signup', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify({ code, waba_id, phone_number_id })
-          });
-          const result = await res.json();
-          if (result.ok) {
-            showToast('✓ Número de WhatsApp conectado');
-            loadDashboard(state.currentOrgId || state.userOrgId);
-          } else {
-            showToast(result.error || 'Error al conectar número');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
-          }
-        } catch (err) {
-          showToast(err.message || 'Error al conectar número');
-          if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
-        }
-      });
+    if (!WA_EMBEDDED_CONFIG_ID) {
+      showToast('Falta el Configuration ID de Meta.');
+      return;
     }
 
+    // En móvil usar redirect en lugar de popup (los popups son bloqueados)
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768;
+    if (isMobile) {
+      const redirectUri = 'https://avaxon.lat/dashboard';
+      const fbParams = new URLSearchParams({
+        client_id:                    '2086225228635820',
+        redirect_uri:                 redirectUri,
+        scope:                        'business_management,whatsapp_business_management,whatsapp_business_messaging',
+        response_type:                'code',
+        config_id:                    WA_EMBEDDED_CONFIG_ID,
+        override_default_response_type: 'true',
+        state:                        'wa_signup',
+      });
+      window.location.href = `https://www.facebook.com/dialog/oauth?${fbParams}`;
+      return;
+    }
+
+    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return; }
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
+
+    // Capturar waba_id y phone_number_id del postMessage ANTES de que llegue el code
+    window.__waSessionInfo = null;
+    const sessionListener = function(event) {
+      if (!event.origin || !event.origin.endsWith('facebook.com')) return;
+      if (typeof event.data !== 'string' || !event.data.includes('WA_EMBEDDED_SIGNUP')) return;
+      try {
+        const data = JSON.parse(event.data);
+        let flow_type = 'new_phone_number';
+        if (data.type === 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING') flow_type = 'existing_phone_number';
+        else if (data.type === 'FINISH_ONLY_WABA') flow_type = 'only_waba';
+        window.__waSessionInfo = {
+          phone_number_id: data.data?.phone_number_id,
+          waba_id:         data.data?.waba_id,
+          flow_type:       flow_type,
+        };
+      } catch(e) { console.warn('WA session info parse error:', e); }
+    };
+    window.addEventListener('message', sessionListener);
+
+    const btn = document.getElementById('wa-embedded-btn');
+
     FB.login(function(response) {
-      if (!response || response.status === 'not_authorized' || !response.authResponse) {
-        // User cancelled or did not authorize
+      (async function() {
+      window.removeEventListener('message', sessionListener);
+      if (!response?.authResponse?.code) {
+        showToast('Conexión cancelada.');
+        return;
       }
+      if (btn) { btn.disabled = true; btn.textContent = 'Conectando…'; }
+      const sessionInfo = window.__waSessionInfo || {};
+      const { code } = response.authResponse;
+      const { waba_id, phone_number_id } = sessionInfo;
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch('https://wprvjhvtnyibiwpeiusc.supabase.co/functions/v1/whatsapp-embedded-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({ code, waba_id, phone_number_id, flow_type: sessionInfo.flow_type }),
+        });
+        const result = await res.json();
+        if (result.ok) {
+          showToast('✓ Número de WhatsApp conectado');
+          loadDashboard(state.currentOrgId || state.userOrgId);
+        } else {
+          showToast(result.error || 'Error al conectar número');
+          if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
+        }
+      } catch (err) {
+        showToast(err.message || 'Error al conectar número');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg> Conectar con Meta'; }
+      }
+      })();
     }, {
-      scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+      config_id: WA_EMBEDDED_CONFIG_ID,
       response_type: 'code',
       override_default_response_type: true,
-      extras: { setup: {}, featureType: '', sessionInfoVersion: '3' }
+      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' },
     });
   }
   window.launchEmbeddedSignup = launchEmbeddedSignup;
@@ -5949,7 +6067,7 @@
   /* ── Embedded Signup: Instagram Direct ── */
   async function launchIgEmbeddedSignup() {
     if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     const btn = $('ig-connect-btn');
     const setLoading = (on) => {
@@ -5960,7 +6078,8 @@
         : '<svg viewBox="0 0 24 24" width="16" height="16" fill="white" style="margin-right:6px"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>Conectar con Meta';
     };
 
-    FB.login(async function(response) {
+    FB.login(function(response) {
+      (async function() {
       if (!response?.authResponse?.accessToken) return;
       setLoading(true);
       try {
@@ -5985,6 +6104,7 @@
       } finally {
         setLoading(false);
       }
+      })();
     }, {
       scope: 'instagram_manage_messages,instagram_basic,pages_show_list,pages_manage_metadata,pages_read_engagement',
     });
@@ -5994,7 +6114,7 @@
   /* ── Embedded Signup: Facebook Messenger ── */
   async function launchFbEmbeddedSignup() {
     if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
-    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v21.0' });
+    FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     const btn = $('fb-connect-btn');
     const setLoading = (on) => {
@@ -6005,7 +6125,8 @@
         : '<svg viewBox="0 0 24 24" width="16" height="16" fill="white" style="margin-right:6px"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.62 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>Conectar con Meta';
     };
 
-    FB.login(async function(response) {
+    FB.login(function(response) {
+      (async function() {
       if (!response?.authResponse?.accessToken) return;
       setLoading(true);
       try {
@@ -6030,6 +6151,7 @@
       } finally {
         setLoading(false);
       }
+      })();
     }, {
       scope: 'pages_manage_metadata,pages_messaging,pages_show_list,pages_read_engagement,public_profile',
     });
@@ -7422,16 +7544,10 @@
     }
 
     // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
-    const _isDemo = user.email === 'luisflores050704@gmail.com';
-    if (!state.isSuperAdmin && !_isDemo) {
+    if (!state.isSuperAdmin) {
       if (!profileData?.terms_accepted_at) {
         showTermsModal();
         return; // bootstrap continúa desde acceptTerms()
-      }
-      if (!profileData?.onboarding_done_at) {
-        await finishBootstrap(profileData);
-        showWelcomeModal(profileData?.full_name);
-        return;
       }
     }
 
@@ -7469,6 +7585,18 @@
       state.currentOrgId = orgId;
       await loadOrgTimezone(orgId);
       await loadDashboard(orgId);
+
+      // Ocultar módulos según plan
+      const { data: orgPlan } = await sb.from('organizations').select('plan_id').eq('id', orgId).single();
+      const plan = orgPlan?.plan_id || '';
+      if (plan === 'arranque' || plan === 'mostrador') {
+        // Módulos que no aplican en plan arranque/mostrador
+        ['nav-campanas','nav-pagos'].forEach(id => { const el = $(id); if (el) el.style.display = 'none'; });
+        ['calendario','leads','pipeline','asignacion'].forEach(view => {
+          const el = document.querySelector(`.nav-item[data-view="${view}"]`);
+          if (el) el.style.display = 'none';
+        });
+      }
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
@@ -7480,6 +7608,7 @@
     if (_savedView !== 'conversaciones') loadConversaciones();
     loadIntegrations();
     handleGoogleOAuthRedirect();
+    handleWaSignupRedirectCallback();
 
     // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
     const _urlParams = new URLSearchParams(window.location.search)
@@ -7566,9 +7695,6 @@
     await loadOrgTimezone(state.currentOrgId);
     loadConversaciones();
     loadIntegrations();
-    if (!p?.onboarding_done_at) {
-      showWelcomeModal(p?.full_name);
-    }
   }
 
   // ── Onboarding tour ──────────────────────────────────────────────────────
