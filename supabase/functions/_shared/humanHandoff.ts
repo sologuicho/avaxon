@@ -102,11 +102,13 @@ export async function notifyOwnerAlert(
     const { data: org } = await sb.from('organizations').select('name').eq('id', organizationId).maybeSingle()
     const orgName = org?.name || 'tu negocio'
 
-    const notifyEmail = await resolveOwnerEmail(sb, organizationId)
-    if (!notifyEmail) {
-      console.warn(`notifyOwnerAlert: sin correo de notificaciones para org ${organizationId}`)
-      return
-    }
+    const { data: profileCheck2 } = await sb
+      .from('organization_profile')
+      .select('notification_email')
+      .eq('organization_id', organizationId)
+      .maybeSingle()
+    const notifyEmail = profileCheck2?.notification_email || null
+    if (!notifyEmail) return
 
     const nowLabel = await resolveNowLabel(sb, organizationId)
     const convUrl = `https://avaxon.lat/dashboard/?conv=${conversationId}`
