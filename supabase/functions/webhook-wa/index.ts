@@ -1095,7 +1095,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // ── 5. Bot IA (solo si está habilitado) ────────────────────────────────────
   const { data: botConfig } = await sb
     .from('bot_configs')
-    .select('system_prompt, enabled, inventory_config')
+    .select('system_prompt, enabled, inventory_config, daily_inventory')
     .eq('organization_id', organization_id)
     .eq('enabled', true)
     .maybeSingle()
