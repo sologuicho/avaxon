@@ -954,7 +954,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // ── Prevenir bot-to-bot: ignorar mensajes de números de bot propios ─────────
   const { data: botNums } = await sb.from('phone_numbers').select('display_phone_number')
   const normalizedSender = fromPhone.replace(/\D/g, '')
-  if (botNums?.some(bn => bn.display_phone_number.replace(/\D/g, '') === normalizedSender)) {
+  if (botNums?.some(bn => bn.display_phone_number?.replace(/\D/g, '') === normalizedSender)) {
     return
   }
 
