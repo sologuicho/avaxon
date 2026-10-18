@@ -52,7 +52,23 @@ Deno.serve(async (req: Request) => {
       let components: any[]
 
       if (type === 'morning') {
-        // Obtener inventario actual para incluirlo en la plantilla
+        // Catálogo completo de comida del día para que el chef elija qué habrá hoy
+        const { data: botCfg } = await sb
+          .from('bot_configs')
+          .select('inventory_config')
+          .eq('organization_id', staff.organization_id)
+          .maybeSingle()
+
+        const catalog = ((botCfg?.inventory_config as any)?.catalog as string)?.trim()
+          || 'Responde con los platillos del dia de hoy'
+
+        templateName = TEMPLATE_MORNING
+        components = [
+          { type: 'body', parameters: [{ type: 'text', text: catalog }] },
+          { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'INVENTARIO_OK_MORNING' }] },
+        ]
+      } else {
+        // Inventario activo actual para confirmar si hay cambios en el día
         const { data: botCfg } = await sb
           .from('bot_configs')
           .select('daily_inventory')
@@ -60,17 +76,12 @@ Deno.serve(async (req: Request) => {
           .maybeSingle()
 
         const rawInventory = botCfg?.daily_inventory?.trim()
-          || 'Sin inventario definido — responde con los platillos del día 🍽️'
+          || 'Sin inventario definido aun'
         const inventory = rawInventory.replace(/[\n\r\t]+/g, ' • ')
 
-        templateName = TEMPLATE_MORNING
-        components = [
-          { type: 'body', parameters: [{ type: 'text', text: inventory }] },
-          { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'INVENTARIO_OK_MORNING' }] },
-        ]
-      } else {
         templateName = TEMPLATE_PERIODIC
         components = [
+          { type: 'body', parameters: [{ type: 'text', text: inventory }] },
           { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'INVENTARIO_OK_PERIODIC' }] },
         ]
       }
