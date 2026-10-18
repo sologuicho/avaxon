@@ -992,6 +992,34 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (staffMember) {
     const incomingText = rawMessages.map((m: any) => m.text?.body ?? '').filter(Boolean).join(' ').trim()
+
+    // Guardar en conversaciones para que aparezca en el dashboard
+    const { data: staffContact } = await sb.from('contacts')
+      .upsert({ organization_id, phone: fromPhone, name: contactName, last_seen_at: new Date().toISOString() }, { onConflict: 'organization_id,phone' })
+      .select('id').single()
+    if (staffContact) {
+      const { data: existingConv } = await sb.from('conversations')
+        .select('id').eq('organization_id', organization_id).eq('contact_id', staffContact.id).eq('status', 'open')
+        .order('created_at', { ascending: false }).limit(1).maybeSingle()
+      let staffConvId: string | null = existingConv?.id ?? null
+      if (!staffConvId) {
+        const { data: nc } = await sb.from('conversations')
+          .insert({ organization_id, contact_id: staffContact.id, phone_number_id: pn.id, status: 'open', last_message_at: new Date().toISOString() })
+          .select('id').single()
+        staffConvId = nc?.id ?? null
+      } else {
+        await sb.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', staffConvId)
+      }
+      if (staffConvId) {
+        for (const rawMsg of rawMessages) {
+          const parsed = await parseMessage(rawMsg, clientToken, OPENAI_KEY)
+          if (parsed?.content) {
+            await sb.from('messages').insert({ conversation_id: staffConvId, organization_id, direction: 'inbound', content: parsed.content, wa_message_id: parsed.waMessageId })
+          }
+        }
+      }
+    }
+
     await handleStaffInventoryMessage(incomingText, fromPhone, staffMember.organization_id, staffMember.name, phoneNumberId, clientToken, sb, OPENAI_KEY)
     return
   }
