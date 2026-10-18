@@ -199,6 +199,47 @@ async function extractAppointmentSlot(
   }
 }
 
+// Toma el menú actual del día + el mensaje libre del chef describiendo
+// cambios ("se acabó X, agregamos Y") y devuelve el menú FINAL ya mezclado
+// -- sin esto, el chef que reporta un cambio puntual pisaba todo el menú
+// anterior con solo la frase del cambio.
+async function interpretMenuUpdate(
+  previousMenu: string,
+  updateText: string,
+  openaiKey: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+        temperature: 0,
+        max_tokens: 300,
+        messages: [
+          {
+            role: 'system',
+            content: 'Eres el asistente de cocina de un restaurante. Tienes el menú actual del día y un mensaje del chef describiendo cambios (platillos que se agotaron, platillos nuevos que se agregan, etc.). Devuelve el menú FINAL ya actualizado, aplicando esos cambios sobre el menú actual -- no incluyas platillos que el chef dijo que se agotaron, y agrega los nuevos que mencionó. Si el chef no menciona ningún cambio de ese tipo, deja el menú actual igual. Responde SOLO con JSON: {"menu": ["platillo 1", "platillo 2", ...]}, cada elemento un platillo sin numeración ni viñetas.',
+          },
+          { role: 'user', content: `Menú actual:\n${previousMenu || '(sin platillos registrados)'}\n\nMensaje del chef:\n${updateText}` },
+        ],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
+    const items = Array.isArray(parsed?.menu)
+      ? parsed.menu.filter((x: unknown) => typeof x === 'string' && x.trim())
+      : null
+    if (!items || !items.length) return null
+    return items.map((s: string) => s.trim()).join('\n')
+  } catch (e) {
+    console.error('interpretMenuUpdate: error inesperado:', e)
+    return null
+  }
+}
+
 // ── Helpers de hora: 12h↔24h y aritmética en minutos-del-día ────────────────
 // Todo esto existe para que la conversión AM/PM nunca dependa de que el
 // modelo la haga bien sola — un "5:00 PM" mal convertido a "05:00" fue
@@ -1297,7 +1338,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     if (kitchenOrgId) {
       const { data: kitchenCfg } = await sb
         .from('bot_configs')
-        .select('system_prompt, inventory_config')
+        .select('system_prompt, inventory_config, daily_inventory')
         .eq('organization_id', kitchenOrgId)
         .maybeSingle()
 
@@ -1378,15 +1419,25 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         })
       }
 
-      const applyInventoryUpdate = async (updateText: string) => {
+      // Devuelve el menú final (con \n entre platillos) ya guardado, para
+      // que quien llama pueda confirmarle a la chef la lista completa.
+      const applyInventoryUpdate = async (updateText: string): Promise<string> => {
         const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+        const previousMenu = (kitchenCfg as any)?.daily_inventory ?? ''
+        // El chef describe un CAMBIO ("se acabó X, agregamos Y"), no el menú
+        // completo — si se guardara updateText tal cual, se perdería todo lo
+        // demás del menú. Se le pide al modelo que mezcle el cambio sobre el
+        // menú anterior; si falla, se cae de vuelta al texto crudo.
+        const merged = await interpretMenuUpdate(previousMenu, updateText, OPENAI_KEY)
+        const finalMenu = merged || updateText
+
         const marker = '[Este apartado se actualiza automáticamente'
         let newPrompt = (kitchenCfg as any)?.system_prompt || ''
         const idx = newPrompt.indexOf(marker)
         if (idx !== -1) {
           const endIdx = newPrompt.indexOf(']', idx)
           if (endIdx !== -1) {
-            newPrompt = newPrompt.slice(0, idx) + `Última actualización: ${today}.\n${updateText}` + newPrompt.slice(endIdx + 1)
+            newPrompt = newPrompt.slice(0, idx) + `Última actualización: ${today}.\n${finalMenu}` + newPrompt.slice(endIdx + 1)
           }
         }
         await sb.from('bot_configs').update({
@@ -1394,10 +1445,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           // daily_inventory es lo que de verdad lee send-inventory-check para
           // la plantilla matutina — antes esto solo tocaba system_prompt y
           // nunca llegaba a actualizar lo que el cron manda al día siguiente.
-          daily_inventory: updateText,
+          daily_inventory: finalMenu,
           inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, confirm_prompt_count: 0, last_updated: new Date().toISOString(), last_update_text: updateText },
           updated_at: new Date().toISOString(),
         }).eq('organization_id', kitchenOrgId)
+
+        return finalMenu
       }
 
       if (kitchenState === 'idle') {
@@ -1428,8 +1481,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         await sendConfirmPrompt()
       } else if (kitchenState === 'awaiting_confirmation') {
         if (isConfirm) {
-          await applyInventoryUpdate(prevText || combinedText)
-          await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
+          const finalMenu = await applyInventoryUpdate(prevText || combinedText)
+          const menuLabel = finalMenu.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ')
+          await sendKitchenReply(`✅ ¡Listo! Menú actualizado: ${menuLabel}. ¡Buen provecho hoy! 😊`)
         } else if (isAddMoreBtn) {
           await sb.from('bot_configs').update({
             inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: prevText, confirm_prompt_count: 0 },
@@ -1440,8 +1494,9 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           // Ya preguntamos 2 veces y la respuesta sigue sin calzar — se
           // aplica con lo que tenemos en vez de preguntar una tercera vez.
           const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
-          await applyInventoryUpdate(accumulated)
-          await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
+          const finalMenu = await applyInventoryUpdate(accumulated)
+          const menuLabel = finalMenu.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ')
+          await sendKitchenReply(`✅ ¡Listo! Menú actualizado: ${menuLabel}. ¡Buen provecho hoy! 😊`)
         } else {
           const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
           await sb.from('bot_configs').update({
