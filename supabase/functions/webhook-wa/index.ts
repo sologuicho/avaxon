@@ -1838,6 +1838,19 @@ async function handleStatuses(statuses: any[], env: Env): Promise<void> {
   for (const s of statuses) {
     const status      = s.status       // 'sent' | 'delivered' | 'read' | 'failed'
     const recipientId = s.recipient_id // E.164 phone we sent to
+
+    // Traza de statuses 'failed' (con su error) — para depurar envíos que
+    // no están ligados a una campaña (ej. pruebas manuales de plantillas).
+    // Solo 'failed', no cada delivered/read de cada mensaje — eso ya se
+    // cuenta en campaigns, y guardar el teléfono de cada entrega normal
+    // en este log no aporta nada.
+    if (status === 'failed' || s.errors) {
+      logToolTrace(sb, {
+        tool_name: 'meta_status_webhook',
+        result: JSON.stringify({ status, recipientId, wamid: s.id, errors: s.errors ?? null }),
+      })
+    }
+
     if (!recipientId || (status !== 'delivered' && status !== 'read')) continue
 
     const updateField = status === 'delivered' ? 'delivered_at' : 'read_at'
