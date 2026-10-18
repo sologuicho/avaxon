@@ -185,7 +185,7 @@ Deno.serve(async (req: Request) => {
         category:         metaRow.category || 'UTILITY',
         language:         metaRow.language || 'es_MX',
         rejected_reason:  cleanReason(metaRow.rejected_reason),
-        components:       [],
+        components:       metaRow.components || [],
         created_at:       new Date().toISOString(),
         updated_at:       new Date().toISOString(),
       })
