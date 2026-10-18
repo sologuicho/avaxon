@@ -1362,12 +1362,15 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       const isNoChanges  = /mismo\s*men[uú]|todo\s*bien|sin\s*cambios/i.test(combinedText)
       const isChangesBtn = /hay\s*cambios/i.test(combinedText)
 
-      // Saludo/charla/agradecimiento sin contenido de menú ("hola", "buenos
-      // días", "gracias", "ok", "qué tal") — en idle, esto NO debe arrancar
-      // el flujo de inventario, solo mostrar el menú y preguntar si hay
-      // cambios. Si el mensaje también describe un cambio ("hola, se acabó
-      // el mole"), hasChangeIndicator gana y se trata como cambio.
-      const isGreetingOrChat = /\b(hola|buenos?\s*d[ií]as|buenas\s*(tardes|noches)?|qu[eé]\s*tal|c[oó]mo\s*(estas|est[aá]s?)|gracias|^ok$|^okay$|vale|perfecto|entendido)\b/i.test(combinedText)
+      // Saludo sin contenido de menú ("hola", "buenos días", "qué tal") — en
+      // idle, esto NO debe arrancar el flujo de inventario: muestra el menú
+      // y pregunta si hay cambios con botones. Si el mensaje también
+      // describe un cambio ("hola, se acabó el mole"), hasChangeIndicator
+      // gana y se trata como cambio.
+      const isGreetingOrChat = /\b(hola|buenos?\s*d[ií]as|buenas\s*(tardes|noches)?|qu[eé]\s*tal|c[oó]mo\s*(estas|est[aá]s?))\b/i.test(combinedText)
+      // Agradecimiento/cierre ("gracias", "ok", "va", "perfecto", "listo",
+      // 👍, 🙏) — distinto del saludo: no repite el menú, solo un acuse corto.
+      const isThanksOrClosing = /\b(muchas\s*gracias|gracias|okay|ok|va|perfecto|listo)\b|👍|🙏/i.test(combinedText)
       const hasChangeIndicator = /\b(se\s*acab[oó]|agot[oó]|agotad[oa]|ya\s*no\s*hay|no\s*hay|agregamos?|agregar|agreg[oó]|cambio|cambi[oó]|sustituim|quitamos|quitar|nuevo\s*platillo)\b/i.test(combinedText)
 
       // Frases completas que cuentan como "ya terminé" — se compara el texto
@@ -1506,8 +1509,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             updated_at: new Date().toISOString(),
           }).eq('organization_id', kitchenOrgId)
           await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+        } else if (isThanksOrClosing && !hasChangeIndicator) {
+          // Agradecimiento/cierre — acuse corto, sin menú, sin botones, sin
+          // tocar inventory_config.
+          const name = kitchenStaffName ? `, ${kitchenStaffName}` : ''
+          await sendKitchenReply(`¡De nada${name}! 😊 Cualquier cambio en el menú, aquí estoy.`)
         } else if (isGreetingOrChat && !hasChangeIndicator) {
-          // Saludo/charla sin contenido de menú — no toca inventory_config.
+          // Saludo sin contenido de menú — no toca inventory_config.
           await sendMenuPrompt()
         } else {
           await sb.from('bot_configs').update({
