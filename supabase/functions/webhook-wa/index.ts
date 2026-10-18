@@ -1022,6 +1022,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       }
     }
 
+    // Si tocó el botón de "Sin cambios" en cualquiera de las plantillas de inventario
+    if (buttonPayload === 'INVENTARIO_OK_MORNING' || buttonPayload === 'INVENTARIO_OK_PERIODIC') {
+      await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: '✅ Perfecto, el menú sigue igual. ¡Gracias! 🍽️' } }),
+      })
+      return
+    }
+
     await handleStaffInventoryMessage(incomingText, fromPhone, staffMember.organization_id, staffMember.name, phoneNumberId, clientToken, sb, OPENAI_KEY)
     return
   }
