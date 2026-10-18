@@ -1176,6 +1176,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const todayLabel = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
   const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 
+  // Antes esto solo llegaba al modelo dentro de calendarCtx (solo si la org
+  // tiene Google Calendar conectado) -- sin calendario, el bot no tenía
+  // idea de qué día era (ej. no sabía que "hoy" sí era domingo para una
+  // regla de "solo se vende los domingos"). Ahora es siempre parte del
+  // contexto, sin depender de ninguna integración.
+  const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver cualquier regla que dependa del día o la hora (ej. "solo los domingos", horario de apertura/cierre, qué menú está vigente ahora) -- nunca asumas o inventes qué día es.`
+
   const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
   const hoursGuardrail = hasBusinessHours
     ? ''
@@ -1209,15 +1216,23 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // que el cliente hubiera pedido nada de esto.
   const notifyOwnerScopeCtx = `\n\nUSO DE notify_owner (son las ÚNICAS razones válidas, no hay otras): 1) el cliente pide explícitamente hablar con una persona, 2) el cliente se queja o está molesto, 3) el cliente tiene un problema real que de verdad no puedes resolver con tus herramientas. NUNCA lo actives solo porque el mensaje del cliente te resulte confuso, fragmentado, incompleto o ambiguo — en esos casos SIEMPRE haz una pregunta clara y concreta para entender qué necesita, en vez de responder a medias o pasarlo a una persona. Tu confusión no es motivo para activar notify_owner.`
 
+  // El cliente puede preguntar "¿con quién hablo?" sin saber que es un bot
+  // (sobre todo justo después de que alguien del equipo respondió desde el
+  // celular) -- nunca debe negar ser el negocio, y nunca debe nombrar ni
+  // confirmar nombres de personas del equipo ("no soy Eli ni Héctor").
+  const identityCtx = `\n\nIDENTIDAD: Nunca digas que no eres el negocio, ni niegues ser quien atiende esta conversación. Nunca menciones, confirmes ni niegues nombres de personas del equipo (ej. nunca digas algo como "no soy Eli" o "no soy Héctor"). Si el cliente pregunta quién le escribe o si está hablando con una persona, responde con calidez como el negocio, sin negar ni afirmar si es un bot o una persona.`
+
   const systemPrompt = [
     botConfig.system_prompt,
     businessContext,
+    fechaHoraCtx,
     calendarCtx,
     catalogCtx,
     outOfHoursCtx,
     noPromisesCtx,
     formatCtx,
     notifyOwnerScopeCtx,
+    identityCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce deslizante con tope ─────────────────────────────────────────
@@ -2057,6 +2072,11 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 })
   }
 
+  if (change?.field === 'smb_message_echoes') {
+    EdgeRuntime.waitUntil(handleMessageEchoes(change.value, env).catch(e => console.error('handleMessageEchoes error:', e)))
+    return new Response('ok', { status: 200 })
+  }
+
   // Delivery/read receipts for campaigns
   const statuses = change?.value?.statuses
   if (statuses?.length) {
@@ -2128,6 +2148,105 @@ async function handleStatuses(statuses: any[], env: Env): Promise<void> {
 
     const { data: camp } = await sb.from('campaigns').select(countField).eq('id', cc.campaign_id).single()
     if (camp) await sb.from('campaigns').update({ [countField]: ((camp as any)[countField] ?? 0) + 1, updated_at: now }).eq('id', cc.campaign_id)
+  }
+}
+
+// ── Eco de mensajes mandados desde la app de WhatsApp Business (coexistencia) ─
+// Cuando alguien del equipo contesta desde el celular del negocio (no desde
+// el dashboard), Meta no manda esto como "messages" normal -- lo manda en el
+// campo de webhook smb_message_echoes. Antes no estábamos suscritos a ese
+// campo, así que el bot nunca se enteraba y seguía respondiendo encima.
+//
+// Reutiliza el mismo mecanismo de pausa que ya existe para cuando alguien
+// contesta desde el dashboard (conversations.human_pause_until, revisado en
+// handleIncoming) -- solo hace falta alimentarlo desde esta fuente nueva.
+const HUMAN_PAUSE_HOURS_ECHO = 4
+
+async function handleMessageEchoes(value: any, env: Env): Promise<void> {
+  const echoes = value?.message_echoes as any[] | undefined
+  if (!echoes?.length) return
+
+  const phoneNumberId = value?.metadata?.phone_number_id
+  if (!phoneNumberId) return
+
+  const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+
+  const { data: pn } = await sb
+    .from('phone_numbers')
+    .select('id, organization_id')
+    .eq('phone_number_id', phoneNumberId)
+    .maybeSingle()
+  if (!pn) { console.error('handleMessageEchoes: phone_number_id no encontrado:', phoneNumberId); return }
+  const { organization_id } = pn
+
+  for (const echo of echoes) {
+    try {
+      const wamid = echo?.id as string | undefined
+      const toPhone = (echo?.to as string | undefined)?.replace(/^\+/, '')
+      if (!wamid || !toPhone) continue
+
+      // Ya la guardamos (reintento del webhook) -- no duplicar.
+      const { data: dup } = await sb.from('messages').select('id').eq('wa_message_id', wamid).maybeSingle()
+      if (dup) continue
+
+      const content = echo?.text?.body ?? `[mensaje ${echo?.type ?? 'desconocido'} enviado desde el celular]`
+
+      // Buscar o crear la conversación con ese cliente, igual que con un
+      // mensaje entrante normal.
+      const { data: contact_row } = await sb
+        .from('contacts')
+        .upsert(
+          { organization_id, phone: toPhone, last_seen_at: new Date().toISOString() },
+          { onConflict: 'organization_id,phone' },
+        )
+        .select('id')
+        .single()
+      if (!contact_row) continue
+
+      const { data: existingConv } = await sb
+        .from('conversations')
+        .select('id, needs_human')
+        .eq('organization_id', organization_id)
+        .eq('contact_id', contact_row.id)
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      let conversation_id: string
+      if (existingConv) {
+        conversation_id = existingConv.id
+      } else {
+        const { data: newConv } = await sb
+          .from('conversations')
+          .insert({ organization_id, contact_id: contact_row.id, phone_number_id: pn.id, status: 'open', last_message_at: new Date().toISOString() })
+          .select('id')
+          .single()
+        if (!newConv) continue
+        conversation_id = newConv.id
+      }
+
+      await sb.from('messages').insert({
+        conversation_id, organization_id, direction: 'outbound', content,
+        media_type: 'text', wa_message_id: wamid, processed_at: new Date().toISOString(),
+      })
+
+      const now = new Date().toISOString()
+      const convUpdate: Record<string, unknown> = {
+        last_message_at: now,
+        updated_at: now,
+        // Renueva las 4h en cada eco nuevo -- no solo en el primero.
+        human_pause_until: new Date(Date.now() + HUMAN_PAUSE_HOURS_ECHO * 60 * 60_000).toISOString(),
+      }
+      if (existingConv?.needs_human) {
+        convUpdate.needs_human = false
+        convUpdate.bot_resumed_at = null
+        convUpdate.needs_human_reason = 'Atendida por el equipo desde el celular'
+      }
+      await sb.from('conversations').update(convUpdate).eq('id', conversation_id)
+    } catch (e) {
+      console.error('handleMessageEchoes: error procesando un eco:', e)
+    }
   }
 }
 
