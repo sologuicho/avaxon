@@ -157,10 +157,15 @@ async function notifyOwnerNeedsHuman(
   const { data: org } = await sb.from('organizations').select('name').eq('id', organizationId).maybeSingle()
   const orgName = org?.name || 'tu negocio'
 
-  // ── Correo (mismo criterio que notifyAppointment: notification_email de
-  // organization_profile, si no, el correo del profile con role='owner') ──
+  // ── Correo: solo si notification_email está configurado explícitamente.
+  // Si es null, el negocio prefiere no recibir emails (usa WhatsApp abajo).
   try {
-    const notifyEmail = await resolveOwnerEmail(sb, organizationId)
+    const { data: profileCheck } = await sb
+      .from('organization_profile')
+      .select('notification_email')
+      .eq('organization_id', organizationId)
+      .maybeSingle()
+    const notifyEmail = profileCheck?.notification_email || null
 
     if (notifyEmail) {
       const nowLabel = await resolveNowLabel(sb, organizationId)
