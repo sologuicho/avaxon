@@ -154,9 +154,9 @@ Deno.serve(async (req: Request) => {
     for (const row of metaData.data || []) byMetaId[String(row.id)] = row
 
     let updated = 0
-    const localMetaIds = new Set(templates.map((t: any) => String(t.meta_template_id)))
+    const localMetaIds = new Set((templates || []).map((t: any) => String(t.meta_template_id)))
 
-    for (const tpl of templates) {
+    for (const tpl of (templates || [])) {
       const metaRow = byMetaId[String(tpl.meta_template_id)]
       if (!metaRow) continue
       const updatePayload: Record<string, unknown> = {
