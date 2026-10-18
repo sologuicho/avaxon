@@ -156,6 +156,8 @@ Deno.serve(async (req: Request) => {
     for (const row of metaData.data || []) byMetaId[String(row.id)] = row
 
     let updated = 0
+    const localMetaIds = new Set(templates.map((t: any) => String(t.meta_template_id)))
+
     for (const tpl of templates) {
       const metaRow = byMetaId[String(tpl.meta_template_id)]
       if (!metaRow) continue
@@ -168,7 +170,27 @@ Deno.serve(async (req: Request) => {
       }).eq('id', tpl.id)
       if (!error) updated++
     }
-    return json({ ok: true, updated, checked: templates.length })
+
+    // Insert templates that exist in Meta but have no local row
+    let inserted = 0
+    for (const metaRow of (metaData.data || [])) {
+      if (localMetaIds.has(String(metaRow.id))) continue
+      const { error } = await adminClient.from('message_templates').insert({
+        organization_id:  organizationId,
+        name:             metaRow.name,
+        meta_template_id: String(metaRow.id),
+        status:           metaRow.status,
+        category:         metaRow.category || 'UTILITY',
+        language:         metaRow.language || 'es_MX',
+        rejected_reason:  cleanReason(metaRow.rejected_reason),
+        components:       [],
+        created_at:       new Date().toISOString(),
+        updated_at:       new Date().toISOString(),
+      })
+      if (!error) inserted++
+    }
+
+    return json({ ok: true, updated, inserted, checked: templates.length })
   }
 
   // ── Borrar (en Meta, si ya se había enviado, y localmente) ────────────────
