@@ -13,7 +13,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const GRAPH = 'https://graph.facebook.com/v22.0'
 
 // Nombres de plantilla en Meta (deben estar aprobadas)
-const TEMPLATE_MORNING  = 'menu_manana_hf'
+const TEMPLATE_MORNING  = 'menu_dia_hf'
 const TEMPLATE_PERIODIC = 'check_periodico_hf'
 
 Deno.serve(async (req: Request) => {
