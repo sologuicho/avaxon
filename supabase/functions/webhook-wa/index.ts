@@ -898,6 +898,34 @@ function isWithinBusinessHours(hours: any, timezone: string, at: Date = new Date
   return hhmm >= h.open && hhmm <= closeCmp
 }
 
+// Devuelve "hoy a las HH:MM AM/PM", "mañana a las HH:MM AM/PM" o el día
+// de la semana más próximo en que el negocio abre, o null si no hay horario.
+function nextOpeningLabel(hours: any, timezone: string): string | null {
+  if (!hours || typeof hours !== 'object') return null
+  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
+  const DAY_ES   = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+  const now = new Date()
+  for (let delta = 1; delta <= 7; delta++) {
+    const candidate = new Date(now.getTime() + delta * 24 * 60 * 60 * 1000)
+    const dayIdx = parseInt(new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Sun' ? '0'
+      : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Mon' ? '1'
+      : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Tue' ? '2'
+      : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Wed' ? '3'
+      : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Thu' ? '4'
+      : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(candidate) === 'Fri' ? '5' : '6')
+    const key = DAY_KEYS[dayIdx]
+    const h = hours[key]
+    if (!h || h.closed || !h.open) continue
+    const [hh, mm] = h.open.split(':').map(Number)
+    const ampm = hh < 12 ? 'AM' : 'PM'
+    const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh
+    const timeStr = `${h12}:${String(mm).padStart(2,'0')} ${ampm}`
+    const label = delta === 1 ? 'mañana' : DAY_ES[dayIdx]
+    return `${label} a las ${timeStr}`
+  }
+  return null
+}
+
 // ── Inventario: respuesta de staff ───────────────────────────────────────────
 async function handleStaffInventoryMessage(
   text:          string,
