@@ -1375,6 +1375,20 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 
   const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
+
+  // enforce_hours: corta la respuesta fuera de horario y manda mensaje fijo.
+  if (hasBusinessHours && outOfHours && (botConfig as any)?.schedule?.enforce_hours) {
+    const nextOpen = nextOpeningLabel(orgProfile?.hours, timezone)
+    const closedMsg = `¡Hola! Por el momento estamos cerrados 🙏 ${nextOpen ? `Abrimos ${nextOpen}.` : ''} Escríbenos en horario de atención y con gusto te ayudamos. 😊`
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: closedMsg } }),
+    })
+    await sb.from('messages').insert({ conversation_id, organization_id, direction: 'outbound', content: closedMsg, media_type: 'text', processed_at: new Date().toISOString() })
+    return
+  }
+
   const hoursGuardrail = hasBusinessHours
     ? ''
     : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
