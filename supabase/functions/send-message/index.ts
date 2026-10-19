@@ -290,12 +290,31 @@ async function handleSend(
     .select('manual_reply_pause_minutes')
     .eq('organization_id', conv.organization_id)
     .maybeSingle()
-  const pauseMinutes = orgProfile?.manual_reply_pause_minutes || 30
+  const pauseMinutes = orgProfile?.manual_reply_pause_minutes ?? 30
+
+  // manual_reply_pause_minutes = 0 → pausa hasta medianoche en la zona horaria
+  // de la org (útil para restaurantes: el equipo responde y el bot descansa el resto del día).
+  let pauseUntil: string
+  if (pauseMinutes === 0) {
+    const { data: orgRow } = await adminClient
+      .from('organizations')
+      .select('timezone')
+      .eq('id', conv.organization_id)
+      .maybeSingle()
+    const tz = orgRow?.timezone || 'America/Matamoros'
+    const timeStr = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const [h, m, s] = timeStr.split(':').map(Number)
+    const minsElapsed = h * 60 + m + (s > 0 ? 1 : 0)
+    const minsUntilMidnight = Math.max(1, 24 * 60 - minsElapsed)
+    pauseUntil = new Date(Date.now() + minsUntilMidnight * 60_000).toISOString()
+  } else {
+    pauseUntil = new Date(Date.now() + pauseMinutes * 60_000).toISOString()
+  }
 
   const convUpdate: Record<string, unknown> = {
     last_message_at:   new Date().toISOString(),
     updated_at:         new Date().toISOString(),
-    human_pause_until: new Date(Date.now() + pauseMinutes * 60_000).toISOString(),
+    human_pause_until: pauseUntil,
   }
   if (conv.needs_human) {
     convUpdate.needs_human = false
