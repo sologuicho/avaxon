@@ -1395,6 +1395,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\n⚠️ El cliente preguntó sobre envío en su PRIMER mensaje. Primero preséntale el menú completo, luego responde la pregunta de envío usando las tarifas de ZONAS DE ENVÍO. Para zonas no listadas pide la colonia y di que se confirma.`
     : null
 
+  // Siempre inyectar el día actual para que el bot sepa qué día es (p.ej.
+  // si hay barbacoa los domingos, que sepa si HOY es domingo). Solo se omite
+  // cuando calendarCtx ya lo incluye para evitar duplicado.
+  const todayCtx = !calendarToken
+    ? `\n\nHOY ES: ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}). Usa esta fecha para saber el día de la semana actual y lo que corresponde ofrecer hoy.`
+    : null
+
   const systemPrompt = [
     botConfig.system_prompt,
     inventoryCtx,
@@ -1405,6 +1412,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     calendarCtx,
     catalogCtx,
     outOfHoursCtx,
+    todayCtx,
     noPromisesCtx,
     formatCtx,
     notifyOwnerScopeCtx,
