@@ -1275,6 +1275,20 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // sigue escribiendo. Se retoma solo, sin aviso, cuando el plazo pasa.
   if (humanPauseActive) return
 
+  // Si la org activa enforce_hours en bot_configs.schedule, el bot no responde
+  // fuera de horario — manda un mensaje fijo de "estamos cerrados" y corta.
+  if (hasBusinessHours && outOfHours && botConfig?.schedule?.enforce_hours) {
+    const nextOpen = nextOpeningLabel(orgProfile?.hours, timezone)
+    const closedMsg = `¡Hola! Por el momento estamos cerrados 🙏 ${nextOpen ? `Abrimos ${nextOpen}.` : ''} Escríbenos en horario de atención y con gusto te ayudamos. 😊`
+    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: closedMsg } }),
+    })
+    await sb.from('messages').insert({ conversation_id, organization_id, direction: 'outbound', content: closedMsg, media_type: 'text', processed_at: new Date().toISOString() })
+    return
+  }
+
   // El bot NUNCA deja de contestar por el horario del negocio (la landing
   // promete 24/7) — el horario solo afecta el texto de este acuse cuando el
   // cliente pide explícitamente hablar con alguien, y a qué horas se puede
