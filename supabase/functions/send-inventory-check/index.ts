@@ -52,19 +52,8 @@ Deno.serve(async (req: Request) => {
       let components: any[]
 
       if (type === 'morning') {
-        // Catálogo completo de comida del día para que el chef elija qué habrá hoy
-        const { data: botCfg } = await sb
-          .from('bot_configs')
-          .select('inventory_config')
-          .eq('organization_id', staff.organization_id)
-          .maybeSingle()
-
-        const catalog = ((botCfg?.inventory_config as any)?.catalog as string)?.trim()
-          || 'Responde con los platillos del dia de hoy'
-
         templateName = TEMPLATE_MORNING
         components = [
-          { type: 'body', parameters: [{ type: 'text', text: catalog }] },
           { type: 'button', sub_type: 'quick_reply', index: '0', parameters: [{ type: 'payload', payload: 'INVENTARIO_OK_MORNING' }] },
         ]
       } else {
