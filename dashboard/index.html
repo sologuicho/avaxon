@@ -7587,6 +7587,7 @@
     const btn = $('terms-accept-btn');
     btn.disabled = true;
     btn.textContent = 'Guardando…';
+    try { localStorage.setItem('avx_terms_v1_' + state.userId, '1'); } catch (_) {}
     await sb.from('profiles').update({ terms_accepted_at: new Date().toISOString() }).eq('id', state.userId);
     $('modal-terms').style.display = 'none';
 
