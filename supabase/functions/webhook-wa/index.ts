@@ -1368,6 +1368,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!botConfig) return
 
+  // Frase de cierre: se cierra la conversación sin llamar a GPT
+  const normalizedIncoming = incomingBatchText.trim().toLowerCase()
+  if (CLOSING_PHRASES.has(normalizedIncoming)) {
+    console.log(`[close_conv] conv=${conversation_id} phrase="${normalizedIncoming}"`)
+    await sb.from('conversations')
+      .update({ status: 'closed', closed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq('id', conversation_id)
+    return
+  }
+
   const businessContext = buildBusinessContextBlock(orgProfile)
 
   // ── 6. Google Calendar (si está conectado) ──────────────────────────────
