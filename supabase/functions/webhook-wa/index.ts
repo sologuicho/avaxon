@@ -1856,6 +1856,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ...(calendarToken ? APPOINTMENT_TOOLS : []),
     ...(stripeConnected ? PAYMENT_TOOLS : []),
     ...ORDER_TOOLS,
+    ...((botConfig as any)?.features?.payment_config ? TRANSFER_TOOLS : []),
   ]
   const tools = toolsArr.length > 0 ? toolsArr : undefined
   let rawReply = ''
