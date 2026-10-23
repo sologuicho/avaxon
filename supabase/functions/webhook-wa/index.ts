@@ -1170,6 +1170,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   let needsHumanBefore = false
   let botResumedBefore = false
   let humanPauseActive = false
+  let isNewConversation = false
   const { data: existing } = await sb
     .from('conversations')
     .select('id, needs_human, bot_resumed_at, human_pause_until, current_order_id, out_of_hours_notified_at')
