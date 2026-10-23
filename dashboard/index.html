@@ -10626,7 +10626,7 @@
 
     const chipsHtml = ASIG_CATALOG.map(label => {
       const on = p.services.includes(label);
-      return `<button onclick="asigToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on ? '#16a34a' : '#dfe4eb'};background:${on ? '#16a34a' : '#fff'};color:${on ? '#fff' : '#3a4555'};font:500 13px 'Figtree',sans-serif;cursor:pointer">${label}</button>`;
+      return `<button onclick="asigToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on ? '#16a34a' : 'var(--border)'};background:${on ? '#16a34a' : 'var(--input-bg)'};color:${on ? '#fff' : 'var(--text)'};font:500 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">${label}</button>`;
     }).join('');
 
     const rowsHtml = p.services.map(name => {
