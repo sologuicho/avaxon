@@ -31,6 +31,15 @@ const POLL_MS      = 1000  // granularidad del sondeo mientras se espera
 // independiente de si el system_prompt de la org sabe usar notify_owner.
 const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
 
+// Frases exactas de despedida que cierran la conversación automáticamente
+// (trim + lowercase, comparación exacta — no substring).
+const CLOSING_PHRASES = new Set([
+  'gracias', 'gracias!', 'gracias!!', 'muchas gracias', 'muchas gracias!',
+  'ok gracias', 'ok, gracias', 'perfecto', 'perfecto!', 'de nada',
+  'hasta luego', 'hasta luego!', 'bye', 'bye!', 'adios', 'adiós',
+  'nos vemos', 'todo bien', 'listo gracias',
+])
+
 // Respuestas del bot rechazando un horario/cita por fuera de atención — se
 // quitan del historial que ve el modelo (ver chatHistory abajo) para que no
 // copie la conclusión de un rechazo viejo en vez de volver a evaluarla.
