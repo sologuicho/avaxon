@@ -10765,18 +10765,19 @@
     } catch (e) { showToast('Error al crear: ' + e.message, 4000); }
   }
 
-  window.asigResetLayout = asigResetLayout;
-  window.asigOpenAdd = asigOpenAdd;
-  window.asigOpenEdit = asigOpenEdit;
-  window.asigClose = asigClose;
+  window.asigResetLayout    = asigResetLayout;
+  window.asigOpenAdd        = asigOpenAdd;
+  window.asigOpenEdit       = asigOpenEdit;
+  window.asigClose          = asigClose;
   window.renderAsigEditPanel = renderAsigEditPanel;
-  window.asigEditField = asigEditField;
-  window.asigDraftField = asigDraftField;
-  window.asigToggleService = asigToggleService;
-  window.asigSetOverride = asigSetOverride;
-  window.asigResetOverride = asigResetOverride;
-  window.asigSave = asigSave;
-  window.asigCreate = asigCreate;
+  window.renderAsigAddPanel  = renderAsigAddPanel;
+  window.asigEditField      = asigEditField;
+  window.asigDraftField     = asigDraftField;
+  window.asigToggleService  = asigToggleService;
+  window.asigSetOverride    = asigSetOverride;
+  window.asigResetOverride  = asigResetOverride;
+  window.asigSave           = asigSave;
+  window.asigCreate         = asigCreate;
 
   function showRuleModal(ruleData) {
     const modal = $('ruleModal');
