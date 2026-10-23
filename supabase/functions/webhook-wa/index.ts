@@ -3,12 +3,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { encodeBase64 } from 'https://deno.land/std@0.224.0/encoding/base64.ts'
 import { sendZapierEvent } from '../_shared/zapier.ts'
 import { getGoogleAccessToken } from '../_shared/google.ts'
-import { fechaHoraToUtcIso } from '../_shared/timezone.ts'
+import { fechaHoraToUtcIso, getLocalTimeParts } from '../_shared/timezone.ts'
 import { notifyAppointment } from '../_shared/appointmentEmail.ts'
 import { stripeFetch } from '../_shared/stripe.ts'
 import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
 import { logBotError } from '../_shared/botErrorLog.ts'
 import { logToolTrace } from '../_shared/toolTraceLog.ts'
+import { GREETING_REGEX } from '../_shared/greeting.ts'
 
 // ── Meta webhook receiver ────────────────────────────────────────────────────
 // GET  → verificación de webhook
@@ -263,6 +264,47 @@ async function extractAppointmentSlot(
   }
 }
 
+// Toma el menú actual del día + el mensaje libre del chef describiendo
+// cambios ("se acabó X, agregamos Y") y devuelve el menú FINAL ya mezclado
+// -- sin esto, el chef que reporta un cambio puntual pisaba todo el menú
+// anterior con solo la frase del cambio.
+async function interpretMenuUpdate(
+  previousMenu: string,
+  updateText: string,
+  openaiKey: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        response_format: { type: 'json_object' },
+        temperature: 0,
+        max_tokens: 300,
+        messages: [
+          {
+            role: 'system',
+            content: 'Eres el asistente de cocina de un restaurante. Tienes el menú actual del día y un mensaje del chef describiendo cambios (platillos que se agotaron, platillos nuevos que se agregan, etc.). Devuelve el menú FINAL ya actualizado, aplicando esos cambios sobre el menú actual -- no incluyas platillos que el chef dijo que se agotaron, y agrega los nuevos que mencionó. Si el chef no menciona ningún cambio de ese tipo, deja el menú actual igual. Responde SOLO con JSON: {"menu": ["platillo 1", "platillo 2", ...]}, cada elemento un platillo sin numeración ni viñetas.',
+          },
+          { role: 'user', content: `Menú actual:\n${previousMenu || '(sin platillos registrados)'}\n\nMensaje del chef:\n${updateText}` },
+        ],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
+    const items = Array.isArray(parsed?.menu)
+      ? parsed.menu.filter((x: unknown) => typeof x === 'string' && x.trim())
+      : null
+    if (!items || !items.length) return null
+    return items.map((s: string) => s.trim()).join('\n')
+  } catch (e) {
+    console.error('interpretMenuUpdate: error inesperado:', e)
+    return null
+  }
+}
+
 // ── Helpers de hora: 12h↔24h y aritmética en minutos-del-día ────────────────
 // Todo esto existe para que la conversión AM/PM nunca dependa de que el
 // modelo la haga bien sola — un "5:00 PM" mal convertido a "05:00" fue
@@ -284,6 +326,21 @@ function to12hLabel(hhmm24: string): string {
   let h12 = h % 12
   if (h12 === 0) h12 = 12
   return `${h12}:${String(m).padStart(2, '0')} ${period}`
+}
+
+// Los botones de WhatsApp tienen un límite DURO de 20 caracteres — la
+// instrucción en el prompt no bastó (el modelo sigue mandando textos más
+// largos), así que esto es la última palabra: para el caso conocido de
+// "quiero otro horario" se usa un texto fijo corto; cualquier otro botón
+// largo se recorta en el último espacio antes del límite (nunca a media
+// palabra, como pasaba con el .slice(0,20) a secas).
+function normalizeButtonLabel(label: string): string {
+  const trimmed = (label || '').trim()
+  if (/^(prefiero\s+)?otr[oa]\s+(horario|hora|fecha|d[ií]a)/i.test(trimmed)) return 'Otro horario'
+  if (trimmed.length <= 20) return trimmed
+  const cut = trimmed.slice(0, 20)
+  const lastSpace = cut.lastIndexOf(' ')
+  return (lastSpace > 10 ? cut.slice(0, lastSpace) : cut).trim()
 }
 
 // "00:00" de cierre = fin del día (24:00) — mismo criterio que isWithinBusinessHours.
@@ -1525,6 +1582,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const todayLabel = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
   const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone })
 
+  // Antes esto solo llegaba al modelo dentro de calendarCtx (solo si la org
+  // tiene Google Calendar conectado) -- sin calendario, el bot no tenía
+  // idea de qué día era (ej. no sabía que "hoy" sí era domingo para una
+  // regla de "solo se vende los domingos"). Ahora es siempre parte del
+  // contexto, sin depender de ninguna integración.
+  const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver cualquier regla que dependa del día o la hora (ej. "solo los domingos", horario de apertura/cierre, qué menú está vigente ahora) -- nunca asumas o inventes qué día es.`
+
   const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
 
   // enforce_hours: un solo aviso por periodo cerrado (hasta la próxima apertura).
@@ -1617,7 +1681,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   // WhatsApp no renderiza markdown de links ni encabezados — si el bot escribe
   // "[texto](url)" o "# título" se ven los corchetes/almohadillas tal cual.
-  const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks.`
+  const formatCtx = `\n\nFORMATO DE WHATSAPP (obligatorio en TODOS tus mensajes): WhatsApp no soporta markdown de links ni encabezados. Nunca escribas un link como "[texto](url)" — manda la URL sola y tal cual, sin corchetes ni paréntesis alrededor. Nunca uses "#" para títulos. Para negritas usa *un asterisco* (nunca **dos**), para cursiva usa _un guion bajo_. No uses tablas ni bloques de código con backticks. Los botones ("buttons") tienen un límite DURO de 20 caracteres en WhatsApp — si se te pasas, queda cortado y se ve mal. Usa textos cortos (ej. "Otro horario" en vez de "Prefiero otro horario", "Sí, agendar" en vez de "Sí, me gustaría agendar"). Cuenta los caracteres antes de poner cada botón.`
 
   // notify_owner pausa la conversación y le avisa al dueño — no es un botón
   // de "ya no sé qué responder". Antes del fix, un mensaje fragmentado y
@@ -1648,6 +1712,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\nHOY ES: ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}). Usa esta fecha para saber el día de la semana actual y lo que corresponde ofrecer hoy.`
     : null
 
+  // El cliente puede preguntar "¿con quién hablo?" sin saber que es un bot
+  // (sobre todo justo después de que alguien del equipo respondió desde el
+  // celular) -- nunca debe negar ser el negocio, y nunca debe nombrar ni
+  // confirmar nombres de personas del equipo ("no soy Eli ni Héctor").
+  const identityCtx = `\n\nIDENTIDAD: Nunca digas que no eres el negocio, ni niegues ser quien atiende esta conversación. Nunca menciones, confirmes ni niegues nombres de personas del equipo (ej. nunca digas algo como "no soy Eli" o "no soy Héctor"). Si el cliente pregunta quién le escribe o si está hablando con una persona, responde con calidez como el negocio, sin negar ni afirmar si es un bot o una persona.`
+
   // Contexto de transferencia pendiente — le indica al modelo cómo responder
   // si el cliente manda texto en vez de imagen, o si ya recibimos el comprobante.
   const transferPendingCtx = transferPending
@@ -1661,6 +1731,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     currentOrderCtx,
     shippingFirstCtx,
     businessContext,
+    fechaHoraCtx,
     calendarCtx,
     catalogCtx,
     outOfHoursCtx,
@@ -1668,6 +1739,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     noPromisesCtx,
     formatCtx,
     notifyOwnerScopeCtx,
+    identityCtx,
     transferPendingCtx,
   ].filter(Boolean).join('\n\n')
 
@@ -1676,12 +1748,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // mensajes cortos en una sola respuesta), pero nunca se espera más de
   // MAX_BATCH_MS desde el primer mensaje del lote — si el cliente no deja de
   // escribir, de todos modos se procesa lo que haya en cuanto se cumple el tope.
+  // Solo cuenta como "primero del lote" un pendiente dentro de la ventana de
+  // MAX_BATCH_MS antes de este mensaje — si no, un mensaje viejo que se quedó
+  // sin procesar por algún motivo (ej. una corrida anterior interrumpida)
+  // envejece el cálculo del tope y hace que CADA invocación futura dispare el
+  // tope de inmediato, sin esperar nada. Esos pendientes viejos de todos modos
+  // se reclaman y pasan a ser contexto vía STALE_THRESHOLD_MS más abajo.
   const { data: firstPendingRow } = await sb
     .from('messages')
     .select('created_at')
     .eq('conversation_id', conversation_id)
     .eq('direction', 'inbound')
     .is('processed_at', null)
+    .gte('created_at', new Date(new Date(lastInsertedAt).getTime() - MAX_BATCH_MS).toISOString())
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle()
@@ -1736,96 +1815,310 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const allPendingIds  = pending.map(m => m.id)
   const combinedText  = current.map(m => m.content).join('\n')
 
-  // ── 9b. Cocina: routing para el número de cocina (Home Food y orgs similares) ─
+  // ── 9b. Cocina: routing para staff de inventario (Home Food y orgs similares) ─
+  // IMPORTANTE: `organization_id` aquí es la org dueña del NÚMERO QUE RECIBIÓ
+  // el mensaje (resuelto arriba por phone_number_id) — para un chef que le
+  // escribe al número de Avaxon, eso es Avaxon, NO la organización real del
+  // chef (ej. Home Food). Por eso esto resuelve la org de cocina por separado
+  // vía org_staff.phone, y usa ESA org (kitchenOrgId) para leer/actualizar el
+  // inventario — nunca `organization_id` ni el `botConfig` ya cargado arriba.
   {
-    const invCfg = (botConfig as any)?.inventory_config as Record<string, any> | null ?? {}
-    const kitchenRaw = invCfg?.kitchen_phone as string | undefined
+    const fromNorm = fromPhone.replace(/^\+/, '')
 
-    if (kitchenRaw) {
-      const kitchenNorm = kitchenRaw.replace(/^\+/, '')
-      const fromNorm    = fromPhone.replace(/^\+/, '')
+    // Un teléfono podría estar activo como staff de inventario en más de una
+    // org (error de captura, o la misma persona ayuda a dos negocios). No usar
+    // maybeSingle() aquí: con 2+ filas truena. Si hay varias, se toma la más
+    // reciente y se deja constancia en bot_tool_logs.
+    const { data: staffRows } = await sb
+      .from('org_staff')
+      .select('organization_id, name, created_at')
+      .eq('phone', fromNorm)
+      .eq('active', true)
+      .eq('receives_inventory_check', true)
+      .order('created_at', { ascending: false })
 
-      if (fromNorm === kitchenNorm) {
-        const kitchenState = (invCfg?.kitchen_state as string) ?? 'idle'
-        const prevText     = (invCfg?.pending_kitchen_text as string) ?? ''
+    let kitchenOrgId: string | null = staffRows?.[0]?.organization_id ?? null
+    const kitchenStaffName: string | null = staffRows?.[0]?.name ?? null
 
-        const isNoChanges    = /mismo\s*men[uú]|todo\s*bien/i.test(combinedText)
-        const isChangesBtn   = /hay\s*cambios/i.test(combinedText)
-        const isConfirm      = /^(si|sí|ya|listo|eso es todo|correcto|ok|okay|nada\s*m[aá]s|ya es todo|as[ií]\s*es|eso|todo|fin|nada)[\s!.]*$/i.test(combinedText.trim())
+    if (staffRows && staffRows.length > 1) {
+      await sb.from('bot_tool_logs').insert({
+        organization_id,
+        conversation_id,
+        tool_name: 'cocina_staff_phone_ambiguo',
+        args: { phone: fromNorm, organization_ids: staffRows.map((r) => r.organization_id) },
+        result: `Teléfono activo como staff de inventario en ${staffRows.length} orgs; se usó la más reciente (${kitchenOrgId}).`,
+      }).catch(() => {})
+    }
 
-        const sendKitchenReply = async (text: string) => {
-          const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: text } }),
-          })
-          const d = await r.json().catch(() => ({}))
-          await sb.from('messages').insert({
-            conversation_id, organization_id, direction: 'outbound', content: text,
-            media_type: 'text', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
-          })
+    // Compatibilidad con el mecanismo viejo (un solo kitchen_phone en el
+    // inventory_config de la propia org receptora) — hoy no lo usa nadie,
+    // pero se deja por si alguna org lo configura así más adelante.
+    if (!kitchenOrgId) {
+      const invCfgLegacy = (botConfig as any)?.inventory_config as Record<string, any> | null ?? {}
+      const kitchenRaw = invCfgLegacy?.kitchen_phone as string | undefined
+      if (kitchenRaw && kitchenRaw.replace(/^\+/, '') === fromNorm) kitchenOrgId = organization_id
+    }
+
+    if (kitchenOrgId) {
+      const { data: kitchenCfg } = await sb
+        .from('bot_configs')
+        .select('system_prompt, inventory_config, daily_inventory')
+        .eq('organization_id', kitchenOrgId)
+        .maybeSingle()
+
+      const invCfg = (kitchenCfg as any)?.inventory_config as Record<string, any> | null ?? {}
+      const kitchenState  = (invCfg?.kitchen_state as string) ?? 'idle'
+      const prevText      = (invCfg?.pending_kitchen_text as string) ?? ''
+      const promptCount   = (invCfg?.confirm_prompt_count as number) ?? 0
+      // Tope: si ya preguntamos "¿sería todo...?" 2 veces y la respuesta
+      // sigue sin calzar como confirmación ni como botón, se aplica el
+      // cambio de una vez en lugar de seguir preguntando (evita el loop).
+      const MAX_CONFIRM_PROMPTS = 2
+
+      // Quita acentos, pasa a minúsculas y le tira la puntuación de encima,
+      // para que "Sería todo", "ES TODO", "no, ya es todo." etc. calcen igual.
+      const normalizeKitchenText = (s: string) =>
+        s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[.,!¡¿?]/g, '').trim()
+
+      const normalizedText = normalizeKitchenText(combinedText)
+
+      const isNoChanges  = /mismo\s*men[uú]|todo\s*bien|sin\s*cambios/i.test(combinedText)
+      const isChangesBtn = /hay\s*cambios/i.test(combinedText)
+
+      // Saludo sin contenido de menú ("hola", "buenos días", "qué tal") — en
+      // idle, esto NO debe arrancar el flujo de inventario: muestra el menú
+      // y pregunta si hay cambios con botones. Si el mensaje también
+      // describe un cambio ("hola, se acabó el mole"), hasChangeIndicator
+      // gana y se trata como cambio.
+      const isGreetingOrChat = /\b(hola|buenos?\s*d[ií]as|buenas\s*(tardes|noches)?|qu[eé]\s*tal|c[oó]mo\s*(estas|est[aá]s?))\b/i.test(combinedText)
+      // Agradecimiento/cierre ("gracias", "ok", "va", "perfecto", "listo",
+      // 👍, 🙏) — distinto del saludo: no repite el menú, solo un acuse corto.
+      const isThanksOrClosing = /\b(muchas\s*gracias|gracias|okay|ok|va|perfecto|listo)\b|👍|🙏/i.test(combinedText)
+      const hasChangeIndicator = /\b(se\s*acab[oó]|agot[oó]|agotad[oa]|ya\s*no\s*hay|no\s*hay|agregamos?|agregar|agreg[oó]|cambio|cambi[oó]|sustituim|quitamos|quitar|nuevo\s*platillo)\b/i.test(combinedText)
+
+      // Frases completas que cuentan como "ya terminé" — se compara el texto
+      // completo normalizado contra esta lista, no un match parcial, para no
+      // confundir "no, también se acabó el arroz" con un "no" de confirmación.
+      const CONFIRM_PHRASES = new Set([
+        'si', 'ok', 'okay', 'ya', 'listo', 'correcto', 'confirmo',
+        'asi', 'asi es', 'asi esta bien',
+        'eso', 'eso es todo', 'todo', 'es todo', 'seria todo',
+        'ya es todo', 'no ya es todo', 'nada', 'nada mas', 'fin', 'no',
+      ])
+      const isConfirm = CONFIRM_PHRASES.has(normalizedText)
+
+      // Botón "Agregar más" del mensaje de confirmación — vuelve a collecting
+      // sin meter "agregar más" como si fuera un platillo.
+      const isAddMoreBtn = normalizedText === 'agregar mas'
+
+      // El mensaje se manda por el número que de verdad recibió esto (Avaxon)
+      // y se registra en SU conversación — eso es correcto y no cambia. Lo
+      // único que cambia de org es a dónde se guarda el inventario.
+      const sendKitchenReply = async (text: string) => {
+        const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: text } }),
+        })
+        const d = await r.json().catch(() => ({}))
+        await sb.from('messages').insert({
+          conversation_id, organization_id, direction: 'outbound', content: text,
+          media_type: 'text', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+        })
+      }
+
+      // Pregunta de confirmación con botones, para no depender de que el
+      // texto libre calce con la lista de frases de arriba.
+      const sendConfirmPrompt = async () => {
+        const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: fromPhone, type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: { text: '¿Sería todo o hay algo más que agregar? 😊' },
+              action: {
+                buttons: [
+                  { type: 'reply', reply: { id: 'cocina_es_todo', title: 'Es todo' } },
+                  { type: 'reply', reply: { id: 'cocina_agregar_mas', title: 'Agregar más' } },
+                ],
+              },
+            },
+          }),
+        })
+        const d = await r.json().catch(() => ({}))
+        await sb.from('messages').insert({
+          conversation_id, organization_id, direction: 'outbound', content: '¿Sería todo o hay algo más que agregar?',
+          media_type: 'interactive', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+        })
+      }
+
+      // Saludo/charla sin cambios: muestra el menú actual y pregunta si hay
+      // cambios con botones, sin tocar inventory_config (sigue en idle).
+      const sendMenuPrompt = async () => {
+        const menuLabel = ((kitchenCfg as any)?.daily_inventory as string | null)
+          ?.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ') || 'sin inventario definido'
+        const saludo = kitchenStaffName ? `¡Hola, ${kitchenStaffName}! 👋` : '¡Hola! 👋'
+        const bodyText = `${saludo} El menú de hoy es: ${menuLabel}. ¿Hay algún cambio?`
+        const r = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp', to: fromPhone, type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: { text: bodyText },
+              action: {
+                buttons: [
+                  { type: 'reply', reply: { id: 'cocina_sin_cambios', title: 'Sin cambios' } },
+                  { type: 'reply', reply: { id: 'cocina_hay_cambios', title: 'Hay cambios' } },
+                ],
+              },
+            },
+          }),
+        })
+        const d = await r.json().catch(() => ({}))
+        await sb.from('messages').insert({
+          conversation_id, organization_id, direction: 'outbound', content: bodyText,
+          media_type: 'interactive', wa_message_id: d.messages?.[0]?.id ?? null, processed_at: new Date().toISOString(),
+        })
+      }
+
+      // Devuelve el menú final (con \n entre platillos) ya guardado, para
+      // que quien llama pueda confirmarle a la chef la lista completa.
+      const applyInventoryUpdate = async (updateText: string): Promise<string> => {
+        const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
+        const previousMenu = (kitchenCfg as any)?.daily_inventory ?? ''
+        // El chef describe un CAMBIO ("se acabó X, agregamos Y"), no el menú
+        // completo — si se guardara updateText tal cual, se perdería todo lo
+        // demás del menú. Se le pide al modelo que mezcle el cambio sobre el
+        // menú anterior; si falla, se cae de vuelta al texto crudo.
+        const merged = await interpretMenuUpdate(previousMenu, updateText, OPENAI_KEY)
+        const finalMenu = merged || updateText
+
+        const marker = '[Este apartado se actualiza automáticamente'
+        let newPrompt = (kitchenCfg as any)?.system_prompt || ''
+        const idx = newPrompt.indexOf(marker)
+        if (idx !== -1) {
+          const endIdx = newPrompt.indexOf(']', idx)
+          if (endIdx !== -1) {
+            newPrompt = newPrompt.slice(0, idx) + `Última actualización: ${today}.\n${finalMenu}` + newPrompt.slice(endIdx + 1)
+          }
         }
+        await sb.from('bot_configs').update({
+          system_prompt: newPrompt,
+          // daily_inventory es lo que de verdad lee send-inventory-check para
+          // la plantilla matutina — antes esto solo tocaba system_prompt y
+          // nunca llegaba a actualizar lo que el cron manda al día siguiente.
+          daily_inventory: finalMenu,
+          inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, confirm_prompt_count: 0, last_updated: new Date().toISOString(), last_update_text: updateText },
+          updated_at: new Date().toISOString(),
+        }).eq('organization_id', kitchenOrgId)
 
-        const applyInventoryUpdate = async (updateText: string) => {
-          const today = new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })
-          const marker = '[Este apartado se actualiza automáticamente'
-          let newPrompt = botConfig!.system_prompt
-          const idx = newPrompt.indexOf(marker)
-          if (idx !== -1) {
-            const endIdx = newPrompt.indexOf(']', idx)
-            if (endIdx !== -1) {
-              newPrompt = newPrompt.slice(0, idx) + `Última actualización: ${today}.\n${updateText}` + newPrompt.slice(endIdx + 1)
+        return finalMenu
+      }
+
+      // ── Turnos de fin de semana: "chef del día" ──────────────────────────
+      // Solo aplica si el día de hoy (hora local de la org) tiene claim:true
+      // en shift_schedule (sábado/domingo) -- entre semana cada quien tiene
+      // su horario fijo y no se bloquean entre sí.
+      {
+        const shiftSchedule = invCfg?.shift_schedule as any ?? null
+        if (shiftSchedule) {
+          const tz = shiftSchedule.timezone || 'America/Matamoros'
+          const { dateStr, weekday } = getLocalTimeParts(tz)
+          const dayCfg = weekday === 'sat' ? shiftSchedule.saturday
+            : weekday === 'sun' ? shiftSchedule.sunday
+            : shiftSchedule.weekday
+
+          if (dayCfg?.morning?.claim === true) {
+            let shiftToday = invCfg?.shift_today as { date: string; chef_phone: string; chef_name: string } | null ?? null
+            if (!shiftToday || shiftToday.date !== dateStr) shiftToday = null
+
+            const candidates = (dayCfg.morning.recipients as Array<{ phone: string; name: string }>) ?? []
+            const me = candidates.find((r) => r.phone.replace(/^\+/, '') === fromNorm)
+
+            if (me) {
+              if (!shiftToday) {
+                shiftToday = { date: dateStr, chef_phone: fromNorm, chef_name: me.name }
+                invCfg.shift_today = shiftToday
+                await sb.from('bot_configs').update({
+                  inventory_config: { ...invCfg, shift_today: shiftToday },
+                  updated_at: new Date().toISOString(),
+                }).eq('organization_id', kitchenOrgId)
+              } else if (shiftToday.chef_phone !== fromNorm) {
+                await sendKitchenReply(`¡Gracias! 🙏 Hoy está atendiendo ${shiftToday.chef_name || 'tu compañera'}. Que tengas buen día 😊`)
+                return // no se procesa como inventario
+              }
             }
           }
-          await sb.from('bot_configs').update({
-            system_prompt: newPrompt,
-            inventory_config: { ...invCfg, kitchen_state: 'idle', pending_kitchen_text: null, last_updated: new Date().toISOString(), last_update_text: updateText },
-            updated_at: new Date().toISOString(),
-          }).eq('organization_id', organization_id)
         }
-
-        if (kitchenState === 'idle') {
-          if (isNoChanges) {
-            await sb.from('bot_configs').update({
-              inventory_config: { ...invCfg, kitchen_state: 'idle', last_updated: new Date().toISOString(), last_update_text: 'Sin cambios' },
-              updated_at: new Date().toISOString(),
-            }).eq('organization_id', organization_id)
-            await sendKitchenReply('✅ ¡Perfecto! Sin cambios en el menú. ¡Buen día! 😊')
-          } else if (isChangesBtn) {
-            await sb.from('bot_configs').update({
-              inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: '' },
-              updated_at: new Date().toISOString(),
-            }).eq('organization_id', organization_id)
-            await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
-          } else {
-            await sb.from('bot_configs').update({
-              inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
-              updated_at: new Date().toISOString(),
-            }).eq('organization_id', organization_id)
-            await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
-          }
-        } else if (kitchenState === 'collecting') {
-          await sb.from('bot_configs').update({
-            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText },
-            updated_at: new Date().toISOString(),
-          }).eq('organization_id', organization_id)
-          await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
-        } else if (kitchenState === 'awaiting_confirmation') {
-          if (isConfirm) {
-            await applyInventoryUpdate(prevText || combinedText)
-            await sendKitchenReply('✅ ¡Listo! Inventario actualizado. ¡Buen provecho hoy! 😊')
-          } else {
-            const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
-            await sb.from('bot_configs').update({
-              inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: accumulated },
-              updated_at: new Date().toISOString(),
-            }).eq('organization_id', organization_id)
-            await sendKitchenReply('¿Sería todo o hay algo más que agregar? 😊')
-          }
-        }
-
-        return // no pasar por GPT-4o
       }
+
+      if (kitchenState === 'idle') {
+        if (isNoChanges) {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'idle', confirm_prompt_count: 0, last_updated: new Date().toISOString(), last_update_text: 'Sin cambios' },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendKitchenReply('✅ ¡Perfecto! Sin cambios en el menú. ¡Buen día! 😊')
+        } else if (isChangesBtn) {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: '', confirm_prompt_count: 0 },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+        } else if (isThanksOrClosing && !hasChangeIndicator) {
+          // Agradecimiento/cierre — acuse corto, sin menú, sin botones, sin
+          // tocar inventory_config.
+          const name = kitchenStaffName ? `, ${kitchenStaffName}` : ''
+          await sendKitchenReply(`¡De nada${name}! 😊 Cualquier cambio en el menú, aquí estoy.`)
+        } else if (isGreetingOrChat && !hasChangeIndicator) {
+          // Saludo sin contenido de menú — no toca inventory_config.
+          await sendMenuPrompt()
+        } else {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText, confirm_prompt_count: 1 },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendConfirmPrompt()
+        }
+      } else if (kitchenState === 'collecting') {
+        await sb.from('bot_configs').update({
+          inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: combinedText, confirm_prompt_count: 1 },
+          updated_at: new Date().toISOString(),
+        }).eq('organization_id', kitchenOrgId)
+        await sendConfirmPrompt()
+      } else if (kitchenState === 'awaiting_confirmation') {
+        if (isConfirm) {
+          const finalMenu = await applyInventoryUpdate(prevText || combinedText)
+          const menuLabel = finalMenu.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ')
+          await sendKitchenReply(`✅ ¡Listo! Menú actualizado: ${menuLabel}. ¡Buen provecho hoy! 😊`)
+        } else if (isAddMoreBtn) {
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'collecting', pending_kitchen_text: prevText, confirm_prompt_count: 0 },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendKitchenReply('¿Qué cambió? Cuéntanos 📝')
+        } else if (promptCount >= MAX_CONFIRM_PROMPTS) {
+          // Ya preguntamos 2 veces y la respuesta sigue sin calzar — se
+          // aplica con lo que tenemos en vez de preguntar una tercera vez.
+          const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
+          const finalMenu = await applyInventoryUpdate(accumulated)
+          const menuLabel = finalMenu.split('\n').map((s) => s.trim()).filter(Boolean).join(' • ')
+          await sendKitchenReply(`✅ ¡Listo! Menú actualizado: ${menuLabel}. ¡Buen provecho hoy! 😊`)
+        } else {
+          const accumulated = prevText ? `${prevText}\n${combinedText}` : combinedText
+          await sb.from('bot_configs').update({
+            inventory_config: { ...invCfg, kitchen_state: 'awaiting_confirmation', pending_kitchen_text: accumulated, confirm_prompt_count: promptCount + 1 },
+            updated_at: new Date().toISOString(),
+          }).eq('organization_id', kitchenOrgId)
+          await sendConfirmPrompt()
+        }
+      }
+
+      return // no pasar por GPT-4o
     }
   }
 
@@ -1833,7 +2126,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const batchIdSet = new Set(batchIds)
   const { data: historyRaw } = await sb
     .from('messages')
-    .select('id, direction, content, sent_by')
+    .select('id, direction, content, sent_by, created_at')
     .eq('conversation_id', conversation_id)
     .order('created_at', { ascending: false })
     .limit(14 + allPendingIds.length)
@@ -1867,6 +2160,28 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   } else {
     chatHistory.push({ role: 'user', content: combinedText })
+  }
+
+  // ── 10a. Saludo ──────────────────────────────────────────────────────────
+  // Se decide en código si el cliente saludó y si el bot YA había saludado
+  // antes en esta conversación — así el modelo no tiene que adivinar ni
+  // depende de que recuerde bien el historial para no saludar dos veces.
+  // (GREETING_REGEX vive en _shared/greeting.ts — ver _shared/greeting_test.ts)
+  const GREETING_LOOKBACK_MS = 6 * 60 * 60 * 1000 // 6 horas — no "para siempre"
+  let greetingCtx = ''
+  if (GREETING_REGEX.test(combinedText)) {
+    const sixHoursAgo = Date.now() - GREETING_LOOKBACK_MS
+    const botAlreadyGreeted = (historyRaw ?? []).some(m =>
+      m.direction === 'outbound' && !m.sent_by && typeof m.content === 'string' &&
+      GREETING_REGEX.test(m.content) && new Date(m.created_at).getTime() >= sixHoursAgo,
+    )
+    if (botAlreadyGreeted) {
+      greetingCtx = `\n\nEl cliente volvió a saludar, pero tú ya lo saludaste hace poco en esta conversación — NO lo saludes de nuevo, ve directo a atender lo que pide.`
+    } else {
+      const hourNow = Number(new Intl.DateTimeFormat('en-GB', { timeZone: timezone, hour: '2-digit', hourCycle: 'h23' }).format(new Date()))
+      const greetingPhrase = hourNow < 5 ? 'Buenas noches' : hourNow < 12 ? 'Buenos días' : hourNow < 19 ? 'Buenas tardes' : 'Buenas noches'
+      greetingCtx = `\n\nEl cliente te saludó en este mensaje. Responde el saludo en la MISMA respuesta, breve y natural, usando "${greetingPhrase}" (es el saludo correcto para la hora actual) — y justo después atiende lo que te pidió, todo junto en un solo mensaje coherente. No mandes el saludo solo y la respuesta aparte.`
+    }
   }
 
   // ── 10b. Disponibilidad forzada en código ──────────────────────────────────
@@ -1914,6 +2229,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     { role: 'system', content: systemPrompt },
     ...chatHistory,
   ]
+  if (greetingCtx) messages.push({ role: 'system', content: greetingCtx })
   if (forcedAvailabilityCtx) messages.push({ role: 'system', content: forcedAvailabilityCtx })
 
   const toolsArr = [
@@ -2143,7 +2459,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .replace(/\*\*([^*\n]+)\*\*/g, '*$1*')
     .replace(/~~([^~\n]+)~~/g, '~$1~')
     .replace(/^#{1,6}\s+/gm, '')
-  const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3)
+  const buttonLabels = (aiParsed.buttons ?? []).slice(0, 3).map(normalizeButtonLabel)
   const notifyOwner  = aiParsed.notify_owner === true
 
   // Bandeja de atención humana — para cualquier org (no solo Avaxon). La
@@ -2408,6 +2724,11 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { status: 200 })
   }
 
+  if (change?.field === 'smb_message_echoes') {
+    EdgeRuntime.waitUntil(handleMessageEchoes(change.value, env).catch(e => console.error('handleMessageEchoes error:', e)))
+    return new Response('ok', { status: 200 })
+  }
+
   // Delivery/read receipts for campaigns
   const statuses = change?.value?.statuses
   if (statuses?.length) {
@@ -2444,6 +2765,19 @@ async function handleStatuses(statuses: any[], env: Env): Promise<void> {
   for (const s of statuses) {
     const status      = s.status       // 'sent' | 'delivered' | 'read' | 'failed'
     const recipientId = s.recipient_id // E.164 phone we sent to
+
+    // Traza de statuses 'failed' (con su error) — para depurar envíos que
+    // no están ligados a una campaña (ej. pruebas manuales de plantillas).
+    // Solo 'failed', no cada delivered/read de cada mensaje — eso ya se
+    // cuenta en campaigns, y guardar el teléfono de cada entrega normal
+    // en este log no aporta nada.
+    if (status === 'failed' || s.errors) {
+      logToolTrace(sb, {
+        tool_name: 'meta_status_webhook',
+        result: JSON.stringify({ status, recipientId, wamid: s.id, errors: s.errors ?? null }),
+      })
+    }
+
     if (!recipientId || (status !== 'delivered' && status !== 'read')) continue
 
     const updateField = status === 'delivered' ? 'delivered_at' : 'read_at'
@@ -2466,6 +2800,105 @@ async function handleStatuses(statuses: any[], env: Env): Promise<void> {
 
     const { data: camp } = await sb.from('campaigns').select(countField).eq('id', cc.campaign_id).single()
     if (camp) await sb.from('campaigns').update({ [countField]: ((camp as any)[countField] ?? 0) + 1, updated_at: now }).eq('id', cc.campaign_id)
+  }
+}
+
+// ── Eco de mensajes mandados desde la app de WhatsApp Business (coexistencia) ─
+// Cuando alguien del equipo contesta desde el celular del negocio (no desde
+// el dashboard), Meta no manda esto como "messages" normal -- lo manda en el
+// campo de webhook smb_message_echoes. Antes no estábamos suscritos a ese
+// campo, así que el bot nunca se enteraba y seguía respondiendo encima.
+//
+// Reutiliza el mismo mecanismo de pausa que ya existe para cuando alguien
+// contesta desde el dashboard (conversations.human_pause_until, revisado en
+// handleIncoming) -- solo hace falta alimentarlo desde esta fuente nueva.
+const HUMAN_PAUSE_HOURS_ECHO = 4
+
+async function handleMessageEchoes(value: any, env: Env): Promise<void> {
+  const echoes = value?.message_echoes as any[] | undefined
+  if (!echoes?.length) return
+
+  const phoneNumberId = value?.metadata?.phone_number_id
+  if (!phoneNumberId) return
+
+  const sb = createClient(env.SUPABASE_URL, env.SERVICE_KEY)
+
+  const { data: pn } = await sb
+    .from('phone_numbers')
+    .select('id, organization_id')
+    .eq('phone_number_id', phoneNumberId)
+    .maybeSingle()
+  if (!pn) { console.error('handleMessageEchoes: phone_number_id no encontrado:', phoneNumberId); return }
+  const { organization_id } = pn
+
+  for (const echo of echoes) {
+    try {
+      const wamid = echo?.id as string | undefined
+      const toPhone = (echo?.to as string | undefined)?.replace(/^\+/, '')
+      if (!wamid || !toPhone) continue
+
+      // Ya la guardamos (reintento del webhook) -- no duplicar.
+      const { data: dup } = await sb.from('messages').select('id').eq('wa_message_id', wamid).maybeSingle()
+      if (dup) continue
+
+      const content = echo?.text?.body ?? `[mensaje ${echo?.type ?? 'desconocido'} enviado desde el celular]`
+
+      // Buscar o crear la conversación con ese cliente, igual que con un
+      // mensaje entrante normal.
+      const { data: contact_row } = await sb
+        .from('contacts')
+        .upsert(
+          { organization_id, phone: toPhone, last_seen_at: new Date().toISOString() },
+          { onConflict: 'organization_id,phone' },
+        )
+        .select('id')
+        .single()
+      if (!contact_row) continue
+
+      const { data: existingConv } = await sb
+        .from('conversations')
+        .select('id, needs_human')
+        .eq('organization_id', organization_id)
+        .eq('contact_id', contact_row.id)
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      let conversation_id: string
+      if (existingConv) {
+        conversation_id = existingConv.id
+      } else {
+        const { data: newConv } = await sb
+          .from('conversations')
+          .insert({ organization_id, contact_id: contact_row.id, phone_number_id: pn.id, status: 'open', last_message_at: new Date().toISOString() })
+          .select('id')
+          .single()
+        if (!newConv) continue
+        conversation_id = newConv.id
+      }
+
+      await sb.from('messages').insert({
+        conversation_id, organization_id, direction: 'outbound', content,
+        media_type: 'text', wa_message_id: wamid, processed_at: new Date().toISOString(),
+      })
+
+      const now = new Date().toISOString()
+      const convUpdate: Record<string, unknown> = {
+        last_message_at: now,
+        updated_at: now,
+        // Renueva las 4h en cada eco nuevo -- no solo en el primero.
+        human_pause_until: new Date(Date.now() + HUMAN_PAUSE_HOURS_ECHO * 60 * 60_000).toISOString(),
+      }
+      if (existingConv?.needs_human) {
+        convUpdate.needs_human = false
+        convUpdate.bot_resumed_at = null
+        convUpdate.needs_human_reason = 'Atendida por el equipo desde el celular'
+      }
+      await sb.from('conversations').update(convUpdate).eq('id', conversation_id)
+    } catch (e) {
+      console.error('handleMessageEchoes: error procesando un eco:', e)
+    }
   }
 }
 
