@@ -1219,6 +1219,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     botResumedBefore = !!existing.bot_resumed_at
     humanPauseActive = !!existing.human_pause_until && new Date(existing.human_pause_until as string).getTime() > Date.now()
     currentOrderId = (existing as any).current_order_id ?? null
+    transferPending  = !!(existing as any).transfer_pending
     if (currentOrderId) {
       const { data: co } = await sb.from('orders').select('order_number, items, modality, delivery_address').eq('id', currentOrderId).single()
       currentOrder = co ?? null
