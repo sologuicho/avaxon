@@ -1074,13 +1074,77 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     return
   }
 
-  // ── Eco smb_message_echoes: mensaje enviado desde la propia línea del negocio ──
-  // Sucede cuando un agente responde desde Meta Business Inbox. Se loguea para
-  // diagnosticar el formato y se ignora — el bot no debe procesar sus propios ecos.
+  // ── Eco smb_message_echoes: el equipo respondió desde Meta Business Inbox ──
+  // Cuando alguien del negocio responde desde la app de Meta (no desde el
+  // dashboard de Avaxon), el webhook recibe el mensaje con from = número del
+  // negocio. Se guarda en el dashboard como outbound y se pausa el bot para
+  // que no pise la respuesta manual del equipo.
   const bizPhoneNorm = (pn as any).display_phone_number?.replace(/\D/g, '') ?? ''
   const fromPhoneNorm = fromPhone?.replace(/\D/g, '') ?? ''
   if (bizPhoneNorm && fromPhoneNorm && fromPhoneNorm === bizPhoneNorm) {
-    console.log(`[smb_echo] phone_number_id=${phoneNumberId} from=${fromPhone} type=${rawMessages[0]?.type ?? '?'} — eco ignorado`)
+    const echoMsg    = rawMessages[0]
+    const echoText   = echoMsg?.text?.body || echoMsg?.caption || `[${echoMsg?.type ?? 'mensaje'}]`
+    const customerWa = contact?.wa_id || echoMsg?.to
+    const customerPhone = customerWa ? (customerWa.startsWith('+') ? customerWa : '+' + customerWa) : null
+    console.log(`[smb_echo] phone_number_id=${phoneNumberId} to=${customerPhone} type=${echoMsg?.type ?? '?'} — guardando y pausando bot`)
+
+    if (customerPhone) {
+      try {
+        const { data: contactRow } = await sb
+          .from('contacts')
+          .select('id')
+          .eq('organization_id', organization_id)
+          .eq('phone', customerPhone)
+          .maybeSingle()
+
+        if (contactRow?.id) {
+          const { data: convRow } = await sb
+            .from('conversations')
+            .select('id, needs_human')
+            .eq('organization_id', organization_id)
+            .eq('contact_id', contactRow.id)
+            .eq('status', 'open')
+            .order('last_message_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+          if (convRow?.id) {
+            await sb.from('messages').insert({
+              conversation_id: convRow.id,
+              organization_id,
+              direction:     'outbound',
+              content:       echoText,
+              media_type:    echoMsg?.type === 'image' ? 'image' : 'text',
+              wa_message_id: echoMsg?.id ?? null,
+            }).select('id').maybeSingle()
+
+            const [{ data: orgProf }, { data: bcPause }] = await Promise.all([
+              sb.from('organization_profile').select('manual_reply_pause_minutes').eq('organization_id', organization_id).maybeSingle(),
+              sb.from('bot_configs').select('features').eq('organization_id', organization_id).eq('enabled', true).maybeSingle(),
+            ])
+            const featurePauseHours = (bcPause?.features as any)?.human_pause_hours
+            const pauseMinutes = featurePauseHours != null
+              ? Math.round(Number(featurePauseHours) * 60)
+              : (orgProf?.manual_reply_pause_minutes ?? 30)
+            const pauseUntil = new Date(Date.now() + pauseMinutes * 60_000).toISOString()
+
+            const convUpdate: Record<string, unknown> = {
+              last_message_at:   new Date().toISOString(),
+              updated_at:        new Date().toISOString(),
+              human_pause_until: pauseUntil,
+            }
+            if (convRow.needs_human) {
+              convUpdate.needs_human        = false
+              convUpdate.bot_resumed_at     = null
+              convUpdate.needs_human_reason = 'Atendida por el equipo desde WhatsApp'
+            }
+            await sb.from('conversations').update(convUpdate).eq('id', convRow.id)
+          }
+        }
+      } catch (e) {
+        console.error('[smb_echo] error al registrar eco:', e)
+      }
+    }
     return
   }
 
