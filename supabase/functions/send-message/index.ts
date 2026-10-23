@@ -285,12 +285,14 @@ async function handleSend(
   // esperaba: se quita la marca (así resume-paused-conversations deja de
   // contarla) y queda un rastro de que se resolvió sola, sin que nadie
   // tuviera que darle a "Marcar como atendida".
-  const { data: orgProfile } = await adminClient
-    .from('organization_profile')
-    .select('manual_reply_pause_minutes')
-    .eq('organization_id', conv.organization_id)
-    .maybeSingle()
-  const pauseMinutes = orgProfile?.manual_reply_pause_minutes ?? 30
+  const [{ data: orgProfile }, { data: bcPause }] = await Promise.all([
+    adminClient.from('organization_profile').select('manual_reply_pause_minutes').eq('organization_id', conv.organization_id).maybeSingle(),
+    adminClient.from('bot_configs').select('features').eq('organization_id', conv.organization_id).eq('enabled', true).maybeSingle(),
+  ])
+  const featurePauseHours = (bcPause?.features as any)?.human_pause_hours
+  const pauseMinutes = featurePauseHours != null
+    ? Math.round(Number(featurePauseHours) * 60)
+    : (orgProfile?.manual_reply_pause_minutes ?? 30)
 
   // manual_reply_pause_minutes = 0 → pausa hasta medianoche en la zona horaria
   // de la org (útil para restaurantes: el equipo responde y el bot descansa el resto del día).
