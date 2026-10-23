@@ -2041,16 +2041,15 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     processed_at:  new Date().toISOString(),
   })
 
-  // ── Enviar comanda con botones de confirmación ─────────────────────────────
+  // ── Al cliente: confirmación amable; a cocina: comanda interna ─────────────
   if (pendingComanda) {
     const { orderId, orderNumber, items, modality, delivery_address, deliveryCost, total } = pendingComanda
-    const modalityLabel = modality === 'aqui' ? 'Comer aquí' : modality === 'recoger' ? 'Para recoger' : `Envío a ${delivery_address}`
+    const modalityLabel = modality === 'aqui' ? 'Comer aquí' : modality === 'recoger' ? 'Para llevar' : `Envío a ${delivery_address}`
     const itemLines = items.map((i: any) => `• ${i.qty}x ${i.name}${i.notes ? ` (${i.notes})` : ''} — $${(i.qty * i.unit_price).toFixed(0)}`).join('\n')
-    let comandaText = `🧾 *Comanda No. ${orderNumber}*\n${itemLines}\n\nModalidad: ${modalityLabel}`
-    if (deliveryCost > 0) comandaText += `\nEnvío: $${deliveryCost}`
-    comandaText += `\n*Total: $${total.toFixed(0)}*`
 
-    const comandaRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+    // Resumen amable al cliente — sin formato interno de comanda
+    const clientSummary = `¡Listo! Aquí tu resumen 🧾\n\n${itemLines}${deliveryCost > 0 ? `\nEnvío: $${deliveryCost}` : ''}\n\n*Total: $${total.toFixed(0)}*\n${modalityLabel}\n\n¿Todo está correcto?`
+    const clientRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2059,22 +2058,50 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
         type: 'interactive',
         interactive: {
           type: 'button',
-          body: { text: comandaText },
+          body: { text: clientSummary },
           action: {
             buttons: [
-              { type: 'reply', reply: { id: `confirm_${orderId}`, title: 'Confirmar comanda' } },
+              { type: 'reply', reply: { id: `confirm_${orderId}`, title: 'Confirmar pedido' } },
               { type: 'reply', reply: { id: `add_more_${orderId}`,  title: 'Agregar algo más' } },
             ],
           },
         },
       }),
     })
-    if (comandaRes.ok) {
+    if (clientRes.ok) {
       await sb.from('messages').insert({
         conversation_id, organization_id, direction: 'outbound',
-        content: `[Comanda No. ${orderNumber}]\n${comandaText}`,
+        content: `[Resumen pedido No. ${orderNumber}]\n${clientSummary}`,
         processed_at: new Date().toISOString(),
       })
+    }
+
+    // Comanda interna completa al número de cocina/dueño
+    const comandaPhone = String((botConfig as any)?.inventory_config?.comanda_phone ?? '').replace(/\D/g, '')
+    if (comandaPhone) {
+      const comandaText = `🧾 *Comanda No. ${orderNumber}*\n${itemLines}\n\nModalidad: ${modalityLabel}${deliveryCost > 0 ? `\nEnvío: $${deliveryCost}` : ''}\n*Total: $${total.toFixed(0)}*`
+      const kitchenRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: comandaPhone,
+          type: 'text',
+          text: { body: comandaText },
+        }),
+      })
+      if (!kitchenRes.ok) {
+        const kitchenData = await kitchenRes.json().catch(() => ({}))
+        await logBotError(sb, {
+          organization_id, conversation_id,
+          type: 'meta_rejected',
+          error_code: String(kitchenData?.error?.code ?? kitchenRes.status),
+          detail: kitchenData?.error?.code === 131026
+            ? `Comanda No. ${orderNumber} no llegó a cocina (${comandaPhone}): fuera de ventana de 24 h — aprueba la plantilla homefood_comanda_v1 en Meta.`
+            : `Comanda No. ${orderNumber} no llegó a cocina (${comandaPhone}): ${kitchenData?.error?.message ?? JSON.stringify(kitchenData).slice(0, 300)}`,
+          source: 'webhook-wa:comanda_to_kitchen',
+        })
+      }
     }
   }
 }
