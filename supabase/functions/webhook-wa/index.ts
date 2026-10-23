@@ -1890,6 +1890,14 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (!rawReply) return
 
+  // Si GPT incluyó el formato interno de comanda en su texto, se quita en
+  // silencio — el cliente nunca debe ver [Comanda] 🧾 ni el bloque de items.
+  if (/\[Comanda\]/i.test(rawReply)) {
+    console.warn(`[comanda_filter] conv=${conversation_id} — bloque [Comanda] en respuesta del bot, eliminado`)
+    rawReply = rawReply.replace(/\n?\[Comanda\][\s\S]*/i, '').trim()
+    if (!rawReply) return
+  }
+
   // ── 12. Parsear respuesta JSON del bot ─────────────────────────────────────
   let aiParsed: { text: string; buttons?: string[]; notify_owner?: boolean }
   try {
