@@ -1398,16 +1398,35 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
 
-  // enforce_hours: corta la respuesta fuera de horario y manda mensaje fijo.
+  // enforce_hours: un solo aviso por periodo cerrado (hasta la próxima apertura).
   if (hasBusinessHours && outOfHours && (botConfig as any)?.schedule?.enforce_hours) {
-    const nextOpen = nextOpeningLabel(orgProfile?.hours, timezone)
-    const closedMsg = `¡Hola! Por el momento estamos cerrados 🙏 ${nextOpen ? `Abrimos ${nextOpen}.` : ''} Escríbenos en horario de atención y con gusto te ayudamos. 😊`
-    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: closedMsg } }),
-    })
-    await sb.from('messages').insert({ conversation_id, organization_id, direction: 'outbound', content: closedMsg, media_type: 'text', processed_at: new Date().toISOString() })
+    const notifiedAt = (existing as any)?.out_of_hours_notified_at
+      ? new Date((existing as any).out_of_hours_notified_at as string)
+      : null
+    const alreadyNotifiedThisPeriod = notifiedAt
+      ? (() => {
+          const nextOpen = nextBusinessOpenAfter(notifiedAt, orgProfile?.hours, timezone)
+          // Si el negocio aún no ha abierto desde la última notificación → mismo periodo
+          return !nextOpen || nextOpen > new Date()
+        })()
+      : false
+
+    if (!alreadyNotifiedThisPeriod) {
+      const nextOpen = nextOpeningLabel(orgProfile?.hours, timezone)
+      const closedMsg = `¡Hola! Por el momento estamos cerrados 🙏 ${nextOpen ? `Abrimos ${nextOpen}.` : ''} Escríbenos en horario de atención y con gusto te ayudamos. 😊`
+      await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: closedMsg } }),
+      })
+      await sb.from('messages').insert({
+        conversation_id, organization_id, direction: 'outbound',
+        content: closedMsg, media_type: 'text', processed_at: new Date().toISOString(),
+      })
+      await sb.from('conversations')
+        .update({ out_of_hours_notified_at: new Date().toISOString() })
+        .eq('id', conversation_id)
+    }
     return
   }
 
