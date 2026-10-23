@@ -4161,6 +4161,7 @@
     if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
     if (name === 'leads')          loadLeads();
     if (name === 'pipeline')       loadPipeline();
+    if (name !== 'asignacion' && asigRaf) { cancelAnimationFrame(asigRaf); asigRaf = null; }
     if (name === 'asignacion')     loadAsignacion();
     if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
     if (name === 'bot')            loadAgentRequestsClient();
