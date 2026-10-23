@@ -878,6 +878,28 @@ function buildBusinessContextBlock(profile: any): string {
   return `INFORMACIÓN DEL NEGOCIO (de Configuración — usa esto para responder sobre contacto, ubicación y horarios; no inventes datos que no estén aquí):\n${lines.join('\n')}`
 }
 
+// Devuelve el timestamp UTC del primer instante ≥ since en que el negocio
+// está abierto. Itera en pasos de 15 min hasta 7 días; null si no hay horario.
+// Se usa para saber si el negocio abrió entre la última notificación fuera
+// de horario y ahora, determinando si ya empezó un nuevo periodo cerrado.
+function nextBusinessOpenAfter(since: Date, hours: any, timezone: string): Date | null {
+  if (!hours || typeof hours !== 'object') return null
+  for (let delta = 0; delta <= 7 * 24 * 60; delta += 15) {
+    const candidate = new Date(since.getTime() + delta * 60_000)
+    const dayKey = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone, weekday: 'short',
+    }).format(candidate).toLowerCase().slice(0, 3)
+    const h = hours[dayKey]
+    if (!h || h.closed || !h.open || !h.close) continue
+    const hhmm = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(candidate)
+    const closeCmp = h.close === '00:00' ? '24:00' : h.close
+    if (hhmm >= h.open && hhmm <= closeCmp) return candidate
+  }
+  return null
+}
+
 // null = el negocio no configuró horarios (no se puede saber si está abierto).
 // `at` por defecto es ahora — pero también se usa con la hora de una cita
 // que se quiere agendar, para no dejar agendar fuera de horario aunque se
