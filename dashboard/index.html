@@ -10363,127 +10363,419 @@
   let asigAgents = [];
   let assignmentRules = [];
 
+  // ── Asignación / Organigrama de equipo ──────────────────────────────────────
+  const ASIG_CATALOG = ['Corte','Tinte','Mechas','Peinado','Tratamiento capilar','Barba','Manicure','Pedicure','Uñas acrílicas'];
+  const ASIG_SPECIALTIES = ['Colorista','Estilista','Barbero','Manicurista','Pedicurista','Gerencia'];
+  const ASIG_AGENTS = ['Avaxon IA · Citas','Avaxon IA · Ventas','Sin agente'];
+  const ASIG_ROLES = ['Admin','Encargada','Empleada'];
+
+  let asigPeople = [];
+  let asigSel = null;
+  let asigMode = null;
+  let asigDraft = null;
+  let asigPos = {};
+  let asigOff = {};
+  let asigDragging = null;
+  let asigRaf = null;
+  let asigT0 = null;
+
+  function asigInitials(n) {
+    const w = (n || '').trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return '+';
+    return (w.length > 1 ? w[0][0] + w[1][0] : w[0].slice(0, 2)).toUpperCase();
+  }
+
+  function asigLayout(people) {
+    const kids = {};
+    people.forEach(p => { const k = p.parent_id || '_'; (kids[k] = kids[k] || []).push(p); });
+    const out = {}; let leaf = 0, maxD = 0;
+    const walk = (p, d) => {
+      maxD = Math.max(maxD, d);
+      const ch = kids[p.id] || [];
+      if (!ch.length) out[p.id] = {d, li: leaf++};
+      else { out[p.id] = {d, ch: ch.map(c => c.id)}; ch.forEach(c => walk(c, d + 1)); }
+    };
+    (kids['_'] || []).forEach(r => walk(r, 0));
+    const X = i => leaf <= 1 ? 50 : 9 + i * (82 / (leaf - 1));
+    const fin = id => {
+      const o = out[id];
+      if (o && o.ch) { o.ch.forEach(fin); o.x = o.ch.reduce((s, c) => s + (out[c]?.x || 50), 0) / o.ch.length; }
+      else if (o) o.x = X(o.li);
+    };
+    (kids['_'] || []).forEach(r => fin(r.id));
+    const ys = maxD ? 64 / maxD : 0;
+    Object.values(out).forEach(o => o.y = 16 + o.d * ys);
+    return out;
+  }
+
   async function loadAsignacion() {
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
 
-    // Load profiles (agents)
-    let q = sb.from('profiles').select('id,full_name,role');
-    if (state.currentOrgId) q = q.eq('organization_id', state.currentOrgId);
-    else q = q.eq('organization_id', state.userOrgId);
-    const { data: profiles } = await q;
-    asigAgents = (profiles || []).filter(p => p.role === 'agent' || p.role === 'admin');
+    const { data: emps } = await sb.from('employees').select('*').eq('organization_id', orgId).eq('active', true).order('created_at');
+    asigPeople = (emps || []).map(e => ({
+      id: e.id,
+      name: e.name,
+      role: e.role || 'Empleada',
+      specialty: e.specialty || 'Gerencia',
+      parent_id: e.parent_id || null,
+      agent: e.agent_label || 'Sin agente',
+      services: e.services || [],
+      type: e.commission_type || 'pct',
+      base: e.commission_base ?? 0,
+      applyOn: e.commission_apply_on || 'neto',
+      overrides: e.commission_overrides || {},
+    }));
 
-    // Count open conversations per agent
-    let countMap = {};
-    try {
-      let convQ = sb.from('conversations').select('assigned_to').eq('status', 'open').eq('organization_id', orgId);
-      const { data: convs } = await convQ;
-      (convs || []).forEach(c => { if (c.assigned_to) countMap[c.assigned_to] = (countMap[c.assigned_to] || 0) + 1; });
-    } catch (_) {}
+    const countEl = $('asig-count-label');
+    if (countEl) countEl.textContent = `${asigPeople.length} persona${asigPeople.length !== 1 ? 's' : ''}`;
 
-    // Render agents list
-    const listEl = $('asig-agents-list');
-    const badge  = $('asig-total-badge');
-    if (badge) badge.textContent = `${asigAgents.length} vendedor${asigAgents.length !== 1 ? 'es' : ''}`;
-    if (listEl) {
-      listEl.innerHTML = asigAgents.length ? asigAgents.map(a => {
-        const count     = countMap[a.id] || 0;
-        const roleLabel = a.role === 'admin' ? 'Admin' : 'Vendedor';
-        return `<div class="asig-agent-row">
-          <div class="asig-agent-avatar">${initials(a.full_name || a.id)}</div>
-          <div><div class="asig-agent-name">${a.full_name || '—'}</div><div class="asig-agent-role">${roleLabel}</div></div>
-          <div class="asig-agent-count" title="Conversaciones abiertas">${count}</div>
-        </div>`;
-      }).join('') : richEmptyState(
-        'fa-user-group', '#f59e0b',
-        'Sin vendedores en este equipo',
-        'Los vendedores se agregan como usuarios de tu cuenta — pídele a Avaxon que invite a tu equipo.',
-        `<a href="mailto:hola@avaxon.lat?subject=Agregar vendedor" style="padding:9px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none">
-          <i class="fa fa-envelope"></i> Contactar a Avaxon
-        </a>`
-      );
-    }
-
-    // Load assignment rules
-    try {
-      const { data: rules } = await sb.from('assignment_rules').select('*').eq('organization_id', orgId).order('priority');
-      assignmentRules = rules || [];
-    } catch (_) { assignmentRules = []; }
-    renderRules();
-
-    // Load default assignment from bot_configs
-    try {
-      const { data: cfg } = await sb.from('bot_configs').select('assignment_mode').eq('organization_id', orgId).maybeSingle();
-      const sel = $('defaultAssignment');
-      if (sel && cfg?.assignment_mode) sel.value = cfg.assignment_mode;
-    } catch (_) {}
-
-    // Load SLA config
-    loadSlaConfig(orgId);
-
-    // Populate agent dropdown in rule modal
-    const ruleAgentSel = $('ruleAgent');
-    if (ruleAgentSel) {
-      ruleAgentSel.innerHTML = '<option value="">Seleccionar agente...</option>' +
-        asigAgents.map(a => `<option value="${a.id}">${a.full_name || a.id}</option>`).join('');
-    }
-    // Populate SLA escalation dropdown
-    const slaAgSel = $('slaEscalateAgent');
-    if (slaAgSel) {
-      const prev = slaAgSel.value;
-      slaAgSel.innerHTML = '<option value="">Sin escalación</option>' +
-        asigAgents.map(a => `<option value="${a.id}">${a.full_name || a.id}</option>`).join('');
-      if (prev) slaAgSel.value = prev;
-    }
+    // Reset state when reloading
+    asigPos = {}; asigOff = {}; asigDragging = null;
+    if (asigRaf) { cancelAnimationFrame(asigRaf); asigRaf = null; }
+    asigT0 = performance.now();
+    const tick = () => {
+      asigStep((performance.now() - asigT0) / 1000);
+      asigRaf = requestAnimationFrame(tick);
+    };
+    asigRaf = requestAnimationFrame(tick);
   }
 
-  function renderRules() {
-    const container = $('rulesContainer');
-    const badge     = $('asig-rules-badge');
-    if (!container) return;
-    if (badge) badge.textContent = `${assignmentRules.length} regla${assignmentRules.length !== 1 ? 's' : ''}`;
-    if (!assignmentRules.length) {
-      container.innerHTML = richEmptyState(
-        'fa-shuffle', '#ef4444',
-        'No hay reglas configuradas',
-        'Crea reglas para asignar leads automáticamente a tu equipo según su origen o tipo.',
-        `<button onclick="showRuleModal()" style="padding:9px 16px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-          <i class="fa fa-plus"></i> Nueva regla
-        </button>`
-      );
-      return;
-    }
-    container.innerHTML = assignmentRules.map((r, i) => {
-      let targetLabel = 'Sin asignar';
-      if (r.action_type === 'assign_role' && r.target_role_id) {
-        targetLabel = `Rol: ${r.target_role_id}`;
-      } else {
-        const agentId = (r.target_agent_ids || [])[0] || r.agent_id;
-        const agent   = asigAgents.find(a => a.id === agentId);
-        targetLabel   = agent?.full_name || 'Sin asignar';
+  function asigList() {
+    return asigMode === 'add' && asigDraft ? [...asigPeople, {...asigDraft, id: '__draft'}] : asigPeople;
+  }
+
+  function asigStep(t) {
+    const list = asigList();
+    const L = asigLayout(list);
+    list.forEach((p, i) => {
+      const o = asigOff[p.id] || {dx: 0, dy: 0};
+      const ph = i * 1.7, drag = asigDragging === p.id;
+      const fx = !drag ? Math.sin(t * 0.55 + ph) * 0.6 : 0;
+      const fy = !drag ? Math.cos(t * 0.7 + ph * 1.3) * 1.4 : 0;
+      const lp = L[p.id] || {x: 50, y: 50};
+      const tx = Math.min(96, Math.max(4, lp.x + o.dx + fx));
+      const ty = Math.min(94, Math.max(6, lp.y + o.dy + fy));
+      let c = asigPos[p.id];
+      if (!c) {
+        const pp = asigPos[p.parent_id];
+        c = asigPos[p.id] = pp ? {...pp} : {x: tx, y: ty};
       }
-      let condText = '';
-      if (r.conditions && r.conditions.length > 0) {
-        const c  = r.conditions[0];
-        const op = { contains_any: 'contiene', equals: 'es igual a', starts_with: 'empieza con', not_contains: 'no contiene', gt: '>', gte: '≥', lt: '<', lte: '≤' }[c.operator] || 'contiene';
-        const val = Array.isArray(c.value) ? c.value.join(', ') : c.value;
-        condText  = `${op} <strong>${val}</strong>`;
-      } else {
-        condText = r.description || r.value || 'Condición personalizada';
-      }
-      return `<div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
-        <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-sub);padding:2px 8px;border-radius:6px">#${r.priority || i+1}</span>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--text)">${r.name}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Si ${condText} → <strong style="color:var(--accent)">${targetLabel}</strong></div>
-        </div>
-        <span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:6px;${r.is_active !== false ? 'background:rgba(34,197,94,.1);color:var(--accent)' : 'background:var(--hover-bg);color:var(--text-dim)'}">${r.is_active !== false ? 'Activa' : 'Inactiva'}</span>
-        <button onclick="editAsigRule('${r.id}')" style="padding:6px 8px;background:none;border:none;color:var(--text-muted);cursor:pointer;border-radius:8px" title="Editar"><i class="fa fa-pen"></i></button>
-        <button onclick="deleteAsigRule('${r.id}')" style="padding:6px 8px;background:none;border:none;color:#ef4444;cursor:pointer;border-radius:8px" title="Eliminar"><i class="fa fa-trash"></i></button>
-      </div>`;
+      const k = drag ? 0.5 : 0.09;
+      c.x += (tx - c.x) * k;
+      c.y += (ty - c.y) * k;
+    });
+    asigRenderOrgChart(list, L);
+  }
+
+  function asigRenderOrgChart(list, L) {
+    const canvas = $('asig-canvas');
+    const svg = $('asig-svg');
+    if (!canvas || !svg) return;
+    const by = Object.fromEntries(list.map(p => [p.id, p]));
+    const P = id => asigPos[id] || L[id] || {x: 50, y: 50};
+    const focus = asigMode === 'add' ? '__draft' : asigMode === 'edit' ? asigSel : null;
+    const lineage = new Set();
+    let c = focus;
+    while (c) { lineage.add(c); c = by[c]?.parent_id; }
+
+    // SVG edges
+    const edgeHtml = list.filter(p => p.parent_id && by[p.parent_id]).map(p => {
+      const a = P(p.parent_id), b = P(p.id);
+      const px = a.x * 10, py = a.y * 5, cx2 = b.x * 10, cy2 = b.y * 5, my = (py + cy2) / 2;
+      const on = lineage.has(p.id), dr = p.id === '__draft';
+      return `<g><path d="M${px} ${py} C${px} ${my},${cx2} ${my},${cx2} ${cy2}" fill="none" stroke="${on ? '#3fe0a0' : 'rgba(110,190,165,.28)'}" stroke-width="${on ? 2 : 1.2}" stroke-dasharray="${dr ? '6 6' : 'none'}" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 6px ${on ? 'rgba(63,224,160,.7)' : 'transparent'})"></path><path d="M${px} ${py} C${px} ${my},${cx2} ${my},${cx2} ${cy2}" fill="none" stroke="${on ? '#b6ffe0' : 'rgba(140,230,200,.55)'}" stroke-width="2.2" stroke-dasharray="3 27" stroke-linecap="round" vector-effect="non-scaling-stroke" style="animation:flow ${on ? '1.2s' : '2.6s'} linear infinite"></path></g>`;
     }).join('');
+    svg.innerHTML = edgeHtml;
+
+    // Node elements
+    list.forEach((p, i) => {
+      const nodeId = 'asig-node-' + p.id.replace(/[^a-z0-9]/gi, '_');
+      let el = document.getElementById(nodeId);
+      const pos = P(p.id);
+      const s = p.id === focus, root = !p.parent_id, dr = p.id === '__draft';
+      const size = root ? 76 : p.role === 'Encargada' ? 62 : 54;
+      const pct = Number(p.base) || 0, isPct = p.type === 'pct';
+      const arcDeg = root ? 360 : isPct ? Math.min(100, pct) * 3.6 : 200;
+      const arcCol = s ? '#3fe0a0' : 'rgba(63,224,160,.55)';
+      const orbitColor = s ? 'rgba(63,224,160,.55)' : lineage.has(p.id) ? 'rgba(63,224,160,.3)' : 'rgba(120,190,170,.16)';
+      const spinDur = root ? 22 : 10 + (i % 4) * 3;
+      const dotColor = s || lineage.has(p.id) ? '#5ef0b0' : 'rgba(120,190,170,.45)';
+      const bg = root ? '#0f3a26' : s ? '#123128' : '#0e1828';
+      const fg = root ? '#7dffc4' : s ? '#5ef0b0' : '#cfe5dd';
+      const glowColor = s ? 'rgba(63,224,160,.5)' : root ? 'rgba(63,224,160,.25)' : 'rgba(0,0,0,0)';
+      const coreBorder = s ? '#3fe0a0' : 'rgba(120,190,170,.3)';
+      const labelBorder = s ? '#3fe0a0' : 'rgba(140,220,190,.18)';
+      const pctLabel = isPct ? `${pct}%` : `$${pct}`;
+
+      if (!el) {
+        el = document.createElement('div');
+        el.id = nodeId;
+        el.style.cssText = 'position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px;user-select:none;touch-action:none;color:#e7f2ee';
+        canvas.appendChild(el);
+      }
+      el.style.left = pos.x + '%';
+      el.style.top = pos.y + '%';
+      el.style.transform = `translate(-50%,-${size / 2}px)`;
+      el.style.cursor = dr ? 'default' : 'grab';
+      el.style.opacity = dr ? '0.85' : '1';
+
+      const innerHtml = `<div style="position:relative;width:${size}px;height:${size}px"><div style="position:absolute;inset:-9px;border-radius:50%;border:1.5px solid #3fe0a0;animation:${s ? 'pulse 1.8s ease-out infinite' : 'none'};opacity:${s ? 1 : 0}"></div><div style="position:absolute;inset:-11px;border-radius:50%;border:1px dashed ${orbitColor};animation:spin ${spinDur}s linear infinite"><div style="position:absolute;top:-3px;left:50%;margin-left:-3px;width:6px;height:6px;border-radius:50%;background:${dotColor};box-shadow:0 0 8px ${dotColor}"></div></div><div style="position:absolute;inset:-4px;border-radius:50%;background:${dr ? 'transparent' : `conic-gradient(${arcCol} ${arcDeg}deg, rgba(120,190,170,.14) 0)`};-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2.5px))"></div><div style="position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${bg};color:${fg};border:1px ${dr ? 'dashed' : 'solid'} ${coreBorder};font:600 ${root ? 22 : 16}px 'Figtree',sans-serif;letter-spacing:.02em;box-shadow:inset 0 0 18px rgba(63,224,160,.18),0 0 30px ${glowColor}">${asigInitials(p.name)}</div><div style="position:absolute;right:-6px;bottom:-4px;padding:2px 5px;border-radius:5px;background:#0a111e;border:1px solid rgba(63,224,160,.5);font:600 9px 'JetBrains Mono',monospace;color:#5ef0b0;display:${p.agent !== 'Sin agente' && !dr ? 'block' : 'none'}">IA</div></div><div style="display:flex;align-items:center;gap:10px;padding:7px 10px 7px 12px;border-radius:10px;background:rgba(12,22,36,.86);border:1px solid ${labelBorder};backdrop-filter:blur(6px);box-shadow:0 8px 24px -10px rgba(0,0,0,.6)"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:600;white-space:nowrap">${dr ? (p.name || 'Nueva persona') : p.name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7fa99a;white-space:nowrap">${root ? 'Admin' : (p.specialty || '')}</span></div><span style="display:${root || dr ? 'none' : 'block'};padding:3px 6px;border-radius:6px;background:rgba(63,224,160,.12);color:#5ef0b0;font:600 11px 'JetBrains Mono',monospace">${pctLabel}</span></div>`;
+
+      if (el.dataset.innerKey !== innerHtml) {
+        el.innerHTML = innerHtml;
+        el.dataset.innerKey = innerHtml;
+      }
+      if (!dr) el.onpointerdown = (e) => asigNodeDown(p.id, e);
+    });
+
+    // Remove stale nodes
+    const currentIds = new Set(list.map(p => 'asig-node-' + p.id.replace(/[^a-z0-9]/gi, '_')));
+    Array.from(canvas.children).forEach(child => {
+      if (child.id && child.id.startsWith('asig-node-') && !currentIds.has(child.id)) canvas.removeChild(child);
+    });
   }
+
+  function asigNodeDown(id, e) {
+    e.preventDefault();
+    const canvas = $('asig-canvas');
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const sx = e.clientX, sy = e.clientY;
+    const o0 = {...(asigOff[id] || {dx: 0, dy: 0})};
+    let moved = false;
+    const mv = ev => {
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (Math.abs(dx) + Math.abs(dy) > 4) { moved = true; asigDragging = id; }
+      if (moved) asigOff[id] = {dx: o0.dx + dx / rect.width * 100, dy: o0.dy + dy / rect.height * 100};
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+      asigDragging = null;
+      if (!moved) asigOpenEdit(id);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
+  }
+
+  function asigResetLayout() { asigOff = {}; }
+
+  function asigOpenEdit(id) {
+    asigSel = id; asigMode = 'edit'; asigDraft = null;
+    renderAsigEditPanel();
+  }
+
+  function asigOpenAdd(parentId) {
+    asigMode = 'add';
+    asigDraft = {
+      name: '', parent_id: parentId || (asigPeople[0]?.id || null),
+      role: 'Empleada', specialty: 'Estilista', agent: 'Avaxon IA · Citas',
+      services: [], type: 'pct', base: 40, applyOn: 'neto', overrides: {},
+    };
+    renderAsigAddPanel();
+  }
+
+  function asigClose() {
+    asigMode = null; asigDraft = null; asigSel = null;
+    document.getElementById('asig-edit-panel')?.remove();
+    document.getElementById('asig-add-panel')?.remove();
+    document.getElementById('asig-panel-overlay')?.remove();
+  }
+
+  function renderAsigEditPanel() {
+    document.getElementById('asig-edit-panel')?.remove();
+    document.getElementById('asig-add-panel')?.remove();
+    document.getElementById('asig-panel-overlay')?.remove();
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (!p) return;
+    const isPct = p.type === 'pct';
+    const prefix = isPct ? '' : '$', suffix = isPct ? '%' : '';
+    const baseLabel = isPct ? `${p.base}%` : `$${p.base}`;
+
+    const chipsHtml = ASIG_CATALOG.map(label => {
+      const on = p.services.includes(label);
+      return `<button onclick="asigToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on ? '#16a34a' : '#dfe4eb'};background:${on ? '#16a34a' : '#fff'};color:${on ? '#fff' : '#3a4555'};font:500 13px 'Figtree',sans-serif;cursor:pointer">${label}</button>`;
+    }).join('');
+
+    const rowsHtml = p.services.map(name => {
+      const v = p.overrides[name] ?? '', set = v !== '';
+      return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;align-items:center;padding:8px 14px;border-top:1px solid #edf0f4"><span style="font-size:14px;font-weight:500">${name}</span><div style="display:flex;align-items:center;gap:4px;height:34px;border:1px solid ${set ? '#16a34a' : '#dfe4eb'};border-radius:8px;padding:0 10px;background:${set ? '#f0fbf4' : '#fff'}"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#7b8798">${prefix}</span><input type="number" value="${v}" placeholder="${p.base}" oninput="asigSetOverride('${name.replace(/'/g,"&#39;")}',this.value)" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:600 14px 'JetBrains Mono',monospace;color:#0f1a2a"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#7b8798">${suffix}</span></div><button onclick="asigResetOverride('${name.replace(/'/g,"&#39;")}')" style="justify-self:end;border:none;background:none;padding:0;font:500 12px 'Figtree',sans-serif;color:${set ? '#16a34a' : '#9aa4b2'};cursor:pointer">${set ? 'Restablecer' : 'Base'}</button></div>`;
+    }).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'asig-panel-overlay';
+    overlay.onclick = asigClose;
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,14,26,.45);backdrop-filter:blur(2px);z-index:900';
+
+    const aside = document.createElement('aside');
+    aside.id = 'asig-edit-panel';
+    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Figtree",sans-serif';
+    aside.onclick = e => e.stopPropagation();
+
+    aside.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:22px 26px;background:#0a111e;color:#e7f2ee"><div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#123128;color:#5ef0b0;font-weight:600;box-shadow:0 0 0 2px #3fe0a0,0 0 20px rgba(63,224,160,.45)">${asigInitials(p.name)}</div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:19px;font-weight:600">${p.name}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7fa99a">${p.role} · ${p.specialty}</span></div><button onclick="asigClose()" style="width:36px;height:36px;border-radius:9px;border:1px solid rgba(140,220,190,.25);background:none;color:#cfe5dd;font-size:18px;cursor:pointer">×</button></div>
+    <div style="flex:1;overflow:auto;padding:8px 26px 26px;display:flex;flex-direction:column">
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid #edf0f4">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">01 · Asignación</span>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Nombre<input oninput="asigEditField('name',this.value)" value="${p.name.replace(/"/g,'&quot;')}" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 12px;font-size:15px;color:#0f1a2a;font-family:inherit"></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Rol<select onchange="asigEditField('role',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_ROLES.map(r=>`<option value="${r}"${r===p.role?' selected':''}>${r}</option>`).join('')}</select></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Agente en conversación<select onchange="asigEditField('agent',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_AGENTS.map(a=>`<option value="${a}"${a===p.agent?' selected':''}>${a}</option>`).join('')}</select></label>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid #edf0f4">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">02 · Perfil de la empleada</span>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Especialidad<select onchange="asigEditField('specialty',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===p.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#5b6676">Servicios que atiende<div style="display:flex;flex-wrap:wrap;gap:8px">${chipsHtml}</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid #edf0f4">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">03 · Comisión</span>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Tipo<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f1f4f8;border-radius:11px"><button onclick="asigEditField('type','pct');renderAsigEditPanel()" style="height:36px;border:none;border-radius:8px;background:${isPct?'#fff':'transparent'};color:${isPct?'#0f1a2a':'#5b6676'};box-shadow:${isPct?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 14px 'Figtree',sans-serif;cursor:pointer">% de la venta</button><button onclick="asigEditField('type','fixed');renderAsigEditPanel()" style="height:36px;border:none;border-radius:8px;background:${!isPct?'#fff':'transparent'};color:${!isPct?'#0f1a2a':'#5b6676'};box-shadow:${!isPct?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 14px 'Figtree',sans-serif;cursor:pointer">$ fijo por servicio</button></div></div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Valor base<div style="display:flex;align-items:center;height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 12px;gap:6px"><span style="font-family:'JetBrains Mono',monospace;color:#7b8798">${prefix}</span><input type="number" value="${p.base}" oninput="asigEditField('base',this.value)" style="flex:1;min-width:0;border:none;outline:none;font:600 16px 'JetBrains Mono',monospace;color:#0f1a2a"><span style="font-family:'JetBrains Mono',monospace;color:#7b8798">${suffix}</span></div></label>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Aplicar sobre<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:#f1f4f8;border-radius:11px"><button onclick="asigEditField('applyOn','total');renderAsigEditPanel()" style="height:32px;border:none;border-radius:8px;background:${p.applyOn==='total'?'#fff':'transparent'};color:${p.applyOn==='total'?'#0f1a2a':'#5b6676'};box-shadow:${p.applyOn==='total'?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 13px 'Figtree',sans-serif;cursor:pointer">Total</button><button onclick="asigEditField('applyOn','neto');renderAsigEditPanel()" style="height:32px;border:none;border-radius:8px;background:${p.applyOn==='neto'?'#fff':'transparent'};color:${p.applyOn==='neto'?'#0f1a2a':'#5b6676'};box-shadow:${p.applyOn==='neto'?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 13px 'Figtree',sans-serif;cursor:pointer">Neto</button></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:20px 0">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">04 · Comisión por servicio</span><span style="font-size:12px;color:#7b8798">Opcional</span></div>
+        <p style="margin:0;font-size:13px;color:#5b6676">Deja vacío para usar la tasa base (${baseLabel}).</p>
+        <div style="border:1px solid #e5e9f0;border-radius:12px;overflow:hidden"><div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;padding:10px 14px;background:#f6f8fb;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7b8798"><span>Servicio</span><span>Comisión</span><span></span></div>${rowsHtml || '<div style="padding:16px 14px;border-top:1px solid #edf0f4;font-size:13px;color:#7b8798">Selecciona servicios en el perfil para personalizar su comisión.</div>'}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-top:1px solid #e5e9f0">
+      <button onclick="asigOpenAdd('${p.id}')" style="margin-right:auto;border:none;background:none;padding:0;font:600 14px 'Figtree',sans-serif;color:#16a34a;cursor:pointer">+ Agregar a su equipo</button>
+      <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1px solid #dfe4eb;background:#fff;font:600 14px 'Figtree',sans-serif;color:#0f1a2a;cursor:pointer">Cancelar</button>
+      <button onclick="asigSave()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;font:600 14px 'Figtree',sans-serif;color:#fff;cursor:pointer">Guardar cambios</button>
+    </div>`;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(aside);
+  }
+
+  function renderAsigAddPanel() {
+    document.getElementById('asig-edit-panel')?.remove();
+    document.getElementById('asig-add-panel')?.remove();
+    document.getElementById('asig-panel-overlay')?.remove();
+    const d = asigDraft;
+    if (!d) return;
+    const parentName = asigPeople.find(p => p.id === d.parent_id)?.name || '';
+    const parentOpts = asigPeople.map(p => `<option value="${p.id}"${p.id===d.parent_id?' selected':''}>${p.name} · ${p.role}</option>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.id = 'asig-panel-overlay';
+    overlay.onclick = asigClose;
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,14,26,.25);z-index:900';
+
+    const aside = document.createElement('aside');
+    aside.id = 'asig-add-panel';
+    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Figtree",sans-serif';
+    aside.onclick = e => e.stopPropagation();
+
+    aside.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:22px 26px;background:#0a111e;color:#e7f2ee"><div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px dashed #3fe0a0;color:#5ef0b0;font-weight:600;font-size:16px">${asigInitials(d.name)}</div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:19px;font-weight:600">Nueva persona</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7fa99a">Se conecta a ${parentName}</span></div><button onclick="asigClose()" style="width:36px;height:36px;border-radius:9px;border:1px solid rgba(140,220,190,.25);background:none;color:#cfe5dd;font-size:18px;cursor:pointer">×</button></div>
+    <div style="flex:1;overflow:auto;padding:24px 26px;display:flex;flex-direction:column;gap:16px">
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Nombre<input value="${(d.name||'').replace(/"/g,'&quot;')}" oninput="asigDraftField('name',this.value)" placeholder="Ej. Lucía" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 12px;font-size:15px;color:#0f1a2a;font-family:inherit"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Reporta a<select onchange="asigDraftField('parent_id',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit"><option value="">Sin jefe directo</option>${parentOpts}</select></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Rol<select onchange="asigDraftField('role',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_ROLES.map(r=>`<option value="${r}"${r===d.role?' selected':''}>${r}</option>`).join('')}</select></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Especialidad<select onchange="asigDraftField('specialty',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===d.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+      </div>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:#5b6676">Agente en conversación<select onchange="asigDraftField('agent',this.value)" style="height:42px;border:1px solid #dfe4eb;border-radius:10px;padding:0 10px;font-size:15px;background:#fff;color:#0f1a2a;font-family:inherit">${ASIG_AGENTS.map(a=>`<option value="${a}"${a===d.agent?' selected':''}>${a}</option>`).join('')}</select></label>
+      <p style="margin:0;font-size:13px;color:#7b8798">Al crearla podrás elegir sus servicios y configurar sus comisiones.</p>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid #e5e9f0">
+      <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1px solid #dfe4eb;background:#fff;font:600 14px 'Figtree',sans-serif;color:#0f1a2a;cursor:pointer">Cancelar</button>
+      <button onclick="asigCreate()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;opacity:${d.name?.trim()?1:.45};font:600 14px 'Figtree',sans-serif;color:#fff;cursor:pointer">Crear y configurar comisión</button>
+    </div>`;
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(aside);
+  }
+
+  function asigEditField(key, value) {
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (p) p[key] = value;
+  }
+
+  function asigDraftField(key, value) {
+    if (asigDraft) { asigDraft[key] = value; renderAsigAddPanel(); }
+  }
+
+  function asigToggleService(label) {
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (!p) return;
+    p.services = p.services.includes(label) ? p.services.filter(x => x !== label) : [...p.services, label];
+    renderAsigEditPanel();
+  }
+
+  function asigSetOverride(name, val) {
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (p) p.overrides[name] = val;
+  }
+
+  function asigResetOverride(name) {
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (p) { delete p.overrides[name]; renderAsigEditPanel(); }
+  }
+
+  async function asigSave() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    const p = asigPeople.find(x => x.id === asigSel);
+    if (!p || !orgId) return;
+    try {
+      const { error } = await sb.from('employees').update({
+        name: p.name, role: p.role, specialty: p.specialty, parent_id: p.parent_id || null,
+        agent_label: p.agent, commission_type: p.type,
+        commission_base: Number(p.base) || 0, commission_apply_on: p.applyOn,
+        commission_overrides: p.overrides, services: p.services,
+        updated_at: new Date().toISOString(),
+      }).eq('id', p.id).eq('organization_id', orgId);
+      if (error) { showToast('Error al guardar: ' + error.message, 4000); return; }
+      showToast('Cambios guardados');
+      asigClose();
+    } catch (e) { showToast('Error al guardar: ' + e.message, 4000); }
+  }
+
+  async function asigCreate() {
+    const orgId = state.currentOrgId || state.userOrgId;
+    const d = asigDraft;
+    if (!d?.name?.trim() || !orgId) return;
+    try {
+      const { data: newEmp, error } = await sb.from('employees').insert({
+        organization_id: orgId, name: d.name.trim(), role: d.role, specialty: d.specialty,
+        parent_id: d.parent_id || null, agent_label: d.agent,
+        commission_type: d.type || 'pct', commission_base: Number(d.base) || 0,
+        commission_apply_on: d.applyOn || 'neto', commission_overrides: d.overrides || {},
+        services: d.services || [],
+      }).select().single();
+      if (error) { showToast('Error al crear: ' + error.message, 4000); return; }
+      const newPerson = {
+        id: newEmp.id, name: newEmp.name, role: newEmp.role, specialty: newEmp.specialty || 'Estilista',
+        parent_id: newEmp.parent_id, agent: newEmp.agent_label || 'Sin agente',
+        services: newEmp.services || [], type: newEmp.commission_type || 'pct',
+        base: newEmp.commission_base || 0, applyOn: newEmp.commission_apply_on || 'neto',
+        overrides: newEmp.commission_overrides || {},
+      };
+      asigPeople.push(newPerson);
+      asigDraft = null; asigSel = newEmp.id; asigMode = 'edit';
+      const countEl = $('asig-count-label');
+      if (countEl) countEl.textContent = `${asigPeople.length} persona${asigPeople.length !== 1 ? 's' : ''}`;
+      renderAsigEditPanel();
+      showToast('Empleada creada');
+    } catch (e) { showToast('Error al crear: ' + e.message, 4000); }
+  }
+
+  window.asigResetLayout = asigResetLayout;
+  window.asigOpenAdd = asigOpenAdd;
+  window.asigOpenEdit = asigOpenEdit;
+  window.asigClose = asigClose;
+  window.renderAsigEditPanel = renderAsigEditPanel;
+  window.asigEditField = asigEditField;
+  window.asigDraftField = asigDraftField;
+  window.asigToggleService = asigToggleService;
+  window.asigSetOverride = asigSetOverride;
+  window.asigResetOverride = asigResetOverride;
+  window.asigSave = asigSave;
+  window.asigCreate = asigCreate;
 
   function showRuleModal(ruleData) {
     const modal = $('ruleModal');
