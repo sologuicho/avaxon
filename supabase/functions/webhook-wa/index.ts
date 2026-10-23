@@ -1986,6 +1986,25 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             } catch (e) {
               toolResult = JSON.stringify({ error: (e as Error).message })
             }
+          } else if (toolCall.function.name === 'iniciar_transferencia') {
+            const { concepto, monto } = args as { concepto: string; monto: number }
+            const payConf = (botConfig as any)?.features?.payment_config
+            if (!payConf) {
+              toolResult = 'No hay cuenta bancaria configurada. Dile al cliente que un asesor le dará los datos de pago.'
+            } else {
+              await sb.from('conversations').update({ transfer_pending: true }).eq('id', conversation_id)
+              transferPending = true
+              const montoFmt = Number(monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })
+              toolResult = JSON.stringify({
+                banco:      payConf.bank,
+                cuenta:     payConf.account,
+                titular:    payConf.holder,
+                clabe:      payConf.clabe ?? null,
+                monto:      `$${montoFmt} MXN`,
+                concepto,
+                instruccion: 'Comunica estos datos al cliente de forma clara y dile que envíe su comprobante como imagen por este mismo chat en cuanto realice la transferencia.',
+              })
+            }
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
