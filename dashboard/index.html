@@ -11736,6 +11736,7 @@
   const isRecoveryLink = window.location.hash.includes('type=recovery');
 
   /* ── Auth state listener ── */
+  let _bootstrapped = false;
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       showScreen('recovery');
@@ -11745,7 +11746,9 @@
       window.location.href = '../index.html';
       return;
     }
-    if (event === 'SIGNED_IN' && session?.user && !isRecoveryLink) {
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user && !isRecoveryLink) {
+      if (_bootstrapped) return;
+      _bootstrapped = true;
       await bootstrap(session.user);
     }
   });
@@ -11759,11 +11762,10 @@
       return;
     }
     const { data: { session } } = await sb.auth.getSession();
-    if (session?.user) {
-      await bootstrap(session.user);
-    } else {
-      showScreen('login');
-    }
+    if (!session?.user) showScreen('login');
+    // Si hay sesión, onAuthStateChange('INITIAL_SESSION') ya llamó bootstrap()
+    // (o lo hará en cuanto resuelva). No llamamos bootstrap() aquí para evitar
+    // dos llamadas simultáneas que causan el doble-modal de términos.
   })();
 
   // ── Solicitudes de cambio al agente ──────────────────────────────────────
