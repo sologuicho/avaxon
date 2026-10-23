@@ -10699,7 +10699,7 @@
 
     const aside = document.createElement('aside');
     aside.id = 'asig-add-panel';
-    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:#fff;display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Figtree",sans-serif';
+    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:var(--card-bg);display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Plus Jakarta Sans",sans-serif';
     aside.onclick = e => e.stopPropagation();
 
     aside.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:22px 26px;background:#0a111e;color:#e7f2ee"><div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px dashed #3fe0a0;color:#5ef0b0;font-weight:600;font-size:16px">${asigInitials(d.name)}</div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:19px;font-weight:600">Nueva persona</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7fa99a">Se conecta a ${parentName}</span></div><button onclick="asigClose()" style="width:36px;height:36px;border-radius:9px;border:1px solid rgba(140,220,190,.25);background:none;color:#cfe5dd;font-size:18px;cursor:pointer">×</button></div>
