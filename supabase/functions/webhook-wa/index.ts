@@ -2328,7 +2328,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
           type: 'meta_rejected',
           error_code: String(kitchenData?.error?.code ?? kitchenRes.status),
           detail: kitchenData?.error?.code === 131026
-            ? `Comanda No. ${orderNumber} no llegó a cocina (${comandaPhone}): fuera de ventana de 24 h — aprueba la plantilla homefood_comanda_v1 en Meta.`
+            ? `Comanda No. ${orderNumber} no llegó a cocina (${comandaPhone}): fuera de ventana de 24 h — aprueba la plantilla homefood_comanda_v2 en Meta.`
             : `Comanda No. ${orderNumber} no llegó a cocina (${comandaPhone}): ${kitchenData?.error?.message ?? JSON.stringify(kitchenData).slice(0, 300)}`,
           source: 'webhook-wa:comanda_to_kitchen',
         })
