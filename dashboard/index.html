@@ -7446,7 +7446,9 @@
 
     // ── Flujo de primer ingreso (solo para admin/agent, no super_admin) ──
     if (!state.isSuperAdmin) {
-      if (!profileData?.terms_accepted_at) {
+      const termsKey = 'avx_terms_v1_' + (state.userId || '');
+      const termsOk = profileData?.terms_accepted_at || localStorage.getItem(termsKey);
+      if (!termsOk) {
         showTermsModal();
         return; // bootstrap continúa desde acceptTerms()
       }
