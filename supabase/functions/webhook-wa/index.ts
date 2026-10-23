@@ -115,6 +115,24 @@ const PAYMENT_TOOLS = [
   },
 ]
 
+const TRANSFER_TOOLS = [
+  {
+    type: 'function' as const,
+    function: {
+      name: 'iniciar_transferencia',
+      description: 'Inicia el proceso de pago por transferencia o depósito bancario. Úsala SOLO cuando el cliente quiera pagar por este medio. Devuelve los datos bancarios para que se los comuniques y activa la espera del comprobante.',
+      parameters: {
+        type: 'object',
+        properties: {
+          concepto: { type: 'string', description: 'Concepto de pago, ej. "Comanda #42 — pollo asado x2"' },
+          monto:    { type: 'number', description: 'Monto total a pagar en MXN' },
+        },
+        required: ['concepto', 'monto'],
+      },
+    },
+  },
+]
+
 const ORDER_TOOLS = [
   {
     type: 'function' as const,
