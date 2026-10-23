@@ -10416,7 +10416,34 @@
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
 
-    const { data: emps } = await sb.from('employees').select('*').eq('organization_id', orgId).eq('active', true).order('created_at');
+    let { data: emps } = await sb.from('employees').select('*').eq('organization_id', orgId).eq('active', true).order('created_at');
+
+    // Si no hay ningún empleado, crear automáticamente el nodo raíz desde el owner/admin de la org
+    if (!emps || emps.length === 0) {
+      const { data: ownerProfile } = await sb.from('profiles')
+        .select('id, full_name, role')
+        .eq('organization_id', orgId)
+        .in('role', ['owner', 'admin'])
+        .order('created_at')
+        .limit(1)
+        .maybeSingle();
+      const rootName = ownerProfile?.full_name || 'Admin';
+      const { data: rootEmp } = await sb.from('employees').insert({
+        organization_id: orgId,
+        name: rootName,
+        role: 'Admin',
+        specialty: 'Gerencia',
+        parent_id: null,
+        agent_label: 'Sin agente',
+        commission_type: 'pct',
+        commission_base: 0,
+        commission_apply_on: 'neto',
+        commission_overrides: {},
+        services: [],
+      }).select().maybeSingle();
+      emps = rootEmp ? [rootEmp] : [];
+    }
+
     asigPeople = (emps || []).map(e => ({
       id: e.id,
       name: e.name,
