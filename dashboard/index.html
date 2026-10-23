@@ -10673,10 +10673,10 @@
         <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden"><div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;padding:10px 14px;background:var(--input-bg);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7b8798"><span>Servicio</span><span>Comisión</span><span></span></div>${rowsHtml || '<div style="padding:16px 14px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted)">Selecciona servicios en el perfil para personalizar su comisión.</div>'}</div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-top:1px solid #e5e9f0">
-      <button onclick="asigOpenAdd('${p.id}')" style="margin-right:auto;border:none;background:none;padding:0;font:600 14px 'Figtree',sans-serif;color:#16a34a;cursor:pointer">+ Agregar a su equipo</button>
-      <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1px solid #dfe4eb;background:#fff;font:600 14px 'Figtree',sans-serif;color:#0f1a2a;cursor:pointer">Cancelar</button>
-      <button onclick="asigSave()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;font:600 14px 'Figtree',sans-serif;color:#fff;cursor:pointer">Guardar cambios</button>
+    <div style="display:flex;align-items:center;gap:10px;padding:16px 26px;border-top:1px solid var(--border)">
+      <button onclick="asigOpenAdd('${p.id}')" style="margin-right:auto;border:none;background:none;padding:0;font:600 14px 'Plus Jakarta Sans',sans-serif;color:#16a34a;cursor:pointer">+ Agregar a su equipo</button>
+      <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--card-bg);font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--text);cursor:pointer">Cancelar</button>
+      <button onclick="asigSave()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;font:600 14px 'Plus Jakarta Sans',sans-serif;color:#fff;cursor:pointer">Guardar cambios</button>
     </div>`;
 
     document.body.appendChild(overlay);
