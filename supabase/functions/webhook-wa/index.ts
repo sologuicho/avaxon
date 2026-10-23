@@ -1212,6 +1212,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       .single()
     if (!newConv) return
     conversation_id = newConv.id
+    isNewConversation = true
     sendZapierEvent(sb, organization_id, 'lead_created', {
       contact_name:    contactName ?? fromPhone,
       contact_phone:   fromPhone,
