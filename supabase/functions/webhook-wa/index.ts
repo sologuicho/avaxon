@@ -1194,17 +1194,18 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
       currentOrder = co ?? null
     }
     await sb.from('conversations')
-      .update({ last_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ last_message_at: new Date().toISOString(), last_client_message_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq('id', conversation_id)
   } else {
     const { data: newConv } = await sb
       .from('conversations')
       .insert({
         organization_id,
-        contact_id:      contact_row.id,
-        phone_number_id: pn.id,
-        status:          'open',
-        last_message_at: new Date().toISOString(),
+        contact_id:              contact_row.id,
+        phone_number_id:         pn.id,
+        status:                  'open',
+        last_message_at:         new Date().toISOString(),
+        last_client_message_at:  new Date().toISOString(),
       })
       .select('id')
       .single()
