@@ -1041,7 +1041,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // ── 1. Resolver organización + token por cliente ────────────────────────────
   const { data: pn } = await sb
     .from('phone_numbers')
-    .select('id, organization_id, whatsapp_accounts(access_token)')
+    .select('id, organization_id, display_phone_number, whatsapp_accounts(access_token)')
     .eq('phone_number_id', phoneNumberId)
     .single()
 
@@ -1053,6 +1053,16 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const clientToken = (pn.whatsapp_accounts as any)?.access_token
   if (!clientToken) {
     console.error('No hay access_token para la organización', organization_id, '— phone_number_id:', phoneNumberId, '. Conectar WhatsApp desde el dashboard.')
+    return
+  }
+
+  // ── Eco smb_message_echoes: mensaje enviado desde la propia línea del negocio ──
+  // Sucede cuando un agente responde desde Meta Business Inbox. Se loguea para
+  // diagnosticar el formato y se ignora — el bot no debe procesar sus propios ecos.
+  const bizPhoneNorm = (pn as any).display_phone_number?.replace(/\D/g, '') ?? ''
+  const fromPhoneNorm = fromPhone?.replace(/\D/g, '') ?? ''
+  if (bizPhoneNorm && fromPhoneNorm && fromPhoneNorm === bizPhoneNorm) {
+    console.log(`[smb_echo] phone_number_id=${phoneNumberId} from=${fromPhone} type=${rawMessages[0]?.type ?? '?'} — eco ignorado`)
     return
   }
 
