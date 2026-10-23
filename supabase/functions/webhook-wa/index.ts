@@ -1141,7 +1141,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   let humanPauseActive = false
   const { data: existing } = await sb
     .from('conversations')
-    .select('id, needs_human, bot_resumed_at, human_pause_until, current_order_id')
+    .select('id, needs_human, bot_resumed_at, human_pause_until, current_order_id, out_of_hours_notified_at')
     .eq('organization_id', organization_id)
     .eq('contact_id', contact_row.id)
     .eq('status', 'open')
