@@ -1390,6 +1390,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     })
   }
 
+  // Comprobante de transferencia: imagen recibida con transfer_pending activo
+  if (transferPending && lastImageDataUrl) {
+    const imageRawMsg = rawMessages.find((m: any) => m.type === 'image')
+    const mediaId = imageRawMsg?.image?.id ?? 'sin-id'
+    await notifyOwnerAlert(
+      sb, organization_id, conversation_id,
+      'Comprobante de transferencia recibido',
+      `El cliente envió su comprobante de pago. Media ID: ${mediaId}`,
+    )
+    await sb.from('conversations').update({ transfer_pending: false }).eq('id', conversation_id)
+    transferPending = false
+  }
+
   // ── 5. Bot IA (solo si está habilitado) ────────────────────────────────────
   const { data: botConfig } = await sb
     .from('bot_configs')
