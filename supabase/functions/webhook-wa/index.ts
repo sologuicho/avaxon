@@ -1584,6 +1584,12 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     ? `\n\nHOY ES: ${todayLabel}, ${nowTimeLabel} (zona horaria ${timezone}). Usa esta fecha para saber el día de la semana actual y lo que corresponde ofrecer hoy.`
     : null
 
+  // Contexto de transferencia pendiente — le indica al modelo cómo responder
+  // si el cliente manda texto en vez de imagen, o si ya recibimos el comprobante.
+  const transferPendingCtx = transferPending
+    ? `\n\nTRANSFERENCIA PENDIENTE: el cliente ya tiene los datos de la cuenta bancaria y debe enviarte su comprobante de pago como imagen. Si escribe un mensaje de texto, recuérdale amablemente que mande el comprobante como imagen por este chat. No le pidas datos adicionales ni actives notify_owner — solo espera la imagen.`
+    : null
+
   const systemPrompt = [
     botConfig.system_prompt,
     inventoryCtx,
@@ -1598,6 +1604,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     noPromisesCtx,
     formatCtx,
     notifyOwnerScopeCtx,
+    transferPendingCtx,
   ].filter(Boolean).join('\n\n')
 
   // ── 8. Debounce deslizante con tope ─────────────────────────────────────────
