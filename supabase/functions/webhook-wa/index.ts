@@ -1452,6 +1452,40 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     return
   }
 
+  // ── Bienvenida con botones (conversación nueva, bot activo y en horario) ────
+  if (isNewConversation && (botConfig as any)?.features?.welcome_buttons_enabled) {
+    const welcomeMsg   = String((botConfig as any).features.welcome_message || '¡Hola! 👋 ¿Cómo te puedo ayudar hoy?')
+    const btnHumanText = String((botConfig as any).features.welcome_btn_human || 'Hablar con alguien')
+    const btnAgentText = String((botConfig as any).features.welcome_btn_agent || 'Continuar')
+    const waWelcomeRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: fromPhone,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: welcomeMsg },
+          action: {
+            buttons: [
+              { type: 'reply', reply: { id: 'welcome_human', title: btnHumanText } },
+              { type: 'reply', reply: { id: 'welcome_agent', title: btnAgentText } },
+            ],
+          },
+        },
+      }),
+    })
+    const waWelcomeData = await waWelcomeRes.json().catch(() => ({}))
+    await sb.from('messages').insert({
+      conversation_id, organization_id, direction: 'outbound',
+      content: `[Bienvenida] ${welcomeMsg}\n[Botones: ${btnHumanText} | ${btnAgentText}]`,
+      media_type: 'text', wa_message_id: waWelcomeData.messages?.[0]?.id ?? null,
+      processed_at: new Date().toISOString(),
+    })
+    return
+  }
+
   const hoursGuardrail = hasBusinessHours
     ? ''
     : ' No conoces el horario de atención del negocio (no está configurado) — NUNCA inventes ni asumas un horario. Si el cliente pregunta qué horarios hay disponibles para agendar, dile que un asesor del negocio le confirmará el horario exacto; no le propongas horas por tu cuenta.'
