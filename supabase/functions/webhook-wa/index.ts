@@ -971,7 +971,7 @@ async function handleStaffInventoryMessage(
       model: 'gpt-4o', temperature: 0, max_tokens: 400,
       messages: [{
         role: 'system',
-        content: `Eres el sistema de inventario de un restaurante mexicano. Un miembro del equipo (${staffName ?? 'staff'}) te informa cambios al menú del día.\n\nInventario actual:\n${currentInventory || 'Sin inventario definido aún'}\n\nMensaje del equipo: "${text}"\n\nSi el mensaje NO contiene información sobre el menú (es un saludo, pregunta no relacionada, o mensaje sin sentido), responde EXACTAMENTE: NO_CHANGE\n\nSi sí contiene cambios, genera el inventario actualizado. Responde SOLO con la lista de platillos disponibles del día, uno por línea, sin precios ni explicaciones.`,
+        content: `Eres el sistema de inventario de un restaurante mexicano. Un miembro del equipo (${staffName ?? 'staff'}) te informa cambios al menú del día.\n\nInventario actual:\n${currentInventory || 'Sin inventario definido aún'}\n\nMensaje del equipo: "${text}"\n\nSi el mensaje NO contiene información sobre el menú (es un saludo, pregunta no relacionada, o mensaje sin sentido), responde EXACTAMENTE: NO_CHANGE\n\nSi sí contiene cambios, genera el inventario actualizado. Responde SOLO con la lista de platillos disponibles del día, uno por línea, sin explicaciones ni comentarios. Conserva los precios que ya tenga el inventario actual. Si el equipo indicó un precio en su mensaje, úsalo (si cambia uno existente, el del mensaje manda). Si un platillo no tiene precio en ninguno de los dos, escribe solo el nombre sin inventar precio. Ejemplo: "Bistec ranchero $140".`,
       }],
     }),
   })
