@@ -47,6 +47,7 @@ Deno.serve(async (req: Request) => {
       .select('id')
       .eq('organization_id', bc.organization_id)
       .eq('status', 'open')
+      .eq('transfer_pending', false)
       .is('current_order_id', null)
       .or(`human_pause_until.is.null,human_pause_until.lt.${now.toISOString()}`)
       .lt('last_client_message_at', cutoff)
