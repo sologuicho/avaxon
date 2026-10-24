@@ -2421,7 +2421,7 @@
 
     const { data: reqs, error } = await sb
       .from('onboarding_requests')
-      .select('id,business_name,contact_name,phone_number,email,phone_number_id,waba_id,status,created_at')
+      .select('id,business_name,contact_name,phone_number,email,phone_number_id,waba_id,plan_id,source,status,created_at')
       .order('created_at', { ascending: false });
 
     if (error) {
