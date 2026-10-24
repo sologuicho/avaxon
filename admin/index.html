@@ -2783,7 +2783,7 @@
     loadSolicitudesClientes();
   });
 
-  async function openActivarModal(requestId, bizName, phone, pnid, waba, email) {
+  async function openActivarModal(requestId, bizName, phone, pnid, waba, email, planId) {
     activarState.requestId = requestId;
     if (!PLANES_AV.length) await loadPlanesReales();
     $('activar-modal-title').textContent = `Activar — ${bizName}`;
@@ -2793,7 +2793,9 @@
     $('activar-info-pnid').textContent  = pnid    || '—';
     $('activar-info-waba').textContent  = waba    || '—';
     $('activar-email').value = email || '';
-    $('activar-plan').innerHTML = planSelectOptionsHtml(PLANES_AV[0]?.id);
+    // Pre-llena el plan si viene desde la solicitud (ej. elegido en la landing)
+    const defaultPlan = planId || PLANES_AV[0]?.id;
+    $('activar-plan').innerHTML = planSelectOptionsHtml(defaultPlan);
     $('activar-error').style.display = 'none';
     openModal('modal-activar');
   }
