@@ -10532,11 +10532,23 @@
     while (c) { lineage.add(c); c = by[c]?.parent_id; }
 
     // SVG edges
-    const edgeHtml = list.filter(p => p.parent_id && by[p.parent_id]).map(p => {
+    const edgeHtml = list.filter(p => p.parent_id && by[p.parent_id]).map((p, ei) => {
       const a = P(p.parent_id), b = P(p.id);
       const px = a.x * 10, py = a.y * 5, cx2 = b.x * 10, cy2 = b.y * 5, my = (py + cy2) / 2;
       const on = lineage.has(p.id), dr = p.id === '__draft';
-      return `<g><path d="M${px} ${py} C${px} ${my},${cx2} ${my},${cx2} ${cy2}" fill="none" stroke="${on ? '#3fe0a0' : 'rgba(110,190,165,.28)'}" stroke-width="${on ? 2 : 1.2}" stroke-dasharray="${dr ? '6 6' : 'none'}" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 6px ${on ? 'rgba(63,224,160,.7)' : 'transparent'})"></path><path d="M${px} ${py} C${px} ${my},${cx2} ${my},${cx2} ${cy2}" fill="none" stroke="${on ? '#b6ffe0' : 'rgba(140,230,200,.55)'}" stroke-width="2.2" stroke-dasharray="3 27" stroke-linecap="round" vector-effect="non-scaling-stroke" style="animation:flow ${on ? '1.2s' : '2.6s'} linear infinite"></path></g>`;
+      const pathD = `M${px} ${py} C${px} ${my},${cx2} ${my},${cx2} ${cy2}`;
+      const eid = `ep-${ei}`;
+      const dotDelay = (ei * 0.4).toFixed(1);
+      const dotDur = on ? '1.6s' : '3s';
+      return `<g>
+        <defs><path id="${eid}" d="${pathD}"/></defs>
+        <use href="#${eid}" fill="none" stroke="rgba(8,20,34,.6)" stroke-width="3" vector-effect="non-scaling-stroke"/>
+        <use href="#${eid}" fill="none" stroke="${on ? '#3fe0a0' : 'rgba(110,190,165,.22)'}" stroke-width="${on ? 2 : 1}" stroke-dasharray="${dr ? '6 6' : 'none'}" vector-effect="non-scaling-stroke" style="filter:drop-shadow(0 0 ${on ? 8 : 3}px ${on ? 'rgba(63,224,160,.9)' : 'rgba(63,224,160,.3)'})"/>
+        <use href="#${eid}" fill="none" stroke="${on ? 'rgba(182,255,224,.7)' : 'rgba(140,230,200,.4)'}" stroke-width="2" stroke-dasharray="3 24" stroke-linecap="round" vector-effect="non-scaling-stroke" style="animation:${on ? 'flowFast' : 'flow'} ${on ? '1s' : '2.2s'} linear infinite"/>
+        <circle r="${on ? 3 : 2}" fill="${on ? '#5ef0b0' : 'rgba(140,230,200,.65)'}" style="filter:drop-shadow(0 0 ${on ? 6 : 3}px ${on ? '#3fe0a0' : 'rgba(63,224,160,.4)'})" ${dr ? 'display="none"' : ''}>
+          <animateMotion dur="${dotDur}" begin="${dotDelay}s" repeatCount="indefinite"><mpath href="#${eid}"/></animateMotion>
+        </circle>
+      </g>`;
     }).join('');
     svg.innerHTML = edgeHtml;
 
