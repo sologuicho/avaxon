@@ -10421,7 +10421,7 @@
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
 
-    let { data: emps } = await sb.from('employees').select('*').eq('organization_id', orgId).eq('active', true).order('created_at');
+    let { data: emps } = await sb.from('employees').select('*,position').eq('organization_id', orgId).eq('active', true).order('created_at');
 
     // Si no hay ningún empleado, crear automáticamente el nodo raíz desde el owner/admin de la org
     if (!emps || emps.length === 0) {
