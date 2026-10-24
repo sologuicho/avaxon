@@ -10616,7 +10616,18 @@
     window.addEventListener('pointerup', up);
   }
 
-  function asigResetLayout() { asigOff = {}; }
+  function asigResetLayout() {
+    asigOff = {};
+    // Borra posiciones guardadas en DB para esta org
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (orgId) sb.from('employees').update({ position: null }).eq('organization_id', orgId);
+  }
+
+  async function asigSavePosition(id) {
+    const orgId = state.currentOrgId || state.userOrgId;
+    if (!orgId || !asigOff[id]) return;
+    await sb.from('employees').update({ position: asigOff[id] }).eq('id', id).eq('organization_id', orgId);
+  }
 
   function asigOpenEdit(id) {
     asigSel = id; asigMode = 'edit'; asigDraft = null;
