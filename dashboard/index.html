@@ -10851,11 +10851,11 @@
         overrides: newEmp.commission_overrides || {},
       };
       asigPeople.push(newPerson);
-      asigDraft = null; asigSel = newEmp.id; asigMode = 'edit';
+      asigDraft = null; asigSel = null; asigMode = null;
       const countEl = $('asig-count-label');
       if (countEl) countEl.textContent = `${asigPeople.length} persona${asigPeople.length !== 1 ? 's' : ''}`;
-      renderAsigEditPanel();
-      showToast('Empleada creada');
+      asigClose();
+      showToast('Persona creada');
     } catch (e) { showToast('Error al crear: ' + e.message, 4000); }
   }
 
