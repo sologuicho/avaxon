@@ -18,15 +18,24 @@ const json = (data: unknown, status = 200) =>
 
 const AVAXON_ORG_ID = 'e30d23e7-b512-44c8-a0bf-23f102300198'
 
+// Mapea el nombre del plan de la landing al plan_id interno
+const PLAN_MAP: Record<string, string> = {
+  'Arranque': 'arranque',
+  'Mostrador': 'mostrador',
+  'Sucursal':  'sucursal',
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  let body: { name?: string; phone?: string }
+  let body: { name?: string; phone?: string; business?: string; plan?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const name  = (body.name ?? '').trim().slice(0, 120) || null
-  const phone = (body.phone ?? '').replace(/\D/g, '')
+  const name     = (body.name     ?? '').trim().slice(0, 120) || null
+  const phone    = (body.phone    ?? '').replace(/\D/g, '')
+  const business = (body.business ?? '').trim().slice(0, 200) || null
+  const planId   = PLAN_MAP[body.plan ?? ''] ?? 'mostrador'
 
   if (phone.length < 10) return json({ error: 'Número de WhatsApp inválido' }, 422)
 
@@ -34,9 +43,10 @@ Deno.serve(async (req: Request) => {
   const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
+  // 1. Guardar/actualizar contacto en el CRM de Avaxon
   // ignoreDuplicates: si el contacto ya existe (por ejemplo, ya escribió por
   // WhatsApp), no se pisa su status/tags actuales.
-  const { error } = await sb.from('contacts').upsert(
+  const { error: contactErr } = await sb.from('contacts').upsert(
     {
       organization_id: AVAXON_ORG_ID,
       phone,
@@ -48,6 +58,28 @@ Deno.serve(async (req: Request) => {
     { onConflict: 'organization_id,phone', ignoreDuplicates: true }
   )
 
-  if (error) return json({ error: error.message }, 500)
+  if (contactErr) console.error('landing-lead: contactErr', contactErr.message)
+
+  // 2. Crear solicitud de onboarding para que aparezca en el panel de admin.
+  // Si el mismo número ya tiene una solicitud pendiente no se duplica.
+  const { data: existing } = await sb
+    .from('onboarding_requests')
+    .select('id, status')
+    .eq('phone_number', phone)
+    .neq('status', 'activated')
+    .maybeSingle()
+
+  if (!existing) {
+    const { error: reqErr } = await sb.from('onboarding_requests').insert({
+      business_name: business || name || phone,
+      contact_name:  name,
+      phone_number:  phone,
+      plan_id:       planId,
+      source:        'landing',
+      status:        'pending',
+    })
+    if (reqErr) console.error('landing-lead: reqErr', reqErr.message)
+  }
+
   return json({ ok: true })
 })
