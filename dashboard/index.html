@@ -10703,31 +10703,63 @@
     if (!d) return;
     const parentName = asigPeople.find(p => p.id === d.parent_id)?.name || '';
     const parentOpts = asigPeople.map(p => `<option value="${p.id}"${p.id===d.parent_id?' selected':''}>${p.name} · ${p.role}</option>`).join('');
+    const isPct = (d.type || 'pct') === 'pct';
+    const prefix = isPct ? '' : '$', suffix = isPct ? '%' : '';
+    const baseLabel = isPct ? `${d.base||0}%` : `$${d.base||0}`;
+
+    const chipsHtml = ASIG_CATALOG.map(label => {
+      const on = (d.services||[]).includes(label);
+      return `<button onclick="asigDraftToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on?'#16a34a':'var(--border)'};background:${on?'#16a34a':'var(--input-bg)'};color:${on?'#fff':'var(--text)'};font:500 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">${label}</button>`;
+    }).join('');
+
+    const rowsHtml = (d.services||[]).map(name => {
+      const v = (d.overrides||{})[name] ?? '', set = v !== '';
+      return `<div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;align-items:center;padding:8px 14px;border-top:1px solid var(--border)"><span style="font-size:14px;font-weight:500">${name}</span><div style="display:flex;align-items:center;gap:4px;height:34px;border:1px solid ${set?'#16a34a':'var(--border)'};border-radius:8px;padding:0 10px;background:${set?'#f0fbf4':'var(--input-bg)'}"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#7b8798">${prefix}</span><input type="number" value="${v}" placeholder="${d.base||0}" oninput="asigDraftSetOverride('${name.replace(/'/g,"&#39;")}',this.value)" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:600 14px 'JetBrains Mono',monospace;color:var(--text)"><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#7b8798">${suffix}</span></div><button onclick="asigDraftResetOverride('${name.replace(/'/g,"&#39;")}')" style="justify-self:end;border:none;background:none;padding:0;font:500 12px 'Plus Jakarta Sans',sans-serif;color:${set?'#16a34a':'#9aa4b2'};cursor:pointer">${set?'Restablecer':'Base'}</button></div>`;
+    }).join('');
 
     const overlay = document.createElement('div');
     overlay.id = 'asig-panel-overlay';
     overlay.onclick = asigClose;
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,14,26,.25);z-index:900';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(8,14,26,.45);backdrop-filter:blur(2px);z-index:900';
 
     const aside = document.createElement('aside');
     aside.id = 'asig-add-panel';
-    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);background:var(--card-bg);display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Plus Jakarta Sans",sans-serif';
+    aside.style.cssText = 'position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--card-bg);display:flex;flex-direction:column;box-shadow:-20px 0 60px -20px rgba(8,14,26,.4);animation:slidein .28s ease-out;z-index:901;font-family:"Plus Jakarta Sans",sans-serif';
     aside.onclick = e => e.stopPropagation();
 
     aside.innerHTML = `<div style="display:flex;align-items:center;gap:14px;padding:22px 26px;background:#0a111e;color:#e7f2ee"><div style="width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px dashed #3fe0a0;color:#5ef0b0;font-weight:600;font-size:16px">${asigInitials(d.name)}</div><div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-size:19px;font-weight:600">Nueva persona</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7fa99a">Se conecta a ${parentName}</span></div><button onclick="asigClose()" style="width:36px;height:36px;border-radius:9px;border:1px solid rgba(140,220,190,.25);background:none;color:#cfe5dd;font-size:18px;cursor:pointer">×</button></div>
-    <div style="flex:1;overflow:auto;padding:24px 26px;display:flex;flex-direction:column;gap:16px">
-      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Nombre<input value="${(d.name||'').replace(/"/g,'&quot;')}" oninput="asigDraftField('name',this.value)" placeholder="Ej. Lucía" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font-size:15px;color:var(--text);background:var(--input-bg);font-family:inherit"></label>
-      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Reporta a<select onchange="asigDraftField('parent_id',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit"><option value="">Sin jefe directo</option>${parentOpts}</select></label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Rol<select onchange="asigDraftField('role',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_ROLES.map(r=>`<option value="${r}"${r===d.role?' selected':''}>${r}</option>`).join('')}</select></label>
-        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigDraftField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===d.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+    <div style="flex:1;overflow:auto;padding:8px 26px 26px;display:flex;flex-direction:column">
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">01 · Asignación</span>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Nombre<input oninput="asigDraftField('name',this.value)" value="${(d.name||'').replace(/"/g,'&quot;')}" placeholder="Ej. Lucía" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;font-size:15px;color:var(--text);background:var(--input-bg);font-family:inherit"></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Reporta a<select onchange="asigDraftField('parent_id',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit"><option value="">Sin jefe directo</option>${parentOpts}</select></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Rol<select onchange="asigDraftField('role',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_ROLES.map(r=>`<option value="${r}"${r===d.role?' selected':''}>${r}</option>`).join('')}</select></label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Agente en conversación<select onchange="asigDraftField('agent',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_AGENTS.map(a=>`<option value="${a}"${a===d.agent?' selected':''}>${a}</option>`).join('')}</select></label>
+        </div>
       </div>
-      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Agente en conversación<select onchange="asigDraftField('agent',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_AGENTS.map(a=>`<option value="${a}"${a===d.agent?' selected':''}>${a}</option>`).join('')}</select></label>
-      <p style="margin:0;font-size:13px;color:var(--text-muted)">Al crearla podrás elegir sus servicios y configurar sus comisiones.</p>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">02 · Perfil de la empleada</span>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigDraftField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===d.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-muted)">Servicios que atiende<div style="display:flex;flex-wrap:wrap;gap:8px">${chipsHtml}</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">03 · Comisión</span>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Tipo<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--input-bg);border-radius:11px"><button onclick="asigDraftField('type','pct')" style="height:36px;border:none;border-radius:8px;background:${isPct?'var(--card-bg)':'transparent'};color:${isPct?'var(--text)':'var(--text-muted)'};box-shadow:${isPct?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">% de la venta</button><button onclick="asigDraftField('type','fixed')" style="height:36px;border:none;border-radius:8px;background:${!isPct?'var(--card-bg)':'transparent'};color:${!isPct?'var(--text)':'var(--text-muted)'};box-shadow:${!isPct?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">$ fijo por servicio</button></div></div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Valor base<div style="display:flex;align-items:center;height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;gap:6px;background:var(--input-bg)"><span style="font-family:'JetBrains Mono',monospace;color:#7b8798">${prefix}</span><input type="number" value="${d.base||0}" oninput="asigDraftField('base',this.value)" style="flex:1;min-width:0;border:none;outline:none;background:transparent;font:600 16px 'JetBrains Mono',monospace;color:var(--text)"><span style="font-family:'JetBrains Mono',monospace;color:#7b8798">${suffix}</span></div></label>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Aplicar sobre<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--input-bg);border-radius:11px"><button onclick="asigDraftField('applyOn','total')" style="height:32px;border:none;border-radius:8px;background:${(d.applyOn||'neto')==='total'?'var(--card-bg)':'transparent'};color:${(d.applyOn||'neto')==='total'?'var(--text)':'var(--text-muted)'};box-shadow:${(d.applyOn||'neto')==='total'?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Total</button><button onclick="asigDraftField('applyOn','neto')" style="height:32px;border:none;border-radius:8px;background:${(d.applyOn||'neto')==='neto'?'var(--card-bg)':'transparent'};color:${(d.applyOn||'neto')==='neto'?'var(--text)':'var(--text-muted)'};box-shadow:${(d.applyOn||'neto')==='neto'?'0 1px 3px rgba(15,26,42,.12)':'none'};font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Neto</button></div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:20px 0">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">04 · Comisión por servicio</span><span style="font-size:12px;color:#7b8798">Opcional</span></div>
+        <p style="margin:0;font-size:13px;color:var(--text-muted)">Deja vacío para usar la tasa base (${baseLabel}).</p>
+        <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden"><div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;padding:10px 14px;background:var(--input-bg);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7b8798"><span>Servicio</span><span>Comisión</span><span></span></div>${rowsHtml||'<div style="padding:16px 14px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted)">Selecciona servicios en el perfil para personalizar su comisión.</div>'}</div>
+      </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--border)">
       <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--card-bg);font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--text);cursor:pointer">Cancelar</button>
-      <button onclick="asigCreate()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;opacity:${d.name?.trim()?1:.45};font:600 14px 'Plus Jakarta Sans',sans-serif;color:#fff;cursor:pointer">Crear y configurar comisión</button>
+      <button onclick="asigCreate()" style="height:42px;padding:0 20px;border-radius:10px;border:none;background:#16a34a;opacity:${d.name?.trim()?1:.45};font:600 14px 'Plus Jakarta Sans',sans-serif;color:#fff;cursor:pointer">Crear persona</button>
     </div>`;
 
     document.body.appendChild(overlay);
