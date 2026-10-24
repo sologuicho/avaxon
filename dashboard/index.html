@@ -10478,8 +10478,12 @@
     const countEl = $('asig-count-label');
     if (countEl) countEl.textContent = `${asigPeople.length} persona${asigPeople.length !== 1 ? 's' : ''}`;
 
-    // Reset state when reloading
+    // Restaurar posiciones guardadas
     asigPos = {}; asigOff = {}; asigDragging = null;
+    asigPeople.forEach(p => {
+      const emp = (emps || []).find(e => e.id === p.id);
+      if (emp?.position?.dx != null) asigOff[p.id] = { dx: emp.position.dx, dy: emp.position.dy };
+    });
     if (asigRaf) { cancelAnimationFrame(asigRaf); asigRaf = null; }
     asigT0 = performance.now();
     const tick = () => {
