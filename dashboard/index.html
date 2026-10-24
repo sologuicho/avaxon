@@ -10797,7 +10797,12 @@
   }
 
   function asigDraftField(key, value) {
-    if (asigDraft) asigDraft[key] = value;
+    if (!asigDraft) return;
+    asigDraft[key] = value;
+    if (key === 'name') {
+      const btn = document.querySelector('#asig-add-panel button[onclick="asigCreate()"]');
+      if (btn) { btn.style.opacity = value.trim() ? '1' : '0.45'; btn.style.cursor = value.trim() ? 'pointer' : 'not-allowed'; }
+    }
   }
 
   function asigDraftFieldRender(key, value) {
