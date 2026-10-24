@@ -10775,6 +10775,26 @@
     if (asigDraft) { asigDraft[key] = value; renderAsigAddPanel(); }
   }
 
+  function asigDraftToggleService(label) {
+    if (!asigDraft) return;
+    asigDraft.services = (asigDraft.services||[]).includes(label)
+      ? asigDraft.services.filter(x => x !== label)
+      : [...(asigDraft.services||[]), label];
+    renderAsigAddPanel();
+  }
+
+  function asigDraftSetOverride(name, val) {
+    if (!asigDraft) return;
+    asigDraft.overrides = asigDraft.overrides || {};
+    asigDraft.overrides[name] = val;
+  }
+
+  function asigDraftResetOverride(name) {
+    if (!asigDraft) return;
+    delete (asigDraft.overrides || {})[name];
+    renderAsigAddPanel();
+  }
+
   function asigToggleService(label) {
     const p = asigPeople.find(x => x.id === asigSel);
     if (!p) return;
