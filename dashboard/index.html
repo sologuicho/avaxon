@@ -10386,6 +10386,7 @@
   let asigDragging = null;
   let asigRaf = null;
   let asigT0 = null;
+  let asigSaveTimer = null;
 
   function asigInitials(n) {
     const w = (n || '').trim().split(/\s+/).filter(Boolean);
