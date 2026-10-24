@@ -10420,14 +10420,26 @@
 
     // Si no hay ningún empleado, crear automáticamente el nodo raíz desde el owner/admin de la org
     if (!emps || emps.length === 0) {
+      // Primero busca owner/admin con nombre; si no, cualquier perfil de la org con nombre
       const { data: ownerProfile } = await sb.from('profiles')
-        .select('id, full_name, role')
+        .select('full_name')
         .eq('organization_id', orgId)
-        .in('role', ['owner', 'admin'])
+        .in('role', ['owner', 'admin', 'super_admin'])
+        .not('full_name', 'is', null)
         .order('created_at')
         .limit(1)
         .maybeSingle();
-      const rootName = ownerProfile?.full_name || 'Admin';
+      let rootName = ownerProfile?.full_name;
+      if (!rootName) {
+        const { data: anyProfile } = await sb.from('profiles')
+          .select('full_name')
+          .eq('organization_id', orgId)
+          .not('full_name', 'is', null)
+          .order('created_at')
+          .limit(1)
+          .maybeSingle();
+        rootName = anyProfile?.full_name || 'Admin';
+      }
       const { data: rootEmp } = await sb.from('employees').insert({
         organization_id: orgId,
         name: rootName,
