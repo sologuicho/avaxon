@@ -10772,6 +10772,10 @@
   }
 
   function asigDraftField(key, value) {
+    if (asigDraft) asigDraft[key] = value;
+  }
+
+  function asigDraftFieldRender(key, value) {
     if (asigDraft) { asigDraft[key] = value; renderAsigAddPanel(); }
   }
 
