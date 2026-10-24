@@ -2425,7 +2425,7 @@
       .order('created_at', { ascending: false });
 
     if (error) {
-      $('tbody-solicitudes').innerHTML = `<tr><td colspan="8" style="color:var(--red);padding:20px">${error.message}</td></tr>`;
+      $('tbody-solicitudes').innerHTML = `<tr><td colspan="10" style="color:var(--red);padding:20px">${error.message}</td></tr>`;
       return;
     }
 
