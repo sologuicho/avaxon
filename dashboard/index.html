@@ -10605,7 +10605,12 @@
       window.removeEventListener('pointermove', mv);
       window.removeEventListener('pointerup', up);
       asigDragging = null;
-      if (!moved) asigOpenEdit(id);
+      if (!moved) {
+        asigOpenEdit(id);
+      } else {
+        clearTimeout(asigSaveTimer);
+        asigSaveTimer = setTimeout(() => asigSavePosition(id), 800);
+      }
     };
     window.addEventListener('pointermove', mv);
     window.addEventListener('pointerup', up);
