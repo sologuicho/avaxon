@@ -2417,7 +2417,7 @@
   const activarState = { requestId: null };
 
   async function loadSolicitudes() {
-    $('tbody-solicitudes').innerHTML = `<tr><td colspan="8"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
+    $('tbody-solicitudes').innerHTML = `<tr><td colspan="10"><div class="inner-loading"><div class="spinner-light"></div> Cargando…</div></td></tr>`;
 
     const { data: reqs, error } = await sb
       .from('onboarding_requests')
