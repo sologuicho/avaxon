@@ -9843,15 +9843,19 @@
       AUTHENTICATION: { color: '#a78bfa', bg: 'rgba(167,139,250,.12)' },
     }
     el.innerHTML = '<div style="display:flex;flex-direction:column;gap:0">' + configTemplates.map(t => {
-      const st       = TEMPLATE_STATUS[t.status] ?? TEMPLATE_STATUS.DRAFT
+      // El estado y meta_template_id solo los pone Meta (webhook) o
+      // "Sincronizar con Meta" — nunca un botón que lo marque a mano.
+      const sentToMeta = !!t.meta_template_id
+      // t.status default es 'PENDING' desde que se crea el borrador local
+      // (antes de mandarlo a Meta) -- sin sentToMeta, un DRAFT recién creado
+      // mostraba "En revisión" como si ya se hubiera enviado. El estado solo
+      // es real una vez que Meta le asignó meta_template_id.
+      const st       = !sentToMeta ? TEMPLATE_STATUS.DRAFT : (TEMPLATE_STATUS[t.status] ?? TEMPLATE_STATUS.DRAFT)
       const catColor = CAT_COLORS[t.category] ?? { color: '#64748b', bg: 'rgba(100,116,139,.12)' }
       const bodyComp = getBodyComponent(t.components)
       const bodyText = bodyComp?.text ?? '—'
       const vars     = bodyComp?.variables ?? []
       const useCase  = bodyComp?.use_case ?? ''
-      // El estado y meta_template_id solo los pone Meta (webhook) o
-      // "Sincronizar con Meta" — nunca un botón que lo marque a mano.
-      const sentToMeta = !!t.meta_template_id
       const varChips = vars.length ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${vars.map(v => `<span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:#818cf8;background:rgba(129,140,248,.1);padding:2px 7px;border-radius:5px">{{${v}}}</span>`).join('')}</div>` : ''
       const submitBtn = !sentToMeta
         ? `<button onclick="submitTemplateForReview('${t.id}')" style="display:flex;align-items:center;gap:5px;padding:6px 14px;border-radius:8px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.08);color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap" title="Enviar a revisión de Meta"><i class="fa fa-paper-plane" style="font-size:11px"></i> Enviar a revisión</button>`
