@@ -1716,6 +1716,18 @@
         </span>
         Campañas
       </div>
+      <!-- Publicaciones en redes: módulo add-on, gate real vía business_modules
+           (module_key='publicaciones_redes'); oculto hasta confirmar con
+           checkPublicacionesModuleEnabled() que la org activa lo tiene
+           activado -- igual al patrón de nav-crm (solo visibilidad de nav,
+           la seguridad real vive en RLS/module_enabled() del lado del server). -->
+      <div class="nav-item" id="nav-publicaciones" data-view="publicaciones" style="display:none">
+        <span class="nav-dot"></span>
+        <span class="nav-icon">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+        </span>
+        Publicaciones
+      </div>
       <div class="nav-section-label">Operaciones</div>
       <div class="nav-item" data-view="calendario">
         <span class="nav-dot"></span>
@@ -2403,6 +2415,184 @@
                 <tbody id="det-contacts-tbody"></tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW: Publicaciones en redes (módulo add-on, gate real vía
+           business_modules — ver checkPublicacionesModuleEnabled()) -->
+      <div class="view" id="view-publicaciones">
+        <div class="view-header" style="margin-bottom:16px">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(34,197,94,.1);color:var(--accent)"><i class="fa fa-share-nodes"></i></div>
+            <div>
+              <div class="view-header-title">Publicaciones en redes</div>
+              <div class="view-header-sub">Programa y publica en Facebook e Instagram</div>
+            </div>
+          </div>
+          <button id="pub-header-btn" onclick="openPubEditor()" class="btn-primary" style="display:flex;align-items:center;gap:7px;padding:9px 18px;font-size:13px;flex-shrink:0"><i class="fa fa-plus"></i> Nueva publicación</button>
+        </div>
+
+        <!-- Sub-tabs (Calendario/Plantillas/Cuentas/Historial) -->
+        <div id="pub-tabbar" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto">
+          <button id="pub-tab-calendario" onclick="switchPubTab('calendario')" style="padding:9px 16px;border:none;border-bottom:2px solid var(--accent);background:none;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Calendario</button>
+          <button id="pub-tab-plantillas" onclick="switchPubTab('plantillas')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Plantillas</button>
+          <button id="pub-tab-cuentas" onclick="switchPubTab('cuentas')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Cuentas conectadas</button>
+          <button id="pub-tab-historial" onclick="switchPubTab('historial')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Historial</button>
+        </div>
+
+        <!-- ── PANE: Calendario ── -->
+        <div id="pub-pane-calendario">
+          <div id="pub-ig-banner" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <i class="fa fa-triangle-exclamation" style="color:#f59e0b"></i>
+            <div style="flex:1;min-width:220px;font-size:13px;color:var(--text)"><strong>El acceso a Instagram expiró.</strong> <span id="pub-ig-banner-text"></span></div>
+            <button class="btn-ghost" onclick="switchPubTab('historial')">Ver fallidas</button>
+            <button class="btn-primary" onclick="switchPubTab('cuentas')" style="padding:7px 14px;font-size:12px">Reconectar Instagram</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="btn-ghost" onclick="pubCalShiftMonth(-1)" aria-label="Mes anterior"><i class="fa fa-chevron-left"></i></button>
+              <button class="btn-ghost" onclick="pubCalShiftMonth(1)" aria-label="Mes siguiente"><i class="fa fa-chevron-right"></i></button>
+              <button class="btn-ghost" onclick="pubCalGoToday()">Hoy</button>
+              <span id="pub-cal-label" style="font-size:16px;font-weight:700;color:var(--text);margin-left:6px"></span>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;font-size:11.5px;color:var(--text-muted)">
+            <span>Estados:</span>
+            <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#94a3b8"></span>Borrador</span>
+            <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#60a5fa"></span>Programado</span>
+            <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>Publicado</span>
+            <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#f87171"></span>Fallido</span>
+          </div>
+          <div class="card bp" style="overflow-x:auto">
+            <div id="pub-cal-grid" style="min-width:760px"></div>
+          </div>
+        </div>
+
+        <!-- ── PANE: Plantillas ── -->
+        <div id="pub-pane-plantillas" style="display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div id="pub-tpl-filters" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+            <input id="pub-tpl-search" type="search" placeholder="Buscar plantilla" oninput="renderPubPlantillas()" style="min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 12px;min-width:200px">
+          </div>
+          <p id="pub-tpl-summary" style="margin:0 0 12px;color:var(--text-muted);font-size:12.5px"></p>
+          <div id="pub-tpl-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));gap:14px"></div>
+        </div>
+
+        <!-- ── PANE: Cuentas conectadas ── -->
+        <div id="pub-pane-cuentas" style="display:none">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:14px" id="pub-cuentas-grid"></div>
+        </div>
+
+        <!-- ── PANE: Historial ── -->
+        <div id="pub-pane-historial" style="display:none">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px" id="pub-hist-filters">
+            <button id="pub-hist-f-all" onclick="pubHistSetFilter('all')" class="btn-ghost" style="font-weight:700">Todas</button>
+            <button id="pub-hist-f-ok" onclick="pubHistSetFilter('ok')" class="btn-ghost">Publicadas</button>
+            <button id="pub-hist-f-err" onclick="pubHistSetFilter('err')" class="btn-ghost">Fallidas</button>
+          </div>
+          <div class="card bp" style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;min-width:760px">
+              <thead>
+                <tr style="background:var(--hover-bg)">
+                  <th style="padding:9px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Fecha</th>
+                  <th style="padding:9px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Red</th>
+                  <th style="padding:9px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Publicación</th>
+                  <th style="padding:9px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Estado</th>
+                  <th style="padding:9px 16px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Detalle</th>
+                  <th style="padding:9px 16px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="pub-hist-tbody"></tbody>
+            </table>
+          </div>
+          <p id="pub-hist-empty" style="display:none;text-align:center;color:var(--text-dim);padding:32px;font-size:13px">Sin publicaciones todavía.</p>
+        </div>
+
+        <!-- ── EDITOR (no es un tab -- se llega por "Nueva publicación" o
+             desde un chip del calendario) ── -->
+        <div id="pub-editor" style="display:none">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <button onclick="closePubEditor()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;padding:4px 0">
+              <i class="fa fa-arrow-left" style="font-size:11px"></i> Volver a Publicaciones
+            </button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn-ghost" onclick="closePubEditor()">Cancelar</button>
+              <button class="btn-ghost" onclick="savePubPost('borrador')"><i class="fa fa-floppy-disk"></i> Guardar borrador</button>
+              <button id="pub-ed-primary-btn" class="btn-primary" onclick="savePubPost('submit')"><i class="fa fa-bolt"></i> Publicar ahora</button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start">
+            <div style="flex:1 1 480px;min-width:0;display:flex;flex-direction:column;gap:14px">
+
+              <!-- Paso 1: cuentas -->
+              <div class="card bp" style="padding:16px">
+                <h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--text)">1 · Publicar en</h3>
+                <div id="pub-ed-accounts" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+              </div>
+
+              <!-- Paso 2: contenido + IA -->
+              <div class="card bp" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+                <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--text)">2 · Contenido</h3>
+                <div style="padding:12px;border-radius:10px;background:var(--hover-bg);display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;color:var(--text)"><i class="fa fa-wand-magic-sparkles" style="color:var(--accent)"></i> Asistente de IA</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+                    <select id="pub-ed-tone" style="min-height:34px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 10px;font-size:12.5px">
+                      <option>Amigable</option><option>Profesional</option><option>Divertido</option><option>Urgente</option>
+                    </select>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted)"><input type="checkbox" id="pub-ed-hashtags" checked> Hashtags</label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-muted)"><input type="checkbox" id="pub-ed-cta" checked onchange="renderPubPreview()"> CTA a WhatsApp</label>
+                  </div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <input id="pub-ed-instruction" placeholder="Ej. Promoción de martes: 3 tacos al pastor por $45" style="flex:1 1 220px;min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 12px;font-size:13px">
+                    <button class="btn-primary" onclick="pubGenerateAI()" id="pub-ai-btn"><i class="fa fa-wand-magic-sparkles"></i> Generar con IA</button>
+                  </div>
+                </div>
+                <textarea id="pub-ed-caption" oninput="renderPubPreview()" rows="5" placeholder="Texto de la publicación…" style="width:100%;border:1px solid var(--border);border-radius:10px;background:var(--card-bg);color:var(--text);padding:12px;font-size:13.5px;line-height:1.5;resize:vertical;font-family:inherit"></textarea>
+                <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim)">
+                  <span>Se adapta a cada red al publicar (el CTA a WhatsApp cambia de texto entre Facebook e Instagram)</span>
+                  <span id="pub-ed-count">0 / 2,200</span>
+                </div>
+              </div>
+
+              <!-- Paso 3: imagen -->
+              <div class="card bp" style="padding:16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+                  <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--text)">3 · Imagen</h3>
+                  <span style="font-size:11.5px;color:var(--text-dim)">JPG, PNG o WEBP · máx. 10 MB · carrusel próximamente</span>
+                </div>
+                <div id="pub-ed-media" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"></div>
+                <input type="file" id="pub-ed-file-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="pubHandleImageUpload(event)">
+              </div>
+
+              <!-- Paso 4: programación -->
+              <div class="card bp" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+                <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--text)">4 · Programación</h3>
+                <div style="display:inline-flex;background:var(--hover-bg);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px;align-self:flex-start">
+                  <button id="pub-ed-mode-now" onclick="pubSetScheduleMode('now')" style="border:0;background:var(--accent);color:#062513;font:inherit;font-weight:600;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12.5px">Publicar ahora</button>
+                  <button id="pub-ed-mode-later" onclick="pubSetScheduleMode('scheduled')" style="border:0;background:transparent;color:var(--text-muted);font:inherit;font-weight:600;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12.5px">Programar</button>
+                </div>
+                <div id="pub-ed-schedule-fields" style="display:none;gap:10px;flex-wrap:wrap">
+                  <input type="date" id="pub-ed-date" style="min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 10px">
+                  <input type="time" id="pub-ed-time" style="min-height:38px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 10px">
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista previa -->
+            <aside style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:10px">
+              <div class="card bp" style="overflow:hidden">
+                <div style="display:flex;border-bottom:1px solid var(--border)">
+                  <button id="pub-prev-tab-fb" onclick="pubShowPreview('facebook_page')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text);border-bottom:2px solid var(--accent);cursor:pointer"><i class="fa fa-facebook" style="color:#1877F2;margin-right:6px"></i>Facebook</button>
+                  <button id="pub-prev-tab-ig" onclick="pubShowPreview('instagram_business')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer"><i class="fa fa-instagram" style="color:#D62976;margin-right:6px"></i>Instagram</button>
+                </div>
+                <div style="padding:18px;background:var(--hover-bg);display:flex;justify-content:center">
+                  <div id="pub-preview-card" style="width:100%;max-width:360px"></div>
+                </div>
+              </div>
+              <p style="margin:0;font-size:11.5px;color:var(--text-dim)">Vista previa aproximada. Cada red puede recortar el texto o la imagen de forma distinta.</p>
+            </aside>
           </div>
         </div>
       </div>
@@ -4146,6 +4336,7 @@
     pipeline: 'Pipeline', asignacion: 'Asignación', campanas: 'Campañas',
     bot: 'Modificaciones a tu agente', cuenta: 'Mi cuenta', crm: 'CRM — Clientes', config: 'Configuración',
     pagos: 'Pagos', inventario: 'Inventario',
+    publicaciones: 'Publicaciones en redes',
   };
 
   function switchView(name) {
@@ -4175,6 +4366,7 @@
     if (name === 'campanas')       loadCampanas();
     if (name === 'pagos')          loadPagos();
     if (name === 'inventario')     loadInventario();
+    if (name === 'publicaciones')  loadPublicaciones();
   }
 
   // El botón Actualizar de la barra superior refresca lo que se esté viendo
@@ -4196,6 +4388,7 @@
     else if (name === 'campanas')       loadCampanas();
     else if (name === 'pagos')          loadPagos();
     else if (name === 'inventario')     loadInventario();
+    else if (name === 'publicaciones')  loadPublicaciones();
   }
 
   document.querySelectorAll('.nav-item').forEach(item => {
@@ -4304,6 +4497,7 @@
     await loadOrgTimezone(orgId);
     loadDashboard(orgId);
     loadIntegrations();
+    checkPublicacionesModuleEnabled();
     const activeView = document.querySelector('.nav-item.active');
     const view = activeView?.dataset.view;
     if (view === 'calendario')  loadCalendarData();
@@ -7487,11 +7681,13 @@
       applyOrgSelection(initialOrgId);
       await loadOrgTimezone(initialOrgId);
       await loadDashboard(initialOrgId);
+      checkPublicacionesModuleEnabled();
     } else {
       const orgId = state.userOrgId;
       state.currentOrgId = orgId;
       await loadOrgTimezone(orgId);
       await loadDashboard(orgId);
+      checkPublicacionesModuleEnabled();
 
       // Ocultar módulos según plan
       const { data: orgPlan } = await sb.from('organizations').select('plan_id').eq('id', orgId).single();
@@ -7516,6 +7712,7 @@
     loadIntegrations();
     handleGoogleOAuthRedirect();
     handleWaSignupRedirectCallback();
+    handleSocialPublishRedirectCallback();
 
     // ── Retorno de OAuth flows (Stripe Connect, etc.) ──────────────────────
     const _urlParams = new URLSearchParams(window.location.search)
@@ -9225,6 +9422,724 @@
   window.editCampaign          = editCampaign
   window.deleteCampaign        = deleteCampaign
   window.loadCampanas          = loadCampanas
+
+  // ── Publicaciones en redes (Facebook/Instagram) ─────────────────────────
+  // Módulo add-on, gate real en business_modules/module_enabled() del lado
+  // del servidor (RLS) -- esto solo controla si el nav item se ve. Meta App
+  // Review para los permisos de publicar todavía no está aprobado: por
+  // ahora solo funciona con la Page/IG de prueba de Avaxon, en modo
+  // desarrollo (ver META_PUBLISH_APP_ID abajo).
+  const META_PUBLISH_APP_ID = '2086225228635820' // mismo app ya usado por WhatsApp Embedded Signup
+  const SOCIAL_STORAGE_BUCKET = 'social-media'
+
+  let pubModuleEnabled = false
+  let pubState = {
+    tab: 'calendario',
+    accounts: [],
+    calMonth: new Date().getMonth(),
+    calYear: new Date().getFullYear(),
+    histFilter: 'all',
+    tplGiro: 'Todos',
+    editingPostId: null,
+    editorFb: true,
+    editorIg: true,
+    editorMedia: null, // { storage_path, public_url, width, height } | null -- 1 sola imagen por ahora (carrusel: fase 3b, no implementada)
+    editorScheduleMode: 'now',
+    editorPreviewNet: 'facebook_page',
+  }
+
+  async function checkPublicacionesModuleEnabled() {
+    const navEl = document.querySelector('.nav-item[data-view="publicaciones"]')
+    if (!navEl) return
+    const orgId = state.currentOrgId
+    if (!orgId) { navEl.style.display = 'none'; pubModuleEnabled = false; return }
+    const { data } = await sb.from('business_modules').select('enabled').eq('organization_id', orgId).eq('module_key', 'publicaciones_redes').maybeSingle()
+    pubModuleEnabled = !!data?.enabled
+    navEl.style.display = pubModuleEnabled ? 'flex' : 'none'
+    if (!pubModuleEnabled && state.currentView === 'publicaciones') switchView('inicio')
+  }
+  window.checkPublicacionesModuleEnabled = checkPublicacionesModuleEnabled
+
+  async function loadPublicaciones() {
+    if (!pubModuleEnabled) { switchView('inicio'); return }
+    await loadPubAccounts()
+    switchPubTab(pubState.tab || 'calendario')
+  }
+  window.loadPublicaciones = loadPublicaciones
+
+  function switchPubTab(tab) {
+    pubState.tab = tab
+    document.getElementById('pub-editor').style.display = 'none'
+    document.getElementById('pub-tabbar').style.display = 'flex'
+    document.getElementById('pub-header-btn').style.display = 'inline-flex'
+    ;['calendario', 'plantillas', 'cuentas', 'historial'].forEach(t => {
+      const btn = $('pub-tab-' + t)
+      const pane = $('pub-pane-' + t)
+      if (btn) { btn.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent'; btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)' }
+      if (pane) pane.style.display = t === tab ? 'block' : 'none'
+    })
+    if (tab === 'calendario')  loadPubCalendar()
+    if (tab === 'plantillas')  loadPubPlantillas()
+    if (tab === 'cuentas')     renderPubCuentas()
+    if (tab === 'historial')   loadPubHistorial()
+  }
+  window.switchPubTab = switchPubTab
+
+  // ── Cuentas conectadas ───────────────────────────────────────────────────
+  async function loadPubAccounts() {
+    const orgId = getActiveOrgId()
+    if (!orgId) { pubState.accounts = []; return }
+    const { data } = await sb.from('social_accounts').select('*').eq('organization_id', orgId).order('platform')
+    pubState.accounts = data || []
+    const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle()
+    pubState.orgName = org?.name || null
+  }
+
+  function pubAccountStatusPill(status) {
+    if (status === 'connected')     return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(34,197,94,.12);color:var(--accent)"><i class="fa fa-check"></i> Conectada</span>'
+    if (status === 'token_expired') return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(245,158,11,.12);color:#b45309"><i class="fa fa-triangle-exclamation"></i> Token expirado</span>'
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(248,113,113,.12);color:#b91c1c"><i class="fa fa-circle-exclamation"></i> Error</span>'
+  }
+
+  function renderPubCuentas() {
+    const grid = $('pub-cuentas-grid')
+    if (!grid) return
+    const cards = pubState.accounts.map(a => {
+      const icon = a.platform === 'facebook_page'
+        ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:28px"></i>'
+        : '<i class="fa fa-instagram" style="color:#D62976;font-size:28px"></i>'
+      const sub = a.platform === 'facebook_page' ? 'Página de Facebook' : 'Cuenta profesional de Instagram'
+      const alert = a.status !== 'connected'
+        ? `<div style="padding:10px 12px;border-radius:9px;background:${a.status === 'token_expired' ? 'rgba(245,158,11,.08)' : 'rgba(248,113,113,.08)'};font-size:12.5px;color:var(--text)">${a.last_error_message || 'Reconecta la cuenta para seguir publicando.'}</div>`
+        : ''
+      return `<article class="card bp" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          ${icon}
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14.5px;color:var(--text)">${a.name}</div>
+            <div style="font-size:12px;color:var(--text-muted)">${sub}</div>
+          </div>
+          ${pubAccountStatusPill(a.status)}
+        </div>
+        ${alert}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto">
+          ${a.status !== 'connected' ? `<button class="btn-primary" style="font-size:12px;padding:7px 12px" onclick="launchSocialPublishSignup()"><i class="fa fa-rotate"></i> Reconectar</button>` : ''}
+          <button class="btn-ghost" onclick="disconnectSocialAccount('${a.id}')">Desconectar</button>
+        </div>
+      </article>`
+    }).join('')
+    const addCard = `<article class="card bp" style="padding:16px;border-style:dashed;display:flex;flex-direction:column;gap:10px;justify-content:center">
+      <div style="font-weight:700;font-size:14.5px;color:var(--text)">Conectar cuenta</div>
+      <div style="font-size:12.5px;color:var(--text-muted)">Conecta tu página de Facebook -- si tiene una cuenta de Instagram profesional vinculada, se conecta junto con ella. Inicia sesión con la cuenta de Meta que administra el negocio.</div>
+      <button class="btn-primary" style="align-self:flex-start" onclick="launchSocialPublishSignup()"><i class="fa fa-plus"></i> Conectar con Meta</button>
+    </article>`
+    grid.innerHTML = cards + addCard
+  }
+
+  async function disconnectSocialAccount(id) {
+    if (!confirm('¿Desconectar esta cuenta? Las publicaciones programadas para esta red dejarán de poder publicarse hasta que la reconectes.')) return
+    const { error } = await sb.from('social_accounts').delete().eq('id', id)
+    if (error) { showToast('Error: ' + error.message); return }
+    showToast('Cuenta desconectada')
+    await loadPubAccounts()
+    renderPubCuentas()
+  }
+  window.disconnectSocialAccount = disconnectSocialAccount
+
+  // Copia el mecanismo ya probado de launchEmbeddedSignup() (WhatsApp), con
+  // los scopes de publicación en Pages/Instagram en vez de los de WhatsApp
+  // Business. "Conectar Instagram" es la MISMA llamada -- no hay OAuth de
+  // Instagram independiente, se descubre a través de la Page vinculada.
+  async function launchSocialPublishSignup() {
+    const SCOPES = 'pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata,instagram_business_basic,instagram_business_content_publish'
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
+    if (isMobile) {
+      const fbParams = new URLSearchParams({
+        client_id: META_PUBLISH_APP_ID,
+        redirect_uri: 'https://avaxon.lat/dashboard',
+        scope: SCOPES,
+        response_type: 'token',
+        state: 'social_publish_signup',
+      })
+      window.location.href = `https://www.facebook.com/dialog/oauth?${fbParams}`
+      return
+    }
+    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return }
+    FB.init({ appId: META_PUBLISH_APP_ID, cookie: true, xfbml: false, version: 'v22.0' })
+    FB.login(function (response) {
+      ;(async function () {
+        if (!response?.authResponse?.accessToken) { showToast('Conexión cancelada.'); return }
+        showToast('Conectando…')
+        try {
+          const { data: { session } } = await sb.auth.getSession()
+          const res = await fetch(`${EDGE_BASE}/social-oauth-callback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ access_token: response.authResponse.accessToken }),
+          })
+          const result = await res.json()
+          if (result.ok) {
+            showToast(result.instagram_linked ? '✓ Facebook e Instagram conectados' : '✓ Facebook conectado (sin Instagram vinculado)')
+            await loadPubAccounts()
+            renderPubCuentas()
+          } else {
+            showToast(result.error || 'Error al conectar')
+          }
+        } catch (err) {
+          showToast(err.message || 'Error al conectar')
+        }
+      })()
+    }, { scope: SCOPES })
+  }
+  window.launchSocialPublishSignup = launchSocialPublishSignup
+
+  // Maneja el redirect de móvil (response_type=token -> el token llega en
+  // el fragment #access_token=... de la URL, no en query string).
+  async function handleSocialPublishRedirectCallback() {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    if (hash.get('state') !== 'social_publish_signup' || !hash.get('access_token')) return
+    window.history.replaceState({}, '', window.location.pathname)
+    const accessToken = hash.get('access_token')
+    showToast('Procesando conexión…')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) { showToast('Sesión expirada. Vuelve a iniciar sesión.'); return }
+      const res = await fetch(`${EDGE_BASE}/social-oauth-callback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ access_token: accessToken }),
+      })
+      const result = await res.json()
+      if (result.ok) {
+        showToast(result.instagram_linked ? '✓ Facebook e Instagram conectados' : '✓ Facebook conectado')
+        switchView('publicaciones')
+        switchPubTab('cuentas')
+      } else {
+        showToast(result.error || 'Error al conectar')
+      }
+    } catch (err) {
+      showToast(err.message || 'Error procesando la conexión')
+    }
+  }
+
+  // ── Calendario ───────────────────────────────────────────────────────────
+  let pubCalTargets = []
+
+  async function loadPubCalendar() {
+    const orgId = getActiveOrgId()
+    if (!orgId) return
+    const start = new Date(pubState.calYear, pubState.calMonth, 1)
+    const end = new Date(pubState.calYear, pubState.calMonth + 1, 1)
+    const { data } = await sb
+      .from('social_post_targets')
+      .select('id, platform, status, scheduled_at, published_at, error_message, social_posts(caption)')
+      .eq('organization_id', orgId)
+      .or(`scheduled_at.gte.${start.toISOString()},published_at.gte.${start.toISOString()}`)
+    pubCalTargets = (data || []).filter(t => {
+      const d = t.scheduled_at || t.published_at
+      if (!d) return true // borrador sin fecha -- no se agrupa por día, se ignora en la grilla por ahora
+      const dt = new Date(d)
+      return dt >= start && dt < end
+    })
+    const igExpired = pubState.accounts.some(a => a.platform === 'instagram_business' && a.status !== 'connected')
+    const igPendingCount = pubCalTargets.filter(t => t.platform === 'instagram_business' && t.status === 'programado').length
+    const banner = $('pub-ig-banner')
+    if (igExpired && igPendingCount > 0) {
+      banner.style.display = 'flex'
+      $('pub-ig-banner-text').textContent = `${igPendingCount} publicación(es) programada(s) en Instagram no saldrán hasta que reconectes la cuenta.`
+    } else {
+      banner.style.display = 'none'
+    }
+    renderPubCalendar()
+  }
+
+  function pubCalShiftMonth(delta) {
+    pubState.calMonth += delta
+    if (pubState.calMonth < 0) { pubState.calMonth = 11; pubState.calYear-- }
+    if (pubState.calMonth > 11) { pubState.calMonth = 0; pubState.calYear++ }
+    loadPubCalendar()
+  }
+  window.pubCalShiftMonth = pubCalShiftMonth
+  function pubCalGoToday() {
+    const now = new Date()
+    pubState.calMonth = now.getMonth(); pubState.calYear = now.getFullYear()
+    loadPubCalendar()
+  }
+  window.pubCalGoToday = pubCalGoToday
+
+  const PUB_STATUS_DOT = { borrador: '#94a3b8', programado: '#60a5fa', en_cola: '#60a5fa', publicado: 'var(--accent)', fallido: '#f87171' }
+  const PUB_STATUS_LABEL = { borrador: 'Borrador', programado: 'Programado', en_cola: 'En cola', publicado: 'Publicado', fallido: 'Fallido' }
+
+  function renderPubCalendar() {
+    const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+    $('pub-cal-label').textContent = `${MESES[pubState.calMonth][0].toUpperCase()}${MESES[pubState.calMonth].slice(1)} ${pubState.calYear}`
+
+    const first = new Date(pubState.calYear, pubState.calMonth, 1)
+    const startOffset = (first.getDay() + 6) % 7 // lunes=0
+    const daysInMonth = new Date(pubState.calYear, pubState.calMonth + 1, 0).getDate()
+    const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7
+    const today = new Date()
+    const byDay = {}
+    pubCalTargets.forEach(t => {
+      const d = t.scheduled_at || t.published_at
+      if (!d) return
+      const dt = new Date(d)
+      const key = dt.getDate()
+      ;(byDay[key] = byDay[key] || []).push(t)
+    })
+
+    let html = '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1px solid var(--border)">'
+    ;['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d => {
+      html += `<div style="padding:8px 10px;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">${d}</div>`
+    })
+    html += '</div><div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--border)">'
+    for (let i = 0; i < totalCells; i++) {
+      const dayNum = i - startOffset + 1
+      const inMonth = dayNum >= 1 && dayNum <= daysInMonth
+      const isToday = inMonth && dayNum === today.getDate() && pubState.calMonth === today.getMonth() && pubState.calYear === today.getFullYear()
+      const posts = inMonth ? (byDay[dayNum] || []) : []
+      const chips = posts.slice(0, 3).map(p => {
+        const icon = p.platform === 'facebook_page' ? '<i class="fa fa-facebook" style="color:#1877F2"></i>' : '<i class="fa fa-instagram" style="color:#D62976"></i>'
+        const title = (p.social_posts?.caption || '(sin texto)').slice(0, 24)
+        return `<div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 5px;border-radius:5px;background:var(--card-bg);border:1px solid var(--border)" title="${PUB_STATUS_LABEL[p.status]}">
+          ${icon}<span style="width:6px;height:6px;border-radius:50%;background:${PUB_STATUS_DOT[p.status]};flex:none"></span>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${title}</span>
+        </div>`
+      }).join('')
+      const more = posts.length > 3 ? `<div style="font-size:10.5px;color:var(--text-dim);padding:2px 5px">+${posts.length - 3} más</div>` : ''
+      html += `<div style="background:${inMonth ? 'var(--card-bg)' : 'var(--hover-bg)'};min-height:110px;padding:6px;display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:12px;font-weight:600;color:${inMonth ? 'var(--text)' : 'var(--text-dim)'};${isToday ? 'background:var(--accent);color:#062513;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center' : ''}">${inMonth ? dayNum : ''}</span>
+        ${chips}${more}
+      </div>`
+    }
+    html += '</div>'
+    $('pub-cal-grid').innerHTML = html
+  }
+
+  // ── Plantillas ───────────────────────────────────────────────────────────
+  let pubTemplates = []
+  async function loadPubPlantillas() {
+    const { data } = await sb.from('post_templates').select('*').eq('is_active', true).order('giro')
+    pubTemplates = data || []
+    renderPubPlantillas()
+  }
+
+  function renderPubPlantillas() {
+    const giros = ['Todos', ...Array.from(new Set(pubTemplates.map(t => t.giro)))]
+    $('pub-tpl-filters').innerHTML = giros.map(g => {
+      const n = g === 'Todos' ? pubTemplates.length : pubTemplates.filter(t => t.giro === g).length
+      const on = pubState.tplGiro === g
+      return `<button class="btn-ghost" style="${on ? 'background:var(--text);color:var(--card-bg);border-color:var(--text)' : ''}" onclick="pubSetTplGiro('${g}')">${g} <span style="opacity:.7">${n}</span></button>`
+    }).join('')
+
+    const q = ($('pub-tpl-search')?.value || '').toLowerCase().trim()
+    const shown = pubTemplates.filter(t => (pubState.tplGiro === 'Todos' || t.giro === pubState.tplGiro) && (!q || t.name.toLowerCase().includes(q)))
+    $('pub-tpl-summary').textContent = pubTemplates.length
+      ? `${shown.length} plantilla(s) · Todas incluyen texto sugerido`
+      : 'Sin plantillas todavía -- este catálogo lo siembra Avaxon por giro de negocio.'
+
+    $('pub-tpl-grid').innerHTML = shown.map(t => `
+      <article class="card bp" style="display:flex;flex-direction:column;overflow:hidden">
+        <div style="aspect-ratio:4/5;padding:18px;display:flex;flex-direction:column;justify-content:space-between;background:var(--hover-bg)">
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)">${t.preview_kicker || ''}</span>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:22px;font-weight:800;color:var(--text);line-height:1.1">${t.preview_headline || t.name}</span>
+            <span style="font-size:13px;color:var(--text-muted)">${t.preview_subtext || ''}</span>
+          </div>
+        </div>
+        <div style="padding:12px;display:flex;flex-direction:column;gap:8px;flex:1">
+          <div style="font-weight:700;font-size:13.5px;color:var(--text)">${t.name}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:var(--hover-bg);color:var(--text-muted)">${t.giro}</span>
+            <span style="font-size:11px;padding:2px 8px;border-radius:999px;background:var(--hover-bg);color:var(--text-muted)">${t.format === 'carrusel' ? 'Carrusel' : 'Post'}</span>
+          </div>
+          <button class="btn-primary" style="margin-top:auto" onclick="openPubEditorFromTemplate('${t.id}')">Usar plantilla</button>
+        </div>
+      </article>
+    `).join('')
+  }
+  window.renderPubPlantillas = renderPubPlantillas
+  function pubSetTplGiro(g) { pubState.tplGiro = g; renderPubPlantillas() }
+  window.pubSetTplGiro = pubSetTplGiro
+
+  // ── Historial ────────────────────────────────────────────────────────────
+  let pubHistRows = []
+  async function loadPubHistorial() {
+    const orgId = getActiveOrgId()
+    if (!orgId) return
+    const { data } = await sb
+      .from('social_post_targets')
+      .select('id, platform, status, scheduled_at, published_at, created_at, error_message, external_post_id, social_posts(caption)')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+    pubHistRows = data || []
+    renderPubHistorial()
+  }
+
+  function pubHistSetFilter(f) {
+    pubState.histFilter = f
+    ;['all', 'ok', 'err'].forEach(k => {
+      const btn = $('pub-hist-f-' + k)
+      if (btn) btn.style.fontWeight = k === f ? '700' : '600'
+    })
+    renderPubHistorial()
+  }
+  window.pubHistSetFilter = pubHistSetFilter
+
+  function renderPubHistorial() {
+    const rows = pubHistRows.filter(r => pubState.histFilter === 'all'
+      || (pubState.histFilter === 'ok' && r.status === 'publicado')
+      || (pubState.histFilter === 'err' && r.status === 'fallido'))
+    $('pub-hist-empty').style.display = rows.length ? 'none' : 'block'
+
+    $('pub-hist-tbody').innerHTML = rows.map(r => {
+      const d = r.published_at || r.scheduled_at || r.created_at
+      const dt = d ? new Date(d) : null
+      const fecha = dt ? dt.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+      const hora = dt ? dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : ''
+      const netIcon = r.platform === 'facebook_page'
+        ? '<span style="display:inline-flex;align-items:center;gap:7px"><i class="fa fa-facebook" style="color:#1877F2"></i>Facebook</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:7px"><i class="fa fa-instagram" style="color:#D62976"></i>Instagram</span>'
+      const pill = `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:${PUB_STATUS_DOT[r.status]}22;color:${PUB_STATUS_DOT[r.status]}">${PUB_STATUS_LABEL[r.status]}</span>`
+      const detalle = r.status === 'fallido'
+        ? `<span style="color:#b91c1c;font-size:12.5px">${r.error_message || 'Error desconocido'}</span>`
+        : r.status === 'publicado' ? '<span style="color:var(--text-muted);font-size:12.5px">Publicado</span>' : ''
+      const accion = r.status === 'fallido'
+        ? `<button class="btn-primary" style="font-size:11.5px;padding:5px 10px" onclick="retryPubTarget('${r.id}')"><i class="fa fa-rotate"></i> Reintentar</button>`
+        : (r.status === 'publicado' ? '<span style="color:var(--text-dim);font-size:11.5px">—</span>' : '')
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:10px 16px;white-space:nowrap"><div style="font-weight:600;font-size:13px;color:var(--text)">${fecha}</div><div style="font-size:11.5px;color:var(--text-dim)">${hora}</div></td>
+        <td style="padding:10px 16px">${netIcon}</td>
+        <td style="padding:10px 16px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--text)">${(r.social_posts?.caption || '(sin texto)').slice(0, 60)}</td>
+        <td style="padding:10px 16px">${pill}</td>
+        <td style="padding:10px 16px;max-width:300px">${detalle}</td>
+        <td style="padding:10px 16px;text-align:right">${accion}</td>
+      </tr>`
+    }).join('')
+  }
+
+  async function retryPubTarget(id) {
+    const { error } = await sb.from('social_post_targets').update({ status: 'en_cola', next_attempt_at: new Date().toISOString(), error_code: null, error_message: null }).eq('id', id)
+    if (error) { showToast('Error: ' + error.message); return }
+    showToast('Puesto en cola -- se reintentará en los próximos minutos')
+    loadPubHistorial()
+  }
+  window.retryPubTarget = retryPubTarget
+
+  // ── Editor ───────────────────────────────────────────────────────────────
+  function openPubEditor(postId, prefillCaption) {
+    pubState.editingPostId = postId || null
+    pubState.editorFb = true
+    pubState.editorIg = pubState.accounts.some(a => a.platform === 'instagram_business')
+    pubState.editorMedia = null
+    pubState.editorScheduleMode = 'now'
+    pubState.editorPreviewNet = 'facebook_page'
+    $('pub-ed-caption').value = prefillCaption || ''
+    $('pub-ed-instruction').value = ''
+    $('pub-ed-hashtags').checked = true
+    $('pub-ed-cta').checked = true
+    pubSetScheduleMode('now')
+    renderPubEditorAccounts()
+    renderPubEditorMedia()
+    renderPubPreview()
+    document.getElementById('pub-tabbar').style.display = 'none'
+    document.getElementById('pub-header-btn').style.display = 'none'
+    document.querySelectorAll('#view-publicaciones > div[id^="pub-pane-"]').forEach(p => p.style.display = 'none')
+    $('pub-editor').style.display = 'block'
+  }
+  window.openPubEditor = openPubEditor
+
+  // Separado de openPubEditor() para no pasar texto arbitrario de la
+  // plantilla por un atributo onclick (riesgo de romper el HTML si el
+  // texto trae comillas) -- solo se pasa el id, el texto se busca en
+  // memoria.
+  function openPubEditorFromTemplate(templateId) {
+    const tpl = pubTemplates.find(t => t.id === templateId)
+    openPubEditor(null, tpl?.caption_template || '')
+  }
+  window.openPubEditorFromTemplate = openPubEditorFromTemplate
+
+  function closePubEditor() {
+    $('pub-editor').style.display = 'none'
+    switchPubTab(pubState.tab || 'calendario')
+  }
+  window.closePubEditor = closePubEditor
+
+  function renderPubEditorAccounts() {
+    if (!pubState.accounts.length) {
+      $('pub-ed-accounts').innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">No tienes ninguna cuenta conectada todavía. <a href="#" onclick="closePubEditor();switchPubTab('cuentas');return false" style="color:var(--accent);font-weight:600">Conecta una aquí</a>.</p>`
+      return
+    }
+    $('pub-ed-accounts').innerHTML = pubState.accounts.map(a => {
+      const checked = a.platform === 'facebook_page' ? pubState.editorFb : pubState.editorIg
+      const sub = a.status === 'connected' ? 'Conectada' : `<span style="color:#b45309">Token expirado · <a href="#" onclick="closePubEditor();switchPubTab('cuentas');return false" style="color:inherit">Reconectar</a></span>`
+      const icon = a.platform === 'facebook_page' ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:22px"></i>' : '<i class="fa fa-instagram" style="color:#D62976;font-size:22px"></i>'
+      return `<label style="flex:1 1 200px;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${checked ? 'var(--accent)' : 'var(--border)'};border-radius:10px;cursor:pointer;background:${checked ? 'rgba(34,197,94,.06)' : 'transparent'}">
+        <input type="checkbox" ${checked ? 'checked' : ''} onchange="pubToggleEditorAccount('${a.platform}', this.checked)">
+        ${icon}
+        <span style="display:flex;flex-direction:column;min-width:0"><strong style="font-size:13.5px">${a.name}</strong><span style="font-size:11.5px;color:var(--text-dim)">${sub}</span></span>
+      </label>`
+    }).join('')
+  }
+
+  function pubToggleEditorAccount(platform, checked) {
+    if (platform === 'facebook_page') pubState.editorFb = checked
+    else pubState.editorIg = checked
+    renderPubPreview()
+  }
+  window.pubToggleEditorAccount = pubToggleEditorAccount
+
+  function renderPubEditorMedia() {
+    const el = $('pub-ed-media')
+    const m = pubState.editorMedia
+    let html = ''
+    if (m) {
+      html += `<div style="position:relative;width:90px;height:112px;border-radius:10px;overflow:hidden;background:var(--hover-bg)">
+        <img src="${m.public_url}" style="width:100%;height:100%;object-fit:cover">
+        <button type="button" onclick="pubRemoveImage()" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer"><i class="fa fa-xmark" style="font-size:11px"></i></button>
+      </div>`
+    } else {
+      html += `<button type="button" onclick="document.getElementById('pub-ed-file-input').click()" style="width:90px;height:112px;border-radius:10px;border:1.5px dashed var(--border);background:var(--hover-bg);color:var(--text-muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:11.5px"><i class="fa fa-upload"></i>Subir</button>`
+    }
+    el.innerHTML = html
+  }
+
+  async function pubHandleImageUpload(evt) {
+    const file = evt.target.files?.[0]
+    if (!file) return
+    const orgId = getActiveOrgId()
+    if (!orgId) { showToast('Selecciona un cliente'); return }
+    if (file.size > 10 * 1024 * 1024) { showToast('La imagen pesa más de 10 MB'); return }
+    showToast('Subiendo imagen…')
+    const dims = await new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight })
+      img.onerror = () => resolve({ width: null, height: null })
+      img.src = URL.createObjectURL(file)
+    })
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+    const path = `${orgId}/draft_${Date.now()}_${safeName}`
+    const { error } = await sb.storage.from(SOCIAL_STORAGE_BUCKET).upload(path, file, { upsert: true })
+    if (error) { showToast('Error subiendo imagen: ' + error.message); return }
+    const { data: pub } = sb.storage.from(SOCIAL_STORAGE_BUCKET).getPublicUrl(path)
+    pubState.editorMedia = { storage_path: path, public_url: pub?.publicUrl, width: dims.width, height: dims.height }
+    renderPubEditorMedia()
+    renderPubPreview()
+    evt.target.value = ''
+  }
+  window.pubHandleImageUpload = pubHandleImageUpload
+
+  function pubRemoveImage() {
+    pubState.editorMedia = null
+    renderPubEditorMedia()
+    renderPubPreview()
+  }
+  window.pubRemoveImage = pubRemoveImage
+
+  function pubSetScheduleMode(mode) {
+    pubState.editorScheduleMode = mode
+    $('pub-ed-mode-now').style.background = mode === 'now' ? 'var(--accent)' : 'transparent'
+    $('pub-ed-mode-now').style.color = mode === 'now' ? '#062513' : 'var(--text-muted)'
+    $('pub-ed-mode-later').style.background = mode === 'scheduled' ? 'var(--accent)' : 'transparent'
+    $('pub-ed-mode-later').style.color = mode === 'scheduled' ? '#062513' : 'var(--text-muted)'
+    $('pub-ed-schedule-fields').style.display = mode === 'scheduled' ? 'flex' : 'none'
+    $('pub-ed-primary-btn').innerHTML = mode === 'scheduled' ? '<i class="fa fa-clock"></i> Programar publicación' : '<i class="fa fa-bolt"></i> Publicar ahora'
+  }
+  window.pubSetScheduleMode = pubSetScheduleMode
+
+  function pubShowPreview(platform) {
+    pubState.editorPreviewNet = platform
+    const isFb = platform === 'facebook_page'
+    $('pub-prev-tab-fb').style.color = isFb ? 'var(--text)' : 'var(--text-muted)'
+    $('pub-prev-tab-fb').style.borderBottomColor = isFb ? 'var(--accent)' : 'transparent'
+    $('pub-prev-tab-ig').style.color = !isFb ? 'var(--text)' : 'var(--text-muted)'
+    $('pub-prev-tab-ig').style.borderBottomColor = !isFb ? 'var(--accent)' : 'transparent'
+    renderPubPreview()
+  }
+  window.pubShowPreview = pubShowPreview
+
+  // Compone el CTA final por red -- Facebook SÍ hipervincula URLs dentro
+  // del texto de un post normal, Instagram NO hipervincula nada en el
+  // caption (ahí un link solo se ve como texto plano). Mismo criterio que
+  // _shared/socialPublish.ts del lado del servidor, solo para la vista
+  // previa (el server vuelve a componerlo al publicar, nunca confía en lo
+  // que mande el cliente).
+  function pubComposeCaption(base, platform, cta, whatsappNumber) {
+    if (!cta || !whatsappNumber) return base
+    if (platform === 'facebook_page') return `${base}\n\nPide por WhatsApp: https://wa.me/${whatsappNumber}`
+    return `${base}\n\nEscríbenos al WhatsApp ${whatsappNumber} 📲`
+  }
+
+  function renderPubPreview() {
+    const base = $('pub-ed-caption').value
+    $('pub-ed-count').textContent = `${base.length} / 2,200`
+    const cta = $('pub-ed-cta')?.checked
+    const whatsappNumber = state.orgWhatsappDisplayNumber || null // se resuelve en loadPublicaciones si existe en otra parte del dashboard; si no, el CTA solo se ve en texto real al publicar (el server sí lo resuelve)
+    const net = pubState.editorPreviewNet
+    const caption = pubComposeCaption(base, net, cta, whatsappNumber || '[tu número]')
+    const m = pubState.editorMedia
+    const imgHtml = m
+      ? `<div style="aspect-ratio:${net === 'facebook_page' ? '1.25' : '0.8'};background-image:url('${m.public_url}');background-size:cover;background-position:center;border-radius:8px"></div>`
+      : `<div style="aspect-ratio:${net === 'facebook_page' ? '1.25' : '0.8'};background:var(--hover-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:12px">Sin imagen</div>`
+
+    if (net === 'facebook_page') {
+      $('pub-preview-card').innerHTML = `<article style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--accent-sub);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700">${(pubState.orgName || 'N')[0]}</div>
+          <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px;color:var(--text)">${pubState.orgName || 'Tu negocio'}</div><div style="font-size:11.5px;color:var(--text-dim)">Ahora · Público</div></div>
+        </div>
+        <p style="margin:0;padding:0 14px 12px;font-size:14px;line-height:1.4;white-space:pre-line;color:var(--text)">${caption || '(sin texto todavía)'}</p>
+        <div style="padding:0 14px 14px">${imgHtml}</div>
+      </article>`
+    } else {
+      $('pub-preview-card').innerHTML = `<article style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-sub);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${(pubState.orgName || 'N')[0]}</div>
+          <div style="font-weight:600;font-size:13.5px;color:var(--text)">${(pubState.orgName || 'tu_negocio').toLowerCase().replace(/\s+/g, '')}</div>
+        </div>
+        ${imgHtml}
+        <p style="margin:0;padding:10px 12px 12px;font-size:13.5px;line-height:1.4;white-space:pre-line;color:var(--text)"><strong>${(pubState.orgName || 'tu_negocio').toLowerCase().replace(/\s+/g, '')}</strong> ${caption || '(sin texto todavía)'}</p>
+      </article>`
+    }
+  }
+  window.renderPubPreview = renderPubPreview
+
+  async function pubGenerateAI() {
+    const orgId = getActiveOrgId()
+    if (!orgId) { showToast('Selecciona un cliente'); return }
+    const btn = $('pub-ai-btn')
+    btn.disabled = true
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Generando…'
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-ai-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          organization_id: orgId,
+          tone: $('pub-ed-tone').value,
+          hashtags: $('pub-ed-hashtags').checked,
+          cta_whatsapp: $('pub-ed-cta').checked,
+          instruction: $('pub-ed-instruction').value,
+        }),
+      })
+      const result = await res.json()
+      if (result.ok) {
+        $('pub-ed-caption').value = result.caption
+        renderPubPreview()
+      } else {
+        showToast(result.error || 'No se pudo generar el texto')
+      }
+    } catch (err) {
+      showToast(err.message || 'Error generando el texto')
+    } finally {
+      btn.disabled = false
+      btn.innerHTML = '<i class="fa fa-wand-magic-sparkles"></i> Generar con IA'
+    }
+  }
+  window.pubGenerateAI = pubGenerateAI
+
+  // Guarda el post + media + un social_post_targets por red seleccionada.
+  // mode: 'borrador' (solo guarda) | 'submit' (según el toggle de
+  // Programación: now -> status en_cola + llama social-publish-now;
+  // scheduled -> status programado, el cron lo recoge después).
+  async function savePubPost(mode) {
+    const orgId = getActiveOrgId()
+    if (!orgId) { showToast('Selecciona un cliente'); return }
+    const caption = $('pub-ed-caption').value.trim()
+    if (!caption && !pubState.editorMedia) { showToast('Agrega texto o una imagen'); return }
+    if (!pubState.editorFb && !pubState.editorIg) { showToast('Selecciona al menos una red'); return }
+
+    const ctaWhatsapp = $('pub-ed-cta').checked
+    let postId = pubState.editingPostId
+
+    if (postId) {
+      await sb.from('social_posts').update({ caption, cta_whatsapp: ctaWhatsapp, updated_at: new Date().toISOString() }).eq('id', postId)
+    } else {
+      const { data: post, error: postErr } = await sb.from('social_posts').insert({
+        organization_id: orgId, created_by: state.userId || null, caption, cta_whatsapp: ctaWhatsapp,
+      }).select('id').single()
+      if (postErr || !post) { showToast('Error guardando: ' + (postErr?.message || '')); return }
+      postId = post.id
+      pubState.editingPostId = postId
+    }
+
+    if (pubState.editorMedia) {
+      await sb.from('social_post_media').delete().eq('post_id', postId)
+      await sb.from('social_post_media').insert({
+        post_id: postId, storage_path: pubState.editorMedia.storage_path, public_url: pubState.editorMedia.public_url,
+        position: 0, width: pubState.editorMedia.width, height: pubState.editorMedia.height,
+      })
+    }
+
+    const targetStatus = mode === 'borrador' ? 'borrador' : (pubState.editorScheduleMode === 'scheduled' ? 'programado' : 'en_cola')
+    const scheduledAt = pubState.editorScheduleMode === 'scheduled' && $('pub-ed-date').value && $('pub-ed-time').value
+      ? new Date(`${$('pub-ed-date').value}T${$('pub-ed-time').value}`).toISOString()
+      : null
+    if (pubState.editorScheduleMode === 'scheduled' && !scheduledAt) { showToast('Elige fecha y hora para programar'); return }
+
+    const wanted = []
+    if (pubState.editorFb) wanted.push('facebook_page')
+    if (pubState.editorIg) wanted.push('instagram_business')
+
+    const newTargetIds = []
+    for (const platform of wanted) {
+      const acc = pubState.accounts.find(a => a.platform === platform)
+      if (!acc) continue
+      // Un target por (post, red) -- si ya existe (reedición), se actualiza en vez de duplicar.
+      const { data: existing } = await sb.from('social_post_targets').select('id').eq('post_id', postId).eq('platform', platform).maybeSingle()
+      const row = {
+        post_id: postId, organization_id: orgId, social_account_id: acc.id, platform,
+        status: targetStatus, publish_mode: pubState.editorScheduleMode, scheduled_at: scheduledAt,
+        timezone: state.orgTimezone || null, updated_at: new Date().toISOString(),
+      }
+      if (existing) {
+        await sb.from('social_post_targets').update(row).eq('id', existing.id)
+        newTargetIds.push(existing.id)
+      } else {
+        const { data: created } = await sb.from('social_post_targets').insert(row).select('id').single()
+        if (created) newTargetIds.push(created.id)
+      }
+    }
+
+    if (mode === 'borrador') {
+      showToast('Borrador guardado')
+      closePubEditor()
+      return
+    }
+
+    if (pubState.editorScheduleMode === 'scheduled') {
+      showToast('Publicación programada')
+      closePubEditor()
+      return
+    }
+
+    // Publicar ahora: llama a la Edge Function (requiere que esté
+    // desplegada -- en esta rama todavía NO lo está, ver resumen del
+    // trabajo). Si falla la llamada, los targets ya quedaron en 'en_cola'
+    // y el cron los recogería en cuanto exista.
+    showToast('Publicando…')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-publish-now`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ target_ids: newTargetIds }),
+      })
+      const result = await res.json()
+      if (result.ok) {
+        const okCount = (result.results || []).filter(r => r.ok).length
+        showToast(okCount === newTargetIds.length ? '✓ Publicado' : 'Publicado parcialmente -- revisa el Historial')
+      } else {
+        showToast(result.error || 'No se pudo publicar -- quedó en cola para reintentar')
+      }
+    } catch (err) {
+      showToast('No se pudo contactar al servidor -- quedó en cola para reintentar')
+    }
+    closePubEditor()
+  }
+  window.savePubPost = savePubPost
 
   // ── CRM (super_admin only) ────────────────────────────────────────────────
   const CRM_STATUS = {

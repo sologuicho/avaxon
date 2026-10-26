@@ -24,3 +24,21 @@ cron = "*/15 * * * *"
 [functions.pay]
 verify_jwt = false
 # Link corto de pago (avaxon.lat/p/<id> → checkout_url). Público.
+
+# ── Publicaciones en redes (feature/publicaciones-redes) ───────────────────
+# NO desplegado a producción todavía -- estas entradas quedan declaradas
+# aquí para cuando se autorice el deploy, no activan nada por sí solas.
+
+[functions.social-post-scheduler]
+verify_jwt = false
+# cada 2 min — cola unificada de publicaciones programadas/en reintento,
+# para Facebook e Instagram (no se usa el scheduled_publish_time nativo de
+# Facebook, todo pasa por este cron)
+cron = "*/2 * * * *"
+
+[functions.social-token-health-check]
+verify_jwt = false
+# diario, 07:00 hora de Ciudad de México (UTC-6) = 13:00 UTC — chequeo
+# proactivo de tokens de Meta, para que "Token expirado" se detecte antes
+# de que falle un intento real de publicar
+cron = "0 13 * * *"
