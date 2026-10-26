@@ -40,6 +40,30 @@ const SHIFT_GRACE_MINUTES = 60
 
 type Recipient = { phone: string; name: string }
 
+// Hasta ahora el resultado de cada envío (éxito o error de Meta) solo se
+// regresaba en el body HTTP de la Edge Function -- nadie lo lee porque la
+// dispara pg_cron, no una persona. Si un envío fallaba (bloqueo, plantilla
+// rechazada, rate limit, etc.) no quedaba ningún rastro consultable. Esto
+// lo persiste en bot_tool_logs sin tocar horario/intervalo/lógica de envío.
+async function logInventorySend(
+  sb: ReturnType<typeof createClient>,
+  organizationId: string,
+  slot: string,
+  entry: Record<string, unknown>,
+): Promise<void> {
+  // Nunca debe tronar el envío real por un problema de logging -- todo
+  // este cuerpo va envuelto en try/catch, incluido el JSON.stringify.
+  try {
+    await sb.from('bot_tool_logs').insert({
+      organization_id: organizationId,
+      tool_name: 'inventory_check_send',
+      result: JSON.stringify({ slot, ...entry }),
+    })
+  } catch (e) {
+    console.error('logInventorySend:', e)
+  }
+}
+
 function sanitizeForTemplate(text: string): string {
   return text.replace(/[\n\r\t]+/g, ' • ').replace(/ {2,}/g, ' ').trim()
 }
@@ -223,7 +247,9 @@ async function handleShift(sb: ReturnType<typeof createClient>) {
 
     if (dayCfg.morning && isSlotDue(minutesOfDay, dayCfg.morning.time, shiftSent.morning)) {
       for (const recipient of (dayCfg.morning.recipients as Recipient[]) ?? []) {
-        results.push({ organization_id: row.organization_id, slot: 'morning', ...(await sendMorningTemplate(sb, row.organization_id, recipient)) })
+        const sendResult = await sendMorningTemplate(sb, row.organization_id, recipient)
+        await logInventorySend(sb, row.organization_id, 'shift-morning', sendResult)
+        results.push({ organization_id: row.organization_id, slot: 'morning', ...sendResult })
       }
       shiftSent = { ...shiftSent, morning: true }
       touched = true
@@ -249,7 +275,9 @@ async function handleShift(sb: ReturnType<typeof createClient>) {
         recipients = (dayCfg.midday.recipients as Recipient[]) ?? []
       }
       for (const recipient of recipients) {
-        results.push({ organization_id: row.organization_id, slot: 'midday', ...(await sendMiddayCheck(sb, row.organization_id, recipient)) })
+        const sendResult = await sendMiddayCheck(sb, row.organization_id, recipient)
+        await logInventorySend(sb, row.organization_id, 'shift-midday', sendResult)
+        results.push({ organization_id: row.organization_id, slot: 'midday', ...sendResult })
       }
       shiftSent = { ...shiftSent, midday: true }
       touched = true
@@ -336,6 +364,7 @@ Deno.serve(async (req: Request) => {
           },
         })
         const data = await res.json()
+        await logInventorySend(sb, staff.organization_id, 'morning', { phone: staff.phone, ok: res.ok, data })
         results.push({ phone: staff.phone, ok: res.ok, data })
         continue
       }
@@ -353,6 +382,7 @@ Deno.serve(async (req: Request) => {
           },
         })
         const data = await res.json()
+        await logInventorySend(sb, staff.organization_id, 'periodic', { phone: staff.phone, ok: res.ok, via: 'interactive', data })
         results.push({ phone: staff.phone, ok: res.ok, via: 'interactive', data })
         continue
       }
@@ -374,8 +404,10 @@ Deno.serve(async (req: Request) => {
         },
       })
       const data = await res.json()
+      await logInventorySend(sb, staff.organization_id, 'periodic', { phone: staff.phone, ok: res.ok, via: 'template', data })
       results.push({ phone: staff.phone, ok: res.ok, via: 'template', data })
     } catch (e) {
+      await logInventorySend(sb, staff.organization_id, type, { phone: staff.phone, ok: false, error: (e as Error).message })
       results.push({ phone: staff.phone, error: (e as Error).message })
     }
   }
