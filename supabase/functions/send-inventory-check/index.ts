@@ -24,12 +24,18 @@ const GRAPH = 'https://graph.facebook.com/v22.0'
 // menu_diario_check (sin "_v3") quedó aprobada como MARKETING y hardcodea
 // "Narciso" en el saludo — ya no se usa aquí, pero no se borra de Meta por
 // si hace falta revertir.
-const TEMPLATE_MORNING            = 'menu_diario_check_v3'
-// inventario_check_periodico quedó aprobada como MARKETING — ya no se usa.
-// inventario_check_v3 es solo el respaldo del check de mediodía cuando la
-// ventana de 24h está cerrada; si está abierta se manda un mensaje
-// interactivo normal, sin gastar plantilla.
-const TEMPLATE_PERIODIC_FALLBACK = 'inventario_check_v3'
+//
+// menu_diario_check_v3 e inventario_check_v3 (las dos de abajo, antes de
+// este cambio) quedaron en PENDING_DELETION el 18/oct y Meta las borró
+// automáticamente 7 días después (confirmado con una llamada directa a la
+// Graph API: "Object does not exist") -- no fue algo que el equipo borrara.
+// Reemplazadas por v1 con nombre nuevo (Meta no deja reusar el nombre de
+// una plantilla recién borrada) y mismo contenido/variables. Verificado
+// APPROVED como UTILITY en Meta antes de desplegar este cambio.
+const TEMPLATE_MORNING            = 'aviso_menu_matutino_v1'
+// Respaldo del check de mediodía cuando la ventana de 24h está cerrada; si
+// está abierta se manda un mensaje interactivo normal, sin gastar plantilla.
+const TEMPLATE_PERIODIC_FALLBACK = 'revision_inventario_v1'
 const WINDOW_MS = 24 * 60 * 60 * 1000
 
 // Tolerancia del cron de turnos: si un slot ya pasó pero no se ha mandado
