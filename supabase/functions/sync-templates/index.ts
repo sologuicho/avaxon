@@ -119,7 +119,12 @@ Deno.serve(async (req: Request) => {
 
     const metaRes = await metaFetch(`${waAccount.waba_id}/message_templates`, {
       method: 'POST',
-      body: JSON.stringify({ name: tpl.name, language, category: tpl.category || 'MARKETING', components: [component] }),
+      // Default a UTILITY, no MARKETING -- un borrador sin category explícita
+      // (el campo default en message_templates es NOT NULL 'UTILITY', pero un
+      // insert manual o un bug de UI podría dejarlo en blanco/null) no debe
+      // colarse como MARKETING, que es justo la categoría que el equipo migró
+      // para evitar que los destinatarios puedan optar por no recibirlas.
+      body: JSON.stringify({ name: tpl.name, language, category: tpl.category || 'UTILITY', components: [component] }),
     })
     const metaData = await metaRes.json()
     if (!metaRes.ok) {
