@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encryptField } from '../_shared/crypto.ts'
 
 // ── Publicaciones en redes — OAuth de Facebook/Instagram ────────────────────
 // Recibe el access token corto del popup de FB.login() del frontend
