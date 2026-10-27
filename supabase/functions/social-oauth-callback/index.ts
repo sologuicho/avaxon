@@ -125,6 +125,7 @@ Deno.serve(async (req: Request) => {
   // Cada Page trae su propio access_token (de Page, no de usuario) -- es
   // el que de verdad se usa para publicar.
   const pageToken = page.access_token as string
+  const encryptedToken = await encryptField(pageToken)
 
   const { data: fbAccount, error: fbErr } = await adminClient
     .from('social_accounts')
@@ -134,7 +135,7 @@ Deno.serve(async (req: Request) => {
       external_id: page.id,
       name: page.name,
       avatar_url: page.picture?.data?.url ?? null,
-      access_token: pageToken,
+      access_token: encryptedToken,
       status: 'connected',
       last_error_code: null,
       last_error_message: null,
