@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyState } from '../_shared/google.ts'
+import { encryptField } from '../_shared/crypto.ts'
 
 // ── Callback de Google OAuth (Calendar + Sheets) ─────────────────────────────
 // Google redirige aquí al navegador del usuario (sin JWT de Supabase, por
