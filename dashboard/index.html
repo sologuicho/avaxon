@@ -9581,7 +9581,7 @@
       window.location.href = `https://www.facebook.com/dialog/oauth?${fbParams}`
       return
     }
-    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return }
+    try { await loadFbSdk(); } catch { showToast('No se pudo cargar el SDK de Meta. Revisa tu conexión.'); return }
     FB.init({ appId: META_PUBLISH_APP_ID, cookie: true, xfbml: false, version: 'v22.0' })
     FB.login(function (response) {
       ;(async function () {
