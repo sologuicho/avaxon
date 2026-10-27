@@ -90,8 +90,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const credentials = {
-      access_token: tokenData.access_token,
-      refresh_token: refreshToken,
+      access_token: await encryptField(tokenData.access_token),
+      refresh_token: refreshToken ? await encryptField(refreshToken) : null,
       expires_at: new Date(Date.now() + (tokenData.expires_in ?? 3600) * 1000).toISOString(),
     }
     const now = new Date().toISOString()
