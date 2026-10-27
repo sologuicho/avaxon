@@ -169,7 +169,7 @@ Deno.serve(async (req: Request) => {
     `*Descripción:* ${body.description}\n` +
     `*Caso de uso:* ${body.use_case}\n` +
     `*Solicitado por:* ${user.email ?? user.id}\n` +
-    `*Org ID:* ${body.organization_id}\n` +
+    `*Org ID:* ${profile.organization_id}\n` +
     `*Estado:* Pendiente`
 
   const waRes = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_NUMBER_ID}/messages`, {
