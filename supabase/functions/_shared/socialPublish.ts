@@ -164,6 +164,8 @@ export async function publishToTarget(adminClient: SupabaseClient, targetId: str
       .eq('id', t.social_account_id)
       .single()
     if (!account) { await markFailed('No se encontró la cuenta conectada para esta red.'); return }
+    const rawToken = account.access_token ?? ''
+    account.access_token = rawToken.startsWith('encv1:') ? await decryptField(rawToken) : rawToken
     if (account.status !== 'connected') {
       await markFailed('La cuenta no está conectada (token expirado o error de permisos). Reconéctala en Cuentas conectadas.', 'account_not_connected')
       return
