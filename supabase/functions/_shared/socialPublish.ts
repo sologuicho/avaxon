@@ -13,6 +13,7 @@
 // vez de intentar algo que no está terminado.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { decryptField } from './crypto.ts'
 
 const GRAPH = 'https://graph.facebook.com/v22.0'
 
