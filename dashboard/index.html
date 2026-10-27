@@ -4702,8 +4702,8 @@
         : '<span class="badge-out">SALIDA</span>';
       return `<tr>
         <td>${dir}</td>
-        <td style="white-space:nowrap;font-weight:600">${name}</td>
-        <td><div class="msg-preview">${truncate(m.content)}${mediaBadge(m.media_type)}</div></td>
+        <td style="white-space:nowrap;font-weight:600">${escapeHtml(name)}</td>
+        <td><div class="msg-preview">${escapeHtml(truncate(m.content))}${mediaBadge(m.media_type)}</div></td>
         <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(m.created_at)}</td>
       </tr>`;
     }).join('');
