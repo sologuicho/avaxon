@@ -5,7 +5,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // Recibe el access token corto del popup de FB.login() del frontend
 // (launchSocialPublishSignup(), scopes de publicación: pages_manage_posts,
 // pages_read_engagement, pages_show_list, pages_manage_metadata,
-// instagram_business_basic, instagram_business_content_publish).
+// instagram_basic, instagram_content_publish).
+//
+// OJO: este flujo es "Instagram API with Facebook Login" (login vía
+// FB.login()/Facebook Login for Business, token de Page, llamadas a
+// graph.facebook.com) -- NO es "Instagram API with Instagram Login"
+// (Business Login for Instagram, login directo con IG, llamadas a
+// graph.instagram.com). Los scopes de ESE otro flujo son
+// instagram_business_basic/instagram_business_content_publish y NO
+// sirven aquí -- Meta los rechaza o los ignora si se piden con FB.login().
 //
 //   1. Cambia el token corto por uno de larga duración (fb_exchange_token)
 //   2. GET /me/accounts -> la primera Page que administra el usuario
@@ -164,7 +172,7 @@ Deno.serve(async (req: Request) => {
         status: 'connected',
         last_error_code: null,
         last_error_message: null,
-        scopes: 'instagram_business_basic,instagram_business_content_publish',
+        scopes: 'instagram_basic,instagram_content_publish',
         connected_by: user.id,
         connected_at: new Date().toISOString(),
         token_expires_at: tokenExpiresAt,

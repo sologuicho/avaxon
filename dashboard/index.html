@@ -9545,8 +9545,15 @@
   // los scopes de publicación en Pages/Instagram en vez de los de WhatsApp
   // Business. "Conectar Instagram" es la MISMA llamada -- no hay OAuth de
   // Instagram independiente, se descubre a través de la Page vinculada.
+  //
+  // Este es el flujo "Instagram API with Facebook Login" (FB.login(), token
+  // de Page, llamadas a graph.facebook.com) -- los scopes de Instagram son
+  // instagram_basic/instagram_content_publish, NO
+  // instagram_business_basic/instagram_business_content_publish (esos son
+  // del flujo separado "Business Login for Instagram", que usa un login
+  // directo de Instagram contra graph.instagram.com y no aplica aquí).
   async function launchSocialPublishSignup() {
-    const SCOPES = 'pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata,instagram_business_basic,instagram_business_content_publish'
+    const SCOPES = 'pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata,instagram_basic,instagram_content_publish'
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
     if (isMobile) {
       const fbParams = new URLSearchParams({
