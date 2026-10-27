@@ -76,11 +76,16 @@ export async function getGoogleAccessToken(
   const creds = (integ?.credentials ?? null) as GoogleCredentials | null
   if (!creds?.access_token) return null
 
+  const accessToken = creds.access_token.startsWith('encv1:') ? await decryptField(creds.access_token) : creds.access_token
+  const refreshToken = creds.refresh_token
+    ? (creds.refresh_token.startsWith('encv1:') ? await decryptField(creds.refresh_token) : creds.refresh_token)
+    : null
+
   const expiresAtMs = creds.expires_at ? new Date(creds.expires_at).getTime() : 0
   const stillValid = expiresAtMs - 60_000 > Date.now()
-  if (stillValid) return creds.access_token
+  if (stillValid) return accessToken
 
-  if (!creds.refresh_token) return null
+  if (!refreshToken) return null
 
   const clientId = Deno.env.get('GOOGLE_CLIENT_ID')
   const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')
