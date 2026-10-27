@@ -48,6 +48,16 @@ Deno.serve(async (req: Request) => {
   if (camp.status === 'running') return json({ error: 'La campaña ya está en curso' }, 409)
   if (camp.status === 'completed') return json({ error: 'La campaña ya está completada' }, 409)
 
+  const { data: profile } = await adminSb
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile) return json({ error: 'Forbidden' }, 403)
+  if (profile.role !== 'super_admin' && camp.organization_id !== profile.organization_id) {
+    return json({ error: 'Forbidden' }, 403)
+  }
+
   const orgId = camp.organization_id
 
   try {
