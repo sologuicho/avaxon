@@ -1289,13 +1289,14 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
   const { data: ccReply } = await sb
     .from('campaign_contacts')
-    .select('id, campaign_id')
+    .select('id, campaign_id, campaigns(organization_id)')
     .eq('phone', normalizedFrom)
     .is('responded_at', null)
     .order('sent_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  if (ccReply) {
+  // Solo actualiza si la campaña pertenece a esta misma org (evita doble-conteo cross-tenant).
+  if (ccReply && (ccReply.campaigns as any)?.organization_id === organization_id) {
     const now = new Date().toISOString()
     await sb.from('campaign_contacts').update({ responded_at: now }).eq('id', ccReply.id)
     const { data: camp } = await sb.from('campaigns').select('responded_count').eq('id', ccReply.campaign_id).single()
