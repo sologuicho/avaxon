@@ -40,6 +40,23 @@ Deno.serve(async (req: Request) => {
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', user.id)
+    .single()
+  if (!profile) return json({ error: 'Forbidden' }, 403)
+
+  const { data: convCheck } = await adminClient
+    .from('conversations')
+    .select('organization_id')
+    .eq('id', conversation_id)
+    .single()
+  if (!convCheck) return json({ error: 'Conversación no encontrada' }, 404)
+  if (profile.role !== 'super_admin' && convCheck.organization_id !== profile.organization_id) {
+    return json({ error: 'Forbidden' }, 403)
+  }
+
   try {
     return await handleSend(adminClient, { conversation_id, message, payment_id, template_id, fallback_template_name, template_vars }, user, WA_TOKEN)
   } catch (e) {
