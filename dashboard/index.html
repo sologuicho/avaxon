@@ -6175,7 +6175,7 @@
 
   /* ── Embedded Signup: Instagram Direct ── */
   async function launchIgEmbeddedSignup() {
-    if (!window.FB) { showToast('SDK de Meta no cargado. Recarga la página.', 3000); return; }
+    try { await loadFbSdk(); } catch { showToast('No se pudo cargar el SDK de Meta. Revisa tu conexión.'); return; }
     FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     const btn = $('ig-connect-btn');
