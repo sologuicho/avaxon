@@ -1383,25 +1383,35 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
 
   if (orderBtnId.startsWith('confirm_')) {
     const orderId = orderBtnId.replace('confirm_', '')
-    await sb.from('orders').update({ status: 'confirmada', confirmed_at: new Date().toISOString() }).eq('id', orderId)
-    await sb.from('conversations').update({ current_order_id: null }).eq('id', conversation_id)
-    const { data: ord } = await sb.from('orders').select('order_number').eq('id', orderId).single()
-    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: `✅ ¡Comanda No. ${ord?.order_number} confirmada! Gracias, tu pedido está registrado. 🍽️` } }),
-    })
+    // Verifica que la orden pertenece a esta org y a este cliente antes de confirmarla.
+    const { data: orderCheck } = await sb.from('orders').select('order_number')
+      .eq('id', orderId).eq('organization_id', organization_id).eq('contact_phone', fromPhone).maybeSingle()
+    if (orderCheck) {
+      await sb.from('orders').update({ status: 'confirmada', confirmed_at: new Date().toISOString() })
+        .eq('id', orderId).eq('organization_id', organization_id).eq('contact_phone', fromPhone)
+      await sb.from('conversations').update({ current_order_id: null }).eq('id', conversation_id)
+      await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: `✅ ¡Comanda No. ${orderCheck.order_number} confirmada! Gracias, tu pedido está registrado. 🍽️` } }),
+      })
+    }
     return
   }
 
   if (orderBtnId.startsWith('add_more_')) {
     const orderId = orderBtnId.replace('add_more_', '')
-    await sb.from('conversations').update({ current_order_id: orderId }).eq('id', conversation_id)
-    await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: '¡Claro! ¿Qué más te gustaría agregar a tu pedido? 😊' } }),
-    })
+    // Verifica que la orden pertenece a esta org y a este cliente antes de asociarla.
+    const { data: orderCheck } = await sb.from('orders').select('id')
+      .eq('id', orderId).eq('organization_id', organization_id).eq('contact_phone', fromPhone).maybeSingle()
+    if (orderCheck) {
+      await sb.from('conversations').update({ current_order_id: orderId }).eq('id', conversation_id)
+      await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messaging_product: 'whatsapp', to: fromPhone, type: 'text', text: { body: '¡Claro! ¿Qué más te gustaría agregar a tu pedido? 😊' } }),
+      })
+    }
     return
   }
 
