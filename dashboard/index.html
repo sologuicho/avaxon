@@ -4717,8 +4717,8 @@
     $('tbody-orgs').innerHTML = data.map(o => `<tr>
       <td>
         <div class="contact-cell">
-          <div class="avatar">${initials(o.name)}</div>
-          <strong>${o.name}</strong>
+          <div class="avatar">${escapeHtml(initials(o.name))}</div>
+          <strong>${escapeHtml(o.name)}</strong>
         </div>
       </td>
       <td style="color:var(--text-muted)">${o.industry || '—'}</td>
