@@ -6109,7 +6109,7 @@
       return;
     }
 
-    if (typeof FB === 'undefined') { showToast('SDK de Meta aún no carga. Recarga la página.'); return; }
+    try { await loadFbSdk(); } catch { showToast('No se pudo cargar el SDK de Meta. Revisa tu conexión.'); return; }
     FB.init({ appId: '2086225228635820', cookie: true, xfbml: false, version: 'v22.0' });
 
     // Capturar waba_id y phone_number_id del postMessage ANTES de que llegue el code
