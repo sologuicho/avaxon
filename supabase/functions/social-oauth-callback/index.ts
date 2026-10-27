@@ -170,7 +170,7 @@ Deno.serve(async (req: Request) => {
         username: igBusiness.username ?? null,
         avatar_url: igBusiness.profile_picture_url ?? null,
         facebook_page_id: page.id,
-        access_token: pageToken, // IG Business siempre publica con el token de la Page
+        access_token: encryptedToken, // IG Business siempre publica con el token de la Page
         status: 'connected',
         last_error_code: null,
         last_error_message: null,
