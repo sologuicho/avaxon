@@ -4677,10 +4677,10 @@
     tbody.innerHTML = data.map(c => `<tr>
       <td>
         <div class="contact-cell">
-          <div class="avatar">${initials(c.name || c.phone)}</div>
+          <div class="avatar">${escapeHtml(initials(c.name || c.phone))}</div>
           <div>
-            <div class="contact-name">${c.name || '—'}</div>
-            <div class="contact-phone">${maskPhone(c.phone)}</div>
+            <div class="contact-name">${escapeHtml(c.name || '—')}</div>
+            <div class="contact-phone">${escapeHtml(maskPhone(c.phone))}</div>
           </div>
         </div>
       </td>
