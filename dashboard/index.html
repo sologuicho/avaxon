@@ -9529,9 +9529,9 @@
       </article>`
     }).join('')
     const addCard = `<article class="card bp" style="padding:16px;border-style:dashed;display:flex;flex-direction:column;gap:10px;justify-content:center">
-      <div style="font-weight:700;font-size:14.5px;color:var(--text)">Conectar cuenta</div>
-      <div style="font-size:12.5px;color:var(--text-muted)">Conecta tu página de Facebook -- si tiene una cuenta de Instagram profesional vinculada, se conecta junto con ella. Inicia sesión con la cuenta de Meta que administra el negocio.</div>
-      <button class="btn-primary" style="align-self:flex-start" onclick="launchSocialPublishSignup()"><i class="fa fa-plus"></i> Conectar con Meta</button>
+      <div style="font-weight:700;font-size:14.5px;color:var(--text)">¿No ves tus cuentas?</div>
+      <div style="font-size:12.5px;color:var(--text-muted)">Conecta tu página de Facebook e Instagram desde la sección de Canales.</div>
+      <button class="btn-ghost" style="align-self:flex-start" onclick="switchView('conexiones')"><i class="fa fa-arrow-right"></i> Ir a Canales</button>
     </article>`
     grid.innerHTML = cards + addCard
   }
