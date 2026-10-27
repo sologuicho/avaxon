@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
     description: body.description,
     useCaso: body.use_case,
     requestedBy: user.email ?? user.id,
-    organizationId: body.organization_id,
+    organizationId: profile.organization_id,
   })
 
   const emailResult = await sendEmail({
