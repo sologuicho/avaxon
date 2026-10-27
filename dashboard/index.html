@@ -5112,7 +5112,7 @@
         </div>
         <div class="conv-item-body">
           <div class="conv-item-row">
-            <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${name}</div>
+            <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${escapeHtml(name)}</div>
             <div class="conv-item-time">${time}</div>
           </div>
           <div class="conv-item-preview">${senderPfx}${escapeHtml(preview.slice(0, 55))}</div>
