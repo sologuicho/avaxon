@@ -102,23 +102,29 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
 
   // Parse body
-  let body: { tool_name?: string; description?: string; use_case?: string; organization_id?: string }
+  let body: { tool_name?: string; description?: string; use_case?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   if (!body.tool_name) return json({ error: 'tool_name requerido' }, 422)
   if (!body.description) return json({ error: 'description requerido' }, 422)
   if (!body.use_case) return json({ error: 'use_case requerido' }, 422)
-  if (!body.organization_id) return json({ error: 'organization_id requerido' }, 422)
 
   const reqId = generateReqId()
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single()
+  if (!profile?.organization_id) return json({ error: 'Perfil sin organización' }, 403)
 
   // Insert row in tool_requisitions
   const { data: inserted, error: insertErr } = await adminClient
     .from('tool_requisitions')
     .insert({
       req_id: reqId,
-      organization_id: body.organization_id,
+      organization_id: profile.organization_id,
       requested_by: user.id,
       tool_name: body.tool_name,
       description: body.description,
