@@ -1,5 +1,6 @@
 // ── Google OAuth: state firmado (HMAC) + refresco de access_token ──────────
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encryptField, decryptField } from './crypto.ts'
 
 async function hmacKey(secret: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
