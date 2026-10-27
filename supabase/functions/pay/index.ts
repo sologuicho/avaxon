@@ -28,5 +28,6 @@ Deno.serve(async (req: Request) => {
     .maybeSingle()
 
   if (!payment?.checkout_url) return redirect(FALLBACK_URL)
+  if (!payment.checkout_url.startsWith('https://checkout.stripe.com/')) return redirect(FALLBACK_URL)
   return redirect(payment.checkout_url)
 })
