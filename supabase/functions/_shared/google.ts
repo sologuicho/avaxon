@@ -97,7 +97,7 @@ export async function getGoogleAccessToken(
     body: new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
-      refresh_token: creds.refresh_token,
+      refresh_token: refreshToken,
       grant_type: 'refresh_token',
     }),
   })
@@ -107,8 +107,8 @@ export async function getGoogleAccessToken(
   if (!tokenData.access_token) return null
 
   const newCreds: GoogleCredentials = {
-    access_token: tokenData.access_token,
-    refresh_token: creds.refresh_token,
+    access_token: await encryptField(tokenData.access_token),
+    refresh_token: refreshToken ? await encryptField(refreshToken) : null,
     expires_at: new Date(Date.now() + (tokenData.expires_in ?? 3600) * 1000).toISOString(),
   }
 
@@ -117,5 +117,5 @@ export async function getGoogleAccessToken(
     .eq('organization_id', organizationId)
     .in('provider', ['google_calendar', 'google_sheets'])
 
-  return newCreds.access_token
+  return tokenData.access_token
 }
