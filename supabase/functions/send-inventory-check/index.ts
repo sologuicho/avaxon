@@ -346,7 +346,7 @@ Deno.serve(async (req: Request) => {
         .single()
 
       const accessToken = (pnRow?.whatsapp_accounts as any)?.access_token
-      if (!accessToken) { results.push({ phone: staff.phone, error: 'no access_token' }); continue }
+      if (!accessToken) { results.push({ ok: false, error: 'no access_token' }); continue }
 
       const sendWA = (body: Record<string, unknown>) =>
         fetch(`${GRAPH}/${staff.notify_via_phone_number_id}/messages`, {
