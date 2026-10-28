@@ -371,7 +371,7 @@ Deno.serve(async (req: Request) => {
         })
         const data = await res.json()
         await logInventorySend(sb, staff.organization_id, 'morning', { phone: staff.phone, ok: res.ok, data })
-        results.push({ phone: staff.phone, ok: res.ok, data })
+        results.push({ ok: res.ok })
         continue
       }
 
@@ -389,7 +389,7 @@ Deno.serve(async (req: Request) => {
         })
         const data = await res.json()
         await logInventorySend(sb, staff.organization_id, 'periodic', { phone: staff.phone, ok: res.ok, via: 'interactive', data })
-        results.push({ phone: staff.phone, ok: res.ok, via: 'interactive', data })
+        results.push({ ok: res.ok, via: 'interactive' })
         continue
       }
 
