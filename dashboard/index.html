@@ -9441,6 +9441,9 @@
   // ahora solo funciona con la Page/IG de prueba de Avaxon, en modo
   // desarrollo (ver META_PUBLISH_APP_ID abajo).
   const META_PUBLISH_APP_ID = '2086225228635820' // mismo app ya usado por WhatsApp Embedded Signup
+  // config_id de la configuración "Publicaciones redes" (Facebook Login for
+  // Business) en Meta Developers -- la app exige config_id en vez de scope.
+  const SOCIAL_PUBLISH_CONFIG_ID = '2139285299994216'
   const SOCIAL_STORAGE_BUCKET = 'social-media'
 
   let pubModuleEnabled = false
@@ -9578,14 +9581,14 @@
   // del flujo separado "Business Login for Instagram", que usa un login
   // directo de Instagram contra graph.instagram.com y no aplica aquí).
   async function launchSocialPublishSignup() {
-    const SCOPES = 'pages_manage_posts,pages_read_engagement,pages_show_list,pages_manage_metadata,instagram_basic,instagram_content_publish'
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
     if (isMobile) {
       const fbParams = new URLSearchParams({
         client_id: META_PUBLISH_APP_ID,
         redirect_uri: 'https://avaxon.lat/dashboard',
-        scope: SCOPES,
+        config_id: SOCIAL_PUBLISH_CONFIG_ID,
         response_type: 'token',
+        override_default_response_type: 'true',
         state: 'social_publish_signup',
       })
       window.location.href = `https://www.facebook.com/dialog/oauth?${fbParams}`
@@ -9616,7 +9619,7 @@
           showToast(err.message || 'Error al conectar')
         }
       })()
-    }, { scope: SCOPES })
+    }, { config_id: SOCIAL_PUBLISH_CONFIG_ID, response_type: 'token', override_default_response_type: true })
   }
   window.launchSocialPublishSignup = launchSocialPublishSignup
 
