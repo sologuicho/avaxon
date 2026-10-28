@@ -9503,10 +9503,14 @@
   async function loadPubAccounts() {
     const orgId = getActiveOrgId()
     if (!orgId) { pubState.accounts = []; return }
-    const { data } = await sb.from('social_accounts').select('*').eq('organization_id', orgId).order('platform')
-    pubState.accounts = data || []
-    const { data: org } = await sb.from('organizations').select('name').eq('id', orgId).maybeSingle()
+    const [{ data: accs }, { data: org }, { data: pn }] = await Promise.all([
+      sb.from('social_accounts').select('*').eq('organization_id', orgId).order('platform'),
+      sb.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+      sb.from('phone_numbers').select('display_phone_number').eq('organization_id', orgId).eq('status', 'active').maybeSingle(),
+    ])
+    pubState.accounts = accs || []
     pubState.orgName = org?.name || null
+    state.orgWhatsappDisplayNumber = pn?.display_phone_number || null
   }
 
   function pubAccountStatusPill(status) {
