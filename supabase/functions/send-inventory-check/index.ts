@@ -411,10 +411,10 @@ Deno.serve(async (req: Request) => {
       })
       const data = await res.json()
       await logInventorySend(sb, staff.organization_id, 'periodic', { phone: staff.phone, ok: res.ok, via: 'template', data })
-      results.push({ phone: staff.phone, ok: res.ok, via: 'template', data })
+      results.push({ ok: res.ok, via: 'template' })
     } catch (e) {
       await logInventorySend(sb, staff.organization_id, type, { phone: staff.phone, ok: false, error: (e as Error).message })
-      results.push({ phone: staff.phone, error: (e as Error).message })
+      results.push({ ok: false, error: (e as Error).message })
     }
   }
 
