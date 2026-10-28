@@ -9890,7 +9890,10 @@
   // memoria.
   function openPubEditorFromTemplate(templateId) {
     const tpl = pubTemplates.find(t => t.id === templateId)
-    openPubEditor(null, tpl?.caption_template || '')
+    let caption = tpl?.caption_template || ''
+    if (pubState.orgName)                  caption = caption.replaceAll('{{nombre_negocio}}', pubState.orgName)
+    if (state.orgWhatsappDisplayNumber)    caption = caption.replaceAll('{{teléfono}}', state.orgWhatsappDisplayNumber)
+    openPubEditor(null, caption)
   }
   window.openPubEditorFromTemplate = openPubEditorFromTemplate
 
