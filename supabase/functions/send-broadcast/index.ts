@@ -53,7 +53,12 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   let orgId = profile?.organization_id
-  if (profile?.role === 'super_admin' && body.org_id) orgId = body.org_id
+  if (profile?.role === 'super_admin' && body.org_id) {
+    const { data: orgCheck } = await adminSb
+      .from('organizations').select('id').eq('id', body.org_id).maybeSingle()
+    if (!orgCheck) return json({ error: 'Organización no encontrada' }, 404)
+    orgId = body.org_id
+  }
   if (!orgId) return json({ error: 'No se encontró organización' }, 404)
 
   try {
