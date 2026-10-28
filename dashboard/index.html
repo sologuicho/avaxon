@@ -9915,7 +9915,7 @@
 
   function renderPubEditorAccounts() {
     if (!pubState.accounts.length) {
-      $('pub-ed-accounts').innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">No tienes ninguna cuenta conectada todavía. <a href="#" onclick="closePubEditor();switchPubTab('cuentas');return false" style="color:var(--accent);font-weight:600">Conecta una aquí</a>.</p>`
+      $('pub-ed-accounts').innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">No tienes ninguna cuenta conectada todavía. <a href="#" onclick="closePubEditor();switchView('conexiones');return false" style="color:var(--accent);font-weight:600">Conecta una aquí</a>.</p>`
       return
     }
     $('pub-ed-accounts').innerHTML = pubState.accounts.map(a => {
