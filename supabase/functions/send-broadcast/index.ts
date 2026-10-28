@@ -155,11 +155,11 @@ async function runBroadcast(
     } else {
       failed++
       const err = await waRes.text()
-      console.error(`Broadcast falló para ${contact.phone}:`, err)
+      console.error(`Broadcast falló para contact ${contact.id}:`, err)
       await logBotError(adminSb, {
         organization_id: orgId,
         type: 'meta_rejected', error_code: String(waRes.status),
-        detail: `Broadcast falló para ${contact.phone}: ${err}`,
+        detail: `Broadcast falló para contact ${contact.id}: ${err}`,
         source: 'send-broadcast',
       })
     }
