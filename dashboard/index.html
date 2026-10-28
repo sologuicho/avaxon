@@ -9645,8 +9645,7 @@
       const result = await res.json()
       if (result.ok) {
         showToast(result.instagram_linked ? '✓ Facebook e Instagram conectados' : '✓ Facebook conectado')
-        switchView('publicaciones')
-        switchPubTab('cuentas')
+        switchView('conexiones')
       } else {
         showToast(result.error || 'Error al conectar')
       }
