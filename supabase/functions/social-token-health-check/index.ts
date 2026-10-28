@@ -44,7 +44,9 @@ Deno.serve(async (_req: Request) => {
 
   for (const acc of accounts ?? []) {
     try {
-      const res = await fetch(`${GRAPH}/debug_token?input_token=${acc.access_token}&access_token=${appToken}`)
+      const rawToken = acc.access_token ?? ''
+      const plainToken = rawToken.startsWith('encv1:') ? await decryptField(rawToken) : rawToken
+      const res = await fetch(`${GRAPH}/debug_token?input_token=${plainToken}&access_token=${appToken}`)
       const data = await res.json()
       const info = data?.data
 
