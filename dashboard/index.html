@@ -9485,7 +9485,7 @@
     document.getElementById('pub-editor').style.display = 'none'
     document.getElementById('pub-tabbar').style.display = 'flex'
     document.getElementById('pub-header-btn').style.display = 'inline-flex'
-    ;['calendario', 'plantillas', 'cuentas', 'historial'].forEach(t => {
+    ;['calendario', 'plantillas', 'historial'].forEach(t => {
       const btn = $('pub-tab-' + t)
       const pane = $('pub-pane-' + t)
       if (btn) { btn.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent'; btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)' }
