@@ -434,4 +434,42 @@ VALUES
   E'¿Sabes todos los servicios que tenemos para tu carro? 🚗✨\n\nDesliza y descubre desde el lavado express hasta el detailing completo.\n\n¿Quieres agendar? Escríbenos y te decimos la disponibilidad del día.\n📲 {{teléfono}} | 📍 {{ciudad}}\n\n#EstéticaAutomotriz #Detailing #{{nombre_negocio}} #{{ciudad}}',
   '[]',
   true
+),
+
+-- ── Tecnología y software ─────────────────────────────────────────────────────
+(
+  'Tecnología y software',
+  'Automatiza tu negocio con IA',
+  'post',
+  ARRAY['facebook_page','instagram_business'],
+  '🤖 Automatización IA',
+  'Tu negocio trabajando solo mientras tú duermes',
+  'Automatiza WhatsApp, citas y seguimiento con inteligencia artificial',
+  E'¿Cuántas horas pierdes respondiendo los mismos mensajes?\n\nCon {{nombre_negocio}} automatizas WhatsApp, agendas citas y haces seguimiento a tus clientes — sin contratar más personal.\n\n🤖 IA que atiende 24/7\n📅 Agenda citas sola\n📊 Reportes automáticos\n💬 Sin código, sin complicaciones\n\nEscríbenos y te damos una demo gratis 👇\n📲 {{teléfono}}\n\n#AutomatizaciónIA #WhatsAppBusiness #{{ciudad}} #{{nombre_negocio}}',
+  '[]',
+  true
+),
+(
+  'Tecnología y software',
+  'Caso de éxito: así lo logramos',
+  'carrusel',
+  ARRAY['facebook_page','instagram_business'],
+  '📈 Caso de éxito',
+  'De 0 a 300 clientes atendidos al mes con IA',
+  'Sin contratar más personal, sin perder calidad',
+  E'Te contamos cómo un negocio en {{ciudad}} pasó de atender 80 a 300 clientes al mes — sin contratar a nadie más. 👇\n\nDesliza para ver el antes y después.\n\n¿Quieres resultados así? En {{nombre_negocio}} te ayudamos a lograrlo.\n📲 {{teléfono}}\n\n#CasoDeÉxito #AutomatizaciónIA #NegociosDigitales #{{nombre_negocio}}',
+  '[]',
+  true
+),
+(
+  'Tecnología y software',
+  '3 señales de que necesitas automatizar',
+  'carrusel',
+  ARRAY['facebook_page','instagram_business'],
+  '🚨 ¿Te pasa esto?',
+  '3 señales de que tu negocio necesita automatización',
+  'Si identificas alguna, ya es momento de actuar',
+  E'Si tu negocio tiene alguna de estas señales, es hora de automatizar 👇\n\n1️⃣ Respondes WhatsApp a las 11pm\n2️⃣ Pierdes clientes por no contestar rápido\n3️⃣ Tu equipo hace tareas repetitivas todos los días\n\nEn {{nombre_negocio}} tenemos la solución. Sin complicaciones, sin código.\n\n📲 Escríbenos: {{teléfono}}\n🌐 {{ciudad}}\n\n#AutomatizaciónIA #ProductividadDigital #{{nombre_negocio}} #{{ciudad}}',
+  '[]',
+  true
 );
