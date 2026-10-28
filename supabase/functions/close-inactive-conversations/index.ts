@@ -18,6 +18,12 @@ const json = (data: unknown, status = 200) =>
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
+  // Si CRON_SECRET está configurado, solo pg_cron (que manda ese header) puede invocar esta función.
+  const CRON_SECRET = Deno.env.get('CRON_SECRET')
+  if (CRON_SECRET && req.headers.get('Authorization') !== `Bearer ${CRON_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
   const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const sb = createClient(SUPABASE_URL, SERVICE_KEY)
