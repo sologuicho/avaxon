@@ -9920,7 +9920,7 @@
     }
     $('pub-ed-accounts').innerHTML = pubState.accounts.map(a => {
       const checked = a.platform === 'facebook_page' ? pubState.editorFb : pubState.editorIg
-      const sub = a.status === 'connected' ? 'Conectada' : `<span style="color:#b45309">Token expirado · <a href="#" onclick="closePubEditor();switchPubTab('cuentas');return false" style="color:inherit">Reconectar</a></span>`
+      const sub = a.status === 'connected' ? 'Conectada' : `<span style="color:#b45309">Token expirado · <a href="#" onclick="closePubEditor();switchView('conexiones');return false" style="color:inherit">Reconectar</a></span>`
       const icon = a.platform === 'facebook_page' ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:22px"></i>' : '<i class="fa fa-instagram" style="color:#D62976;font-size:22px"></i>'
       return `<label style="flex:1 1 200px;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${checked ? 'var(--accent)' : 'var(--border)'};border-radius:10px;cursor:pointer;background:${checked ? 'rgba(34,197,94,.06)' : 'transparent'}">
         <input type="checkbox" ${checked ? 'checked' : ''} onchange="pubToggleEditorAccount('${a.platform}', this.checked)">
