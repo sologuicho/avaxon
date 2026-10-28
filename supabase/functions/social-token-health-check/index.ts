@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { decryptField } from '../_shared/crypto.ts'
 
 // ── Publicaciones en redes — chequeo proactivo de tokens ────────────────────
 // Sin esto, "Token expirado" solo se detecta cuando un intento real de
