@@ -1806,7 +1806,7 @@
     const plan_id     = ncState.plan;
     const trial_dias  = parseInt($('nc-trial-dias').value) || 14;
 
-    if (!org_name || !admin_name || !admin_email) {
+    if (!org_name || !admin_name || !admin_email || !industry) {
       errEl.textContent = 'Los campos marcados con * son requeridos.';
       errEl.style.display = 'block';
       return;

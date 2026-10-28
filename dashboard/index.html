@@ -4032,6 +4032,10 @@
                 <span id="cuenta-org-name" style="font-size:13px;font-weight:600">—</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--text-muted)">Giro</span>
+                <span id="cuenta-giro" style="font-size:13px;font-weight:600">—</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--text-muted)">Rol</span>
                 <span id="cuenta-role" style="font-size:13px;font-weight:600">—</span>
               </div>
@@ -9764,15 +9768,22 @@
   }
 
   function renderPubPlantillas() {
-    const giros = ['Todos', ...Array.from(new Set(pubTemplates.map(t => t.giro)))]
-    $('pub-tpl-filters').innerHTML = giros.map(g => {
-      const n = g === 'Todos' ? pubTemplates.length : pubTemplates.filter(t => t.giro === g).length
-      const on = pubState.tplGiro === g
-      return `<button class="btn-ghost" style="${on ? 'background:var(--text);color:var(--card-bg);border-color:var(--text)' : ''}" onclick="pubSetTplGiro('${g}')">${g} <span style="opacity:.7">${n}</span></button>`
-    }).join('')
+    const locked = !!pubState.orgIndustry && pubTemplates.some(t => t.giro === pubState.orgIndustry)
+    if (locked) {
+      // La org tiene giro → mostrar solo sus plantillas, sin selector de giros
+      $('pub-tpl-filters').innerHTML = `<span style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:999px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);font-size:12.5px;font-weight:600;color:var(--accent)"><i class="fa fa-tag"></i>${pubState.orgIndustry}</span>`
+    } else {
+      const giros = ['Todos', ...Array.from(new Set(pubTemplates.map(t => t.giro)))]
+      $('pub-tpl-filters').innerHTML = giros.map(g => {
+        const n = g === 'Todos' ? pubTemplates.length : pubTemplates.filter(t => t.giro === g).length
+        const on = pubState.tplGiro === g
+        return `<button class="btn-ghost" style="${on ? 'background:var(--text);color:var(--card-bg);border-color:var(--text)' : ''}" onclick="pubSetTplGiro('${g}')">${g} <span style="opacity:.7">${n}</span></button>`
+      }).join('')
+    }
 
     const q = ($('pub-tpl-search')?.value || '').toLowerCase().trim()
-    const shown = pubTemplates.filter(t => (pubState.tplGiro === 'Todos' || t.giro === pubState.tplGiro) && (!q || t.name.toLowerCase().includes(q)))
+    const activeGiro = locked ? pubState.orgIndustry : pubState.tplGiro
+    const shown = pubTemplates.filter(t => (activeGiro === 'Todos' || t.giro === activeGiro) && (!q || t.name.toLowerCase().includes(q)))
     $('pub-tpl-summary').textContent = pubTemplates.length
       ? `${shown.length} plantilla(s) · Todas incluyen texto sugerido`
       : 'Sin plantillas todavía -- este catálogo lo siembra Avaxon por giro de negocio.'
@@ -11333,10 +11344,29 @@
   let assignmentRules = [];
 
   // ── Asignación / Organigrama de equipo ──────────────────────────────────────
-  const ASIG_CATALOG = ['Corte','Tinte','Mechas','Peinado','Tratamiento capilar','Barba','Manicure','Pedicure','Uñas acrílicas'];
-  const ASIG_SPECIALTIES = ['Colorista','Estilista','Barbero','Manicurista','Pedicurista','Gerencia'];
+  const ASIG_GIRO_CONFIG = {
+    'Clínicas y consultorios':  { services: ['Consulta general','Medicina interna','Pediatría','Ginecología','Laboratorio','Ultrasonido','Rayos X','Cardiología','Nutrición'], specialties: ['Médico general','Especialista','Enfermera','Recepcionista','Laboratorista','Gerencia'] },
+    'Odontología':              { services: ['Limpieza dental','Blanqueamiento','Extracción','Endodoncia','Ortodoncia','Implante','Resina / Empaste','Rx dental','Prótesis'], specialties: ['Odontólogo general','Ortodoncista','Endodoncista','Asistente dental','Recepcionista','Gerencia'] },
+    'Talleres mecánicos':       { services: ['Cambio de aceite','Frenos','Suspensión','Afinación','Eléctrico','Aire acondicionado','Transmisión','Llantas','Diagnóstico OBD'], specialties: ['Mecánico general','Electricista automotriz','Especialista en frenos','Diagnosticador','Recepcionista','Gerencia'] },
+    'Inmobiliarias':            { services: ['Venta de casa','Renta de casa','Venta de terreno','Asesoría de crédito','Avalúo','Renta de local','Inversión / Preventa'], specialties: ['Asesor inmobiliario','Agente de rentas','Coordinador de créditos','Captador de propiedades','Recepcionista','Gerencia'] },
+    'Escuelas y cursos':        { services: ['Inscripción','Clases particulares','Cursos presenciales','Cursos en línea','Talleres','Certificación','Diplomado'], specialties: ['Docente','Asesor académico','Orientador','Administrativo','Recepcionista','Gerencia'] },
+    'Salones y spas':           { services: ['Corte','Tinte','Mechas','Peinado','Tratamiento capilar','Barba','Manicure','Pedicure','Uñas acrílicas','Masaje','Facial'], specialties: ['Colorista','Estilista','Barbero','Manicurista','Pedicurista','Esteticista','Gerencia'] },
+    'Servicios a domicilio':    { services: ['Plomería','Electricidad','Limpieza del hogar','Fumigación','Pintura','Cerrajería','Instalación de equipos','Jardinería','Mudanza'], specialties: ['Técnico general','Plomero','Electricista','Limpiador','Pintor','Coordinador','Gerencia'] },
+    'Restaurantes y fondas':    { services: ['Comida para llevar','Entrega a domicilio','Atención en restaurante','Catering / Eventos','Menú del día','Pedidos por WhatsApp'], specialties: ['Chef','Cocinero','Mesero','Cajero','Repartidor','Gerencia'] },
+    'Gimnasios y fitness':      { services: ['Membresía mensual','Clase grupal','Entrenamiento personal','Evaluación física','Nutrición deportiva','Yoga','CrossFit','Spinning','Pilates'], specialties: ['Entrenador personal','Instructor de clases','Nutriólogo','Recepcionista','Administrador','Gerencia'] },
+    'Veterinarias':             { services: ['Consulta general','Vacunación','Desparasitación','Cirugía','Estética canina','Urgencias','Hospitalización','Rayos X','Laboratorio'], specialties: ['Médico veterinario','Especialista','Auxiliar veterinario','Groomer','Recepcionista','Gerencia'] },
+    'Abogados y despachos':     { services: ['Consultoría inicial','Derecho familiar','Derecho penal','Derecho laboral','Derecho corporativo','Juicio civil','Notaría / Contratos','Amparos'], specialties: ['Abogado socio','Abogado litigante','Asesor jurídico','Pasante','Secretaria legal','Gerencia'] },
+    'Agencias de viajes':       { services: ['Paquetes nacionales','Paquetes internacionales','Vuelos','Hotel','Cruceros','Viajes de luna de miel','Grupos / Convenciones','Seguro de viaje'], specialties: ['Agente de viajes','Especialista en destinos','Asesor de cruceros','Coordinador de grupos','Recepcionista','Gerencia'] },
+    'Tiendas y comercios':      { services: ['Venta en tienda','Venta online','Envío a domicilio','Asesoría de producto','Apartado','Crédito / MSI','Devoluciones'], specialties: ['Vendedor','Asesor de ventas','Encargado de almacén','Cajero','Repartidor','Gerencia'] },
+    'Psicólogos y terapeutas':  { services: ['Terapia individual','Terapia de pareja','Terapia familiar','Terapia infantil','Psicología laboral','Evaluación psicológica','Sesión online'], specialties: ['Psicólogo clínico','Terapeuta','Psicoanalista','Neuropsicólogo','Orientador','Gerencia'] },
+    'Seguros y finanzas':       { services: ['Seguro de vida','Seguro de gastos médicos','Seguro de auto','Seguro de casa','Ahorro / Inversión','Plan de retiro','Seguro empresarial','Asesoría financiera'], specialties: ['Agente de seguros','Asesor financiero','Promotor','Coordinador de ventas','Analista','Gerencia'] },
+    'Estética automotriz':      { services: ['Lavado express','Lavado detallado interior','Pulido de pintura','Encerado','Restauración de plásticos','Limpieza de motor','Polarizado','Nano cerámica'], specialties: ['Detailer','Especialista en pintura','Pulidor','Técnico en polarizado','Recepcionista','Gerencia'] },
+  }
   const ASIG_AGENTS = ['Avaxon IA · Citas','Avaxon IA · Ventas','Sin agente'];
-  const ASIG_ROLES = ['Admin','Encargada','Empleada'];
+  const ASIG_ROLES = ['Admin','Encargado/a','Empleado/a'];
+  let asigOrgIndustry = null;
+  function getAsigCatalog()     { return (ASIG_GIRO_CONFIG[asigOrgIndustry] || ASIG_GIRO_CONFIG['Salones y spas']).services }
+  function getAsigSpecialties() { return (ASIG_GIRO_CONFIG[asigOrgIndustry] || ASIG_GIRO_CONFIG['Salones y spas']).specialties }
 
   let asigPeople = [];
   let asigSel = null;
@@ -11382,7 +11412,12 @@
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
 
-    let { data: emps } = await sb.from('employees').select('*,position').eq('organization_id', orgId).eq('active', true).order('created_at');
+    const [{ data: emps_raw }, { data: orgRow }] = await Promise.all([
+      sb.from('employees').select('*,position').eq('organization_id', orgId).eq('active', true).order('created_at'),
+      sb.from('organizations').select('industry').eq('id', orgId).maybeSingle(),
+    ])
+    let emps = emps_raw
+    asigOrgIndustry = orgRow?.industry || null
 
     // Si no hay ningún empleado, crear automáticamente el nodo raíz desde el owner/admin de la org
     if (!emps || emps.length === 0) {
@@ -11630,7 +11665,7 @@
     asigMode = 'add';
     asigDraft = {
       name: '', parent_id: parentId || (asigPeople[0]?.id || null),
-      role: 'Empleada', specialty: 'Estilista', agent: 'Avaxon IA · Citas',
+      role: 'Empleado/a', specialty: getAsigSpecialties()[0], agent: 'Avaxon IA · Citas',
       services: [], type: 'pct', base: 40, applyOn: 'neto', overrides: {},
     };
     renderAsigAddPanel();
@@ -11653,7 +11688,7 @@
     const prefix = isPct ? '' : '$', suffix = isPct ? '%' : '';
     const baseLabel = isPct ? `${p.base}%` : `$${p.base}`;
 
-    const chipsHtml = ASIG_CATALOG.map(label => {
+    const chipsHtml = getAsigCatalog().map(label => {
       const on = p.services.includes(label);
       return `<button onclick="asigToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on ? '#16a34a' : 'var(--border)'};background:${on ? '#16a34a' : 'var(--input-bg)'};color:${on ? '#fff' : 'var(--text)'};font:500 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">${label}</button>`;
     }).join('');
@@ -11685,7 +11720,7 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
         <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">02 · Perfil de la empleada</span>
-        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigEditField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===p.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigEditField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${getAsigSpecialties().map(s=>`<option value="${s}"${s===p.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-muted)">Servicios que atiende<div style="display:flex;flex-wrap:wrap;gap:8px">${chipsHtml}</div></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
@@ -11724,7 +11759,7 @@
     const prefix = isPct ? '' : '$', suffix = isPct ? '%' : '';
     const baseLabel = isPct ? `${d.base||0}%` : `$${d.base||0}`;
 
-    const chipsHtml = ASIG_CATALOG.map(label => {
+    const chipsHtml = getAsigCatalog().map(label => {
       const on = (d.services||[]).includes(label);
       return `<button onclick="asigDraftToggleService('${label.replace(/'/g,"&#39;")}')" style="padding:7px 12px;border-radius:999px;border:1px solid ${on?'#16a34a':'var(--border)'};background:${on?'#16a34a':'var(--input-bg)'};color:${on?'#fff':'var(--text)'};font:500 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">${label}</button>`;
     }).join('');
@@ -11757,7 +11792,7 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
         <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">02 · Perfil de la empleada</span>
-        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigDraftField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${ASIG_SPECIALTIES.map(s=>`<option value="${s}"${s===d.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">Especialidad<select onchange="asigDraftField('specialty',this.value)" style="height:42px;border:1.5px solid var(--border);border-radius:10px;padding:0 10px;font-size:15px;background:var(--input-bg);color:var(--text);font-family:inherit">${getAsigSpecialties().map(s=>`<option value="${s}"${s===d.specialty?' selected':''}>${s}</option>`).join('')}</select></label>
         <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-muted)">Servicios que atiende<div style="display:flex;flex-wrap:wrap;gap:8px">${chipsHtml}</div></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0;border-bottom:1px solid var(--border)">
@@ -13157,8 +13192,10 @@
       // `subscriptions`, una tabla que nunca se llena (0 filas) — por eso
       // siempre decía "Sin plan" aunque Configuración sí mostrara el plan
       // real de organizations.plan_id.
-      const { data: org } = await sb.from('organizations').select('name, plan_id, status, trial_ends_at').eq('id', orgId).maybeSingle();
+      const { data: org } = await sb.from('organizations').select('name, industry, plan_id, status, trial_ends_at').eq('id', orgId).maybeSingle();
       if (orgEl) orgEl.textContent = org?.name || '—';
+      const giroEl = $('cuenta-giro');
+      if (giroEl) giroEl.textContent = org?.industry || 'Sin asignar';
 
       const { data: plan } = org?.plan_id
         ? await sb.from('plans').select('name, price_monthly, max_conversations').eq('id', org.plan_id).maybeSingle()
