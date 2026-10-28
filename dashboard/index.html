@@ -9505,7 +9505,7 @@
     if (!orgId) { pubState.accounts = []; return }
     const [{ data: accs }, { data: org }, { data: pn }] = await Promise.all([
       sb.from('social_accounts').select('*').eq('organization_id', orgId).order('platform'),
-      sb.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+      sb.from('organizations').select('name, industry').eq('id', orgId).maybeSingle(),
       sb.from('phone_numbers').select('display_phone_number').eq('organization_id', orgId).eq('status', 'active').maybeSingle(),
     ])
     pubState.accounts = accs || []
