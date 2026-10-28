@@ -9756,6 +9756,10 @@
   async function loadPubPlantillas() {
     const { data } = await sb.from('post_templates').select('*').eq('is_active', true).order('giro')
     pubTemplates = data || []
+    // Auto-seleccionar el giro de la org la primera vez que se abre la pestaña
+    if (pubState.tplGiro === 'Todos' && pubState.orgIndustry && pubTemplates.some(t => t.giro === pubState.orgIndustry)) {
+      pubState.tplGiro = pubState.orgIndustry
+    }
     renderPubPlantillas()
   }
 
