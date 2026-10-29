@@ -4522,11 +4522,11 @@
   });
 
   function closeSidebarMobile() {
-    $('sidebar').classList.remove('mobile-open');
+    $('sb-rail').classList.remove('mobile-open');
     $('sidebar-overlay').classList.remove('mobile-open');
   }
   $('hamburger-btn').addEventListener('click', () => {
-    $('sidebar').classList.toggle('mobile-open');
+    $('sb-rail').classList.toggle('mobile-open');
     $('sidebar-overlay').classList.toggle('mobile-open');
   });
   $('sidebar-overlay').addEventListener('click', closeSidebarMobile);
