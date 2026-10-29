@@ -729,8 +729,17 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
-      #sb-rail { transform: translateX(-100%); transition: transform 0.25s ease; }
-      #sb-rail.mobile-open { transform: translateX(0); }
+      #sb-rail {
+        width: 264px !important;
+        transform: translateX(-264px);
+        transition: transform .25s ease;
+        pointer-events: none;
+      }
+      #sb-rail.mobile-open {
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+      .sidebar { width: 264px !important; box-shadow: 8px 0 32px rgba(0,0,0,.4); }
       .main-content { margin-left: 0 !important; }
       .hamburger { display: flex; }
       .page-area { padding: 20px 16px 40px; }
