@@ -83,10 +83,34 @@ async function publishFacebookSingle(
 // procesa) -- llamar a media_publish antes de que termine da "Media ID is
 // not available". Hace polling a GET /{container-id}?fields=status_code
 // cada IG_POLL_INTERVAL_MS hasta ver FINISHED, o hasta IG_POLL_TIMEOUT_MS.
+//
+// Aun viendo FINISHED, media_publish puede devolver "Media ID is not
+// available" por una condición de carrera documentada del lado de Meta
+// (el status_code cambia a FINISHED una fracción de segundo antes de que
+// el endpoint de publish lo reconozca internamente) -- por eso
+// publishContainer() reintenta con backoff en vez de fallar al primer intento.
 const IG_POLL_INTERVAL_MS = 3000
 const IG_POLL_TIMEOUT_MS = 60000
+const IG_PUBLISH_RETRY_DELAYS_MS = [5000, 10000, 15000] // 3 reintentos tras el intento inicial
 
-async function waitForContainerReady(pageAccessToken: string, containerId: string): Promise<void> {
+// Mete error_subcode/fbtrace_id (si vienen) en el mensaje -- Meta los manda
+// aparte de `message` y sin ellos no se puede diferenciar un 9007 transitorio
+// de uno real buscando en los logs de Meta.
+function formatMetaError(rawError: unknown): string {
+  const e = rawError as { message?: string; code?: number; error_subcode?: number; fbtrace_id?: string } | undefined
+  if (!e) return 'Error desconocido de Meta'
+  const parts = [e.message ?? 'Error desconocido de Meta']
+  if (e.code !== undefined) parts.push(`code=${e.code}`)
+  if (e.error_subcode !== undefined) parts.push(`error_subcode=${e.error_subcode}`)
+  if (e.fbtrace_id) parts.push(`fbtrace_id=${e.fbtrace_id}`)
+  return parts.join(' | ')
+}
+
+// Devuelve el status_code final (siempre 'FINISHED' si no lanzó) -- se
+// reporta igual en el mensaje de error si falla más adelante en
+// media_publish, para saber en qué estado vio Meta el contenedor la
+// última vez que se consultó.
+async function waitForContainerReady(pageAccessToken: string, containerId: string): Promise<string> {
   const deadline = Date.now() + IG_POLL_TIMEOUT_MS
   while (true) {
     const statusRes = await fetch(`${GRAPH}/${containerId}?fields=status_code,status`, {
@@ -95,28 +119,67 @@ async function waitForContainerReady(pageAccessToken: string, containerId: strin
     const statusData = await statusRes.json()
     if (!statusRes.ok) {
       throw new GraphApiError(
-        statusData?.error?.message ?? 'Error consultando el estado del contenedor de Instagram',
+        `Error consultando el estado del contenedor de Instagram (container_id=${containerId}): ${formatMetaError(statusData?.error)}`,
         statusData?.error?.code,
         statusData?.error,
       )
     }
-    if (statusData.status_code === 'FINISHED') return
+    if (statusData.status_code === 'FINISHED') return statusData.status_code
     if (statusData.status_code === 'ERROR' || statusData.status_code === 'EXPIRED') {
       throw new GraphApiError(
-        `Instagram no pudo procesar la imagen (status_code=${statusData.status_code}${statusData.status ? `, status=${statusData.status}` : ''}).`,
+        `Instagram no pudo procesar la imagen (container_id=${containerId}, status_code=${statusData.status_code}${statusData.status ? `, status=${statusData.status}` : ''}).`,
         undefined,
         statusData,
       )
     }
     if (Date.now() >= deadline) {
       throw new GraphApiError(
-        `Tiempo de espera agotado procesando el contenedor de Instagram (último status_code=${statusData.status_code ?? 'desconocido'}).`,
+        `Tiempo de espera agotado procesando el contenedor de Instagram (container_id=${containerId}, último status_code=${statusData.status_code ?? 'desconocido'}).`,
         undefined,
         statusData,
       )
     }
     await new Promise((r) => setTimeout(r, IG_POLL_INTERVAL_MS))
   }
+}
+
+// Llama a media_publish con el container_id ya FINISHED. Reintenta con
+// backoff ante "Media ID is not available" (y cualquier otro rechazo) en
+// vez de fallar al primer intento -- ver nota arriba sobre la condición de
+// carrera de Meta.
+async function publishContainer(
+  pageAccessToken: string,
+  igUserId: string,
+  containerId: string,
+  lastPollStatusCode: string,
+): Promise<{ externalPostId: string }> {
+  const maxAttempts = IG_PUBLISH_RETRY_DELAYS_MS.length + 1
+  let lastErrorData: { error?: Record<string, unknown> } | undefined
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${pageAccessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creation_id: containerId }),
+    })
+    const publishData = await publishRes.json()
+    if (publishRes.ok && publishData.id) return { externalPostId: publishData.id }
+
+    lastErrorData = publishData
+    if (attempt < maxAttempts) {
+      await new Promise((r) => setTimeout(r, IG_PUBLISH_RETRY_DELAYS_MS[attempt - 1]))
+    }
+  }
+
+  throw new GraphApiError(
+    `Instagram rechazó media_publish tras ${maxAttempts} intentos ` +
+      `(container_id=${containerId}, último status_code del polling=${lastPollStatusCode}): ` +
+      formatMetaError(lastErrorData?.error),
+    lastErrorData?.error && typeof (lastErrorData.error as { code?: number }).code === 'number'
+      ? (lastErrorData.error as { code: number }).code
+      : undefined,
+    lastErrorData?.error,
+  )
 }
 
 async function publishInstagramSingle(
@@ -137,19 +200,11 @@ async function publishInstagramSingle(
   }
 
   // Paso 2: esperar a que el contenedor termine de procesar la imagen.
-  await waitForContainerReady(pageAccessToken, createData.id)
+  const lastPollStatusCode = await waitForContainerReady(pageAccessToken, createData.id)
 
-  // Paso 3: publicar el contenedor.
-  const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${pageAccessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ creation_id: createData.id }),
-  })
-  const publishData = await publishRes.json()
-  if (!publishRes.ok || !publishData.id) {
-    throw new GraphApiError(publishData?.error?.message ?? 'Error publicando el contenedor de Instagram', publishData?.error?.code, publishData?.error)
-  }
-  return { externalPostId: publishData.id }
+  // Paso 3: publicar el contenedor -- SIEMPRE con el id del contenedor
+  // (createData.id, de Paso 1), nunca con igUserId ni ningún otro id.
+  return await publishContainer(pageAccessToken, igUserId, createData.id, lastPollStatusCode)
 }
 
 export class GraphApiError extends Error {
