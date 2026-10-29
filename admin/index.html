@@ -394,6 +394,14 @@
     }
     .sidebar-logo { position: relative; }
     .sb-toggle:hover { background: rgba(255,255,255,.08); color: #c9d2df; }
+    /* Colapsado: centrar toggle y ocultar logo */
+    .sidebar.collapsed:not(.peeking) .sidebar-logo-icon { opacity: 0; pointer-events: none; }
+    .sidebar.collapsed:not(.peeking) .sb-toggle {
+      left: 50%; right: auto;
+      transform: translate(-50%, -50%);
+      color: #6f7d92;
+    }
+    .sidebar.collapsed:not(.peeking) .sb-toggle:hover { color: #c9d2df; }
     #sb-rail.collapsed .sb-toggle svg { transform: scaleX(-1); }
     /* Tooltip */
     .sb-tip {
