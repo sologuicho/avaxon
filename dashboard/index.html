@@ -4526,24 +4526,27 @@
   // ── Sidebar collapse / peek / tooltip ───────────────────────────────────────
   (function() {
     const SB_KEY = 'avx-sidebar-collapsed';
+    const rail = document.getElementById('sb-rail');
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.querySelector('.main-content');
     const toggleBtn = document.getElementById('sb-toggle-btn');
     const tip = document.getElementById('sb-tip');
-    if (!sidebar || !mainContent || !toggleBtn) return;
+    if (!rail || !sidebar || !mainContent || !toggleBtn) return;
 
     let peekTimer = null;
 
-    const COL_W = 72, EXP_W = 264;
-    function positionToggle(collapsed) {
-      toggleBtn.style.left = (collapsed ? COL_W : EXP_W) - 12 + 'px';
-      if (collapsed) toggleBtn.classList.add('collapsed'); else toggleBtn.classList.remove('collapsed');
-    }
-
     function setCollapsed(c, save) {
-      if (c) { sidebar.classList.add('collapsed'); mainContent.classList.add('sb-col'); toggleBtn.title = 'Expandir (⌘B)'; }
-      else    { sidebar.classList.remove('collapsed'); mainContent.classList.remove('sb-col'); toggleBtn.title = 'Contraer (⌘B)'; }
-      positionToggle(c);
+      if (c) {
+        rail.classList.add('collapsed');
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('sb-col');
+        toggleBtn.title = 'Expandir (⌘B)';
+      } else {
+        rail.classList.remove('collapsed');
+        sidebar.classList.remove('collapsed');
+        mainContent.classList.remove('sb-col');
+        toggleBtn.title = 'Contraer (⌘B)';
+      }
       if (save) localStorage.setItem(SB_KEY, c ? '1' : '0');
       if (!c) hideTip();
     }
