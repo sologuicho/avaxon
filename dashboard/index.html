@@ -349,8 +349,10 @@
       background: linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg2) 100%);
       border-right: 1px solid var(--sidebar-border);
       display: flex; flex-direction: column; z-index: 200;
-      transition: transform 0.25s ease;
+      overflow: hidden; transition: width .22s cubic-bezier(.4,0,.2,1), box-shadow .22s, transform 0.25s ease;
     }
+    .sidebar.collapsed { width: var(--sidebar-w-col); }
+    .sidebar.peeking { width: 264px; box-shadow: 8px 0 32px rgba(0,0,0,.35); }
     .sidebar-top { padding: 24px 18px 0; flex-shrink: 0; }
     .sidebar-logo { display: flex; align-items: center; gap: 11px; padding: 0 6px; margin-bottom: 26px; }
     .sidebar-logo-icon {
