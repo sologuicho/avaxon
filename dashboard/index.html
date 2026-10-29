@@ -354,6 +354,8 @@
     }
     .sidebar.collapsed { width: var(--sidebar-w-col); }
     .sidebar.peeking { width: 264px; box-shadow: 8px 0 32px rgba(0,0,0,.35); }
+    /* Inner clip so the aside contents don't overflow, while the absolute toggle button can sit outside */
+    .sidebar-inner { display: flex; flex-direction: column; position: absolute; inset: 0; overflow: hidden; }
     .sidebar-top { padding: 24px 18px 0; flex-shrink: 0; }
     .sidebar-logo { display: flex; align-items: center; gap: 11px; padding: 0 6px; margin-bottom: 26px; }
     .sidebar-logo-icon {
