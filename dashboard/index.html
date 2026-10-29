@@ -4451,6 +4451,86 @@
   });
   $('sidebar-overlay').addEventListener('click', closeSidebarMobile);
 
+  // ── Sidebar collapse / peek / tooltip ───────────────────────────────────────
+  (function() {
+    const SB_KEY = 'avx-sidebar-collapsed';
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const toggleBtn = document.getElementById('sb-toggle-btn');
+    const tip = document.getElementById('sb-tip');
+    if (!sidebar || !mainContent || !toggleBtn) return;
+
+    let peekTimer = null;
+
+    function setCollapsed(c, save) {
+      if (c) { sidebar.classList.add('collapsed'); mainContent.classList.add('sb-col'); toggleBtn.title = 'Expandir (⌘B)'; }
+      else    { sidebar.classList.remove('collapsed'); mainContent.classList.remove('sb-col'); toggleBtn.title = 'Contraer (⌘B)'; }
+      if (save) localStorage.setItem(SB_KEY, c ? '1' : '0');
+      // Hide tip when expanding
+      if (!c) hideTip();
+    }
+
+    function isCollapsed() { return sidebar.classList.contains('collapsed'); }
+
+    // Init
+    const saved = localStorage.getItem(SB_KEY);
+    const startCol = saved != null ? saved === '1' : window.innerWidth < 900;
+    setCollapsed(startCol, false);
+
+    // Toggle button
+    toggleBtn.addEventListener('click', () => {
+      const peeking = sidebar.classList.contains('peeking');
+      if (peeking) { sidebar.classList.remove('peeking'); }
+      setCollapsed(!isCollapsed(), true);
+    });
+
+    // Cmd/Ctrl+B
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        const peeking = sidebar.classList.contains('peeking');
+        if (peeking) sidebar.classList.remove('peeking');
+        setCollapsed(!isCollapsed(), true);
+      }
+    });
+
+    // Hover peek
+    sidebar.addEventListener('mouseenter', () => {
+      if (!isCollapsed()) return;
+      clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => { sidebar.classList.add('peeking'); hideTip(); }, 280);
+    });
+    sidebar.addEventListener('mouseleave', () => {
+      clearTimeout(peekTimer);
+      sidebar.classList.remove('peeking');
+    });
+
+    // Tooltips (only when fully collapsed, not peeking)
+    function showTip(label, el) {
+      if (!isCollapsed() || sidebar.classList.contains('peeking')) return;
+      const r = el.getBoundingClientRect();
+      tip.textContent = label;
+      tip.style.left = '80px';
+      tip.style.top = (r.top + r.height / 2) + 'px';
+      tip.classList.add('visible');
+    }
+    function hideTip() { tip.classList.remove('visible'); }
+
+    document.querySelectorAll('.nav-item[data-view], .nav-item[onclick]').forEach(item => {
+      // Get label from sb-label span, nav-bot-label span, or text content
+      const labelEl = item.querySelector('.sb-label') || item.querySelector('[id$="-label"]');
+      const label = labelEl ? labelEl.textContent.trim() : item.textContent.trim().split('\n')[0].trim();
+      item.addEventListener('mouseenter', () => showTip(label, item));
+      item.addEventListener('mouseleave', hideTip);
+    });
+
+    // Also tooltip for org-switcher and user trigger
+    const orgBtn = document.getElementById('org-switcher-btn');
+    const userTrigger = document.getElementById('sidebar-user-trigger');
+    if (orgBtn) { orgBtn.addEventListener('mouseenter', () => showTip('Cambiar cuenta', orgBtn)); orgBtn.addEventListener('mouseleave', hideTip); }
+    if (userTrigger) { userTrigger.addEventListener('mouseenter', e => { const n = document.getElementById('sidebar-user-name'); showTip(n ? n.textContent : 'Mi perfil', userTrigger); }); userTrigger.addEventListener('mouseleave', hideTip); }
+  })();
+
   $('agent-toggle-btn').addEventListener('click', () => {
     state.agentActive = !state.agentActive;
     updateAgentWidget();
