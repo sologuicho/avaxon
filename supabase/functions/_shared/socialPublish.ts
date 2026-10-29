@@ -79,6 +79,46 @@ async function publishFacebookSingle(
   return { externalPostId: data.post_id ?? data.id }
 }
 
+// Instagram crea el contenedor de forma asíncrona (descarga image_url,
+// procesa) -- llamar a media_publish antes de que termine da "Media ID is
+// not available". Hace polling a GET /{container-id}?fields=status_code
+// cada IG_POLL_INTERVAL_MS hasta ver FINISHED, o hasta IG_POLL_TIMEOUT_MS.
+const IG_POLL_INTERVAL_MS = 3000
+const IG_POLL_TIMEOUT_MS = 60000
+
+async function waitForContainerReady(pageAccessToken: string, containerId: string): Promise<void> {
+  const deadline = Date.now() + IG_POLL_TIMEOUT_MS
+  while (true) {
+    const statusRes = await fetch(`${GRAPH}/${containerId}?fields=status_code,status`, {
+      headers: { Authorization: `Bearer ${pageAccessToken}` },
+    })
+    const statusData = await statusRes.json()
+    if (!statusRes.ok) {
+      throw new GraphApiError(
+        statusData?.error?.message ?? 'Error consultando el estado del contenedor de Instagram',
+        statusData?.error?.code,
+        statusData?.error,
+      )
+    }
+    if (statusData.status_code === 'FINISHED') return
+    if (statusData.status_code === 'ERROR' || statusData.status_code === 'EXPIRED') {
+      throw new GraphApiError(
+        `Instagram no pudo procesar la imagen (status_code=${statusData.status_code}${statusData.status ? `, status=${statusData.status}` : ''}).`,
+        undefined,
+        statusData,
+      )
+    }
+    if (Date.now() >= deadline) {
+      throw new GraphApiError(
+        `Tiempo de espera agotado procesando el contenedor de Instagram (último status_code=${statusData.status_code ?? 'desconocido'}).`,
+        undefined,
+        statusData,
+      )
+    }
+    await new Promise((r) => setTimeout(r, IG_POLL_INTERVAL_MS))
+  }
+}
+
 async function publishInstagramSingle(
   pageAccessToken: string,
   igUserId: string,
@@ -96,7 +136,10 @@ async function publishInstagramSingle(
     throw new GraphApiError(createData?.error?.message ?? 'Error creando el contenedor de Instagram', createData?.error?.code, createData?.error)
   }
 
-  // Paso 2: publicar el contenedor.
+  // Paso 2: esperar a que el contenedor termine de procesar la imagen.
+  await waitForContainerReady(pageAccessToken, createData.id)
+
+  // Paso 3: publicar el contenedor.
   const publishRes = await fetch(`${GRAPH}/${igUserId}/media_publish`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${pageAccessToken}`, 'Content-Type': 'application/json' },
