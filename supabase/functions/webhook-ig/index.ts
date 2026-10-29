@@ -1,6 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+// Mismo specifier que usan _shared/humanHandoff.ts y webhook-wa (su otro
+// consumidor) para createClient -- jsr:@supabase/supabase-js tipaba `sb`
+// como un ReturnType distinto y el type-check de flagNeedsHuman fallaba.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "node:crypto";
+import { parseAgentReply } from "../_shared/agentReply.ts";
+import { flagNeedsHuman } from "../_shared/humanHandoff.ts";
 
 const VERIFY_TOKEN = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? '';
 const APP_SECRET   = Deno.env.get('META_APP_SECRET') ?? '';
@@ -8,13 +13,47 @@ const OPENAI_KEY   = Deno.env.get('OPENAI_API_KEY') ?? '';
 const SUPA_URL     = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPA_SVC     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
+// Límites reales de los quick replies de Instagram (Send API).
+const IG_QUICK_REPLY_MAX = 13;
+const IG_QUICK_REPLY_TITLE_MAX = 20;
+
 // ── Helpers ──────────────────────────────────────────────────────────
-async function sendIgMessage(pageAccessToken: string, recipientId: string, text: string) {
-  await fetch('https://graph.facebook.com/v21.0/me/messages', {
+function truncateLabel(label: string, maxLen: number): string {
+  const trimmed = label.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  const cut = trimmed.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > maxLen / 2 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+// Manda solo texto al cliente de Instagram -- nunca el JSON crudo del
+// agente. Si hay botones, los convierte a quick replies (máx. 13, título de
+// máx. 20 caracteres); si ninguno sobrevive el truncado/filtro pero sí
+// había botones, se agregan como texto en vez de perderlos en silencio.
+async function sendIgMessage(pageAccessToken: string, recipientId: string, text: string, buttons: string[] = []) {
+  const quickReplyTitles = buttons
+    .map((b) => truncateLabel(b, IG_QUICK_REPLY_TITLE_MAX))
+    .filter((b) => b.length > 0)
+    .slice(0, IG_QUICK_REPLY_MAX);
+
+  const message: Record<string, unknown> = {
+    text: quickReplyTitles.length === 0 && buttons.length > 0
+      ? `${text}\n\n${buttons.map((b) => `• ${b.trim()}`).join('\n')}`
+      : text,
+  };
+  if (quickReplyTitles.length > 0) {
+    message.quick_replies = quickReplyTitles.map((title, i) => ({ content_type: 'text', title, payload: `btn_${i}` }));
+  }
+
+  const res = await fetch('https://graph.facebook.com/v21.0/me/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pageAccessToken}` },
-    body: JSON.stringify({ recipient: { id: recipientId }, message: { text } }),
+    body: JSON.stringify({ recipient: { id: recipientId }, message }),
   });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error('webhook-ig: Meta rechazó el envío del mensaje:', JSON.stringify(errData));
+  }
 }
 
 async function callOpenAI(systemPrompt: string, history: { role: string; content: string }[], userText: string): Promise<string> {
@@ -138,20 +177,29 @@ async function handleIncomingMessage(
   }));
 
   // 8. Call OpenAI
-  const reply = await callOpenAI(botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.', openaiHistory.slice(0, -1), messageText);
-  if (!reply) return;
+  const rawReply = await callOpenAI(botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.', openaiHistory.slice(0, -1), messageText);
+  if (!rawReply) return;
+
+  // 8b. Parsear la respuesta del agente ({text, buttons, notify_owner}) --
+  // misma lógica que usa webhook-wa, nunca se manda el JSON crudo al cliente.
+  const { text: replyText, buttons, notifyOwner } = parseAgentReply(rawReply);
+
+  if (notifyOwner) {
+    await flagNeedsHuman(sb, conv.id, orgId, 'El agente marcó que el cliente necesita atención');
+  }
 
   // 9. Store outbound message
+  const savedContent = buttons.length > 0 ? `${replyText}\n[Botones: ${buttons.join(' | ')}]` : replyText;
   await sb.from('messages').insert({
     conversation_id: conv.id,
     organization_id: orgId,
     direction: 'outbound',
-    content: reply,
+    content: savedContent,
     processed_at: new Date().toISOString(),
   });
 
   // 10. Send reply via Instagram
-  await sendIgMessage(pageAccessToken, senderId, reply);
+  await sendIgMessage(pageAccessToken, senderId, replyText, buttons);
 }
 
 // ── Main handler ──────────────────────────────────────────────────────
