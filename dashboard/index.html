@@ -4467,11 +4467,17 @@
 
     let peekTimer = null;
 
+    const COL_W = 72, EXP_W = 264;
+    function positionToggle(collapsed) {
+      toggleBtn.style.left = (collapsed ? COL_W : EXP_W) - 12 + 'px';
+      if (collapsed) toggleBtn.classList.add('collapsed'); else toggleBtn.classList.remove('collapsed');
+    }
+
     function setCollapsed(c, save) {
       if (c) { sidebar.classList.add('collapsed'); mainContent.classList.add('sb-col'); toggleBtn.title = 'Expandir (⌘B)'; }
       else    { sidebar.classList.remove('collapsed'); mainContent.classList.remove('sb-col'); toggleBtn.title = 'Contraer (⌘B)'; }
+      positionToggle(c);
       if (save) localStorage.setItem(SB_KEY, c ? '1' : '0');
-      // Hide tip when expanding
       if (!c) hideTip();
     }
 
