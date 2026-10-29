@@ -1,0 +1,271 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+// Mismo specifier que usan _shared/humanHandoff.ts y webhook-wa (su otro
+// consumidor) para createClient -- jsr:@supabase/supabase-js tipaba `sb`
+// como un ReturnType distinto y el type-check de flagNeedsHuman fallaba.
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createHmac } from "node:crypto";
+import { parseAgentReply } from "../_shared/agentReply.ts";
+import { flagNeedsHuman } from "../_shared/humanHandoff.ts";
+
+const VERIFY_TOKEN = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? '';
+const APP_SECRET   = Deno.env.get('META_APP_SECRET') ?? '';
+const OPENAI_KEY   = Deno.env.get('OPENAI_API_KEY') ?? '';
+const SUPA_URL     = Deno.env.get('SUPABASE_URL') ?? '';
+const SUPA_SVC     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+// Límites reales de los quick replies de Messenger (Send API) -- mismos que
+// Instagram, es el mismo endpoint/estructura por debajo.
+const FB_QUICK_REPLY_MAX = 13;
+const FB_QUICK_REPLY_TITLE_MAX = 20;
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function truncateLabel(label: string, maxLen: number): string {
+  const trimmed = label.trim();
+  if (trimmed.length <= maxLen) return trimmed;
+  const cut = trimmed.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > maxLen / 2 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+// Manda solo texto al cliente de Messenger -- nunca el JSON crudo del
+// agente. Si hay botones, los convierte a quick replies (máx. 13, título de
+// máx. 20 caracteres); si ninguno sobrevive el truncado/filtro pero sí
+// había botones, se agregan como texto en vez de perderlos en silencio.
+async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string, buttons: string[] = []) {
+  const quickReplyTitles = buttons
+    .map((b) => truncateLabel(b, FB_QUICK_REPLY_TITLE_MAX))
+    .filter((b) => b.length > 0)
+    .slice(0, FB_QUICK_REPLY_MAX);
+
+  const message: Record<string, unknown> = {
+    text: quickReplyTitles.length === 0 && buttons.length > 0
+      ? `${text}\n\n${buttons.map((b) => `• ${b.trim()}`).join('\n')}`
+      : text,
+  };
+  if (quickReplyTitles.length > 0) {
+    message.quick_replies = quickReplyTitles.map((title, i) => ({ content_type: 'text', title, payload: `btn_${i}` }));
+  }
+
+  const res = await fetch('https://graph.facebook.com/v21.0/me/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pageAccessToken}` },
+    body: JSON.stringify({ recipient: { id: recipientId }, message }),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    console.error('webhook-fb: Meta rechazó el envío del mensaje:', JSON.stringify(errData));
+  }
+}
+
+async function callOpenAI(systemPrompt: string, history: { role: string; content: string }[], userText: string): Promise<string> {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history,
+    { role: 'user', content: userText },
+  ];
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
+    body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: 500 }),
+  });
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content?.trim() ?? '';
+}
+
+async function handleIncomingMessage(
+  sb: ReturnType<typeof createClient>,
+  orgId: string,
+  pageId: string,
+  senderId: string,
+  messageText: string,
+  externalMsgId: string,
+  pageAccessToken: string,
+) {
+  const contactPhone = `fb:${senderId}`;
+
+  // 1. Find or create contact
+  let { data: contact } = await sb
+    .from('contacts')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .eq('phone', contactPhone)
+    .maybeSingle();
+
+  if (!contact) {
+    const { data: newContact } = await sb
+      .from('contacts')
+      .insert({ organization_id: orgId, phone: contactPhone, name: `Messenger ${senderId.slice(-6)}` })
+      .select('id, name')
+      .single();
+    contact = newContact;
+  }
+  if (!contact) return;
+
+  // 2. Find or create open conversation
+  let { data: conv } = await sb
+    .from('conversations')
+    .select('id, needs_human, human_pause_until')
+    .eq('organization_id', orgId)
+    .eq('contact_id', contact.id)
+    .eq('channel', 'facebook')
+    .eq('channel_account_id', pageId)
+    .eq('status', 'open')
+    .maybeSingle();
+
+  if (!conv) {
+    const { data: newConv } = await sb
+      .from('conversations')
+      .insert({
+        organization_id: orgId,
+        contact_id: contact.id,
+        channel: 'facebook',
+        channel_account_id: pageId,
+        status: 'open',
+        last_message_at: new Date().toISOString(),
+      })
+      .select('id, needs_human, human_pause_until')
+      .single();
+    conv = newConv;
+  }
+  if (!conv) return;
+
+  // 3. Store inbound message
+  await sb.from('messages').insert({
+    conversation_id: conv.id,
+    organization_id: orgId,
+    direction: 'inbound',
+    content: messageText,
+    wa_message_id: externalMsgId,
+  });
+
+  await sb.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', conv.id);
+
+  // 4. Skip bot if paused for human
+  const pausedUntil = conv.human_pause_until ? new Date(conv.human_pause_until) : null;
+  if (conv.needs_human && (!pausedUntil || pausedUntil > new Date())) return;
+
+  // 5. Get bot config
+  const { data: botCfg } = await sb
+    .from('bot_configs')
+    .select('enabled, system_prompt, schedule')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+
+  if (!botCfg?.enabled) return;
+
+  // 6. Check schedule
+  if (botCfg.schedule) {
+    const now  = new Date();
+    const day  = now.getDay();
+    const hour = now.getHours();
+    const sched = botCfg.schedule as { days?: number[]; start_hour?: number; end_hour?: number };
+    if (sched.days && !sched.days.includes(day)) return;
+    if (sched.start_hour !== undefined && hour < sched.start_hour) return;
+    if (sched.end_hour !== undefined && hour >= sched.end_hour) return;
+  }
+
+  // 7. Build conversation history for OpenAI
+  const { data: history } = await sb
+    .from('messages')
+    .select('direction, content')
+    .eq('conversation_id', conv.id)
+    .order('created_at', { ascending: true })
+    .limit(20);
+
+  const openaiHistory = (history ?? []).map((m) => ({
+    role: m.direction === 'inbound' ? 'user' : 'assistant',
+    content: m.content ?? '',
+  }));
+
+  // 8. Call OpenAI
+  const rawReply = await callOpenAI(botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.', openaiHistory.slice(0, -1), messageText);
+  if (!rawReply) return;
+
+  // 8b. Parsear la respuesta del agente ({text, buttons, notify_owner}) --
+  // misma lógica que usa webhook-wa, nunca se manda el JSON crudo al cliente.
+  const { text: replyText, buttons, notifyOwner } = parseAgentReply(rawReply);
+
+  if (notifyOwner) {
+    await flagNeedsHuman(sb, conv.id, orgId, 'El agente marcó que el cliente necesita atención');
+  }
+
+  // 9. Store outbound message
+  const savedContent = buttons.length > 0 ? `${replyText}\n[Botones: ${buttons.join(' | ')}]` : replyText;
+  await sb.from('messages').insert({
+    conversation_id: conv.id,
+    organization_id: orgId,
+    direction: 'outbound',
+    content: savedContent,
+    processed_at: new Date().toISOString(),
+  });
+
+  // 10. Send reply via Messenger
+  await sendFbMessage(pageAccessToken, senderId, replyText, buttons);
+}
+
+// ── Main handler ──────────────────────────────────────────────────────
+Deno.serve(async (req: Request) => {
+  // Webhook verification (GET)
+  if (req.method === 'GET') {
+    const url = new URL(req.url);
+    const mode      = url.searchParams.get('hub.mode');
+    const token     = url.searchParams.get('hub.verify_token');
+    const challenge = url.searchParams.get('hub.challenge');
+    if (mode === 'subscribe' && token === VERIFY_TOKEN && challenge) {
+      return new Response(challenge, { status: 200 });
+    }
+    return new Response('Forbidden', { status: 403 });
+  }
+
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+
+  const rawBody = await req.text();
+
+  // Verify Meta signature
+  const sig      = req.headers.get('x-hub-signature-256') ?? '';
+  const expected = 'sha256=' + createHmac('sha256', APP_SECRET).update(rawBody).digest('hex');
+  if (APP_SECRET && sig !== expected) {
+    console.warn('Invalid FB webhook signature');
+    return new Response('Invalid signature', { status: 401 });
+  }
+
+  let body: Record<string, unknown>;
+  try { body = JSON.parse(rawBody); } catch { return new Response('OK', { status: 200 }); }
+
+  if (body.object !== 'page') return new Response('OK', { status: 200 });
+
+  const sb = createClient(SUPA_URL, SUPA_SVC);
+
+  for (const entry of (body.entry as Record<string, unknown>[]) ?? []) {
+    const pageId = entry.id as string;
+    const messagingEvents = (entry.messaging as Record<string, unknown>[]) ?? [];
+
+    // Look up org by Facebook page ID
+    const { data: integration } = await sb
+      .from('integrations')
+      .select('organization_id, credentials')
+      .eq('provider', 'facebook_messenger')
+      .eq('status', 'connected')
+      .filter('credentials->>page_id', 'eq', pageId)
+      .maybeSingle();
+
+    if (!integration) continue;
+
+    const orgId: string = integration.organization_id;
+    const pageAccessToken: string = (integration.credentials as Record<string, string>).page_access_token;
+
+    for (const event of messagingEvents) {
+      const msg = event.message as Record<string, unknown> | undefined;
+      if (!msg || msg.is_echo) continue;
+      const text = msg.text as string | undefined;
+      if (!text) continue;
+
+      const senderId = (event.sender as Record<string, string>)?.id;
+      const msgId    = msg.mid as string;
+
+      await handleIncomingMessage(sb, orgId, pageId, senderId, text, msgId, pageAccessToken);
+    }
+  }
+
+  return new Response('OK', { status: 200 });
+});
