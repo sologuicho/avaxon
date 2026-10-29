@@ -598,33 +598,32 @@
     .user-menu-item-danger { color: #f87171; }
     .user-menu-item-danger:hover { background: rgba(239,68,68,.12); color: #f87171; }
 
-    /* ── Sidebar collapse ── */
+    /* ── Sidebar collapse: cosas que se ocultan cuando está colapsado ── */
     .sidebar.collapsed:not(.peeking) .sb-label,
-    .sidebar.collapsed:not(.peeking) .nav-section-label,
+    .sidebar.collapsed:not(.peeking) .sidebar-logo-text-wrap,
     .sidebar.collapsed:not(.peeking) .org-switcher-name,
     .sidebar.collapsed:not(.peeking) .org-switcher-chevron,
-    .sidebar.collapsed:not(.peeking) .sidebar-logo-text,
-    .sidebar.collapsed:not(.peeking) .sidebar-logo-sub,
+    .sidebar.collapsed:not(.peeking) .nav-section-label-btn,
     .sidebar.collapsed:not(.peeking) .sidebar-user-info,
     .sidebar.collapsed:not(.peeking) .sidebar-user-chevron,
     .sidebar.collapsed:not(.peeking) .agent-status-widget-label,
     .sidebar.collapsed:not(.peeking) .agent-status-label,
     .sidebar.collapsed:not(.peeking) .agent-toggle-btn,
-    .sidebar.collapsed:not(.peeking) .nav-badge { opacity: 0; pointer-events: none; transition: opacity .15s; }
-    .sb-label { transition: opacity .15s; }
-    .nav-item { white-space: nowrap; overflow: hidden; }
-    /* Toggle button — fixed so it sits outside the sidebar clip */
+    .sidebar.collapsed:not(.peeking) .nav-badge { opacity: 0; pointer-events: none; }
+    /* Línea de sección visible cuando colapsado */
+    .sidebar.collapsed:not(.peeking) .nav-section-line { opacity: 1; }
+    /* Bot widget más compacto */
+    .sidebar.collapsed:not(.peeking) .agent-status-widget { height: 48px; }
+    /* Toggle button — fuera del aside, position absolute en el rail */
     .sb-toggle {
-      position: fixed; top: 26px; left: calc(var(--sidebar-w) - 12px);
-      width: 24px; height: 24px;
+      position: absolute; top: 26px; right: -12px; width: 24px; height: 24px;
       border-radius: 50%; border: 1px solid rgba(255,255,255,.16); background: #1f2c42;
-      color: #c9d2df; display: grid; place-items: center; cursor: pointer; padding: 0; z-index: 9999;
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
-      transition: left .22s cubic-bezier(.4,0,.2,1), background .12s, color .12s;
+      color: #c9d2df; display: grid; place-items: center; cursor: pointer; padding: 0; z-index: 40;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25); transition: background .12s, color .12s;
     }
     .sb-toggle:hover { background: #2a3b58; color: #fff; }
     .sb-toggle svg { transition: transform .22s; }
-    .sb-toggle.collapsed svg { transform: rotate(180deg); }
+    #sb-rail.collapsed .sb-toggle svg { transform: rotate(180deg); }
     /* Tooltip */
     .sb-tip {
       position: fixed; background: #0b111b; color: #fff; font-size: 13px; font-weight: 500;
@@ -633,10 +632,6 @@
       opacity: 0; transition: opacity .1s;
     }
     .sb-tip.visible { opacity: 1; }
-    /* Agent widget compact */
-    .sidebar.collapsed:not(.peeking) .agent-status-widget { padding: 9px; display: flex; justify-content: center; align-items: center; min-height: 46px; }
-    .sidebar.collapsed:not(.peeking) .agent-status-widget-label { display: none; }
-    .sidebar.collapsed:not(.peeking) .agent-status-row { margin-top: 0; justify-content: center; }
 
     /* Hamburger mobile */
     .hamburger {
