@@ -2720,8 +2720,8 @@
             <aside style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:10px">
               <div class="card bp" style="overflow:hidden">
                 <div style="display:flex;border-bottom:1px solid var(--border)">
-                  <button id="pub-prev-tab-fb" onclick="pubShowPreview('facebook_page')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text);border-bottom:2px solid var(--accent);cursor:pointer"><i class="fa fa-facebook" style="color:#1877F2;margin-right:6px"></i>Facebook</button>
-                  <button id="pub-prev-tab-ig" onclick="pubShowPreview('instagram_business')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer"><i class="fa fa-instagram" style="color:#D62976;margin-right:6px"></i>Instagram</button>
+                  <button id="pub-prev-tab-fb" onclick="pubShowPreview('facebook_page')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text);border-bottom:2px solid var(--accent);cursor:pointer"><svg viewBox="0 0 24 24" width="14" height="14" fill="#1877F2" style="margin-right:6px;vertical-align:-2px"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.62 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>Facebook</button>
+                  <button id="pub-prev-tab-ig" onclick="pubShowPreview('instagram_business')" style="flex:1;padding:12px;border:0;background:none;font-weight:600;font-size:13px;color:var(--text-muted);border-bottom:2px solid transparent;cursor:pointer"><svg viewBox="0 0 24 24" width="14" height="14" fill="#E1306C" style="margin-right:6px;vertical-align:-2px"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>Instagram</button>
                 </div>
                 <div style="padding:18px;background:var(--hover-bg);display:flex;justify-content:center">
                   <div id="pub-preview-card" style="width:100%;max-width:360px"></div>
@@ -3214,7 +3214,7 @@
                   </div>
                   <div id="pub-conexion-accounts"></div>
                   <button class="ch-cta" style="background:linear-gradient(135deg,#1877f2 0%,#e1306c 100%);color:#fff" onclick="launchSocialPublishSignup()">
-                    <i class="fa fa-rotate"></i> Conectar con Meta
+                    <i class="fa fa-rotate"></i> <span id="pub-conexion-cta-label">Conectar con Meta</span>
                   </button>
                 </div>
               </div>
@@ -9774,6 +9774,20 @@
     state.orgWhatsappDisplayNumber = pn?.display_phone_number || null
   }
 
+  // Logo de Facebook/Instagram vía SVG inline (mismo método y mismos paths
+  // que usan las tarjetas de Instagram Direct y Facebook Messenger en
+  // Canales) -- "fa fa-facebook"/"fa fa-instagram" NO existen en el set
+  // "solid" de Font Awesome (son íconos de marca, requieren fa-brands/fab),
+  // por eso se veían rotos.
+  function pubPlatformIcon(platform, size) {
+    size = size || 16
+    if (platform === 'facebook_page') {
+      return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#1877F2" style="flex-shrink:0;vertical-align:middle"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 4.99 3.657 9.128 8.438 9.878v-6.987h-2.54V12.073h2.54V9.845c0-2.504 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.62 1.562V12.073h2.773l-.443 2.891h-2.33v6.987C20.343 21.201 24 17.063 24 12.073z"/></svg>`
+    }
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="#E1306C" style="flex-shrink:0;vertical-align:middle"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>`
+  }
+  window.pubPlatformIcon = pubPlatformIcon
+
   function pubAccountStatusPill(status) {
     if (status === 'connected')     return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(34,197,94,.12);color:var(--accent)"><i class="fa fa-check"></i> Conectada</span>'
     if (status === 'token_expired') return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:rgba(245,158,11,.12);color:#b45309"><i class="fa fa-triangle-exclamation"></i> Token expirado</span>'
@@ -9793,9 +9807,7 @@
       return
     }
     const cards = pubState.accounts.map(a => {
-      const icon = a.platform === 'facebook_page'
-        ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:28px"></i>'
-        : '<i class="fa fa-instagram" style="color:#D62976;font-size:28px"></i>'
+      const icon = pubPlatformIcon(a.platform, 28)
       const sub = a.platform === 'facebook_page' ? 'Página de Facebook' : 'Cuenta profesional de Instagram'
       const alert = a.status !== 'connected'
         ? `<div style="padding:10px 12px;border-radius:9px;background:${a.status === 'token_expired' ? 'rgba(245,158,11,.08)' : 'rgba(248,113,113,.08)'};font-size:12.5px;color:var(--text)">${a.last_error_message || 'Reconecta la cuenta para seguir publicando.'}</div>`
@@ -9833,17 +9845,17 @@
     if (!pubModuleEnabled) return
     const pill = $('pub-conexion-status-pill')
     const list = $('pub-conexion-accounts')
+    const ctaLabel = $('pub-conexion-cta-label')
     if (!list) return
     const hasConnected = pubState.accounts.some(a => a.status === 'connected')
     if (pill) {
       pill.textContent = hasConnected ? 'Conectado' : 'No conectado'
       pill.className = hasConnected ? 'pill pill-green no-dot' : 'pill pill-amber no-dot'
     }
+    if (ctaLabel) ctaLabel.textContent = pubState.accounts.length ? 'Reconectar / agregar cuenta' : 'Conectar con Meta'
     if (!pubState.accounts.length) { list.innerHTML = ''; return }
     list.innerHTML = pubState.accounts.map(a => {
-      const icon = a.platform === 'facebook_page'
-        ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:14px"></i>'
-        : '<i class="fa fa-instagram" style="color:#D62976;font-size:14px"></i>'
+      const icon = pubPlatformIcon(a.platform, 14)
       const sub = a.platform === 'facebook_page' ? 'Página de Facebook' : 'Cuenta de Instagram'
       return `<div class="ch-setting-row" style="padding:10px 0;border:none;border-top:1px solid var(--border)">
         <div class="ch-setting-label"><span class="ch-setting-title">${icon} ${a.name}</span><span class="ch-setting-sub">${sub}</span></div>
@@ -10032,7 +10044,7 @@
       const isToday = inMonth && dayNum === today.getDate() && pubState.calMonth === today.getMonth() && pubState.calYear === today.getFullYear()
       const posts = inMonth ? (byDay[dayNum] || []) : []
       const chips = posts.slice(0, 3).map(p => {
-        const icon = p.platform === 'facebook_page' ? '<i class="fa fa-facebook" style="color:#1877F2"></i>' : '<i class="fa fa-instagram" style="color:#D62976"></i>'
+        const icon = pubPlatformIcon(p.platform, 12)
         const title = (p.social_posts?.caption || '(sin texto)').slice(0, 24)
         return `<div style="display:flex;align-items:center;gap:5px;font-size:11px;padding:3px 5px;border-radius:5px;background:var(--card-bg);border:1px solid var(--border)" title="${PUB_STATUS_LABEL[p.status]}">
           ${icon}<span style="width:6px;height:6px;border-radius:50%;background:${PUB_STATUS_DOT[p.status]};flex:none"></span>
@@ -10142,9 +10154,7 @@
       const dt = d ? new Date(d) : null
       const fecha = dt ? dt.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
       const hora = dt ? dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : ''
-      const netIcon = r.platform === 'facebook_page'
-        ? '<span style="display:inline-flex;align-items:center;gap:7px"><i class="fa fa-facebook" style="color:#1877F2"></i>Facebook</span>'
-        : '<span style="display:inline-flex;align-items:center;gap:7px"><i class="fa fa-instagram" style="color:#D62976"></i>Instagram</span>'
+      const netIcon = `<span style="display:inline-flex;align-items:center;gap:7px">${pubPlatformIcon(r.platform, 14)}${r.platform === 'facebook_page' ? 'Facebook' : 'Instagram'}</span>`
       const pill = `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:${PUB_STATUS_DOT[r.status]}22;color:${PUB_STATUS_DOT[r.status]}">${PUB_STATUS_LABEL[r.status]}</span>`
       const detalle = r.status === 'fallido'
         ? `<span style="color:#b91c1c;font-size:12.5px">${r.error_message || 'Error desconocido'}</span>`
@@ -10221,7 +10231,7 @@
     $('pub-ed-accounts').innerHTML = pubState.accounts.map(a => {
       const checked = a.platform === 'facebook_page' ? pubState.editorFb : pubState.editorIg
       const sub = a.status === 'connected' ? 'Conectada' : `<span style="color:#b45309">Token expirado · <a href="#" onclick="closePubEditor();switchView('conexiones');return false" style="color:inherit">Reconectar</a></span>`
-      const icon = a.platform === 'facebook_page' ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:22px"></i>' : '<i class="fa fa-instagram" style="color:#D62976;font-size:22px"></i>'
+      const icon = pubPlatformIcon(a.platform, 22)
       return `<label style="flex:1 1 200px;display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${checked ? 'var(--accent)' : 'var(--border)'};border-radius:10px;cursor:pointer;background:${checked ? 'rgba(34,197,94,.06)' : 'transparent'}">
         <input type="checkbox" ${checked ? 'checked' : ''} onchange="pubToggleEditorAccount('${a.platform}', this.checked)">
         ${icon}
