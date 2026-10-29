@@ -3037,13 +3037,86 @@
   $('btn-reload-solicitudes').addEventListener('click', loadSolicitudes);
 
   $('hamburger-btn').addEventListener('click', () => {
-    $('sidebar').classList.toggle('open');
-    $('sidebar-overlay').style.display = $('sidebar').classList.contains('open') ? 'block' : 'none';
+    $('sb-rail').classList.toggle('mobile-open');
+    $('sidebar-overlay').style.display = $('sb-rail').classList.contains('mobile-open') ? 'block' : 'none';
   });
   $('sidebar-overlay').addEventListener('click', () => {
-    $('sidebar').classList.remove('open');
+    $('sb-rail').classList.remove('mobile-open');
     $('sidebar-overlay').style.display = 'none';
   });
+
+  // ── Sidebar collapse / peek / tooltip ───────────────────────────────────────
+  (function() {
+    const SB_KEY = 'avx-admin-sidebar-collapsed';
+    const rail = $('sb-rail');
+    const sidebar = $('sidebar');
+    const mainContent = document.querySelector('.main-content');
+    const toggleBtn = $('sb-toggle-btn');
+    const tip = $('sb-tip');
+    if (!rail || !sidebar || !mainContent || !toggleBtn) return;
+
+    let peekTimer = null;
+
+    function setCollapsed(c, save) {
+      if (c) {
+        rail.classList.add('collapsed');
+        sidebar.classList.add('collapsed');
+        mainContent.classList.add('sb-col');
+        toggleBtn.title = 'Expandir (⌘B)';
+      } else {
+        rail.classList.remove('collapsed');
+        sidebar.classList.remove('collapsed');
+        mainContent.classList.remove('sb-col');
+        toggleBtn.title = 'Contraer (⌘B)';
+      }
+      if (save) localStorage.setItem(SB_KEY, c ? '1' : '0');
+      if (!c) tip.classList.remove('visible');
+    }
+
+    function isCollapsed() { return sidebar.classList.contains('collapsed'); }
+
+    const saved = localStorage.getItem(SB_KEY);
+    const startCol = saved != null ? saved === '1' : window.innerWidth < 900;
+    setCollapsed(startCol, false);
+
+    toggleBtn.addEventListener('click', () => {
+      if (sidebar.classList.contains('peeking')) sidebar.classList.remove('peeking');
+      setCollapsed(!isCollapsed(), true);
+    });
+
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        if (sidebar.classList.contains('peeking')) sidebar.classList.remove('peeking');
+        setCollapsed(!isCollapsed(), true);
+      }
+    });
+
+    sidebar.addEventListener('mouseenter', () => {
+      if (!isCollapsed()) return;
+      clearTimeout(peekTimer);
+      peekTimer = setTimeout(() => { sidebar.classList.add('peeking'); tip.classList.remove('visible'); }, 280);
+    });
+    sidebar.addEventListener('mouseleave', () => {
+      clearTimeout(peekTimer);
+      sidebar.classList.remove('peeking');
+    });
+
+    document.querySelectorAll('.nav-item[data-view], .nav-back').forEach(item => {
+      const labelEl = item.querySelector('.sb-label');
+      const label = labelEl ? labelEl.textContent.trim() : '';
+      if (!label) return;
+      item.addEventListener('mouseenter', () => {
+        if (!isCollapsed() || sidebar.classList.contains('peeking')) return;
+        const r = item.getBoundingClientRect();
+        tip.textContent = label;
+        tip.style.left = '80px';
+        tip.style.top = (r.top + r.height / 2) + 'px';
+        tip.classList.add('visible');
+      });
+      item.addEventListener('mouseleave', () => tip.classList.remove('visible'));
+    });
+  })();
 </script>
 </body>
 </html>
