@@ -1426,10 +1426,19 @@
 
     /* ── Responsive ── */
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.mobile-open { transform: translateX(0); }
+      #sb-rail {
+        width: 264px !important;
+        transform: translateX(-264px);
+        transition: transform .25s ease;
+        pointer-events: none;
+      }
+      #sb-rail.mobile-open {
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+      .sidebar { width: 264px !important; box-shadow: 8px 0 32px rgba(0,0,0,.4); }
       .sidebar-overlay.mobile-open { display: block; }
-      .main-content { margin-left: 0; }
+      .main-content { margin-left: 0 !important; }
       .hamburger { display: flex; }
       .topbar { padding: 0 12px 0 52px; height: 52px; }
       .page-area { padding: 18px 14px 44px; }
