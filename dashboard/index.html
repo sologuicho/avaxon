@@ -566,7 +566,8 @@
     }
 
     /* ── Main Content ── */
-    .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; }
+    .main-content { margin-left: var(--sidebar-w); min-height: 100vh; display: flex; flex-direction: column; transition: margin-left .22s cubic-bezier(.4,0,.2,1); }
+    .main-content.sb-col { margin-left: var(--sidebar-w-col); }
 
     /* Topbar */
     .topbar {
