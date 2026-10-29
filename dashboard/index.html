@@ -1170,6 +1170,22 @@
     .ch-setting-title { font-size:13.5px; font-weight:600; color:var(--text); display:block; }
     .ch-setting-sub { font-size:12px; color:var(--text-muted); display:block; margin-top:2px; }
     .ch-footer { display:flex; align-items:center; gap:10px; padding:10px 18px; background:var(--page-bg); border-top:1px solid var(--border); flex-wrap:wrap; }
+    .ch-benefits-2col { display:grid; grid-template-columns:1fr 1fr; gap:7px 14px; }
+    @media(max-width:480px){ .ch-benefits-2col { grid-template-columns:1fr; } }
+    /* Tarjeta "Publicaciones en redes" -- en escritorio (3 columnas) ocupa las
+       columnas 2-3, junto a WhatsApp; en tablet (2 columnas) y móvil (1
+       columna) ocupa todo el ancho de su fila como las demás. */
+    .pub-conn-card { grid-column:2 / -1; align-self:start; }
+    @media(max-width:860px){ .pub-conn-card { grid-column:1 / -1; } }
+    /* En escritorio, WhatsApp ocupa 2 filas para que la fila 1 no se fuerce
+       a su altura completa cuando está conectada (vista larga) -- así la
+       fila 1 mide lo que miden Instagram/Messenger, y Publicaciones (fila 2,
+       col 2-3) llena el hueco que queda junto a WhatsApp. En tablet/móvil
+       cada tarjeta vuelve a su flujo normal de una fila por tarjeta. */
+    @media(min-width:861px){
+      #wa-conexion-card { grid-row: span 2; }
+      .pub-conn-card { grid-row: 2; }
+    }
 
     /* ── WA setup flow (estado sin conectar) ── */
     .wa-setup-wrap { padding: 28px 24px 24px; }
@@ -2978,7 +2994,7 @@
             <div class="ch-grid">
 
               <!-- ─────────────── WhatsApp Business ─────────────── -->
-              <div class="ch-card">
+              <div class="ch-card" id="wa-conexion-card">
 
                 <!-- STATE: Sin número (setup) -->
                 <div id="wa-setup-view">
@@ -3174,6 +3190,32 @@
                     Conectar con Meta
                   </button>
                   <span id="fb-integ-status" style="display:none;font-size:11.5px;color:var(--text-muted);text-align:center"></span>
+                </div>
+              </div>
+
+              <!-- ─────────────── Publicaciones en redes (add-on, gate: business_modules.publicaciones_redes) ─────────────── -->
+              <div class="ch-card pub-conn-card" id="pub-conexion-card" style="display:none">
+                <div class="ch-card-head">
+                  <div class="ch-logo" style="background:linear-gradient(135deg,#1877f2,#e1306c)">
+                    <i class="fa fa-share-nodes" style="color:#fff;font-size:18px"></i>
+                  </div>
+                  <div style="flex:1;min-width:0">
+                    <div class="ch-head-name">Publicaciones en redes</div>
+                    <div class="ch-head-sub">Facebook e Instagram</div>
+                  </div>
+                  <span class="pill pill-amber no-dot" id="pub-conexion-status-pill">No conectado</span>
+                </div>
+                <div class="ch-setup">
+                  <p class="ch-setup-desc">Programa publicaciones para tu página de Facebook y tu cuenta de Instagram, con el mismo agente de IA que redacta y agenda por ti.</p>
+                  <div class="ch-benefits ch-benefits-2col">
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>Programa publicaciones en Facebook e Instagram</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>IA te ayuda a redactar el contenido</div>
+                    <div class="ch-benefit"><i class="fa fa-circle-check" style="color:#1877f2"></i>Un solo calendario para ambas redes</div>
+                  </div>
+                  <div id="pub-conexion-accounts"></div>
+                  <button class="ch-cta" style="background:linear-gradient(135deg,#1877f2 0%,#e1306c 100%);color:#fff" onclick="launchSocialPublishSignup()">
+                    <i class="fa fa-rotate"></i> Conectar con Meta
+                  </button>
                 </div>
               </div>
 
@@ -4484,7 +4526,7 @@
     if (name === 'pipeline')       loadPipeline();
     if (name !== 'asignacion' && asigRaf) { cancelAnimationFrame(asigRaf); asigRaf = null; }
     if (name === 'asignacion')     loadAsignacion();
-    if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
+    if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); loadPubConexionCard(); }
     if (name === 'bot')            loadAgentRequestsClient();
     if (name === 'cuenta')         loadCuenta();
     if (name === 'crm')            loadCRM();
@@ -4506,7 +4548,7 @@
     else if (name === 'leads')          loadLeads();
     else if (name === 'pipeline')       loadPipeline();
     else if (name === 'asignacion')     loadAsignacion();
-    else if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); }
+    else if (name === 'conexiones')    { loadOnboardingRequests(); updateGcalUI(); loadPubConexionCard(); }
     else if (name === 'bot')            loadAgentRequestsClient();
     else if (name === 'cuenta')         loadCuenta();
     else if (name === 'crm')            loadCRM();
@@ -9682,10 +9724,13 @@
     const navEl = document.querySelector('.nav-item[data-view="publicaciones"]')
     if (!navEl) return
     const orgId = state.currentOrgId
-    if (!orgId) { navEl.style.display = 'none'; pubModuleEnabled = false; return }
+    const pubCard = $('pub-conexion-card')
+    if (!orgId) { navEl.style.display = 'none'; pubModuleEnabled = false; if (pubCard) pubCard.style.display = 'none'; return }
     const { data } = await sb.from('business_modules').select('enabled').eq('organization_id', orgId).eq('module_key', 'publicaciones_redes').maybeSingle()
     pubModuleEnabled = !!data?.enabled
     navEl.style.display = pubModuleEnabled ? 'flex' : 'none'
+    if (pubCard) pubCard.style.display = pubModuleEnabled ? '' : 'none'
+    if (pubModuleEnabled && state.currentView === 'conexiones') loadPubConexionCard()
     if (!pubModuleEnabled && state.currentView === 'publicaciones') switchView('inicio')
   }
   window.checkPublicacionesModuleEnabled = checkPublicacionesModuleEnabled
@@ -9779,6 +9824,43 @@
     grid.innerHTML = cards + addCard
   }
 
+  // ── Tarjeta de Conexiones → Canales (misma data que renderPubCuentas, pero
+  // la tarjeta del grid de Canales en vez de la vista Publicaciones) ────────
+  function renderConnPubCard() {
+    const card = $('pub-conexion-card')
+    if (!card) return
+    card.style.display = pubModuleEnabled ? '' : 'none'
+    if (!pubModuleEnabled) return
+    const pill = $('pub-conexion-status-pill')
+    const list = $('pub-conexion-accounts')
+    if (!list) return
+    const hasConnected = pubState.accounts.some(a => a.status === 'connected')
+    if (pill) {
+      pill.textContent = hasConnected ? 'Conectado' : 'No conectado'
+      pill.className = hasConnected ? 'pill pill-green no-dot' : 'pill pill-amber no-dot'
+    }
+    if (!pubState.accounts.length) { list.innerHTML = ''; return }
+    list.innerHTML = pubState.accounts.map(a => {
+      const icon = a.platform === 'facebook_page'
+        ? '<i class="fa fa-facebook" style="color:#1877F2;font-size:14px"></i>'
+        : '<i class="fa fa-instagram" style="color:#D62976;font-size:14px"></i>'
+      const sub = a.platform === 'facebook_page' ? 'Página de Facebook' : 'Cuenta de Instagram'
+      return `<div class="ch-setting-row" style="padding:10px 0;border:none;border-top:1px solid var(--border)">
+        <div class="ch-setting-label"><span class="ch-setting-title">${icon} ${a.name}</span><span class="ch-setting-sub">${sub}</span></div>
+        ${pubAccountStatusPill(a.status)}
+        <button onclick="disconnectSocialAccount('${a.id}')" title="Desconectar" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:4px 6px;flex-shrink:0" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text-muted)'"><i class="fa fa-unlink"></i></button>
+      </div>`
+    }).join('')
+  }
+  window.renderConnPubCard = renderConnPubCard
+
+  async function loadPubConexionCard() {
+    if (!pubModuleEnabled) return
+    await loadPubAccounts()
+    renderConnPubCard()
+  }
+  window.loadPubConexionCard = loadPubConexionCard
+
   async function disconnectSocialAccount(id) {
     if (!confirm('¿Desconectar esta cuenta? Las publicaciones programadas para esta red dejarán de poder publicarse hasta que la reconectes.')) return
     const { error } = await sb.from('social_accounts').delete().eq('id', id)
@@ -9786,6 +9868,7 @@
     showToast('Cuenta desconectada')
     await loadPubAccounts()
     renderPubCuentas()
+    renderConnPubCard()
   }
   window.disconnectSocialAccount = disconnectSocialAccount
 
@@ -9832,6 +9915,7 @@
             showToast(result.instagram_linked ? '✓ Facebook e Instagram conectados' : '✓ Facebook conectado (sin Instagram vinculado)')
             await loadPubAccounts()
             renderPubCuentas()
+            renderConnPubCard()
           } else {
             showToast(result.error || 'Error al conectar')
           }
@@ -10131,7 +10215,7 @@
 
   function renderPubEditorAccounts() {
     if (!pubState.accounts.length) {
-      $('pub-ed-accounts').innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">No tienes ninguna cuenta conectada todavía. <a href="#" onclick="closePubEditor();switchView('conexiones');return false" style="color:var(--accent);font-weight:600">Conecta una aquí</a>.</p>`
+      $('pub-ed-accounts').innerHTML = `<p style="color:var(--text-muted);font-size:13px;margin:0">No tienes ninguna cuenta conectada todavía. <a href="#" onclick="closePubEditor();switchView('conexiones');setTimeout(()=>{const el=document.getElementById('pub-conexion-card');if(el)el.scrollIntoView({behavior:'smooth',block:'center'})},50);return false" style="color:var(--accent);font-weight:600">Conecta una aquí</a>.</p>`
       return
     }
     $('pub-ed-accounts').innerHTML = pubState.accounts.map(a => {
