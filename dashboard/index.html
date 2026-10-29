@@ -1341,7 +1341,19 @@
     .view-section-hr { height: 1px; border: 0; margin: 0 0 20px; background: var(--border); }
 
     /* ── Nav section labels ── */
-    .nav-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; color: #3a4d62; letter-spacing: .12em; text-transform: uppercase; padding: 14px 18px 4px; }
+    .nav-section-label {
+      position: relative; height: 30px; margin: 12px 12px 2px;
+      display: flex; align-items: center; gap: 6px; padding: 0 14px;
+      font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600;
+      color: #6f7d92; letter-spacing: .16em; text-transform: uppercase; white-space: nowrap;
+    }
+    /* Thin rule visible when collapsed */
+    .nav-section-label::after {
+      content: ''; position: absolute; left: 14px; right: 14px; top: 50%; height: 1px;
+      background: rgba(255,255,255,.09);
+      opacity: 0; transition: opacity .15s;
+    }
+    .sidebar.collapsed:not(.peeking) .nav-section-label::after { opacity: 1; }
 
     /* ── Pipeline Kanban ── */
     .pipeline-col { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 0; display: flex; flex-direction: column; min-height: 200px; overflow: hidden; }
