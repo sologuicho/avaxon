@@ -93,7 +93,14 @@ Deno.serve(async (req: Request) => {
     );
     const subData = await subRes.json();
     if (!subData.success) {
-      console.warn('IG webhook subscription warning:', JSON.stringify(subData));
+      // Antes esto solo se logueaba y la función seguía de todas formas,
+      // mostrando "Conectado" en el dashboard aunque la Página nunca quedó
+      // suscrita a los eventos de mensajería -- el bot nunca recibía DMs.
+      console.error('instagram-embedded-signup: fallo suscribiendo subscribed_apps:', JSON.stringify(subData));
+      return json({
+        ok: false,
+        error: `No se pudo suscribir la Página a los eventos de mensajería de Instagram: ${subData?.error?.message ?? 'Meta no confirmó la suscripción (subscribed_apps).'}`,
+      }, 502);
     }
 
     // Upsert integration
