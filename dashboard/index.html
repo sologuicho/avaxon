@@ -11882,10 +11882,18 @@
     const orgId = state.currentOrgId || state.userOrgId;
     if (!orgId) return;
 
-    const [{ data: emps_raw }, { data: orgRow }] = await Promise.all([
+    const [{ data: emps_raw }, { data: orgRow }, { data: svcRows }, { data: schedRows }] = await Promise.all([
       sb.from('employees').select('*,position').eq('organization_id', orgId).eq('active', true).order('created_at'),
       sb.from('organizations').select('industry').eq('id', orgId).maybeSingle(),
-    ])
+      sb.from('services').select('id,name,price,duration_minutes,category').eq('organization_id', orgId).eq('active', true).order('name'),
+      sb.from('employee_schedules').select('*').eq('organization_id', orgId),
+    ]);
+    asigServicesDB = svcRows || [];
+    asigSchedulesByEmpId = {};
+    (schedRows || []).forEach(s => {
+      if (!asigSchedulesByEmpId[s.employee_id]) asigSchedulesByEmpId[s.employee_id] = {};
+      asigSchedulesByEmpId[s.employee_id][s.day_of_week] = { id: s.id, start: s.start_time.slice(0,5), end: s.end_time.slice(0,5) };
+    });
     let emps = emps_raw
     asigOrgIndustry = orgRow?.industry || null
 
