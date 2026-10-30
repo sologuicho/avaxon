@@ -13951,6 +13951,10 @@
     $('pagos-kpi-paid').textContent = '$' + paidTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
     $('pagos-kpi-pending').textContent = '$' + pendingTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 });
     $('pagos-kpi-total').textContent = visible.length;
+    const today = new Date().toLocaleDateString('es-MX');
+    const cashToday = visible.filter(p => p.status === 'paid' && p.payment_method === 'cash' && new Date(p.paid_at||p.created_at).toLocaleDateString('es-MX') === today).reduce((s,p) => s + Number(p.amount), 0);
+    const cashKpi = $('pagos-kpi-cash');
+    if (cashKpi) cashKpi.textContent = '$' + cashToday.toLocaleString('es-MX', { minimumFractionDigits: 0 });
 
     if (!pagos.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros todavía</div>'; return; }
     if (!visible.length) { listEl.innerHTML = '<div class="apt-empty">Sin cobros visibles (hay cancelados/expirados ocultos)</div>'; return; }
