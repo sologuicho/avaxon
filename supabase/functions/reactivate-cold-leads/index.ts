@@ -73,6 +73,12 @@ Deno.serve(async (_req: Request) => {
     .select('id, organization_id, contacts(phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token)), organizations(timezone)')
     .in('organization_id', activeOrgIds)
     .eq('status', 'open')
+    // Este seguimiento solo existe para WhatsApp (plantilla aprobada /
+    // ventana de 24h de WhatsApp) -- sin este filtro, una conversación fría
+    // de Instagram/Messenger generaba el mensaje con GPT igual y lo
+    // descartaba después al no tener phone/phone_number_id, gastando la
+    // llamada a OpenAI para nada.
+    .eq('channel', 'whatsapp')
     .gte('last_message_at', windowStart)
     .lt('last_message_at', windowEnd)
 

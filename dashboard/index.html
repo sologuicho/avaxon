@@ -1264,6 +1264,14 @@
     .conv-tab { flex: 1; text-align: center; padding: 5px 0; font-size: 12px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-muted); background: transparent; border: none; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
     .conv-tab.active { background: #fff; color: #1a2535; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 
+    /* Channel tabs (Todos/WhatsApp/Instagram/Messenger) -- solo aparecen si
+       hay más de un canal conectado para la org, ver renderChannelTabs() */
+    .conv-channel-tabs { display: flex; gap: 6px; }
+    .conv-channel-tab { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 11px; font-size: 12px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-muted); background: var(--page-bg); border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+    .conv-channel-tab.active { background: #fff; color: #1a2535; border-color: var(--border); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .conv-channel-tab-badge { min-width: 15px; height: 15px; padding: 0 3px; background: var(--accent); color: #fff; font-size: 9px; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; }
+    .conv-channel-tab-label { white-space: nowrap; }
+
     /* Stage filter chips */
     .conv-chips { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 1px; scrollbar-width: none; }
     .conv-chips::-webkit-scrollbar { display: none; }
@@ -1587,6 +1595,11 @@
       /* Conexiones tabs: full width, wrap evenly */
       .conn-tabs { width: 100%; }
       .conn-tab { flex: 1; justify-content: center; padding: 8px 10px; font-size: 12px; }
+
+      /* Pestañas de canal en Conversaciones: solo ícono, sin nombre, para
+         que las 4 (Todos/WhatsApp/Instagram/Messenger) quepan en una fila */
+      .conv-channel-tab-label { display: none; }
+      .conv-channel-tab { padding: 6px 9px; }
 
       /* KPI value: scale down so 2-col fits comfortably */
       .kpi-value { font-size: 36px; }
@@ -2168,6 +2181,8 @@
             <div class="conv-sidebar-top">
               <!-- Search -->
               <input id="conv-search" placeholder="Buscar contacto o mensaje…" class="search-input" style="padding-left:10px;background-image:none" />
+              <!-- Channel tabs (Todos/WhatsApp/Instagram/Messenger) -- ocultas si solo hay un canal conectado -->
+              <div class="conv-channel-tabs" id="conv-channel-tabs" style="display:none"></div>
               <!-- Status tabs (Todas / Bot / Humano) -->
               <div class="conv-tabs">
                 <button id="conv-tab-all"    data-tab="all"    onclick="filterConvs('all')"    class="conv-tab active">Todas</button>
@@ -4384,6 +4399,17 @@
     return d.length >= 4 ? '••• ••• ' + d.slice(-4) : '••••••'
   }
 
+  // Donde antes se mostraba maskPhone(contact.phone): los contactos de
+  // Instagram/Messenger no tienen teléfono real (ver migración
+  // contacts_channel_identity) -- se identifican por @username (IG) o solo
+  // "Messenger" (la Graph API de Messenger no expone un handle público).
+  function contactIdentityLabel(contact) {
+    if (!contact) return '—'
+    if (contact.channel === 'instagram') return contact.username ? ('@' + contact.username + ' · Instagram') : 'Instagram'
+    if (contact.channel === 'facebook')  return 'Messenger'
+    return maskPhone(contact.phone)
+  }
+
   function fmtDate(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
@@ -4521,7 +4547,7 @@
     state.currentView = name;
     try { localStorage.setItem('avx_last_view', name); } catch(e) {}
     if (name === 'calendario')    { loadCalendarData(); updateGcalUI(); }
-    if (name === 'conversaciones') { convState.unreadCount = 0; updateUnreadBadge(); loadConversaciones(); }
+    if (name === 'conversaciones') { convState.unreadCount = 0; convState.unreadByChannel = {}; updateUnreadBadge(); loadConversaciones(); }
     if (name === 'leads')          loadLeads();
     if (name === 'pipeline')       loadPipeline();
     if (name !== 'asignacion' && asigRaf) { cancelAnimationFrame(asigRaf); asigRaf = null; }
@@ -4938,7 +4964,7 @@
           <div class="avatar">${escapeHtml(initials(c.name || c.phone))}</div>
           <div>
             <div class="contact-name">${escapeHtml(c.name || '—')}</div>
-            <div class="contact-phone">${escapeHtml(maskPhone(c.phone))}</div>
+            <div class="contact-phone">${escapeHtml(contactIdentityLabel(c))}</div>
           </div>
         </div>
       </td>
@@ -5031,7 +5057,7 @@
           </div>
         </div>
       </td>
-      <td style="font-size:13px;color:var(--text-muted)">${maskPhone(c.phone)}</td>
+      <td style="font-size:13px;color:var(--text-muted)">${contactIdentityLabel(c)}</td>
       <td>${renderTags(c.tags)}</td>
       <td>${statusPill(c.status)}</td>
       <td style="white-space:nowrap;font-size:12px;color:var(--text-muted)">${fmtDate(c.last_seen_at)}</td>
@@ -5183,14 +5209,21 @@
   window.saveApptCancelTemplate = saveApptCancelTemplate;
 
   // ── Conversaciones ─────────────────────────────────────────────
-  const convState = { all: [], filtered: [], activeId: null, realtimeSub: null, activeTab: 'all', activeStage: 'all', mineOnly: false };
+  const convState = {
+    all: [], filtered: [], activeId: null, realtimeSub: null, activeTab: 'all', activeStage: 'all', mineOnly: false,
+    // Pestaña de canal recordada entre sesiones (ver filterConvChannel/renderChannelTabs).
+    activeChannel: (() => { try { return localStorage.getItem('avx_conv_channel_tab') || 'all'; } catch (e) { return 'all'; } })(),
+    // Contador de no leídas por canal -- igual que convState.unreadCount (solo de sesión,
+    // la app no tiene un estado de "leído" persistido en BD), pero separado por canal.
+    unreadByChannel: {},
+  };
 
   async function loadConversaciones() {
     const orgId = state.currentOrgId;
     $('conv-list').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:10px;align-items:center;justify-content:center"><div class="spinner-light"></div>Cargando…</div>';
 
     let q = sb.from('conversations')
-      .select('id, organization_id, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, bot_resumed_at, human_pause_until, contacts(id, name, phone, email, status, tags)')
+      .select('id, organization_id, channel, status, created_at, updated_at, assigned_to, needs_human, needs_human_at, needs_human_reason, bot_resumed_at, human_pause_until, contacts(id, name, phone, email, status, tags, channel, username)')
       .order('updated_at', { ascending: false });
     if (orgId) q = q.eq('organization_id', orgId);
     const { data: convs } = await q;
@@ -5216,6 +5249,7 @@
     convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
     updateNeedsHumanBadges();
     renderHumanCard(); // Item 8: update Inicio "Necesita humano" card
+    renderChannelTabs();
     filterConvs(convState.activeTab ?? 'all');
 
     // Realtime: new messages + new conversations
@@ -5235,6 +5269,11 @@
         } else if (payload.new.direction === 'inbound') {
           convState.unreadCount = (convState.unreadCount ?? 0) + 1;
           updateUnreadBadge();
+          if (conv?.channel) {
+            if (!convState.unreadByChannel) convState.unreadByChannel = {};
+            convState.unreadByChannel[conv.channel] = (convState.unreadByChannel[conv.channel] ?? 0) + 1;
+            renderChannelTabs();
+          }
         }
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversations' }, async () => {
@@ -5288,6 +5327,85 @@
   }
   window.filterConvs = filterConvs;
 
+  // ── Pestañas de canal (Todos/WhatsApp/Instagram/Messenger) ──────────────
+  // Solo se muestran si hay más de un canal conectado para la org -- con
+  // solo WhatsApp conectado (el caso de hoy para casi todas las orgs) no
+  // tiene sentido filtrar, así que la fila completa queda oculta.
+  const CHANNEL_TAB_META = {
+    whatsapp:  { label: 'WhatsApp',  icon: () => '<i class="fab fa-whatsapp" style="color:#25D366"></i>' },
+    instagram: { label: 'Instagram', icon: () => pubPlatformIcon('instagram_business', 13) },
+    facebook:  { label: 'Messenger', icon: () => pubPlatformIcon('facebook_page', 13) },
+  };
+
+  // window._lastPhoneData lo llena loadDashboard() (phone_numbers de la
+  // org); state.integrations lo llena loadIntegrations() -- ambos ya
+  // corren al bootstrap de la app antes de que Conversaciones sea
+  // navegable, así que no hace falta otra consulta aparte.
+  function getConnectedChannels() {
+    if (isIntegrationsOrgBlocked()) return []; // "Todos los clientes": no hay org real que mostrar
+    const list = [];
+    if ((window._lastPhoneData?.length ?? 0) > 0) list.push('whatsapp');
+    if (state.integrations?.instagram?.status === 'connected') list.push('instagram');
+    if (state.integrations?.facebook_messenger?.status === 'connected') list.push('facebook');
+    return list;
+  }
+
+  function renderChannelTabs() {
+    const container = $('conv-channel-tabs');
+    if (!container) return;
+    const connected = getConnectedChannels();
+    let needsRefilter = false;
+
+    if (connected.length < 2) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      if (convState.activeChannel !== 'all') { convState.activeChannel = 'all'; needsRefilter = true; }
+      if (needsRefilter) applyConvFilters();
+      return;
+    }
+
+    // Si el canal seleccionado se desconectó (ej. se cerró sesión de
+    // Instagram), su pestaña desaparece y la lista vuelve a "Todos".
+    if (convState.activeChannel !== 'all' && !connected.includes(convState.activeChannel)) {
+      convState.activeChannel = 'all';
+      needsRefilter = true;
+    }
+
+    const active = convState.activeChannel ?? 'all';
+    const tabs = [`<button class="conv-channel-tab${active === 'all' ? ' active' : ''}" data-channel="all" onclick="filterConvChannel('all')">Todos</button>`]
+      .concat(connected.map(ch => {
+        const meta = CHANNEL_TAB_META[ch];
+        const unread = convState.unreadByChannel?.[ch] ?? 0;
+        const badge = unread > 0 ? `<span class="conv-channel-tab-badge">${unread > 99 ? '99+' : unread}</span>` : '';
+        return `<button class="conv-channel-tab${active === ch ? ' active' : ''}" data-channel="${ch}" onclick="filterConvChannel('${ch}')" title="${meta.label}">${meta.icon()}<span class="conv-channel-tab-label">${meta.label}</span>${badge}</button>`;
+      }));
+
+    container.innerHTML = tabs.join('');
+    container.style.display = 'flex';
+    if (needsRefilter) applyConvFilters();
+  }
+  window.renderChannelTabs = renderChannelTabs;
+
+  function filterConvChannel(channel) {
+    convState.activeChannel = channel;
+    try { localStorage.setItem('avx_conv_channel_tab', channel); } catch (e) {}
+    if (channel !== 'all') {
+      if (!convState.unreadByChannel) convState.unreadByChannel = {};
+      convState.unreadByChannel[channel] = 0;
+    }
+    renderChannelTabs();
+    applyConvFilters();
+  }
+  window.filterConvChannel = filterConvChannel;
+
+  // Ícono chico de canal junto al nombre en cada item de la lista -- mismo
+  // método (SVG inline) que pubPlatformIcon() usa para Instagram/Facebook.
+  function convChannelIcon(channel) {
+    if (channel === 'instagram') return pubPlatformIcon('instagram_business', 12);
+    if (channel === 'facebook')  return pubPlatformIcon('facebook_page', 12);
+    return '<i class="fab fa-whatsapp" style="color:#25D366;font-size:11px;flex-shrink:0"></i>';
+  }
+
   // Contador rojo en la pestaña "Necesita humano" y en el menú lateral.
   function updateNeedsHumanBadges() {
     const count = convState.all.filter(c => c.needs_human).length;
@@ -5319,12 +5437,14 @@
   window.toggleConvMine = toggleConvMine;
 
   function applyConvFilters() {
-    const tab   = convState.activeTab   ?? 'all';
-    const stage = convState.activeStage ?? 'all';
-    const mine  = convState.mineOnly    ?? false;
+    const tab     = convState.activeTab     ?? 'all';
+    const stage   = convState.activeStage   ?? 'all';
+    const mine     = convState.mineOnly     ?? false;
+    const channel = convState.activeChannel ?? 'all';
     const q     = ($('conv-search')?.value ?? '').toLowerCase();
     convState.filtered = convState.all
       .filter(c => tab === 'all' || (tab === 'needshuman' ? c.needs_human : c.status === tab))
+      .filter(c => channel === 'all' || c.channel === channel)
       .filter(c => stage === 'all' || (c.contacts?.stage ?? '') === stage)
       .filter(c => !mine /* future: filter by assigned_to === currentUser */)
       .filter(c => !q || (c.contacts?.name ?? '').toLowerCase().includes(q) || (c.contacts?.phone ?? '').includes(q));
@@ -5364,13 +5484,14 @@
         : c.needs_human_reason === 'Atendida por el equipo'
         ? '<i title="Atendida por el equipo" class="fa fa-circle-check" style="color:#16a34a;font-size:11px;flex-shrink:0"></i>'
         : '';
+      const channelIcon = convChannelIcon(c.channel);
       return `<div class="conv-item${isActive ? ' active' : ''}" onclick="openConversacion('${c.id}')">
         <div class="conv-item-avatar-wrap">
           <div class="conv-item-avatar" style="background:linear-gradient(135deg,${g1},${g2})">${ini}</div>
         </div>
         <div class="conv-item-body">
           <div class="conv-item-row">
-            <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${escapeHtml(name)}</div>
+            <div class="conv-item-name" style="display:flex;align-items:center;gap:6px">${needsHumanDot}${channelIcon}${escapeHtml(name)}</div>
             <div class="conv-item-time">${time}</div>
           </div>
           <div class="conv-item-preview">${senderPfx}${escapeHtml(preview.slice(0, 55))}</div>
@@ -5479,7 +5600,7 @@
     const ini  = initials(name);
     if ($('chat-header-avatar')) $('chat-header-avatar').textContent = ini;
     $('chat-header-name').textContent  = name;
-    $('chat-header-phone').textContent = maskPhone(contact?.phone);
+    $('chat-header-phone').textContent = contactIdentityLabel(contact);
     $('chat-header-status').innerHTML  = statusPill(conv?.status);
     updateConvDetailNeedsHuman(conv);
     const toggleBtn = $('chat-btn-toggle');
@@ -5493,8 +5614,14 @@
       toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
     }
     const waBtn = $('chat-wa-btn');
-    if (waBtn && contact?.phone && !state.isReviewer) waBtn.dataset.waUrl = `https://wa.me/${contact.phone.replace(/\D/g,'')}`;
-    else if (waBtn) delete waBtn.dataset.waUrl;
+    if (waBtn) {
+      // Instagram/Messenger no tienen "abrir en WhatsApp" -- el botón se
+      // oculta por completo en vez de quedar visible pero sin acción.
+      const isWaChannel = (conv?.channel ?? 'whatsapp') === 'whatsapp';
+      waBtn.style.display = isWaChannel ? '' : 'none';
+      if (isWaChannel && contact?.phone && !state.isReviewer) waBtn.dataset.waUrl = `https://wa.me/${contact.phone.replace(/\D/g,'')}`;
+      else delete waBtn.dataset.waUrl;
+    }
     $('chat-empty-state').style.display = 'none';
     $('chat-input-area').style.display  = state.isReviewer ? 'none' : 'flex';
     $('wa-window-banner').classList.remove('visible');
@@ -5522,7 +5649,7 @@
     $('cpanel-empty').style.display   = 'none';
     $('cpanel-content').style.display = 'flex';
     $('cpanel-name').textContent  = contact?.name || '—';
-    $('cpanel-phone').textContent = maskPhone(contact?.phone);
+    $('cpanel-phone').textContent = contactIdentityLabel(contact);
     $('cpanel-email').textContent = contact?.email || '—';
     $('cpanel-status').innerHTML  = statusPill(contact?.status);
     $('cpanel-tags').innerHTML    = renderTags(contact?.tags);
@@ -7189,7 +7316,7 @@
     const tbody = $('tbody-leads')
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)"><div class="spinner-light" style="margin:0 auto 8px"></div>Cargando contactos…</td></tr>`
     const orgId = state.currentOrgId || state.userOrgId || null
-    let q = sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at', { ascending: false }).limit(1000)
+    let q = sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at,channel,username').order('created_at', { ascending: false }).limit(1000)
     if (orgId) q = q.eq('organization_id', orgId)
     const { data, error } = await q
     if (error) { if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#ef4444">Error al cargar contactos</td></tr>`; return }
@@ -7241,7 +7368,7 @@
         // Messages last 7 days for chart
         withOrg(sb.from('messages').select('direction,created_at').gte('created_at', week7.toISOString())),
         // All contacts for pipeline
-        withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at').order('created_at',{ascending:false}).limit(500)),
+        withOrg(sb.from('contacts').select('id,name,phone,email,status,tags,last_seen_at,created_at,channel,username').order('created_at',{ascending:false}).limit(500)),
         // Phone numbers
         withOrg(sb.from('phone_numbers').select('id,display_phone_number,verified_name,quality_rating,status,webhook_verified,whatsapp_accounts(business_name)')),
         // Orgs (super admin)
@@ -7357,6 +7484,7 @@
       if (leadsSearch) leadsSearch.value = ''
       renderLeads(contacts)
       renderConexiones(phonesRes.data)
+      renderChannelTabs() // WhatsApp puede haberse (des)conectado mientras ya estábamos en Conversaciones
 
       // Fecha en header
       const fechaEl = $('dash-fecha')
@@ -10966,7 +11094,7 @@
     const hn = $('lead-header-name')
     if (hn) hn.textContent = contact.name || contact.phone || 'Contacto'
     const hp = $('lead-header-phone')
-    if (hp) hp.textContent = maskPhone(contact.phone || '')
+    if (hp) hp.textContent = contactIdentityLabel(contact)
     $('modal-lead').style.display = 'flex'
   }
 
@@ -11582,7 +11710,7 @@
       </div>`
     ).join('');
 
-    let q = sb.from('contacts').select('id,name,phone,status,tags,last_seen_at').order('last_seen_at', { ascending: false });
+    let q = sb.from('contacts').select('id,name,phone,status,tags,last_seen_at,channel,username').order('last_seen_at', { ascending: false });
     if (state.currentOrgId) q = q.eq('organization_id', state.currentOrgId);
     const { data: contacts } = await q;
 
@@ -11618,7 +11746,7 @@
             <div class="avatar" style="width:26px;height:26px;font-size:11px;flex-shrink:0">${initials(c.name || c.phone)}</div>
             <div>
               <div class="pipeline-card-name">${c.name || '—'}</div>
-              <div class="pipeline-card-phone">${maskPhone(c.phone)}</div>
+              <div class="pipeline-card-phone">${contactIdentityLabel(c)}</div>
             </div>
           </div>
           ${c.tags?.length ? `<div class="tags-wrap" style="margin-bottom:4px">${c.tags.slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}</div>` : ''}
@@ -13599,6 +13727,7 @@
       updateIntegPill('make',          'make-integ-pill');
       updateIntegPill('meta_leads',    'meta_leads-integ-pill');
       updateSheetsZapierDetails();
+      renderChannelTabs(); // instagram/facebook_messenger ya no están conectados sin una org real
       return;
     }
     const { data } = await sb.from('integrations').select('provider,status,config,connected_at').eq('organization_id', orgId);
@@ -13613,6 +13742,9 @@
     updateIntegPill('make',          'make-integ-pill');
     updateIntegPill('meta_leads',    'meta_leads-integ-pill');
     updateSheetsZapierDetails();
+    // Si Instagram/Messenger se conectó o desconectó mientras ya estábamos
+    // en Conversaciones, la pestaña aparece/desaparece sin recargar.
+    renderChannelTabs();
   }
 
   function updateIntegPill(provider, pillId) {

@@ -57,6 +57,27 @@ async function sendFbMessage(pageAccessToken: string, recipientId: string, text:
   }
 }
 
+// Perfil del remitente vía Graph API -- Messenger (a diferencia de
+// Instagram) no expone un username/handle público, solo nombre y foto, y
+// solo si la Página tiene los permisos de Messenger Platform vigentes. Si
+// falla o viene vacío, se sigue con el nombre genérico; nunca se inventa un
+// teléfono ni se bloquea el mensaje por esto.
+async function fetchFbProfile(psid: string, pageAccessToken: string): Promise<{ name?: string } | null> {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${psid}?fields=first_name,last_name&access_token=${encodeURIComponent(pageAccessToken)}`);
+    if (!res.ok) {
+      console.error('webhook-fb: Graph API rechazó la consulta de perfil:', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+    const data = await res.json();
+    const name = [data?.first_name, data?.last_name].filter(Boolean).join(' ').trim();
+    return { name: name || undefined };
+  } catch (err) {
+    console.error('webhook-fb: fallo consultando el perfil del remitente:', err);
+    return null;
+  }
+}
+
 async function callOpenAI(systemPrompt: string, history: { role: string; content: string }[], userText: string): Promise<string> {
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -81,20 +102,28 @@ async function handleIncomingMessage(
   externalMsgId: string,
   pageAccessToken: string,
 ) {
-  const contactPhone = `fb:${senderId}`;
-
-  // 1. Find or create contact
+  // 1. Find or create contact -- identificado por (org, canal, PSID), no
+  // por teléfono: Messenger no entrega uno real. Antes se guardaba el PSID
+  // en `phone` (ej. 'fb:1234567890') y el dashboard lo mostraba formateado
+  // como si fuera un número de verdad.
   let { data: contact } = await sb
     .from('contacts')
     .select('id, name')
     .eq('organization_id', orgId)
-    .eq('phone', contactPhone)
+    .eq('channel', 'facebook')
+    .eq('external_id', senderId)
     .maybeSingle();
 
   if (!contact) {
+    const profile = await fetchFbProfile(senderId, pageAccessToken);
     const { data: newContact } = await sb
       .from('contacts')
-      .insert({ organization_id: orgId, phone: contactPhone, name: `Messenger ${senderId.slice(-6)}` })
+      .insert({
+        organization_id: orgId,
+        channel: 'facebook',
+        external_id: senderId,
+        name: profile?.name || `Messenger ${senderId.slice(-6)}`,
+      })
       .select('id, name')
       .single();
     contact = newContact;
