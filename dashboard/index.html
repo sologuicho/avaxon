@@ -12304,6 +12304,22 @@
         <p style="margin:0;font-size:13px;color:var(--text-muted)">Deja vacío para usar la tasa base (${baseLabel}).</p>
         <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden"><div style="display:grid;grid-template-columns:minmax(0,1fr) 140px 96px;gap:12px;padding:10px 14px;background:var(--input-bg);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7b8798"><span>Servicio</span><span>Comisión</span><span></span></div>${rowsHtml||'<div style="padding:16px 14px;border-top:1px solid var(--border);font-size:13px;color:var(--text-muted)">Selecciona servicios en el perfil para personalizar su comisión.</div>'}</div>
       </div>
+      <div style="display:flex;flex-direction:column;gap:14px;padding:20px 0">
+        <span style="font-family:&#39;JetBrains Mono&#39;,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#16a34a">05 · Horario laboral</span>
+        <p style="margin:0;font-size:13px;color:var(--text-muted)">Días y horas en que trabaja. Se usa para calcular el % de ocupación en Reportes.</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'].map((dayName, i) => {
+            const s = asigScheduleDraft[i];
+            const on = !!s;
+            const start = s?.start || '09:00';
+            const end = s?.end || '18:00';
+            return `<div style="display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center">
+              <button onclick="asigDraftToggleDay(${i})" style="height:34px;border:1px solid ${on ? '#16a34a' : 'var(--border)'};border-radius:8px;background:${on ? 'rgba(22,163,74,.12)' : 'var(--input-bg)'};color:${on ? '#16a34a' : 'var(--text-muted)'};font:600 13px &#39;Plus Jakarta Sans&#39;,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${on ? '#16a34a' : 'var(--border)'}"></span>${dayName}</button>
+              ${on ? `<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-muted)"><input type="time" value="${start}" onchange="asigDraftSetDayTime(${i},&#39;start&#39;,this.value)" style="height:34px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:13px"><span>–</span><input type="time" value="${end}" onchange="asigDraftSetDayTime(${i},&#39;end&#39;,this.value)" style="height:34px;border:1.5px solid var(--border);border-radius:8px;padding:0 10px;background:var(--input-bg);color:var(--text);font-family:inherit;font-size:13px"></div>` : `<span style="font-size:12.5px;color:var(--text-dim)">No trabaja</span>`}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:10px;padding:16px 26px;border-top:1px solid var(--border)">
       <button onclick="asigClose()" style="height:42px;padding:0 18px;border-radius:10px;border:1.5px solid var(--border);background:var(--card-bg);font:600 14px 'Plus Jakarta Sans',sans-serif;color:var(--text);cursor:pointer">Cancelar</button>
