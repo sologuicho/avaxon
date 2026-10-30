@@ -6,56 +6,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "node:crypto";
 import { parseAgentReply } from "../_shared/agentReply.ts";
 import { flagNeedsHuman } from "../_shared/humanHandoff.ts";
+import { sendFbMessage } from "../_shared/socialSend.ts";
 
 const VERIFY_TOKEN = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? '';
 const APP_SECRET   = Deno.env.get('META_APP_SECRET') ?? '';
 const OPENAI_KEY   = Deno.env.get('OPENAI_API_KEY') ?? '';
 const SUPA_URL     = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPA_SVC     = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-
-// Límites reales de los quick replies de Messenger (Send API) -- mismos que
-// Instagram, es el mismo endpoint/estructura por debajo.
-const FB_QUICK_REPLY_MAX = 13;
-const FB_QUICK_REPLY_TITLE_MAX = 20;
-
-// ── Helpers ──────────────────────────────────────────────────────────
-function truncateLabel(label: string, maxLen: number): string {
-  const trimmed = label.trim();
-  if (trimmed.length <= maxLen) return trimmed;
-  const cut = trimmed.slice(0, maxLen);
-  const lastSpace = cut.lastIndexOf(' ');
-  return (lastSpace > maxLen / 2 ? cut.slice(0, lastSpace) : cut).trim();
-}
-
-// Manda solo texto al cliente de Messenger -- nunca el JSON crudo del
-// agente. Si hay botones, los convierte a quick replies (máx. 13, título de
-// máx. 20 caracteres); si ninguno sobrevive el truncado/filtro pero sí
-// había botones, se agregan como texto en vez de perderlos en silencio.
-async function sendFbMessage(pageAccessToken: string, recipientId: string, text: string, buttons: string[] = []) {
-  const quickReplyTitles = buttons
-    .map((b) => truncateLabel(b, FB_QUICK_REPLY_TITLE_MAX))
-    .filter((b) => b.length > 0)
-    .slice(0, FB_QUICK_REPLY_MAX);
-
-  const message: Record<string, unknown> = {
-    text: quickReplyTitles.length === 0 && buttons.length > 0
-      ? `${text}\n\n${buttons.map((b) => `• ${b.trim()}`).join('\n')}`
-      : text,
-  };
-  if (quickReplyTitles.length > 0) {
-    message.quick_replies = quickReplyTitles.map((title, i) => ({ content_type: 'text', title, payload: `btn_${i}` }));
-  }
-
-  const res = await fetch('https://graph.facebook.com/v21.0/me/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${pageAccessToken}` },
-    body: JSON.stringify({ recipient: { id: recipientId }, message }),
-  });
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    console.error('webhook-fb: Meta rechazó el envío del mensaje:', JSON.stringify(errData));
-  }
-}
 
 // Perfil del remitente vía Graph API -- Messenger (a diferencia de
 // Instagram) no expone un username/handle público, solo nombre y foto, y
