@@ -10,7 +10,7 @@ import { logBotError } from '../_shared/botErrorLog.ts'
 import { logToolTrace } from '../_shared/toolTraceLog.ts'
 import { GREETING_REGEX } from '../_shared/greeting.ts'
 import {
-  DAY_ORDER, APPOINTMENT_TOOLS, isWithinBusinessHours,
+  DAY_ORDER, APPOINTMENT_TOOLS, APPOINTMENT_BOOKED_PREFIX, isWithinBusinessHours,
   consultarDisponibilidad, checkRequestedSlot, agendarCita, cancelarOReagendarCita,
   buildCalendarCtx, buildForcedAvailabilityContext,
 } from '../_shared/appointmentTools.ts'
@@ -1682,6 +1682,10 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   let finishReasonFinal = ''
   let paymentLinkUrl: string | null = null
   let pendingComanda: { orderId: string; orderNumber: number; items: any[]; modality: string; delivery_address: string | null; deliveryCost: number; total: number } | null = null
+  // Para que notify_owner, cuando el agente lo activa justo después de
+  // agendar una cita (ver abajo), notifique al dueño SIN pausar el bot --
+  // solo se pausa de verdad cuando el cliente necesita a una persona.
+  let appointmentBookedThisTurn = false
   const MAX_TOOL_LOOPS = 5
 
   for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
@@ -1741,6 +1745,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
             toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone, orgProfile?.hours)
           } else if (toolCall.function.name === 'agendar_cita') {
             toolResult = await agendarCita(args, organization_id, contact_row.id, sb, calendarToken!, timezone, conversation_id, orgProfile?.hours)
+            if (toolResult.startsWith(APPOINTMENT_BOOKED_PREFIX)) appointmentBookedThisTurn = true
             sendZapierEvent(sb, organization_id, 'appointment_booked', {
               contact_name:  args.nombre,
               contact_phone: fromPhone,
@@ -1904,8 +1909,19 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // Bandeja de atención humana — para cualquier org (no solo Avaxon). La
   // respuesta de este turno SÍ se manda (ver abajo): notify_owner describe
   // el cierre del bot para este turno, no cancela lo que ya iba a decir.
+  //
+  // Excepción: si el agente llamó agendar_cita en este mismo turno y la
+  // cita quedó agendada, notify_owner significa "avísale al dueño de la
+  // cita" (así lo pide el prompt de Avaxon), no "este cliente necesita a
+  // una persona" -- pausar el bot aquí lo deja sin poder seguir atendiendo
+  // al mismo cliente aunque no haya pedido hablar con nadie. Se avisa al
+  // dueño igual (notifyOwnerAlert, sin pausar) y el bot sigue respondiendo.
   if (notifyOwner) {
-    await flagNeedsHuman(sb, conversation_id, organization_id, 'El agente marcó que el cliente necesita atención')
+    if (appointmentBookedThisTurn) {
+      await notifyOwnerAlert(sb, organization_id, conversation_id, 'Cita agendada', 'El agente agendó una cita para el cliente y marcó notify_owner')
+    } else {
+      await flagNeedsHuman(sb, conversation_id, organization_id, 'El agente marcó que el cliente necesita atención')
+    }
   }
 
   // ── 13. Enviar respuesta por WhatsApp ──────────────────────────────────────

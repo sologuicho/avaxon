@@ -5,8 +5,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { createHmac } from "node:crypto";
 import { parseAgentReply } from "../_shared/agentReply.ts";
-import { flagNeedsHuman } from "../_shared/humanHandoff.ts";
+import { flagNeedsHuman, notifyOwnerAlert } from "../_shared/humanHandoff.ts";
 import { sendIgMessage } from "../_shared/socialSend.ts";
+import { getGoogleAccessToken } from "../_shared/google.ts";
+import { buildCalendarCtx, buildForcedAvailabilityContext, runAppointmentAgentLoop } from "../_shared/appointmentTools.ts";
 
 const VERIFY_TOKEN = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? '';
 const APP_SECRET   = Deno.env.get('META_APP_SECRET') ?? '';
@@ -30,21 +32,6 @@ async function fetchIgProfile(igsid: string, pageAccessToken: string): Promise<{
     console.error('webhook-ig: fallo consultando el perfil del remitente:', err);
     return null;
   }
-}
-
-async function callOpenAI(systemPrompt: string, history: { role: string; content: string }[], userText: string): Promise<string> {
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...history,
-    { role: 'user', content: userText },
-  ];
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: 'gpt-4o-mini', messages, max_tokens: 500 }),
-  });
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content?.trim() ?? '';
 }
 
 async function handleIncomingMessage(
@@ -161,16 +148,65 @@ async function handleIncomingMessage(
     content: m.content ?? '',
   }));
 
-  // 8. Call OpenAI
-  const rawReply = await callOpenAI(botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.', openaiHistory.slice(0, -1), messageText);
+  // 7b. Calendario (si la org tiene Google Calendar conectado) -- mismo
+  // mecanismo de agenda que ya tenía webhook-wa (ver _shared/appointmentTools.ts),
+  // para que el bot pueda consultar disponibilidad y agendar de verdad en
+  // vez de solo prometerlo en texto.
+  const [{ data: orgProfile }, { data: orgRow }, calendarToken] = await Promise.all([
+    sb.from('organization_profile').select('hours').eq('organization_id', orgId).maybeSingle(),
+    sb.from('organizations').select('timezone').eq('id', orgId).maybeSingle(),
+    getGoogleAccessToken(sb, orgId),
+  ]);
+  const timezone = orgRow?.timezone || 'America/Matamoros';
+  const hours = orgProfile?.hours;
+  const hasBusinessHours = Object.values(hours || {}).some((h: any) => h && !h.closed && h.open && h.close);
+
+  const now = new Date();
+  const todayLabel = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone });
+  const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
+  const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver referencias relativas como "hoy", "mañana" o "el viernes" -- nunca asumas o inventes qué día es.`;
+  const calendarCtx = buildCalendarCtx({ calendarToken, todayLabel, nowTimeLabel, timezone, hasBusinessHours });
+  // Si el cliente solo confirma ("sí", "agéndame") sin repetir fecha/hora,
+  // se resuelve contra lo que el bot ya había propuesto -- mismo criterio
+  // que usa webhook-wa.
+  const lastBotMessage = [...openaiHistory].reverse().find((m) => m.role === 'assistant')?.content || '';
+  const forcedAvailabilityCtx = await buildForcedAvailabilityContext({
+    combinedText: messageText, lastBotMessage, todayLabel, nowTimeLabel, timezone,
+    openaiKey: OPENAI_KEY, calendarToken, hours,
+  });
+
+  const systemPrompt = [
+    botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.',
+    fechaHoraCtx,
+    calendarCtx,
+    forcedAvailabilityCtx,
+  ].filter(Boolean).join('\n\n');
+
+  // 8. Llamar al agente (con las herramientas de agenda si hay calendario)
+  const { rawReply, appointmentBooked } = await runAppointmentAgentLoop({
+    sb, openaiKey: OPENAI_KEY, model: 'gpt-4o-mini',
+    systemPrompt, history: openaiHistory.slice(0, -1), userText: messageText,
+    calendarToken, timezone, hours,
+    organizationId: orgId, contactId: contact.id, conversationId: conv.id,
+    channel: 'instagram',
+  });
   if (!rawReply) return;
 
   // 8b. Parsear la respuesta del agente ({text, buttons, notify_owner}) --
   // misma lógica que usa webhook-wa, nunca se manda el JSON crudo al cliente.
   const { text: replyText, buttons, notifyOwner } = parseAgentReply(rawReply);
 
+  // notify_owner normalmente pausa el bot (needs_human) porque el cliente
+  // necesita a una persona -- pero si lo que pasó en este turno fue que el
+  // bot YA agendó la cita, notify_owner solo significa "avísale al dueño",
+  // no "este cliente necesita a alguien". Pausar ahí dejaría al bot sin
+  // poder seguir atendiendo a un cliente que no pidió hablar con nadie.
   if (notifyOwner) {
-    await flagNeedsHuman(sb, conv.id, orgId, 'El agente marcó que el cliente necesita atención');
+    if (appointmentBooked) {
+      await notifyOwnerAlert(sb, orgId, conv.id, 'Cita agendada', 'El agente agendó una cita para el cliente y marcó notify_owner');
+    } else {
+      await flagNeedsHuman(sb, conv.id, orgId, 'El agente marcó que el cliente necesita atención');
+    }
   }
 
   // 9. Store outbound message
@@ -183,7 +219,7 @@ async function handleIncomingMessage(
     processed_at: new Date().toISOString(),
   });
 
-  // 10. Send reply via Instagram
+  // 10. Send reply via Instagram (quick replies en vez de botones)
   await sendIgMessage(pageAccessToken, senderId, replyText, buttons);
 }
 

@@ -321,6 +321,14 @@ export async function checkRequestedSlot(
   return { ok: true, message: `${label} del ${fecha}: DISPONIBLE (dentro de horario y sin citas registradas en ese momento).` }
 }
 
+export type AppointmentChannel = 'whatsapp' | 'instagram' | 'facebook'
+
+// Nunca se marca como agendada sin este prefijo exacto -- lo usan los
+// webhooks para saber si notify_owner, en este turno, significa "avísale al
+// dueño de la cita" en vez de "este cliente necesita a una persona" (ver
+// notify_only más abajo en cada webhook).
+export const APPOINTMENT_BOOKED_PREFIX = 'Cita agendada correctamente'
+
 // ── Herramienta: agendar cita ────────────────────────────────────────────────
 export async function agendarCita(
   args: { fecha: string; hora: string; servicio: string; nombre: string; duracion_minutos?: number },
@@ -331,6 +339,11 @@ export async function agendarCita(
   timezone: string,
   conversationId: string,
   hours: any,
+  // Nuevo parámetro (default 'whatsapp' = comportamiento idéntico al de
+  // antes) -- solo cambia el texto del evento de Google Calendar y el
+  // "origen" del correo al dueño, para no decir "agendada por WhatsApp" en
+  // una cita que en realidad vino de Instagram o Messenger.
+  channel: AppointmentChannel = 'whatsapp',
 ): Promise<string> {
   // La hora tiene que traer AM/PM explícito — nunca se adivina. Esto es lo
   // que de verdad causaba el bug "5pm fuera de horario": el modelo convertía
@@ -357,7 +370,7 @@ export async function agendarCita(
   // como si fuera el nombre real. Si no hay nombre real ni uno válido en
   // args.nombre, se rechaza el agendado para que el bot primero lo pregunte.
   const GENERIC_NAME_REGEX = /^(cliente|sin nombre|n\/?a|desconocido|cliente de whatsapp|whatsapp)$/i
-  const { data: contactNameRow } = await sb.from('contacts').select('name, phone').eq('id', contactId).maybeSingle()
+  const { data: contactNameRow } = await sb.from('contacts').select('name, phone, username, external_id').eq('id', contactId).maybeSingle()
   const realName = (contactNameRow?.name || '').trim()
   const contactPhone = contactNameRow?.phone || ''
   const providedName = (args.nombre || '').trim()
@@ -394,7 +407,7 @@ export async function agendarCita(
     return `Error guardando la cita: ${apptErr?.message ?? 'desconocido'}`
   }
 
-  await notifyAppointment(sb, appt.id, 'created', 'whatsapp')
+  await notifyAppointment(sb, appt.id, 'created', channel)
 
   // Mueve el contacto a "Calificado" en el pipeline (solo si sigue en una
   // etapa temprana — no se toca si ya está qualified/won/lost) y le agrega
@@ -422,6 +435,16 @@ export async function agendarCita(
     console.error('Error actualizando pipeline/etiqueta del contacto:', e)
   }
 
+  // Identidad del contacto en la descripción del evento -- nunca "Teléfono"
+  // para un contacto de Instagram/Messenger, que no tiene uno.
+  const channelLabel = channel === 'instagram' ? 'Instagram' : channel === 'facebook' ? 'Messenger' : 'WhatsApp'
+  const sourcePrefix  = channel === 'instagram' ? 'webhook-ig' : channel === 'facebook' ? 'webhook-fb' : 'webhook-wa'
+  const identityLine = channel === 'instagram'
+    ? `Instagram: ${contactNameRow?.username ? '@' + contactNameRow.username : (contactNameRow?.external_id || 'sin usuario')}`
+    : channel === 'facebook'
+      ? `Messenger: ${finalName || contactNameRow?.external_id || 'sin nombre'}`
+      : `Teléfono: ${contactPhone || 'sin teléfono'}`
+
   // Crear evento en Google Calendar
   let googleEventId: string | null = null
   try {
@@ -430,7 +453,7 @@ export async function agendarCita(
       headers: { Authorization: `Bearer ${calendarToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         summary:     `${args.servicio} — ${finalName}`,
-        description: `Cita agendada por WhatsApp vía Avaxon.\nTeléfono: ${contactPhone || 'sin teléfono'}`,
+        description: `Cita agendada por ${channelLabel} vía Avaxon.\n${identityLine}`,
         start: { dateTime: scheduledAt, timeZone: timezone },
         end:   { dateTime: endAt, timeZone: timezone },
       }),
@@ -447,7 +470,7 @@ export async function agendarCita(
         organization_id: organizationId, conversation_id: conversationId,
         type: 'calendar_failed', error_code: String(eventRes.status),
         detail: `No se pudo crear el evento en Google Calendar para la cita ${appt.id}: ${JSON.stringify(errData)}`,
-        source: 'webhook-wa:agendar_cita',
+        source: `${sourcePrefix}:agendar_cita`,
       })
     }
   } catch (e) {
@@ -456,11 +479,11 @@ export async function agendarCita(
     await logBotError(sb, {
       organization_id: organizationId, conversation_id: conversationId,
       type: 'calendar_failed', detail: `Error creando evento en Google Calendar para la cita ${appt.id}: ${(e as Error).message}`,
-      source: 'webhook-wa:agendar_cita',
+      source: `${sourcePrefix}:agendar_cita`,
     })
   }
 
-  return `Cita agendada correctamente. ID: ${appt.id}. Fecha: ${args.fecha} a las ${to12hLabel(hora24)}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
+  return `${APPOINTMENT_BOOKED_PREFIX}. ID: ${appt.id}. Fecha: ${args.fecha} a las ${to12hLabel(hora24)}. Servicio: ${args.servicio}. ${googleEventId ? 'Evento creado en Google Calendar.' : ''}`
 }
 
 // ── Herramienta: cancelar o reagendar ────────────────────────────────────────
@@ -472,7 +495,9 @@ export async function cancelarOReagendarCita(
   timezone: string,
   conversationId: string,
   hours: any,
+  channel: AppointmentChannel = 'whatsapp',
 ): Promise<string> {
+  const sourcePrefix = channel === 'instagram' ? 'webhook-ig' : channel === 'facebook' ? 'webhook-fb' : 'webhook-wa'
   const { data: appt } = await sb
     .from('appointments')
     .select('id, title, service, scheduled_at, google_event_id, status')
@@ -524,18 +549,18 @@ export async function cancelarOReagendarCita(
             organization_id: organizationId, conversation_id: conversationId,
             type: 'calendar_failed', error_code: String(patchRes.status),
             detail: `No se pudo reagendar el evento de Google Calendar de la cita ${appt.id}: ${JSON.stringify(errData)}`,
-            source: 'webhook-wa:reagendar_cita',
+            source: `${sourcePrefix}:reagendar_cita`,
           })
         }
       } catch (e) {
         await logBotError(sb, {
           organization_id: organizationId, conversation_id: conversationId,
           type: 'calendar_failed', detail: `Error reagendando evento de Google Calendar de la cita ${appt.id}: ${(e as Error).message}`,
-          source: 'webhook-wa:reagendar_cita',
+          source: `${sourcePrefix}:reagendar_cita`,
         })
       }
     }
-    await notifyAppointment(sb, appt.id, 'rescheduled', 'whatsapp')
+    await notifyAppointment(sb, appt.id, 'rescheduled', channel)
     return `Cita reagendada para el ${args.nueva_fecha} a las ${to12hLabel(nuevaHora24)}.`
   } else {
     await sb.from('appointments')
@@ -556,18 +581,18 @@ export async function cancelarOReagendarCita(
             organization_id: organizationId, conversation_id: conversationId,
             type: 'calendar_failed', error_code: String(delRes.status),
             detail: `No se pudo borrar el evento de Google Calendar de la cita ${appt.id}: ${JSON.stringify(errData)}`,
-            source: 'webhook-wa:cancelar_cita',
+            source: `${sourcePrefix}:cancelar_cita`,
           })
         }
       } catch (e) {
         await logBotError(sb, {
           organization_id: organizationId, conversation_id: conversationId,
           type: 'calendar_failed', detail: `Error borrando evento de Google Calendar de la cita ${appt.id}: ${(e as Error).message}`,
-          source: 'webhook-wa:cancelar_cita',
+          source: `${sourcePrefix}:cancelar_cita`,
         })
       }
     }
-    await notifyAppointment(sb, appt.id, 'cancelled', 'whatsapp')
+    await notifyAppointment(sb, appt.id, 'cancelled', channel)
     return `Cita cancelada correctamente.`
   }
 }
@@ -644,4 +669,93 @@ export async function buildForcedAvailabilityContext(params: {
   }
 
   return forcedAvailabilityCtx
+}
+
+// ── Loop de function-calling para Instagram/Messenger ──────────────────────
+// webhook-wa tiene su PROPIO loop (no usa esto) porque además interlea
+// PAYMENT_TOOLS/TRANSFER_TOOLS/ORDER_TOOLS, que no existen en estos dos
+// canales. Esto es solo las tres herramientas de agenda -- para que
+// webhook-ig y webhook-fb no dupliquen el mismo loop entre ellos.
+export async function runAppointmentAgentLoop(params: {
+  sb: ReturnType<typeof createClient>
+  openaiKey: string
+  model: string
+  systemPrompt: string
+  history: { role: string; content: string }[]
+  userText: string
+  calendarToken: string | null
+  timezone: string
+  hours: any
+  organizationId: string
+  contactId: string
+  conversationId: string
+  channel: AppointmentChannel
+}): Promise<{ rawReply: string; appointmentBooked: boolean }> {
+  const {
+    sb, openaiKey, model, systemPrompt, history, userText,
+    calendarToken, timezone, hours, organizationId, contactId, conversationId, channel,
+  } = params
+  const tools = calendarToken ? APPOINTMENT_TOOLS : undefined
+  const messages: any[] = [
+    { role: 'system', content: systemPrompt },
+    ...history,
+    { role: 'user', content: userText },
+  ]
+
+  let rawReply = ''
+  let appointmentBooked = false
+  const MAX_TOOL_LOOPS = 5
+
+  for (let loop = 0; loop < MAX_TOOL_LOOPS; loop++) {
+    let aiRes: Response
+    try {
+      aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${openaiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, messages, tools, max_tokens: 500 }),
+      })
+    } catch (e) {
+      console.error('runAppointmentAgentLoop: error de red llamando a OpenAI:', e)
+      break
+    }
+
+    const aiData  = await aiRes.json().catch(() => ({}))
+    const choice  = aiData.choices?.[0]
+    const message = choice?.message
+
+    if (!aiRes.ok || !message) {
+      console.error('runAppointmentAgentLoop: OpenAI no devolvió una respuesta usable:', JSON.stringify(aiData).slice(0, 1500))
+      break
+    }
+
+    if (choice.finish_reason === 'tool_calls' && message.tool_calls?.length) {
+      messages.push(message) // assistant message con tool_calls
+
+      for (const toolCall of message.tool_calls) {
+        let toolResult: string
+        try {
+          const args = JSON.parse(toolCall.function.arguments)
+          if (toolCall.function.name === 'consultar_disponibilidad') {
+            toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone, hours)
+          } else if (toolCall.function.name === 'agendar_cita') {
+            toolResult = await agendarCita(args, organizationId, contactId, sb, calendarToken!, timezone, conversationId, hours, channel)
+            if (toolResult.startsWith(APPOINTMENT_BOOKED_PREFIX)) appointmentBooked = true
+          } else if (toolCall.function.name === 'cancelar_o_reagendar_cita') {
+            toolResult = await cancelarOReagendarCita(args, organizationId, sb, calendarToken!, timezone, conversationId, hours, channel)
+          } else {
+            toolResult = 'Herramienta no reconocida.'
+          }
+        } catch (e) {
+          toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
+        }
+        messages.push({ role: 'tool', tool_call_id: toolCall.id, content: toolResult })
+      }
+      continue
+    }
+
+    rawReply = message.content?.trim() ?? ''
+    break
+  }
+
+  return { rawReply, appointmentBooked }
 }
