@@ -12432,6 +12432,45 @@
     } catch (e) { showToast('Error al crear: ' + e.message, 4000); }
   }
 
+  function asigEditToggleDay(i) {
+    if (asigScheduleDraft[i]) { delete asigScheduleDraft[i]; }
+    else { asigScheduleDraft[i] = { start: '09:00', end: '18:00' }; }
+    renderAsigEditPanel();
+  }
+  function asigEditSetDayTime(i, field, val) {
+    if (asigScheduleDraft[i]) asigScheduleDraft[i][field] = val;
+  }
+  function asigDraftToggleDay(i) {
+    if (asigScheduleDraft[i]) { delete asigScheduleDraft[i]; }
+    else { asigScheduleDraft[i] = { start: '09:00', end: '18:00' }; }
+    renderAsigAddPanel();
+  }
+  function asigDraftSetDayTime(i, field, val) {
+    if (asigScheduleDraft[i]) asigScheduleDraft[i][field] = val;
+  }
+
+  async function asigSaveSchedule(employeeId, orgId) {
+    const days = Object.entries(asigScheduleDraft);
+    if (!days.length) return;
+    for (const [day, times] of days) {
+      const existing = asigSchedulesByEmpId[employeeId]?.[day];
+      if (existing?.id) {
+        await sb.from('employee_schedules').update({ start_time: times.start, end_time: times.end, active: true }).eq('id', existing.id);
+      } else {
+        await sb.from('employee_schedules').insert({ employee_id: employeeId, organization_id: orgId, day_of_week: Number(day), start_time: times.start, end_time: times.end });
+      }
+    }
+    // delete removed days
+    const currentDays = Object.keys(asigSchedulesByEmpId[employeeId] || {});
+    const newDays = Object.keys(asigScheduleDraft);
+    for (const old of currentDays) {
+      if (!newDays.includes(old)) {
+        const rec = asigSchedulesByEmpId[employeeId][old];
+        if (rec?.id) await sb.from('employee_schedules').update({ active: false }).eq('id', rec.id);
+      }
+    }
+  }
+
   window.asigResetLayout    = asigResetLayout;
   window.asigOpenAdd        = asigOpenAdd;
   window.asigOpenEdit       = asigOpenEdit;
