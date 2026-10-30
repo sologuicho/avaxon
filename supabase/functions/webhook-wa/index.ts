@@ -1064,7 +1064,17 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // idea de qué día era (ej. no sabía que "hoy" sí era domingo para una
   // regla de "solo se vende los domingos"). Ahora es siempre parte del
   // contexto, sin depender de ninguna integración.
-  const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver cualquier regla que dependa del día o la hora (ej. "solo los domingos", horario de apertura/cierre, qué menú está vigente ahora) -- nunca asumas o inventes qué día es.`
+  //
+  // Los LLMs cometen errores al calcular el día de la semana a partir de
+  // aritmética de fechas (ej. "el 30 es domingo" cuando es viernes). Para
+  // evitarlo, generamos una mini-tabla de los próximos 14 días con su fecha
+  // completa y día de la semana, de modo que el modelo consulte la tabla
+  // en lugar de calcular.
+  const next14Days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(now.getTime() + i * 86_400_000)
+    return d.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: timezone })
+  }).join(' | ')
+  const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver cualquier regla que dependa del día o la hora (ej. "solo los domingos", horario de apertura/cierre, qué menú está vigente ahora) -- nunca asumas o inventes qué día es.\nPRÓXIMOS 14 DÍAS (usa esta tabla para saber qué día cae cualquier fecha mencionada por el cliente, NO calcules): ${next14Days}`
 
   const hasBusinessHours = Object.values(orgProfile?.hours || {}).some((h: any) => h && !h.closed && h.open && h.close)
 
