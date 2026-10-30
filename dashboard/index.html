@@ -3854,6 +3854,130 @@
   </div>
 </div>
 
+      <!-- Modal: Pago manual -->
+<div id="manual-payment-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeManualPaymentModal()">
+  <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)">
+      <span style="font-size:16px;font-weight:700;color:var(--text)">Registrar pago manual</span>
+      <button onclick="closeManualPaymentModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:18px"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="cfg-field-label">Concepto *</label>
+        <input id="mp-concept" type="text" class="cfg-field-input" placeholder="Ej: Masaje relajante, Corte de cabello…" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="cfg-field-label">Monto (MXN) *</label>
+          <input id="mp-amount" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Método de pago *</label>
+          <select id="mp-payment-method" class="cfg-field-select">
+            <option value="cash">Efectivo</option>
+            <option value="card">Tarjeta</option>
+            <option value="transfer">Transferencia</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="cfg-field-label">Propina (MXN)</label>
+          <input id="mp-tip" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Descuento (MXN)</label>
+          <input id="mp-discount" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+        </div>
+      </div>
+      <div>
+        <label class="cfg-field-label">Empleado</label>
+        <select id="mp-employee" class="cfg-field-select">
+          <option value="">Sin asignar</option>
+        </select>
+      </div>
+      <div>
+        <label class="cfg-field-label">Fecha</label>
+        <input id="mp-date" type="date" class="cfg-field-input" />
+      </div>
+      <div>
+        <label class="cfg-field-label">Contacto (opcional)</label>
+        <input id="mp-contact-search" type="text" class="cfg-field-input" placeholder="Buscar en Leads…" oninput="searchMpContact(this.value)" autocomplete="off" />
+        <input type="hidden" id="mp-contact-id" />
+        <div id="mp-contact-results" class="cal-contact-results" style="display:none"></div>
+      </div>
+      <div>
+        <label class="cfg-field-label">Notas</label>
+        <textarea id="mp-notes" class="cfg-field-textarea" rows="2" placeholder="Observaciones opcionales…"></textarea>
+      </div>
+      <div id="mp-error" style="display:none;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+    </div>
+    <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--border)">
+      <button onclick="closeManualPaymentModal()" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font:600 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button onclick="saveManualPayment()" id="mp-save-btn" class="btn-primary" style="flex:2">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Corte de caja -->
+<div id="cash-register-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2100;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCashRegisterModal()">
+  <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)">
+      <span style="font-size:16px;font-weight:700;color:var(--text)">Corte de caja</span>
+      <button onclick="closeCashRegisterModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:18px"><i class="fa fa-xmark"></i></button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label class="cfg-field-label">Fecha</label>
+        <input id="cr-date" type="date" class="cfg-field-input" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="cfg-field-label">Efectivo (MXN)</label>
+          <input id="cr-cash" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" oninput="updateCrTotal()" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Tarjeta (MXN)</label>
+          <input id="cr-card" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" oninput="updateCrTotal()" />
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="cfg-field-label">Transferencia (MXN)</label>
+          <input id="cr-transfer" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" oninput="updateCrTotal()" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Propinas (MXN)</label>
+          <input id="cr-tips" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="cfg-field-label">Descuentos (MXN)</label>
+          <input id="cr-discounts" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Nº de citas</label>
+          <input id="cr-appts" type="number" min="0" class="cfg-field-input" placeholder="0" />
+        </div>
+      </div>
+      <div style="padding:14px 16px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13px;color:var(--text-muted)">Gran total</span>
+        <span id="cr-total-display" style="font-size:20px;font-weight:700;color:var(--text)">$0</span>
+      </div>
+      <div>
+        <label class="cfg-field-label">Notas</label>
+        <textarea id="cr-notes" class="cfg-field-textarea" rows="2" placeholder="Observaciones del día…"></textarea>
+      </div>
+      <div id="cr-error" style="display:none;padding:10px 13px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:13px;color:#dc2626"></div>
+    </div>
+    <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid var(--border)">
+      <button onclick="closeCashRegisterModal()" style="flex:1;padding:10px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font:600 14px 'Plus Jakarta Sans',sans-serif;cursor:pointer">Cancelar</button>
+      <button onclick="saveCashRegister()" id="cr-save-btn" class="btn-primary" style="flex:2">Cerrar corte</button>
+    </div>
+  </div>
+</div>
+
       <!-- VIEW: Configuración -->
       <div class="view" id="view-config">
         <div class="view-header">
