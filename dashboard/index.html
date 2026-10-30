@@ -14359,6 +14359,494 @@
   }
   window.saveManualPayment = saveManualPayment;
 
+  // ════════════════════════════════════════════════════════════════
+  // MÓDULO: Reportes
+  // ════════════════════════════════════════════════════════════════
+  let repPeriod   = 'month';
+  let repExpanded = null;
+  let repExportOpen = false;
+
+  // ── Utilidades de fecha ─────────────────────────────────────────
+  function repGetRange(period) {
+    const now  = new Date();
+    const y    = now.getFullYear(), m = now.getMonth();
+    if (period === 'week') {
+      const dow  = now.getDay();
+      const mon  = new Date(now); mon.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1)); mon.setHours(0,0,0,0);
+      const sun  = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
+      return { start: mon, end: sun, days: 7 };
+    }
+    if (period === 'last') {
+      const start = new Date(y, m - 1, 1);
+      const end   = new Date(y, m, 0, 23, 59, 59, 999);
+      return { start, end, days: end.getDate() };
+    }
+    // 'month' default
+    const start = new Date(y, m, 1);
+    const end   = new Date(y, m + 1, 0, 23, 59, 59, 999);
+    return { start, end, days: end.getDate() };
+  }
+
+  function repRangeLabel(period) {
+    const { start, end } = repGetRange(period);
+    const fmt = d => d.toLocaleDateString('es-MX', { day:'numeric', month:'short', year: start.getFullYear() !== end.getFullYear() ? 'numeric' : undefined });
+    return `${fmt(start)} – ${fmt(end)}`;
+  }
+
+  function repFmt(n) { return '$' + Math.round(n||0).toLocaleString('es-MX'); }
+
+  // ── Período selector ─────────────────────────────────────────────
+  function setReportesPeriod(p) {
+    repPeriod = p;
+    ['week','month','last'].forEach(k => {
+      const btn = $('rep-btn-' + k);
+      if (!btn) return;
+      btn.classList.toggle('rep-period-active', k === p);
+    });
+    loadReportes();
+  }
+  window.setReportesPeriod = setReportesPeriod;
+
+  // ── Export dropdown ──────────────────────────────────────────────
+  function toggleRepExport() {
+    repExportOpen = !repExportOpen;
+    const dd = $('rep-export-dropdown');
+    const chev = $('rep-export-chevron');
+    if (dd) dd.style.display = repExportOpen ? 'block' : 'none';
+    if (chev) chev.style.transform = repExportOpen ? 'rotate(180deg)' : 'none';
+  }
+  window.toggleRepExport = toggleRepExport;
+
+  function exportReporte(type) {
+    toggleRepExport();
+    showToast('Exportación PDF próximamente disponible');
+  }
+  window.exportReporte = exportReporte;
+
+  // ── Expandir fila empleado ───────────────────────────────────────
+  function toggleRepEmployee(name) {
+    repExpanded = repExpanded === name ? null : name;
+    const allExpands = document.querySelectorAll('[id^="rep-expand-"]');
+    allExpands.forEach(el => { el.style.display = 'none'; });
+    const allChevrons = document.querySelectorAll('[id^="rep-chev-"]');
+    allChevrons.forEach(el => { el.style.transform = 'none'; el.style.color = '#55667b'; });
+    if (repExpanded) {
+      const safeId = repExpanded.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      const expandEl = $('rep-expand-' + safeId);
+      const chevEl   = $('rep-chev-'   + safeId);
+      if (expandEl) expandEl.style.display = 'block';
+      if (chevEl)   { chevEl.style.transform = 'rotate(90deg)'; chevEl.style.color = '#7cb4ff'; }
+    }
+  }
+  window.toggleRepEmployee = toggleRepEmployee;
+
+  // ── Carga principal ──────────────────────────────────────────────
+  async function loadReportes() {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+
+    const { start, end } = repGetRange(repPeriod);
+    const rangeLabel      = repRangeLabel(repPeriod);
+
+    // Update labels
+    const rangeEl = $('rep-range-label');
+    const chartPeriodEl = $('rep-chart-period-label');
+    const exportPeriodEl = $('rep-export-period-label');
+    if (rangeEl) rangeEl.textContent = rangeLabel;
+    if (chartPeriodEl) chartPeriodEl.textContent = rangeLabel;
+    if (exportPeriodEl) exportPeriodEl.textContent = 'Período: ' + rangeLabel;
+
+    // Populate export options
+    const exportOptsEl = $('rep-export-options');
+    if (exportOptsEl) {
+      exportOptsEl.innerHTML = [
+        ['Solo ingresos','Resumen financiero del período'],
+        ['Solo empleados y comisiones','Ideal para calcular nómina'],
+        ['Solo citas del período','Lista completa con estado'],
+        ['Clientes en riesgo','Sin visita en 30+ días'],
+      ].map(([title, sub]) => `<div onclick="exportReporte('custom')" style="display:flex;gap:12px;padding:10px 14px;cursor:pointer" onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background=''"><div style="width:30px;height:30px;flex:none;border-radius:6px;background:var(--hover-bg);color:var(--text-muted);display:flex;align-items:center;justify-content:center;font-size:13px">↓</div><div><div style="font-size:13px;font-weight:600">${title}</div><div style="font-size:12px;color:var(--text-muted)">${sub}</div></div></div>`).join('');
+    }
+
+    // ── Queries en paralelo ──────────────────────────────────────
+    const [aptsRes, empsRes, prevAptsRes, contactsRes, riskAptsRes] = await Promise.all([
+      // Citas del período
+      sb.from('appointments')
+        .select('id,contact_id,contact_name,employee_id,service,price,tip,discount,payment_method,scheduled_at,duration_minutes,status,paid_at')
+        .eq('organization_id', orgId)
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString())
+        .order('scheduled_at'),
+
+      // Empleados activos
+      sb.from('employees')
+        .select('id,name,role,specialty,commission_type,commission_base,commission_apply_on,commission_overrides,services')
+        .eq('organization_id', orgId)
+        .eq('active', true)
+        .order('name'),
+
+      // Citas período anterior (para deltas)
+      sb.from('appointments')
+        .select('id,contact_id,price,status,scheduled_at')
+        .eq('organization_id', orgId)
+        .gte('scheduled_at', new Date(start.getTime() - (end.getTime() - start.getTime())).toISOString())
+        .lt('scheduled_at', start.toISOString()),
+
+      // Todos los contactos (para nuevo vs recurrente)
+      sb.from('contacts')
+        .select('id,created_at')
+        .eq('organization_id', orgId),
+
+      // Última cita por contacto (para "en riesgo")
+      sb.from('appointments')
+        .select('contact_id,contact_name,service,scheduled_at')
+        .eq('organization_id', orgId)
+        .lt('scheduled_at', start.toISOString())
+        .order('scheduled_at', { ascending: false })
+        .limit(500),
+    ]);
+
+    const apts     = (aptsRes.data || []).filter(a => a.status !== 'cancelled');
+    const emps     = empsRes.data  || [];
+    const prevApts = (prevAptsRes.data || []).filter(a => a.status !== 'cancelled');
+
+    // ── KPIs ─────────────────────────────────────────────────────
+    const completed    = apts.filter(a => a.status === 'completed');
+    const ingresos     = completed.reduce((s, a) => s + (Number(a.price)||0), 0);
+    const citas        = completed.length;
+    const ticket       = citas ? ingresos / citas : 0;
+    const clienteSet   = new Set(completed.map(a => a.contact_id).filter(Boolean));
+    const clientes     = clienteSet.size;
+
+    const prevCompleted = prevApts.filter(a => a.status === 'completed');
+    const prevIngresos  = prevCompleted.reduce((s, a) => s + (Number(a.price)||0), 0);
+    const prevCitas     = prevCompleted.length;
+    const prevTicket    = prevCitas ? prevIngresos / prevCitas : 0;
+    const prevClientes  = new Set(prevCompleted.map(a => a.contact_id).filter(Boolean)).size;
+
+    const delta = (cur, prev) => {
+      if (!prev) return '';
+      const pct = ((cur - prev) / prev * 100).toFixed(0);
+      const up = cur >= prev;
+      return `<span style="color:${up ? '#5fd49a' : '#ef8689'}">${up ? '↑' : '↓'} ${Math.abs(pct)}%</span> vs período anterior`;
+    };
+
+    const kpiMap = [
+      ['rep-kpi-ingresos', repFmt(ingresos), delta(ingresos, prevIngresos)],
+      ['rep-kpi-citas',    citas,            delta(citas, prevCitas)],
+      ['rep-kpi-ticket',   repFmt(ticket),   delta(ticket, prevTicket)],
+      ['rep-kpi-clientes', clientes,         delta(clientes, prevClientes)],
+    ];
+    kpiMap.forEach(([id, val, d]) => {
+      const el  = $(id);       if (el)  el.textContent  = val;
+      const del = $(id + '-delta'); if (del) del.innerHTML = d;
+    });
+
+    // ── Line chart (ingresos por día) ────────────────────────────
+    const { days, start: s0 } = repGetRange(repPeriod);
+    const dayTotals = Array(days).fill(0);
+    completed.forEach(a => {
+      const d = new Date(a.scheduled_at);
+      const idx = Math.floor((d - s0) / 86400000);
+      if (idx >= 0 && idx < days) dayTotals[idx] += Number(a.price)||0;
+    });
+    renderRepLineChart(dayTotals, s0, days);
+
+    // ── Services ranking ─────────────────────────────────────────
+    const svcMap = {};
+    completed.forEach(a => {
+      const name = a.service || 'Sin servicio';
+      if (!svcMap[name]) svcMap[name] = { amount: 0, count: 0 };
+      svcMap[name].amount += Number(a.price)||0;
+      svcMap[name].count++;
+    });
+    const svcList = Object.entries(svcMap).sort((a,b) => b[1].amount - a[1].amount).slice(0,5);
+    const svcEl = $('rep-services-list');
+    if (svcEl) {
+      if (!svcList.length) { svcEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Sin datos en este período</div>'; }
+      else {
+        const maxAmt = svcList[0][1].amount || 1;
+        svcEl.innerHTML = svcList.map(([name, {amount, count}], i) => `
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:13px">
+              <span><span style="color:var(--text-muted);font-size:11.5px;width:14px;display:inline-block">${i+1}</span>${name}</span>
+              <span style="font-weight:600">${repFmt(amount)}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding-left:18px">
+              <div style="flex:1;height:7px;background:var(--hover-bg);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${(amount/maxAmt*100).toFixed(1)}%;background:${i===0?'#7cb4ff':'#5980a6'};border-radius:3px"></div>
+              </div>
+              <span style="font-size:11.5px;color:var(--text-muted);width:50px;text-align:right">${count} cita${count!==1?'s':''}</span>
+            </div>
+          </div>`).join('');
+      }
+    }
+
+    // ── Staff table ───────────────────────────────────────────────
+    renderRepStaffTable(emps, apts, completed);
+
+    // ── Donut nuevos vs recurrentes ──────────────────────────────
+    const allContacts   = contactsRes.data || [];
+    const newContactIds = new Set(allContacts.filter(c => {
+      const cd = new Date(c.created_at);
+      return cd >= s0 && cd <= end;
+    }).map(c => c.id));
+    const attendedIds = [...clienteSet];
+    const nuevos      = attendedIds.filter(id => newContactIds.has(id)).length;
+    const recurrentes = attendedIds.length - nuevos;
+    renderRepDonut(nuevos, recurrentes, attendedIds.length, rangeLabel);
+
+    // ── Clientes en riesgo ────────────────────────────────────────
+    const riskApts = riskAptsRes.data || [];
+    const lastVisit = {};
+    riskApts.forEach(a => {
+      if (!lastVisit[a.contact_id] || new Date(a.scheduled_at) > new Date(lastVisit[a.contact_id].scheduled_at))
+        lastVisit[a.contact_id] = a;
+    });
+    const thirtyDaysAgo = new Date(start.getTime() - 30 * 86400000);
+    const atRisk = Object.values(lastVisit)
+      .filter(a => new Date(a.scheduled_at) < thirtyDaysAgo && !clienteSet.has(a.contact_id))
+      .sort((a,b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+      .slice(0, 5);
+    const riskBadge = $('rep-risk-badge');
+    if (riskBadge) riskBadge.textContent = atRisk.length;
+    const riskEl = $('rep-risk-list');
+    if (riskEl) {
+      if (!atRisk.length) { riskEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px 0">Sin clientes en riesgo este período</div>'; }
+      else {
+        riskEl.innerHTML = atRisk.map(a => {
+          const days = Math.floor((Date.now() - new Date(a.scheduled_at)) / 86400000);
+          const initials = (a.contact_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+          return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)">
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(239,68,68,.1);color:#f87171;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none">${initials}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;font-weight:500">${a.contact_name || '—'}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${a.service||'—'} · <span style="color:#f87171">${days} días sin visita</span></div>
+            </div>
+            <button onclick="switchView('conversaciones')" style="font-size:12px;font-weight:500;height:28px;padding:0 11px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--hover-bg);color:var(--text-muted)">Reactivar</button>
+          </div>`;
+        }).join('');
+      }
+    }
+  }
+  window.loadReportes = loadReportes;
+
+  // ── Line chart SVG ───────────────────────────────────────────────
+  function renderRepLineChart(dayTotals, startDate, days) {
+    const el = $('rep-linechart');
+    if (!el) return;
+    if (!dayTotals.some(v => v > 0)) {
+      el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:60px">Sin ingresos en este período</div>';
+      return;
+    }
+    const maxV  = Math.max(...dayTotals, 1);
+    const W = 1000, H = 1000;
+    const X = i => (i + 0.5) / days * W;
+    const Y = v => H - (v / maxV) * H * 0.88 - H * 0.06;
+    const path = dayTotals.map((v, i) => `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    const area = path + ` L${X(days-1).toFixed(1)},${H} L${X(0).toFixed(1)},${H} Z`;
+
+    // X labels (every N days)
+    const every = days <= 7 ? 1 : days <= 15 ? 3 : 5;
+    const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const xLabels = [];
+    for (let i = 0; i < days; i += every) {
+      const d = new Date(startDate.getTime() + i * 86400000);
+      xLabels.push({ left: (X(i)/10).toFixed(1) + '%', label: days <= 7 ? `${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]} ${d.getDate()}` : `${d.getDate()} ${MES[d.getMonth()]}` });
+    }
+
+    el.innerHTML = `
+      <div style="display:flex;gap:6px;height:100%">
+        <div style="width:42px;flex:none;position:relative;height:calc(100% - 18px)">
+          ${[0,.25,.5,.75,1].map(f => `<div style="position:absolute;right:0;top:${((1-f)*88+6).toFixed(1)}%;transform:translateY(-50%);font-size:11px;color:var(--text-muted)">${f===0?'$0':repFmt(maxV*f).replace('$','$')}</div>`).join('')}
+        </div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <div style="position:relative;flex:1">
+            ${[0,.25,.5,.75,1].map(f => `<div style="position:absolute;left:0;right:0;top:${((1-f)*88+6).toFixed(1)}%;border-top:1px solid var(--border)"></div>`).join('')}
+            <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+              <defs><linearGradient id="repGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cb4ff" stop-opacity=".2"/><stop offset="1" stop-color="#7cb4ff" stop-opacity="0"/></linearGradient></defs>
+              <path d="${area}" fill="url(#repGrad)"/>
+              <path d="${path}" fill="none" stroke="#7cb4ff" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+          </div>
+          <div style="position:relative;height:16px">
+            ${xLabels.map(x => `<div style="position:absolute;left:${x.left};transform:translateX(-50%);font-size:11px;color:var(--text-muted);white-space:nowrap">${x.label}</div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Staff table ───────────────────────────────────────────────────
+  function renderRepStaffTable(emps, allApts, completed) {
+    const el = $('rep-staff-table');
+    if (!el) return;
+    if (!emps.length) {
+      el.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:13px;text-align:center">Agrega empleados en Asignación para ver su rendimiento</div>';
+      return;
+    }
+
+    const header = `<div style="display:grid;grid-template-columns:minmax(200px,2fr) 1fr 1.2fr 1.6fr 1.2fr;font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;background:var(--hover-bg);border-bottom:1px solid var(--border)">
+      <div style="padding:10px 18px">Empleado</div>
+      <div style="padding:10px 18px;text-align:right">Citas</div>
+      <div style="padding:10px 18px;text-align:right">Ingresos</div>
+      <div style="padding:10px 18px">Ocupación</div>
+      <div style="padding:10px 18px;text-align:right">Comisión</div>
+    </div>`;
+
+    const rows = emps.map(emp => {
+      const empApts    = completed.filter(a => a.employee_id === emp.id);
+      const ingresos   = empApts.reduce((s, a) => s + (Number(a.price)||0), 0);
+      const citas      = empApts.length;
+
+      // Commission calculation
+      let comision = 0;
+      if (emp.commission_type === 'pct') {
+        comision = empApts.reduce((s, a) => {
+          const svcName = a.service || '';
+          const override = emp.commission_overrides?.[svcName];
+          const rate = override != null ? Number(override) : Number(emp.commission_base||0);
+          const base = emp.commission_apply_on === 'total' ? (Number(a.price)||0) : (Number(a.price)||0) - (Number(a.discount)||0);
+          return s + base * rate / 100;
+        }, 0);
+      } else {
+        comision = empApts.reduce((s, a) => {
+          const svcName = a.service || '';
+          const override = emp.commission_overrides?.[svcName];
+          const rate = override != null ? Number(override) : Number(emp.commission_base||0);
+          return s + rate;
+        }, 0);
+      }
+
+      const occPct = 55; // placeholder — real calc needs employee_schedules hours
+      const occColor = occPct >= 75 ? '#7cb4ff' : occPct >= 50 ? '#5980a6' : '#3d5168';
+      const safeId   = emp.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      const initials = emp.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+      // Sub-table of appointments for this employee
+      const apptRows = empApts.slice(0, 8).map(a => {
+        const dt   = new Date(a.scheduled_at);
+        const fmtD = dt.toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+        const fmtT = dt.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+        const ok   = a.status === 'completed';
+        return `<div style="display:contents;color:${ok?'var(--text)':'var(--text-muted)'}">
+          <div class="rep-appt-cell">${fmtD}, ${fmtT}</div>
+          <div class="rep-appt-cell">${a.contact_name||'—'}</div>
+          <div class="rep-appt-cell">${a.service||'—'}</div>
+          <div class="rep-appt-cell;color:var(--text-muted)">${a.duration_minutes||60} min</div>
+          <div class="rep-appt-cell" style="text-align:right;${!ok?'text-decoration:line-through':''}">${repFmt(a.price||0)}</div>
+          <div class="rep-appt-cell"><span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:2px 8px;border-radius:5px;color:${ok?'#5fd49a':'#ef8689'};background:${ok?'rgba(79,194,138,.12)':'rgba(229,103,107,.13)'}"><span style="width:6px;height:6px;border-radius:50%;background:currentColor"></span>${ok?'Completada':'No show'}</span></div>
+        </div>`;
+      }).join('');
+
+      const sumTotal = empApts.filter(a=>a.status==='completed').reduce((s,a)=>s+(Number(a.price)||0),0);
+      const noShows  = empApts.filter(a=>a.status==='no_show').length;
+
+      return `
+        <div class="rep-staff-row" onclick="toggleRepEmployee('${emp.name.replace(/'/g,"\\'")}')">
+          <div class="rep-staff-cell" style="display:flex;align-items:center;gap:10px">
+            <svg id="rep-chev-${safeId}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#55667b" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none;transition:transform .15s"><path d="M9 6l6 6-6 6"/></svg>
+            <div style="width:28px;height:28px;border-radius:50%;background:var(--hover-bg);color:var(--text-muted);font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none">${initials}</div>
+            <div><div style="font-weight:500">${emp.name}</div><div style="font-size:11.5px;color:var(--text-muted)">${emp.specialty||emp.role||'—'}</div></div>
+          </div>
+          <div class="rep-staff-cell" style="text-align:right">${citas}</div>
+          <div class="rep-staff-cell" style="text-align:right">${repFmt(ingresos)}</div>
+          <div class="rep-staff-cell" style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1;height:6px;background:var(--hover-bg);border-radius:3px;overflow:hidden"><div style="height:100%;width:${occPct}%;background:${occColor};border-radius:3px"></div></div>
+            <span style="width:36px;text-align:right;font-size:13px">${occPct}%</span>
+          </div>
+          <div class="rep-staff-cell" style="text-align:right">
+            <span style="background:rgba(79,194,138,.13);color:#5fd49a;border:1px solid rgba(79,194,138,.28);font-weight:600;font-size:12.5px;padding:3px 9px;border-radius:5px">${repFmt(comision)}</span>
+          </div>
+        </div>
+        <div id="rep-expand-${safeId}" style="display:none">
+          <div class="rep-staff-expand">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+              <span style="font-size:12px;color:var(--text-muted)">Citas de <strong style="color:var(--text)">${emp.name}</strong></span>
+              <button onclick="event.stopPropagation();switchView('calendario')" style="font-size:12px;color:#7cb4ff;background:none;border:none;cursor:pointer">Ver en Calendario →</button>
+            </div>
+            <div class="rep-appt-grid">
+              <div style="display:contents;font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">
+                <div class="rep-appt-hcell">Fecha y hora</div>
+                <div class="rep-appt-hcell">Cliente</div>
+                <div class="rep-appt-hcell">Servicio</div>
+                <div class="rep-appt-hcell">Duración</div>
+                <div class="rep-appt-hcell" style="text-align:right">Precio</div>
+                <div class="rep-appt-hcell">Estado</div>
+              </div>
+              ${apptRows || '<div style="grid-column:1/-1;padding:14px 12px;color:var(--text-muted);font-size:13px">Sin citas en este período</div>'}
+              <div style="display:contents;font-weight:600;font-size:12.5px">
+                <div style="padding:10px 12px;background:var(--hover-bg)">${citas} cita${citas!==1?'s':''}</div>
+                <div style="padding:10px 12px;background:var(--hover-bg);grid-column:span 2;color:var(--text-muted);font-weight:500">${citas - noShows} completada${citas-noShows!==1?'s':''}${noShows?` · ${noShows} no show`:''}</div>
+                <div style="padding:10px 12px;background:var(--hover-bg);grid-column:span 2;text-align:right">Subtotal: ${repFmt(sumTotal)}</div>
+                <div style="padding:10px 12px;background:var(--hover-bg);display:flex;align-items:center"><span style="background:rgba(79,194,138,.13);color:#5fd49a;border:1px solid rgba(79,194,138,.28);font-size:12px;padding:2px 8px;border-radius:5px">Comisión: ${repFmt(comision)}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    });
+
+    const totIngresos = completed.reduce((s,a)=>s+(Number(a.price)||0),0);
+    const totCitas    = completed.length;
+    const totComision = emps.reduce((s,emp) => {
+      const empApts = completed.filter(a => a.employee_id === emp.id);
+      if (emp.commission_type === 'pct') {
+        return s + empApts.reduce((ss, a) => {
+          const rate = Number(emp.commission_base||0);
+          return ss + (Number(a.price)||0) * rate / 100;
+        }, 0);
+      }
+      return s + empApts.length * Number(emp.commission_base||0);
+    }, 0);
+
+    const footer = `<div style="display:grid;grid-template-columns:minmax(200px,2fr) 1fr 1.2fr 1.6fr 1.2fr;font-weight:700;background:var(--hover-bg);border-top:1px solid var(--border)">
+      <div style="padding:13px 18px">TOTAL</div>
+      <div style="padding:13px 18px;text-align:right">${totCitas}</div>
+      <div style="padding:13px 18px;text-align:right">${repFmt(totIngresos)}</div>
+      <div style="padding:13px 18px;color:var(--text-muted)">— promedio</div>
+      <div style="padding:13px 18px;display:flex;justify-content:flex-end"><span style="background:#2a7a55;color:#eafff3;font-size:12.5px;padding:3px 9px;border-radius:5px">${repFmt(totComision)}</span></div>
+    </div>`;
+
+    el.innerHTML = header + rows.join('') + footer;
+  }
+
+  // ── Donut chart ───────────────────────────────────────────────────
+  function renderRepDonut(nuevos, recurrentes, total, rangeLabel) {
+    const subEl = $('rep-donut-sub');
+    if (subEl) subEl.textContent = `${total} clientes atendidos · ${rangeLabel}`;
+    const wrapEl = $('rep-donut-wrap');
+    if (!wrapEl) return;
+    if (!total) {
+      wrapEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px">Sin clientes en este período</div>';
+      return;
+    }
+    const r = 54, C = 2 * Math.PI * r;
+    const pn = nuevos / total;
+    wrapEl.innerHTML = `
+      <div style="position:relative;width:140px;height:140px;flex:none">
+        <svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg)">
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="#3f7a62" stroke-width="16"/>
+          <circle cx="70" cy="70" r="${r}" fill="none" stroke="#7cb4ff" stroke-width="16" stroke-dasharray="${(pn*C).toFixed(1)} ${C.toFixed(1)}"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px">
+          <span style="font-size:22px;font-weight:600">${total}</span>
+          <span style="font-size:11px;color:var(--text-muted)">clientes</span>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <span style="width:10px;height:10px;border-radius:2px;background:#7cb4ff;flex:none"></span>
+          <span style="flex:1;font-size:13px;color:var(--text-muted)">Nuevos</span>
+          <span style="font-size:18px;font-weight:600">${nuevos}</span>
+          <span style="font-size:12.5px;color:var(--text-muted);width:38px;text-align:right">${Math.round(pn*100)}%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:10px;height:10px;border-radius:2px;background:#3f7a62;flex:none"></span>
+          <span style="flex:1;font-size:13px;color:var(--text-muted)">Recurrentes</span>
+          <span style="font-size:18px;font-weight:600">${recurrentes}</span>
+          <span style="font-size:12.5px;color:var(--text-muted);width:38px;text-align:right">${100 - Math.round(pn*100)}%</span>
+        </div>
+      </div>`;
+  }
+
   window.loadPagos = loadPagos;
 
   // ── Cuenta ───────────────────────────────────────────────────────────────
