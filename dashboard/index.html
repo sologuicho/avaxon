@@ -12136,6 +12136,7 @@
 
   function asigOpenEdit(id) {
     asigSel = id; asigMode = 'edit'; asigDraft = null;
+    asigScheduleDraft = JSON.parse(JSON.stringify(asigSchedulesByEmpId[id] || {}));
     renderAsigEditPanel();
   }
 
