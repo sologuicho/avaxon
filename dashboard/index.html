@@ -2858,8 +2858,41 @@
               <input type="hidden" id="apt-f-contact-id" />
             </div>
             <div>
-              <label class="cfg-field-label">Servicio (opcional)</label>
-              <input id="apt-f-service" type="text" class="cfg-field-input" placeholder="Ej: Limpieza dental" />
+              <label class="cfg-field-label">Empleado</label>
+              <select id="apt-f-employee" class="cfg-field-select" onchange="onAptEmployeeChange(this.value)">
+                <option value="">Sin asignar</option>
+              </select>
+            </div>
+            <div style="position:relative">
+              <label class="cfg-field-label">Servicio</label>
+              <input id="apt-f-service" type="text" class="cfg-field-input" placeholder="Buscar servicio o escribe uno nuevo…" oninput="onAptServiceInput(this.value)" autocomplete="off" />
+              <input type="hidden" id="apt-f-service-id" />
+              <div id="apt-service-results" class="cal-contact-results" style="display:none"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label class="cfg-field-label">Precio (MXN)</label>
+                <input id="apt-f-price" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+              </div>
+              <div>
+                <label class="cfg-field-label">Método de pago</label>
+                <select id="apt-f-payment-method" class="cfg-field-select">
+                  <option value="">Sin cobrar</option>
+                  <option value="cash">Efectivo</option>
+                  <option value="card">Tarjeta</option>
+                  <option value="transfer">Transferencia</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div>
+                <label class="cfg-field-label">Propina (MXN)</label>
+                <input id="apt-f-tip" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+              </div>
+              <div>
+                <label class="cfg-field-label">Descuento (MXN)</label>
+                <input id="apt-f-discount" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+              </div>
             </div>
             <div>
               <label class="cfg-field-label">Fecha</label>
