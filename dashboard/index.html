@@ -8453,7 +8453,7 @@
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
-    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','pagos'];
+    const _validViews = ['inicio','conversaciones','leads','pipeline','campanas','calendario','asignacion','conexiones','bot','inventario','config','cuenta','crm','pagos','reportes'];
     if (_savedView && _validViews.includes(_savedView)) switchView(_savedView);
     // switchView('conversaciones') ya llama loadConversaciones() en su propio
     // dispatch — llamarlo también aquí sin condición duplicaba la petición
