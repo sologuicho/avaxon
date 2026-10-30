@@ -3985,6 +3985,124 @@
   </div>
 </div>
 
+      <!-- VIEW: Reportes -->
+      <div class="view" id="view-reportes">
+
+        <!-- Header -->
+        <div class="view-header" style="flex-wrap:wrap;gap:12px">
+          <div class="view-header-left">
+            <div class="view-header-icon" style="background:rgba(124,180,255,.12);color:#7cb4ff">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+            </div>
+            <div>
+              <div class="view-header-title">Reportes</div>
+              <div class="view-header-sub" id="rep-range-label">—</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <!-- Period selector -->
+            <div style="display:flex;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px">
+              <button onclick="setReportesPeriod('week')"  id="rep-btn-week"  class="rep-period-btn rep-period-active">Esta semana</button>
+              <button onclick="setReportesPeriod('month')" id="rep-btn-month" class="rep-period-btn">Este mes</button>
+              <button onclick="setReportesPeriod('last')"  id="rep-btn-last"  class="rep-period-btn">Mes pasado</button>
+            </div>
+            <!-- Export -->
+            <div style="position:relative">
+              <button onclick="toggleRepExport()" id="rep-export-btn" style="display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+                Exportar
+                <svg id="rep-export-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .15s"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="rep-export-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);width:300px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 16px 40px rgba(0,0,0,.4);z-index:20;overflow:hidden">
+                <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600">Exportar reporte · PDF</div>
+                <div onclick="exportReporte('full')" style="display:flex;gap:12px;padding:12px 14px;cursor:pointer;background:rgba(124,180,255,.06);border-bottom:1px solid var(--border)" onmouseenter="this.style.background='rgba(124,180,255,.1)'" onmouseleave="this.style.background='rgba(124,180,255,.06)'">
+                  <div style="width:30px;height:30px;flex:none;border-radius:6px;background:rgba(124,180,255,.15);color:#7cb4ff;display:flex;align-items:center;justify-content:center;font-size:14px">◈</div>
+                  <div style="flex:1"><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:13px;font-weight:600">Vista actual completa</span><span style="font-size:10px;font-weight:700;text-transform:uppercase;background:#7cb4ff;color:#0d1520;padding:2px 6px;border-radius:4px">Recomendado</span></div><span style="font-size:12px;color:var(--text-muted)">KPIs, gráficas, empleados y clientes</span></div>
+                </div>
+                <div id="rep-export-options"></div>
+                <div style="padding:8px 14px;border-top:1px solid var(--border);font-size:11.5px;color:var(--text-muted)" id="rep-export-period-label"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI cards -->
+        <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#7cb4ff"></div><div><div class="kpi-label">Ingresos totales</div><div class="kpi-value" id="rep-kpi-ingresos">—</div><div class="kpi-sub" id="rep-kpi-ingresos-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#5fd49a"></div><div><div class="kpi-label">Citas completadas</div><div class="kpi-value" id="rep-kpi-citas">—</div><div class="kpi-sub" id="rep-kpi-citas-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#a78bfa"></div><div><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="rep-kpi-ticket">—</div><div class="kpi-sub" id="rep-kpi-ticket-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
+          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#f59e0b"></div><div><div class="kpi-label">Clientes atendidos</div><div class="kpi-value" id="rep-kpi-clientes">—</div><div class="kpi-sub" id="rep-kpi-clientes-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
+        </section>
+
+        <!-- Charts row -->
+        <section style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px">
+          <!-- Line chart -->
+          <div class="card bp" style="padding:18px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div><div style="font-size:14px;font-weight:700">Ingresos por día</div><div style="font-size:12px;color:var(--text-muted)">MXN · <span id="rep-chart-period-label">—</span></div></div>
+              <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted)">
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:2px;background:#7cb4ff;display:inline-block"></span>Período actual</span>
+              </div>
+            </div>
+            <div id="rep-linechart" style="height:180px;position:relative">
+              <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:60px">Cargando…</div>
+            </div>
+          </div>
+          <!-- Services bar -->
+          <div class="card bp" style="padding:18px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="margin-bottom:14px"><div style="font-size:14px;font-weight:700">Servicios más vendidos</div><div style="font-size:12px;color:var(--text-muted)">Top 5 por ingresos</div></div>
+            <div id="rep-services-list" style="display:flex;flex-direction:column;gap:12px">
+              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Employee table -->
+        <section class="card bp" style="padding:0;overflow:hidden">
+          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:700">Rendimiento del equipo</div>
+              <div style="font-size:12px;color:var(--text-muted)">Comisión calculada según configuración de cada empleado</div>
+            </div>
+          </div>
+          <div id="rep-staff-table">
+            <div style="padding:24px;color:var(--text-muted);font-size:13px;text-align:center">Cargando…</div>
+          </div>
+        </section>
+
+        <!-- Bottom row -->
+        <section style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+          <!-- Donut -->
+          <div class="card bp" style="padding:18px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="margin-bottom:14px"><div style="font-size:14px;font-weight:700">Clientes nuevos vs recurrentes</div><div style="font-size:12px;color:var(--text-muted)" id="rep-donut-sub">—</div></div>
+            <div id="rep-donut-wrap" style="display:flex;align-items:center;gap:24px">
+              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+            </div>
+          </div>
+          <!-- At risk -->
+          <div class="card bp" style="padding:18px 20px">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:14px;font-weight:700">Clientes en riesgo</span>
+                  <span id="rep-risk-badge" style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:flex;align-items:center;justify-content:center">0</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted)">Sin visita en más de 30 días</div>
+              </div>
+            </div>
+            <div id="rep-risk-list" style="display:flex;flex-direction:column">
+              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
       <!-- VIEW: Configuración -->
       <div class="view" id="view-config">
         <div class="view-header">
