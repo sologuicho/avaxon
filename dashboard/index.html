@@ -12399,6 +12399,7 @@
       }).eq('id', p.id).eq('organization_id', orgId);
       if (error) { showToast('Error al guardar: ' + error.message, 4000); return; }
       showToast('Cambios guardados');
+      await asigSaveSchedule(p.id, orgId);
       asigClose();
     } catch (e) { showToast('Error al guardar: ' + e.message, 4000); }
   }
