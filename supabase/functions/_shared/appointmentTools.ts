@@ -135,7 +135,7 @@ export async function consultarDisponibilidad(
 // calendario. El resultado se inyecta como dato obligatorio más abajo.
 export async function extractAppointmentSlot(
   combinedText: string,
-  lastBotMessage: string,
+  recentContext: string,
   nowLabel: string,
   timezone: string,
   openaiKey: string,
@@ -151,7 +151,7 @@ export async function extractAppointmentSlot(
         messages: [
           {
             role: 'system',
-            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo, confirmando o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha.${lastBotMessage ? ` Si el mensaje del cliente es solo una CONFIRMACIÓN sin fecha/hora propia (ej. "sí", "confirmo", "agenda", o tocó un botón como "Agendar cita"), usa la fecha/hora que el bot ya había propuesto en su último mensaje: "${lastBotMessage.replace(/"/g, "'")}".` : ''} Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null, "hora_ambigua": true|false, "hora_alt": "HH:MM"|null}. "hora" y "hora_alt" en formato 24h. Si el cliente dio un número de 1 a 11 SIN decir "de la mañana/tarde/noche" ni "am/pm" (ej. "a las 7"), es ambigua: "hora_ambigua": true, "hora" = esa hora interpretada como AM, y "hora_alt" = la misma hora interpretada como PM (+12h). Si especificó claramente AM/PM o mañana/tarde/noche, o es una hora de las 13 a 23 (ya sin ambigüedad posible), "hora_ambigua": false y "hora_alt": null. Si menciona o confirma el día pero no se puede determinar ninguna hora, deja "hora": null. Si no hay fecha concreta (ni propia ni confirmando la del bot), "solicita_horario": false y "fecha": null.`,
+            content: `Analiza el mensaje del cliente y decide si está pidiendo, proponiendo, confirmando o preguntando por una cita/horario en un día y hora concretos (no cuenta solo preguntar "qué días atienden" sin mencionar un día específico). Hoy es ${nowLabel} (zona horaria ${timezone}) — resuelve referencias relativas ("hoy", "mañana", "el viernes", etc.) usando esa fecha.${recentContext ? ` Si el mensaje del cliente es solo una CONFIRMACIÓN o no repite una fecha/hora propia (ej. "sí", "confirmo", "agenda", solo dio su nombre, o tocó un botón como "Agendar cita"), busca en este historial reciente de la conversación si el cliente ya había mencionado una fecha/hora, o si el bot ya había propuesto una, y úsala -- no asumas que no hay fecha solo porque este mensaje no la repite:\n${recentContext.replace(/"/g, "'")}` : ''} Responde SOLO con JSON: {"solicita_horario": true|false, "fecha": "YYYY-MM-DD"|null, "hora": "HH:MM"|null, "hora_ambigua": true|false, "hora_alt": "HH:MM"|null}. "hora" y "hora_alt" en formato 24h. Si el cliente dio un número de 1 a 11 SIN decir "de la mañana/tarde/noche" ni "am/pm" (ej. "a las 7"), es ambigua: "hora_ambigua": true, "hora" = esa hora interpretada como AM, y "hora_alt" = la misma hora interpretada como PM (+12h). Si especificó claramente AM/PM o mañana/tarde/noche, o es una hora de las 13 a 23 (ya sin ambigüedad posible), "hora_ambigua": false y "hora_alt": null. Si menciona o confirma el día pero no se puede determinar ninguna hora, deja "hora": null. Si no hay fecha concreta (ni propia, ni del historial reciente, ni confirmando la del bot), "solicita_horario": false y "fecha": null.`,
           },
           { role: 'user', content: combinedText },
         ],
@@ -461,9 +461,22 @@ export async function agendarCita(
     if (eventRes.ok) {
       const eventData = await eventRes.json()
       googleEventId = eventData.id
-      await sb.from('appointments')
+      const { error: saveIdErr } = await sb.from('appointments')
         .update({ google_event_id: googleEventId, updated_at: new Date().toISOString() })
         .eq('id', appt.id)
+      // Si esto falla, el evento SÍ queda creado en Google Calendar pero la
+      // cita en nuestra BD nunca se entera de su google_event_id -- al
+      // cancelarla después, cancelarOReagendarCita no tiene cómo borrar el
+      // evento (busca appt.google_event_id) y queda huérfano en el
+      // calendario. Antes esto fallaba en silencio, sin loguear nada.
+      if (saveIdErr) {
+        await logBotError(sb, {
+          organization_id: organizationId, conversation_id: conversationId,
+          type: 'calendar_failed',
+          detail: `Evento de Google Calendar creado (${googleEventId}) para la cita ${appt.id}, pero no se pudo guardar su id: ${saveIdErr.message}`,
+          source: `${sourcePrefix}:agendar_cita`,
+        })
+      }
     } else {
       const errData = await eventRes.json().catch(() => ({}))
       await logBotError(sb, {
@@ -625,7 +638,13 @@ export function buildCalendarCtx(params: {
 // obligatorio que no puede contradecir. Movido tal cual desde webhook-wa.
 export async function buildForcedAvailabilityContext(params: {
   combinedText: string
-  lastBotMessage: string
+  // Transcripción corta de los últimos turnos ("Cliente: ...\nBot: ...\n...")
+  // -- antes solo se pasaba el último mensaje del bot, y si el cliente dio
+  // la fecha/hora dos turnos atrás (p. ej. porque el bot se pausó o un
+  // humano contestó en medio), extractAppointmentSlot no tenía forma de
+  // recuperarla y el modelo quedaba solo con su propia lectura del
+  // historial, sin el veredicto real de disponibilidad.
+  recentContext: string
   todayLabel: string
   nowTimeLabel: string
   timezone: string
@@ -633,10 +652,10 @@ export async function buildForcedAvailabilityContext(params: {
   calendarToken: string | null
   hours: any
 }): Promise<string> {
-  const { combinedText, lastBotMessage, todayLabel, nowTimeLabel, timezone, openaiKey, calendarToken, hours } = params
+  const { combinedText, recentContext, todayLabel, nowTimeLabel, timezone, openaiKey, calendarToken, hours } = params
   if (!calendarToken) return ''
 
-  const slot = await extractAppointmentSlot(combinedText, lastBotMessage, `${todayLabel}, ${nowTimeLabel}`, timezone, openaiKey)
+  const slot = await extractAppointmentSlot(combinedText, recentContext, `${todayLabel}, ${nowTimeLabel}`, timezone, openaiKey)
   if (!slot?.fecha || !slot.hora) return ''
 
   let resolvedHora = slot.hora
@@ -735,6 +754,14 @@ export async function runAppointmentAgentLoop(params: {
         let toolResult: string
         try {
           const args = JSON.parse(toolCall.function.arguments)
+
+          // Mismo [tool_trace] que ya tenía webhook-wa -- sin esto, no hay
+          // forma de saber desde los logs qué argumentos mandó el modelo
+          // (ej. qué hora interpretó) cuando algo sale mal.
+          const argsForLog = { ...args }
+          if ('nombre' in argsForLog) argsForLog.nombre = argsForLog.nombre ? '[provisto]' : '[vacío]'
+          console.log(`[tool_trace] channel=${channel} conv=${conversationId} tool=${toolCall.function.name} args=${JSON.stringify(argsForLog)}`)
+
           if (toolCall.function.name === 'consultar_disponibilidad') {
             toolResult = await consultarDisponibilidad(args.fecha, calendarToken!, timezone, hours)
           } else if (toolCall.function.name === 'agendar_cita') {
@@ -745,6 +772,7 @@ export async function runAppointmentAgentLoop(params: {
           } else {
             toolResult = 'Herramienta no reconocida.'
           }
+          console.log(`[tool_trace] channel=${channel} conv=${conversationId} tool=${toolCall.function.name} result=${toolResult.slice(0, 300)}`)
         } catch (e) {
           toolResult = `Error ejecutando la herramienta: ${(e as Error).message}`
         }

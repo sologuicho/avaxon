@@ -166,12 +166,16 @@ async function handleIncomingMessage(
   const nowTimeLabel = now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: timezone });
   const fechaHoraCtx = `\n\nFECHA Y HORA ACTUAL: Hoy es ${todayLabel}, son las ${nowTimeLabel} (zona horaria ${timezone}). Usa este dato SIEMPRE para resolver referencias relativas como "hoy", "mañana" o "el viernes" -- nunca asumas o inventes qué día es.`;
   const calendarCtx = buildCalendarCtx({ calendarToken, todayLabel, nowTimeLabel, timezone, hasBusinessHours });
-  // Si el cliente solo confirma ("sí", "agéndame") sin repetir fecha/hora,
-  // se resuelve contra lo que el bot ya había propuesto -- mismo criterio
-  // que usa webhook-wa.
-  const lastBotMessage = [...openaiHistory].reverse().find((m) => m.role === 'assistant')?.content || '';
+  // Si el cliente solo confirma ("sí", "agéndame") sin repetir fecha/hora, o
+  // la dio un par de turnos atrás y el bot no llegó a contestarle en ese
+  // momento, se resuelve contra los últimos turnos de la conversación --
+  // mismo criterio que usa webhook-wa.
+  const RECENT_CONTEXT_TURNS = 6;
+  const recentContext = openaiHistory.slice(0, -1).slice(-RECENT_CONTEXT_TURNS)
+    .map((m) => `${m.role === 'assistant' ? 'Bot' : 'Cliente'}: ${m.content}`)
+    .join('\n');
   const forcedAvailabilityCtx = await buildForcedAvailabilityContext({
-    combinedText: messageText, lastBotMessage, todayLabel, nowTimeLabel, timezone,
+    combinedText: messageText, recentContext, todayLabel, nowTimeLabel, timezone,
     openaiKey: OPENAI_KEY, calendarToken, hours,
   });
 

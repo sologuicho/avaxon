@@ -1609,11 +1609,18 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     .reverse()
     .map(m => ({ role: m.direction === 'inbound' ? 'user' : 'assistant', content: m.content }))
 
-  // Último mensaje del bot ANTES del turno actual — para resolver cuando el
-  // cliente solo confirma (ej. toca el botón "Agendar cita") sin repetir la
-  // fecha/hora: el bot ya la había propuesto, así que el código la retoma de
-  // ahí en vez de dejar que el modelo la reconstruya (y arriesgue un AM/PM).
-  const lastBotMessage = [...chatHistory].reverse().find(m => m.role === 'assistant' && typeof m.content === 'string')?.content || ''
+  // Transcripción corta de los últimos turnos ANTES del actual — para
+  // resolver cuando el cliente solo confirma (ej. "sí", o toca el botón
+  // "Agendar cita") sin repetir la fecha/hora, o cuando él mismo la dio un
+  // par de turnos atrás y el bot no llegó a contestarle en ese momento (p.
+  // ej. se pausó y un humano contestó algo sin relación en medio) — antes
+  // solo se miraba el último mensaje del bot, y en ese caso se perdía la
+  // fecha/hora por completo.
+  const RECENT_CONTEXT_TURNS = 6
+  const recentContext = chatHistory
+    .slice(-RECENT_CONTEXT_TURNS)
+    .map(m => `${m.role === 'assistant' ? 'Bot' : 'Cliente'}: ${typeof m.content === 'string' ? m.content : ''}`)
+    .join('\n')
 
   if (lastImageDataUrl) {
     chatHistory.push({
@@ -1659,7 +1666,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // (compartido con webhook-ig/webhook-fb) -- misma lógica que antes se
   // hacía aquí inline.
   const forcedAvailabilityCtx = await buildForcedAvailabilityContext({
-    combinedText, lastBotMessage, todayLabel, nowTimeLabel, timezone,
+    combinedText, recentContext, todayLabel, nowTimeLabel, timezone,
     openaiKey: OPENAI_KEY, calendarToken, hours: orgProfile?.hours,
   })
 
