@@ -13926,10 +13926,14 @@
     if (!orgId) { listEl.innerHTML = '<div class="apt-empty">Selecciona un cliente</div>'; return; }
 
     let q = sb.from('payments')
-      .select('id,amount,concept,status,checkout_url,created_at,paid_at,created_by_bot,contacts(name,phone)')
+      .select('id,amount,concept,status,checkout_url,created_at,paid_at,created_by_bot,is_manual,payment_method,tip,employee_id,contacts(name,phone)')
       .eq('organization_id', orgId)
       .order('created_at', { ascending: false })
       .limit(200);
+
+    if (pagosActiveTab === 'stripe') q = q.eq('is_manual', false);
+    if (pagosActiveTab === 'manual') q = q.eq('is_manual', true);
+
     const { data, error } = await q;
 
     if (error) { listEl.innerHTML = `<div class="apt-empty">Error: ${error.message}</div>`; return; }
