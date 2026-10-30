@@ -13978,6 +13978,239 @@
       </div>`;
     }).join('');
   }
+  // ── Pagos: estado de tabs ──────────────────────────────────────────────────
+  let pagosActiveTab = 'todos';
+
+  function switchPagosTab(tab) {
+    pagosActiveTab = tab;
+    ['todos','manual','cortes','stripe'].forEach(t => {
+      const btn = $('pagos-tab-' + t);
+      if (btn) {
+        btn.style.background = t === tab ? 'var(--accent)' : 'transparent';
+        btn.style.color      = t === tab ? '#062513'        : 'var(--text-muted)';
+      }
+    });
+    const listaPane  = $('pagos-pane-lista');
+    const cortesPane = $('pagos-pane-cortes');
+    if (tab === 'cortes') {
+      if (listaPane)  listaPane.style.display  = 'none';
+      if (cortesPane) cortesPane.style.display = 'flex';
+      loadCashRegisters();
+    } else {
+      if (listaPane)  listaPane.style.display  = 'block';
+      if (cortesPane) cortesPane.style.display = 'none';
+      loadPagos();
+    }
+  }
+  window.switchPagosTab = switchPagosTab;
+
+  // ── Cortes de caja ────────────────────────────────────────────────────────
+  async function loadCashRegisters() {
+    const orgId = getActiveOrgId();
+    const listEl = $('pagos-cortes-list');
+    if (!orgId || !listEl) return;
+    listEl.innerHTML = '<div class="apt-empty">Cargando…</div>';
+    const { data, error } = await sb.from('cash_registers')
+      .select('*').eq('organization_id', orgId).order('date', { ascending: false }).limit(60);
+    if (error) { listEl.innerHTML = `<div class="apt-empty">Error: ${error.message}</div>`; return; }
+    if (!data?.length) { listEl.innerHTML = '<div class="apt-empty">Sin cortes registrados todavía</div>'; return; }
+    const fmx = n => '$' + Number(n||0).toLocaleString('es-MX', { minimumFractionDigits: 0 });
+    listEl.innerHTML = data.map(cr => {
+      const dateLabel = new Date(cr.date + 'T12:00:00').toLocaleDateString('es-MX', { weekday:'short', day:'numeric', month:'long', year:'numeric' });
+      const isClosed = cr.status === 'closed';
+      return `<div class="card bp" style="padding:18px 20px">
+        <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:15px;font-weight:700;color:var(--text)">${dateLabel}</span>
+            <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;${isClosed ? 'background:rgba(34,197,94,.1);color:#22c55e' : 'background:rgba(245,158,11,.1);color:#f59e0b'}">${isClosed ? 'Cerrado' : 'Abierto'}</span>
+          </div>
+          <span style="font-size:22px;font-weight:700;color:var(--text)">${fmx(cr.grand_total)} MXN</span>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--text-muted)">
+          <span><i class="fa fa-money-bill-wave" style="margin-right:5px;color:#22c55e"></i>Efectivo: <strong style="color:var(--text)">${fmx(cr.cash_total)}</strong></span>
+          <span><i class="fa fa-credit-card" style="margin-right:5px;color:#7cb4ff"></i>Tarjeta: <strong style="color:var(--text)">${fmx(cr.card_total)}</strong></span>
+          <span><i class="fa fa-building-columns" style="margin-right:5px;color:#a78bfa"></i>Transferencia: <strong style="color:var(--text)">${fmx(cr.transfer_total)}</strong></span>
+          ${cr.tips_total ? `<span><i class="fa fa-star" style="margin-right:5px;color:#f59e0b"></i>Propinas: <strong style="color:var(--text)">${fmx(cr.tips_total)}</strong></span>` : ''}
+          ${cr.appointments_count ? `<span><i class="fa fa-calendar-check" style="margin-right:5px"></i>${cr.appointments_count} citas</span>` : ''}
+        </div>
+        ${cr.notes ? `<p style="margin:10px 0 0;font-size:12.5px;color:var(--text-muted)">${cr.notes}</p>` : ''}
+      </div>`;
+    }).join('');
+  }
+  window.loadCashRegisters = loadCashRegisters;
+
+  function openCashRegisterModal() {
+    const today = new Date().toISOString().split('T')[0];
+    $('cr-date').value    = today;
+    $('cr-cash').value    = '';
+    $('cr-card').value    = '';
+    $('cr-transfer').value = '';
+    $('cr-tips').value    = '';
+    $('cr-discounts').value = '';
+    $('cr-appts').value   = '';
+    $('cr-notes').value   = '';
+    $('cr-total-display').textContent = '$0';
+    $('cr-error').style.display = 'none';
+    $('cash-register-modal').style.display = 'flex';
+  }
+  window.openCashRegisterModal = openCashRegisterModal;
+
+  function closeCashRegisterModal() { $('cash-register-modal').style.display = 'none'; }
+  window.closeCashRegisterModal = closeCashRegisterModal;
+
+  function updateCrTotal() {
+    const cash     = parseFloat($('cr-cash').value)     || 0;
+    const card     = parseFloat($('cr-card').value)     || 0;
+    const transfer = parseFloat($('cr-transfer').value) || 0;
+    const total    = cash + card + transfer;
+    $('cr-total-display').textContent = '$' + total.toLocaleString('es-MX', { minimumFractionDigits: 0 });
+  }
+  window.updateCrTotal = updateCrTotal;
+
+  async function saveCashRegister() {
+    const orgId = getActiveOrgId();
+    const errEl = $('cr-error');
+    const btn   = $('cr-save-btn');
+    errEl.style.display = 'none';
+
+    const date      = $('cr-date').value;
+    const cashTotal = parseFloat($('cr-cash').value) || 0;
+    const cardTotal = parseFloat($('cr-card').value) || 0;
+    const transTotal= parseFloat($('cr-transfer').value) || 0;
+
+    if (!date) { errEl.textContent = 'Selecciona una fecha.'; errEl.style.display = 'block'; return; }
+    if (!cashTotal && !cardTotal && !transTotal) {
+      errEl.textContent = 'Ingresa al menos un monto.'; errEl.style.display = 'block'; return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Guardando…';
+
+    const { error } = await sb.from('cash_registers').insert({
+      organization_id:   orgId,
+      opened_by:         state.userId,
+      closed_by:         state.userId,
+      opened_at:         new Date().toISOString(),
+      closed_at:         new Date().toISOString(),
+      date,
+      status:            'closed',
+      cash_total:        cashTotal,
+      card_total:        cardTotal,
+      transfer_total:    transTotal,
+      tips_total:        parseFloat($('cr-tips').value)      || 0,
+      discount_total:    parseFloat($('cr-discounts').value) || 0,
+      appointments_count: parseInt($('cr-appts').value)      || 0,
+      notes:             $('cr-notes').value.trim() || null,
+    });
+
+    btn.disabled = false; btn.textContent = 'Cerrar corte';
+    if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+    showToast('Corte de caja registrado');
+    closeCashRegisterModal();
+    if (pagosActiveTab === 'cortes') loadCashRegisters();
+  }
+  window.saveCashRegister = saveCashRegister;
+
+  // ── Pago manual ───────────────────────────────────────────────────────────
+  async function openManualPaymentModal() {
+    const orgId = getActiveOrgId();
+    $('mp-concept').value = '';
+    $('mp-amount').value  = '';
+    $('mp-tip').value     = '';
+    $('mp-discount').value = '';
+    $('mp-contact-search').value = '';
+    $('mp-contact-id').value     = '';
+    $('mp-notes').value   = '';
+    $('mp-payment-method').value = 'cash';
+    $('mp-error').style.display  = 'none';
+
+    $('mp-date').value = new Date().toISOString().split('T')[0];
+
+    const empSel = $('mp-employee');
+    if (empSel && orgId) {
+      const { data: emps } = await sb.from('employees').select('id,name,specialty,role').eq('organization_id', orgId).eq('active', true).order('name');
+      empSel.innerHTML = '<option value="">Sin asignar</option>' +
+        (emps || []).map(e => `<option value="${e.id}">${e.name} · ${e.specialty || e.role}</option>`).join('');
+    }
+    $('manual-payment-modal').style.display = 'flex';
+  }
+  window.openManualPaymentModal = openManualPaymentModal;
+
+  function closeManualPaymentModal() { $('manual-payment-modal').style.display = 'none'; }
+  window.closeManualPaymentModal = closeManualPaymentModal;
+
+  function searchMpContact(val) {
+    const q = val.trim().toLowerCase();
+    const res = $('mp-contact-results');
+    if (!q) { res.style.display = 'none'; return; }
+    const orgId = getActiveOrgId();
+    sb.from('contacts').select('id,name,phone').eq('organization_id', orgId)
+      .or(`name.ilike.%${q}%,phone.ilike.%${q}%`).limit(5)
+      .then(({ data }) => {
+        if (!data?.length) { res.style.display = 'none'; return; }
+        res.innerHTML = data.map(c =>
+          `<div onclick="selectMpContact('${c.id}','${(c.name||c.phone).replace(/'/g,"\\'")}')"
+            style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13.5px"
+            onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background=''">
+            ${c.name || c.phone}${c.name && c.phone ? ` <span style="color:var(--text-muted);font-size:12px">${c.phone}</span>` : ''}
+          </div>`
+        ).join('');
+        res.style.display = 'block';
+      });
+  }
+  window.searchMpContact = searchMpContact;
+
+  function selectMpContact(id, name) {
+    $('mp-contact-id').value     = id;
+    $('mp-contact-search').value = name;
+    $('mp-contact-results').style.display = 'none';
+  }
+  window.selectMpContact = selectMpContact;
+
+  async function saveManualPayment() {
+    const orgId = getActiveOrgId();
+    const errEl = $('mp-error');
+    const btn   = $('mp-save-btn');
+    errEl.style.display = 'none';
+
+    const concept = $('mp-concept').value.trim();
+    const amount  = parseFloat($('mp-amount').value);
+    const method  = $('mp-payment-method').value;
+
+    if (!concept) { errEl.textContent = 'El concepto es obligatorio.'; errEl.style.display = 'block'; return; }
+    if (!amount || amount <= 0) { errEl.textContent = 'Ingresa un monto válido.'; errEl.style.display = 'block'; return; }
+    if (!method) { errEl.textContent = 'Selecciona el método de pago.'; errEl.style.display = 'block'; return; }
+
+    btn.disabled = true; btn.textContent = 'Registrando…';
+
+    const dateVal = $('mp-date').value;
+    const paidAt  = dateVal ? new Date(dateVal + 'T12:00:00').toISOString() : new Date().toISOString();
+
+    const { error } = await sb.from('payments').insert({
+      organization_id: orgId,
+      contact_id:      $('mp-contact-id').value || null,
+      employee_id:     $('mp-employee').value   || null,
+      amount,
+      currency:        'MXN',
+      concept,
+      status:          'paid',
+      payment_method:  method,
+      tip:             parseFloat($('mp-tip').value)      || 0,
+      discount:        parseFloat($('mp-discount').value) || 0,
+      is_manual:       true,
+      paid_at:         paidAt,
+      created_by:      state.userId,
+      created_by_bot:  false,
+    });
+
+    btn.disabled = false; btn.textContent = 'Registrar pago';
+    if (error) { errEl.textContent = 'Error: ' + error.message; errEl.style.display = 'block'; return; }
+    showToast('Pago registrado');
+    closeManualPaymentModal();
+    loadPagos();
+  }
+  window.saveManualPayment = saveManualPayment;
+
   window.loadPagos = loadPagos;
 
   // ── Cuenta ───────────────────────────────────────────────────────────────
