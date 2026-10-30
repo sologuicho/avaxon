@@ -12425,6 +12425,7 @@
         overrides: newEmp.commission_overrides || {},
       };
       asigPeople.push(newPerson);
+      await asigSaveSchedule(newEmp.id, orgId);
       asigDraft = null; asigSel = null; asigMode = null;
       const countEl = $('asig-count-label');
       if (countEl) countEl.textContent = `${asigPeople.length} persona${asigPeople.length !== 1 ? 's' : ''}`;
