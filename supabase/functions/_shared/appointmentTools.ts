@@ -11,6 +11,13 @@ import { logBotError } from './botErrorLog.ts'
 
 export const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 
+// Respuestas del bot rechazando un horario/cita -- se quitan del historial
+// que ve el modelo para que no copie la conclusión de un rechazo viejo en
+// vez de volver a evaluarla (antes solo vivía en webhook-wa; "no está
+// disponible"/"ya no está disponible" se agregó porque es la frase real que
+// usa el modelo al rechazar un horario y el patrón original no la cubría).
+export const BOT_SCHEDULE_REJECTION_REGEX = /no podemos agendar|no se puede agendar|no est[aá] disponible|ya no est[aá] disponible|fuera del horario de atenci[oó]n|fuera de horario/i
+
 export const APPOINTMENT_TOOLS = [
   {
     type: 'function',
@@ -101,7 +108,10 @@ export async function consultarDisponibilidad(
       const h = hours[dayKey]
       windowLabel = (!h || h.closed || !h.open || !h.close)
         ? `el negocio está CERRADO ese día (${fecha}) — no ofrezcas ningún horario ese día, propón otro día`
-        : `el horario de atención ese día (${fecha}) es de ${h.open} a ${h.close} — SOLO puedes ofrecer horas dentro de ese rango`
+        // 12h con a.m./p.m. (nunca 24h) -- "23:59" suelto se prestaba a que el
+        // modelo lo leyera como una cita registrada a esa hora en vez de la
+        // hora de cierre del negocio.
+        : `el horario de ATENCIÓN del negocio ese día (${fecha}) es de ${to12hLabel(h.open)} a ${to12hLabel(h.close)} — esto es cuándo abre y cierra el negocio, NO una cita existente. SOLO puedes ofrecer horas dentro de ese rango`
     } else {
       windowLabel = 'no hay horario de atención configurado — no inventes ni asumas uno, dile al cliente que un asesor le confirmará el horario'
     }
@@ -114,13 +124,14 @@ export async function consultarDisponibilidad(
     if (!res.ok) return `No se pudo consultar el calendario (error ${res.status}).`
     const data = await res.json()
     const busy: { start: string; end: string }[] = data.calendars?.primary?.busy ?? []
-    if (busy.length === 0) return `El día ${fecha} no tiene citas registradas; ${windowLabel}.`
+    if (busy.length === 0) return `El día ${fecha} no tiene ninguna cita registrada todavía; ${windowLabel}.`
     // Google regresa start/end en UTC (sufijo Z) — convertir a la hora local
     // de la org, no cortar el string asumiendo que ya viene en esa zona.
+    // 12h con a.m./p.m., igual que windowLabel -- mismo motivo.
     const toLocalHour = (iso: string) =>
-      new Date(iso).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone })
+      new Date(iso).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: timezone })
     const slots = busy.map(b => `${toLocalHour(b.start)}–${toLocalHour(b.end)}`).join(', ')
-    return `El día ${fecha} tiene los siguientes horarios ocupados: ${slots}; ${windowLabel}. Ofrece un hueco libre dentro de ese rango.`
+    return `El día ${fecha} ya tiene citas ocupando estos horarios: ${slots}; ${windowLabel}. Ofrece un hueco libre dentro de ese rango, que no choque con esos horarios ocupados.`
   } catch (e) {
     return `Error consultando el calendario: ${(e as Error).message}`
   }
@@ -288,7 +299,7 @@ export async function checkRequestedSlot(
   if (within === false) {
     const openMin = minutesOfDay(h.open)
     const closeMin = closeMinutesFor(h)
-    const base = `${label} del ${fecha}: FUERA DE HORARIO (el horario de atención ese día es de ${h.open} a ${h.close}).`
+    const base = `${label} del ${fecha}: FUERA DE HORARIO (el negocio atiende ese día de ${to12hLabel(h.open)} a ${to12hLabel(h.close)}).`
     if (fetchError) return { ok: false, message: `${base} No se pudo consultar el calendario para sugerir horas (${fetchError}) — propónle al cliente un horario dentro de ese rango.` }
     const alt = findNearbySlots(targetMin, openMin, closeMin, busyMin, DURATION, 3).map(m => to12hLabel(minutesTo24h(m)))
     return {
@@ -460,22 +471,50 @@ export async function agendarCita(
     })
     if (eventRes.ok) {
       const eventData = await eventRes.json()
-      googleEventId = eventData.id
-      const { error: saveIdErr } = await sb.from('appointments')
-        .update({ google_event_id: googleEventId, updated_at: new Date().toISOString() })
-        .eq('id', appt.id)
-      // Si esto falla, el evento SÍ queda creado en Google Calendar pero la
-      // cita en nuestra BD nunca se entera de su google_event_id -- al
-      // cancelarla después, cancelarOReagendarCita no tiene cómo borrar el
-      // evento (busca appt.google_event_id) y queda huérfano en el
-      // calendario. Antes esto fallaba en silencio, sin loguear nada.
-      if (saveIdErr) {
+      googleEventId = eventData?.id ?? null
+
+      // Antes se asumía que eventData.id siempre viene en un 200 -- si
+      // Google alguna vez responde 200 sin "id" (respuesta parcial, forma
+      // distinta, etc.), esto lo deja ver en vez de guardar `null` en
+      // silencio y seguir como si nada.
+      if (!googleEventId) {
         await logBotError(sb, {
           organization_id: organizationId, conversation_id: conversationId,
           type: 'calendar_failed',
-          detail: `Evento de Google Calendar creado (${googleEventId}) para la cita ${appt.id}, pero no se pudo guardar su id: ${saveIdErr.message}`,
+          detail: `Google Calendar respondió 200 para la cita ${appt.id} pero sin "id" en el body: ${JSON.stringify(eventData).slice(0, 500)}`,
           source: `${sourcePrefix}:agendar_cita`,
         })
+      } else {
+        // .select().maybeSingle() para distinguir un error real de Postgres
+        // (saveIdErr con mensaje) de un UPDATE que no falla pero tampoco
+        // encuentra la fila (0 filas afectadas, data viene null con error
+        // null) -- antes solo se miraba `error`, así que ese segundo caso
+        // quedaba completamente invisible: el evento SÍ se crea en Google
+        // Calendar, pero la cita en nuestra BD nunca se entera de su
+        // google_event_id, y al cancelarla después cancelarOReagendarCita
+        // no tiene cómo borrar el evento (busca appt.google_event_id) y
+        // queda huérfano en el calendario.
+        const { data: savedRow, error: saveIdErr } = await sb.from('appointments')
+          .update({ google_event_id: googleEventId, updated_at: new Date().toISOString() })
+          .eq('id', appt.id)
+          .select('id')
+          .maybeSingle()
+
+        if (saveIdErr) {
+          await logBotError(sb, {
+            organization_id: organizationId, conversation_id: conversationId,
+            type: 'calendar_failed',
+            detail: `Evento de Google Calendar creado (${googleEventId}) para la cita ${appt.id}, pero no se pudo guardar su id: ${saveIdErr.message}`,
+            source: `${sourcePrefix}:agendar_cita`,
+          })
+        } else if (!savedRow) {
+          await logBotError(sb, {
+            organization_id: organizationId, conversation_id: conversationId,
+            type: 'calendar_failed',
+            detail: `Evento de Google Calendar creado (${googleEventId}) para la cita ${appt.id}, pero el UPDATE no encontró esa fila para guardar el id (0 filas afectadas, sin error de Postgres).`,
+            source: `${sourcePrefix}:agendar_cita`,
+          })
+        }
       }
     } else {
       const errData = await eventRes.json().catch(() => ({}))
@@ -608,6 +647,30 @@ export async function cancelarOReagendarCita(
     await notifyAppointment(sb, appt.id, 'cancelled', channel)
     return `Cita cancelada correctamente.`
   }
+}
+
+const HOURS_DAY_LABELS: Record<string, string> = {
+  mon: 'Lunes', tue: 'Martes', wed: 'Miércoles', thu: 'Jueves',
+  fri: 'Viernes', sat: 'Sábado', sun: 'Domingo',
+}
+
+// ── Texto de sistema: horarios de atención ──────────────────────────────────
+// webhook-wa siempre tiene un bloque fijo de "Horarios de atención" en su
+// prompt (buildBusinessContextBlock, ahí mismo) -- Instagram/Messenger no
+// tenían ninguno, así que la única pista sobre el horario que veía el
+// modelo era el texto suelto que regresaba consultar_disponibilidad en ese
+// turno. Esto le da una referencia fija, en 12h (nunca "23:59" solo, que se
+// prestaba a leerse como una cita en vez de la hora de cierre).
+export function buildHoursListBlock(hours: any): string {
+  if (!hours || typeof hours !== 'object') return ''
+  const lines = DAY_ORDER
+    .filter(day => hours[day])
+    .map(day => {
+      const h = hours[day]
+      return h.closed ? `${HOURS_DAY_LABELS[day]}: cerrado` : `${HOURS_DAY_LABELS[day]}: ${to12hLabel(h.open)}–${to12hLabel(h.close)}`
+    })
+  if (!lines.length) return ''
+  return `\n\nHORARIOS DE ATENCIÓN DEL NEGOCIO:\n${lines.join('\n')}\nNunca propongas, menciones como posible ni aceptes una cita fuera de estos horarios.`
 }
 
 // ── Texto de sistema: calendario activo ─────────────────────────────────────

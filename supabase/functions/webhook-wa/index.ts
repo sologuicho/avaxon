@@ -10,7 +10,7 @@ import { logBotError } from '../_shared/botErrorLog.ts'
 import { logToolTrace } from '../_shared/toolTraceLog.ts'
 import { GREETING_REGEX } from '../_shared/greeting.ts'
 import {
-  DAY_ORDER, APPOINTMENT_TOOLS, APPOINTMENT_BOOKED_PREFIX, isWithinBusinessHours,
+  DAY_ORDER, APPOINTMENT_TOOLS, APPOINTMENT_BOOKED_PREFIX, BOT_SCHEDULE_REJECTION_REGEX, isWithinBusinessHours,
   consultarDisponibilidad, checkRequestedSlot, agendarCita, cancelarOReagendarCita,
   buildCalendarCtx, buildForcedAvailabilityContext,
 } from '../_shared/appointmentTools.ts'
@@ -54,10 +54,9 @@ const CLOSING_PHRASES = new Set([
   'nos vemos', 'todo bien', 'listo gracias',
 ])
 
-// Respuestas del bot rechazando un horario/cita por fuera de atención — se
-// quitan del historial que ve el modelo (ver chatHistory abajo) para que no
-// copie la conclusión de un rechazo viejo en vez de volver a evaluarla.
-const BOT_SCHEDULE_REJECTION_REGEX = /no podemos agendar|no se puede agendar|fuera del horario de atenci[oó]n|fuera de horario|horario de atenci[oó]n es de/i
+// BOT_SCHEDULE_REJECTION_REGEX vive en _shared/appointmentTools.ts (antes
+// solo se usaba aquí; ahora también filtra el historial de webhook-ig y
+// webhook-fb).
 
 // ── Tool definitions ─────────────────────────────────────────────────────────
 // APPOINTMENT_TOOLS vive en _shared/appointmentTools.ts (compartido con

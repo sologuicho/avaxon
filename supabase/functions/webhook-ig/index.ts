@@ -8,7 +8,7 @@ import { parseAgentReply } from "../_shared/agentReply.ts";
 import { flagNeedsHuman, notifyOwnerAlert } from "../_shared/humanHandoff.ts";
 import { sendIgMessage } from "../_shared/socialSend.ts";
 import { getGoogleAccessToken } from "../_shared/google.ts";
-import { buildCalendarCtx, buildForcedAvailabilityContext, runAppointmentAgentLoop } from "../_shared/appointmentTools.ts";
+import { buildCalendarCtx, buildForcedAvailabilityContext, buildHoursListBlock, runAppointmentAgentLoop, BOT_SCHEDULE_REJECTION_REGEX } from "../_shared/appointmentTools.ts";
 
 const VERIFY_TOKEN = Deno.env.get('META_WEBHOOK_VERIFY_TOKEN') ?? '';
 const APP_SECRET   = Deno.env.get('META_APP_SECRET') ?? '';
@@ -143,10 +143,15 @@ async function handleIncomingMessage(
     .order('created_at', { ascending: true })
     .limit(20);
 
-  const openaiHistory = (history ?? []).map((m) => ({
-    role: m.direction === 'inbound' ? 'user' : 'assistant',
-    content: m.content ?? '',
-  }));
+  // Las respuestas viejas del bot rechazando un horario se quitan del
+  // historial -- si no, el modelo copia la CONCLUSIÓN de un rechazo pasado
+  // en vez de volver a evaluarla (mismo filtro que ya usa webhook-wa).
+  const openaiHistory = (history ?? [])
+    .filter((m) => !(m.direction === 'outbound' && BOT_SCHEDULE_REJECTION_REGEX.test(m.content ?? '')))
+    .map((m) => ({
+      role: m.direction === 'inbound' ? 'user' : 'assistant',
+      content: m.content ?? '',
+    }));
 
   // 7b. Calendario (si la org tiene Google Calendar conectado) -- mismo
   // mecanismo de agenda que ya tenía webhook-wa (ver _shared/appointmentTools.ts),
@@ -179,9 +184,12 @@ async function handleIncomingMessage(
     openaiKey: OPENAI_KEY, calendarToken, hours,
   });
 
+  const hoursListBlock = buildHoursListBlock(hours);
+
   const systemPrompt = [
     botCfg.system_prompt ?? 'Eres un asistente de atención al cliente.',
     fechaHoraCtx,
+    hoursListBlock,
     calendarCtx,
     forcedAvailabilityCtx,
   ].filter(Boolean).join('\n\n');
