@@ -32,6 +32,15 @@ const SLIDE_MS     = 7000  // se reinicia con cada mensaje nuevo del cliente
 const MAX_BATCH_MS = 20000 // tope absoluto desde el primer mensaje del lote
 const POLL_MS      = 1000  // granularidad del sondeo mientras se espera
 
+// Org propia de Avaxon -- usada SOLO para acotar el aviso de lead listo
+// para agendar (paso 15, más abajo), que es el proceso interno de ventas de
+// Avaxon (manda un WhatsApp a su propio número y programa un recordatorio).
+// Ninguna otra org tiene ese flujo configurado; antes se disparaba para
+// cualquier organization_id con notify_owner=true, lo que le mandaba a
+// Avaxon datos de leads de otros clientes y, peor, lo intentaba mandar
+// usando el WhatsApp Business de ESE OTRO cliente en vez del de Avaxon.
+const AVAXON_ORGANIZATION_ID = 'e30d23e7-b512-44c8-a0bf-23f102300198'
+
 // Detecta cuando el cliente pide explícitamente hablar con una persona —
 // independiente de si el system_prompt de la org sabe usar notify_owner.
 const HUMAN_HANDOFF_REGEX = /hablar con (alguien|una persona|un asesor|un humano|un agente|un ejecutivo|un representante)|atenci[oó]n humana|quiero un asesor|p[aá]same con (alguien|una persona)|comun[ií]came con (alguien|una persona)|necesito (hablar|que me atienda) (con )?(una persona|un humano)|representante humano/i
@@ -2002,8 +2011,13 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   // (Los pendientes ya quedaron marcados como procesados en el paso 9, al
   // reclamarlos — no hace falta un segundo UPDATE aquí.)
 
-  // ── 15. Notificar al dueño si el lead quiere agendar (Avaxon) ─────────────
-  if (notifyOwner) {
+  // ── 15. Notificar al dueño si el lead quiere agendar (SOLO Avaxon) ────────
+  // Cualquier otra org ya fue notificada arriba (flagNeedsHuman, paso 12)
+  // con su propio correo/plantilla de WhatsApp configurados en
+  // organization_profile/integrations -- este bloque es el proceso de
+  // ventas interno de Avaxon (su propio número, su propio recordatorio), no
+  // algo que las demás orgs tengan ni deban recibir.
+  if (notifyOwner && organization_id === AVAXON_ORGANIZATION_ID) {
     const leadName    = contactName ?? fromPhone
     const AVAXON_PHONE = '528991709336'
     const notifText   = `🔔 *Lead listo para agendar — Avaxon*\n\n*Contacto:* ${leadName}\n*WhatsApp:* wa.me/${fromPhone}\n\nConfirmó interés en el diagnóstico gratuito. ¡Escríbele pronto! 💼`
