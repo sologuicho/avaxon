@@ -5303,6 +5303,18 @@
         // conversación que tengo abierta — se intercala en vivo.
         if (payload.new.conversation_id === convState.activeId) appendNote(payload.new);
       })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'appointments' }, payload => {
+        // El bot puede agendar una cita mientras ya tienes la conversación
+        // abierta (ej. estás viendo el chat en vivo) -- antes el panel
+        // "Citas" se quedaba en "Sin citas registradas" hasta cerrar y
+        // volver a abrir la conversación, porque solo se cargaba una vez.
+        if (payload.new.contact_id && payload.new.contact_id === cpanelContactId) renderCpanelAppointments(cpanelContactId);
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'appointments' }, payload => {
+        // Confirmar/cancelar/reagendar desde otra pestaña o el bot -- mismo
+        // motivo que el INSERT de arriba.
+        if (payload.new.contact_id && payload.new.contact_id === cpanelContactId) renderCpanelAppointments(cpanelContactId);
+      })
       .subscribe();
   }
 

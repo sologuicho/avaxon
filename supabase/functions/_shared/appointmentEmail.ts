@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { sendEmail } from './email.ts'
 
 export type AppointmentEvent = 'created' | 'rescheduled' | 'cancelled'
-export type AppointmentOrigin = 'whatsapp' | 'dashboard'
+export type AppointmentOrigin = 'whatsapp' | 'instagram' | 'facebook' | 'dashboard'
 
 const SUBJECT_PREFIX: Record<AppointmentEvent, string> = {
   created: 'Nueva cita agendada',
@@ -20,14 +20,18 @@ function escapeHtml(s: string): string {
 function buildHtml(opts: {
   event: AppointmentEvent
   clientName: string
-  phone: string
+  identityLabel: string
+  identityValue: string
   service: string
   dateLabel: string
   timeLabel: string
   origin: AppointmentOrigin
   convUrl: string
 }): string {
-  const originLabel = opts.origin === 'whatsapp' ? 'WhatsApp (agendada por el bot)' : 'Dashboard'
+  const originLabel = opts.origin === 'whatsapp' ? 'WhatsApp (agendada por el bot)'
+    : opts.origin === 'instagram' ? 'Instagram (agendada por el bot)'
+    : opts.origin === 'facebook' ? 'Messenger (agendada por el bot)'
+    : 'Dashboard'
   const title = SUBJECT_PREFIX[opts.event]
   return `
 <div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f8fafc;padding:32px 16px">
@@ -39,7 +43,7 @@ function buildHtml(opts: {
       <h2 style="margin:0 0 16px;font-size:18px;color:#0f172a">${escapeHtml(title)}</h2>
       <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#64748b;width:120px">Cliente</td><td style="padding:6px 0;font-weight:600">${escapeHtml(opts.clientName)}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">Teléfono</td><td style="padding:6px 0">${escapeHtml(opts.phone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">${escapeHtml(opts.identityLabel)}</td><td style="padding:6px 0">${escapeHtml(opts.identityValue)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Servicio</td><td style="padding:6px 0">${escapeHtml(opts.service)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Fecha y hora</td><td style="padding:6px 0">${escapeHtml(opts.dateLabel)}, ${escapeHtml(opts.timeLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Origen</td><td style="padding:6px 0">${escapeHtml(originLabel)}</td></tr>
@@ -61,7 +65,7 @@ export async function notifyAppointment(
   try {
     const { data: appt } = await sb
       .from('appointments')
-      .select('id, organization_id, contact_id, contact_name, title, service, scheduled_at, contacts(name, phone)')
+      .select('id, organization_id, contact_id, contact_name, title, service, scheduled_at, contacts(name, phone, channel, username, external_id)')
       .eq('id', appointmentId)
       .maybeSingle()
     if (!appt) {
@@ -104,7 +108,17 @@ export async function notifyAppointment(
     }
 
     const clientName = appt.contact_name || (appt.contacts as any)?.name || 'Sin nombre'
-    const phone = (appt.contacts as any)?.phone || '—'
+    // Mismo criterio que contactIdentityRow en _shared/humanHandoff.ts --
+    // un contacto de Instagram/Messenger no tiene teléfono, así que la fila
+    // de identidad muestra su @usuario o nombre en vez de "—" a secas.
+    const contactForIdentity = appt.contacts as { phone?: string; channel?: string; username?: string; external_id?: string } | null
+    const identityLabel = contactForIdentity?.channel === 'instagram' ? 'Instagram'
+      : contactForIdentity?.channel === 'facebook' ? 'Canal'
+      : 'Teléfono'
+    const identityValue = contactForIdentity?.channel === 'instagram'
+      ? (contactForIdentity.username ? `@${contactForIdentity.username}` : (contactForIdentity.external_id || '—'))
+      : contactForIdentity?.channel === 'facebook' ? 'Messenger'
+      : (contactForIdentity?.phone || '—')
     const service = appt.service || appt.title || 'Cita'
 
     const dt = new Date(appt.scheduled_at)
@@ -128,7 +142,7 @@ export async function notifyAppointment(
     }
 
     const subject = `${SUBJECT_PREFIX[event]}: ${shortDateLabel}, ${timeLabel}`
-    const html = buildHtml({ event, clientName, phone, service, dateLabel, timeLabel, origin, convUrl })
+    const html = buildHtml({ event, clientName, identityLabel, identityValue, service, dateLabel, timeLabel, origin, convUrl })
 
     const result = await sendEmail({ to: notifyEmail, subject, html })
     if (!result.ok) {
