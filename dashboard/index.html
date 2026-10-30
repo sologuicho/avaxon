@@ -13236,6 +13236,19 @@
     if (!orgId) { showToast('Selecciona un cliente'); return; }
     await loadOrgHoursForCal(orgId);
 
+    const [{ data: empRows }, { data: svcRows }] = await Promise.all([
+      sb.from('employees').select('id,name,role,specialty').eq('organization_id', orgId).eq('active', true).order('name'),
+      sb.from('services').select('id,name,price,duration_minutes').eq('organization_id', orgId).eq('active', true).order('name'),
+    ]);
+    calAptEmployees = empRows || [];
+    calAptServices  = svcRows || [];
+
+    const empSel = $('apt-f-employee');
+    if (empSel) {
+      empSel.innerHTML = '<option value="">Sin asignar</option>' +
+        calAptEmployees.map(e => `<option value="${e.id}">${e.name} · ${e.specialty || e.role}</option>`).join('');
+    }
+
     if (appointmentId) {
       let a = findAptById(appointmentId);
       if (!a) { const res = await sb.from('appointments').select('*').eq('id', appointmentId).maybeSingle(); a = res.data; }
@@ -13247,6 +13260,12 @@
         $('apt-f-status').value = ['confirmed','completed','no_show'].includes(a.status) ? a.status : 'pending';
         $('apt-f-contact-search').value = a.contact_name || '';
         $('apt-f-contact-id').value = a.contact_id || '';
+        $('apt-f-employee').value = a.employee_id || '';
+        $('apt-f-service-id').value = a.service_id || '';
+        $('apt-f-price').value    = a.price || 0;
+        $('apt-f-tip').value      = a.tip || 0;
+        $('apt-f-discount').value = a.discount || 0;
+        $('apt-f-payment-method').value = a.payment_method || '';
         $('apt-f-date').value = `${parts.year}-${String(parts.month+1).padStart(2,'0')}-${String(parts.day).padStart(2,'0')}`;
         calView.formDuration = a.duration_minutes || 60;
         calView.formTime = parts.hour*60 + parts.minute;
@@ -13254,6 +13273,12 @@
     } else {
       const d = calView.mode === 'month' ? (calView.selectedDate || new Date()) : calView.timegridDate;
       $('apt-f-date').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      $('apt-f-employee').value = '';
+      $('apt-f-service-id').value = '';
+      $('apt-f-price').value    = 0;
+      $('apt-f-tip').value      = 0;
+      $('apt-f-discount').value = 0;
+      $('apt-f-payment-method').value = '';
     }
 
     renderAptDurationChips();
