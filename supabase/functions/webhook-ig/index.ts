@@ -56,6 +56,24 @@ async function sendIgMessage(pageAccessToken: string, recipientId: string, text:
   }
 }
 
+// Perfil del remitente vía Graph API -- si falla (permiso retirado, cuenta
+// eliminada, límite de tasa, etc.) se sigue con el nombre genérico; nunca se
+// inventa un teléfono ni se bloquea el mensaje por esto.
+async function fetchIgProfile(igsid: string, pageAccessToken: string): Promise<{ name?: string; username?: string } | null> {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v21.0/${igsid}?fields=name,username&access_token=${encodeURIComponent(pageAccessToken)}`);
+    if (!res.ok) {
+      console.error('webhook-ig: Graph API rechazó la consulta de perfil:', res.status, await res.text().catch(() => ''));
+      return null;
+    }
+    const data = await res.json();
+    return { name: data?.name, username: data?.username };
+  } catch (err) {
+    console.error('webhook-ig: fallo consultando el perfil del remitente:', err);
+    return null;
+  }
+}
+
 async function callOpenAI(systemPrompt: string, history: { role: string; content: string }[], userText: string): Promise<string> {
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -80,20 +98,29 @@ async function handleIncomingMessage(
   externalMsgId: string,
   pageAccessToken: string,
 ) {
-  const contactPhone = `ig:${senderId}`;
-
-  // 1. Find or create contact
+  // 1. Find or create contact -- identificado por (org, canal, IGSID), no
+  // por teléfono: Instagram no entrega uno real. Antes se guardaba el IGSID
+  // en `phone` (ej. 'ig:17841437975820718') y el dashboard lo mostraba
+  // formateado como si fuera un número de verdad.
   let { data: contact } = await sb
     .from('contacts')
     .select('id, name')
     .eq('organization_id', orgId)
-    .eq('phone', contactPhone)
+    .eq('channel', 'instagram')
+    .eq('external_id', senderId)
     .maybeSingle();
 
   if (!contact) {
+    const profile = await fetchIgProfile(senderId, pageAccessToken);
     const { data: newContact } = await sb
       .from('contacts')
-      .insert({ organization_id: orgId, phone: contactPhone, name: `Instagram ${senderId.slice(-6)}` })
+      .insert({
+        organization_id: orgId,
+        channel: 'instagram',
+        external_id: senderId,
+        name: profile?.name || `Instagram ${senderId.slice(-6)}`,
+        username: profile?.username ?? null,
+      })
       .select('id, name')
       .single();
     contact = newContact;

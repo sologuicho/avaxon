@@ -40,6 +40,16 @@ function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 }
 
+// Los contactos de Instagram/Messenger no tienen teléfono (ver migración
+// contacts_channel_identity) -- la fila de identidad del correo al dueño
+// debe decir "Instagram: @user" o "Canal: Messenger", nunca "WhatsApp: "
+// en blanco.
+function contactIdentityRow(contact: { phone?: string | null; channel?: string | null; username?: string | null } | null | undefined): { label: string; value: string } {
+  if (contact?.channel === 'instagram') return { label: 'Instagram', value: contact.username ? `@${contact.username}` : '—' }
+  if (contact?.channel === 'facebook')  return { label: 'Canal', value: 'Messenger' }
+  return { label: 'WhatsApp', value: contact?.phone || '—' }
+}
+
 async function resolveOwnerEmail(
   sb: ReturnType<typeof createClient>,
   organizationId: string,
@@ -93,11 +103,11 @@ export async function notifyOwnerAlert(
   try {
     const { data: conv } = await sb
       .from('conversations')
-      .select('contacts(name, phone)')
+      .select('contacts(name, phone, channel, username)')
       .eq('id', conversationId)
       .maybeSingle()
-    const contactName  = (conv?.contacts as any)?.name || (conv?.contacts as any)?.phone || 'Un cliente'
-    const contactPhone = (conv?.contacts as any)?.phone || ''
+    const identity     = contactIdentityRow(conv?.contacts as any)
+    const contactName  = (conv?.contacts as any)?.name || identity.value || 'Un cliente'
 
     const { data: org } = await sb.from('organizations').select('name').eq('id', organizationId).maybeSingle()
     const orgName = org?.name || 'tu negocio'
@@ -124,7 +134,7 @@ export async function notifyOwnerAlert(
       <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#64748b;width:120px">Negocio</td><td style="padding:6px 0;font-weight:600">${escapeHtml(orgName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Contacto</td><td style="padding:6px 0;font-weight:600">${escapeHtml(contactName)}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">WhatsApp</td><td style="padding:6px 0">${escapeHtml(contactPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">${escapeHtml(identity.label)}</td><td style="padding:6px 0">${escapeHtml(identity.value)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Fecha y hora</td><td style="padding:6px 0">${escapeHtml(nowLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Motivo</td><td style="padding:6px 0">${escapeHtml(reason)}</td></tr>
       </table>
@@ -150,11 +160,11 @@ async function notifyOwnerNeedsHuman(
 ): Promise<void> {
   const { data: conv } = await sb
     .from('conversations')
-    .select('contacts(name, phone)')
+    .select('contacts(name, phone, channel, username)')
     .eq('id', conversationId)
     .maybeSingle()
-  const contactName  = (conv?.contacts as any)?.name || (conv?.contacts as any)?.phone || 'Un cliente'
-  const contactPhone = (conv?.contacts as any)?.phone || ''
+  const identity    = contactIdentityRow(conv?.contacts as any)
+  const contactName = (conv?.contacts as any)?.name || identity.value || 'Un cliente'
 
   const { data: org } = await sb.from('organizations').select('name').eq('id', organizationId).maybeSingle()
   const orgName = org?.name || 'tu negocio'
@@ -188,7 +198,7 @@ async function notifyOwnerNeedsHuman(
       <table style="width:100%;font-size:14px;color:#334155;border-collapse:collapse">
         <tr><td style="padding:6px 0;color:#64748b;width:120px">Negocio</td><td style="padding:6px 0;font-weight:600">${escapeHtml(orgName)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Contacto</td><td style="padding:6px 0;font-weight:600">${escapeHtml(contactName)}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">WhatsApp</td><td style="padding:6px 0">${escapeHtml(contactPhone)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748b">${escapeHtml(identity.label)}</td><td style="padding:6px 0">${escapeHtml(identity.value)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Fecha y hora</td><td style="padding:6px 0">${escapeHtml(nowLabel)}</td></tr>
         <tr><td style="padding:6px 0;color:#64748b">Motivo</td><td style="padding:6px 0">${escapeHtml(reason)}</td></tr>
       </table>
