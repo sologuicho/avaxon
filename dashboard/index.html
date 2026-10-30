@@ -13217,6 +13217,38 @@
   }
   window.selectAptContact = selectAptContact;
 
+  function onAptServiceInput(val) {
+    const q = val.trim().toLowerCase();
+    const res = $('apt-service-results');
+    if (!q || !calAptServices.length) { res.style.display = 'none'; return; }
+    const matches = calAptServices.filter(s => s.name.toLowerCase().includes(q)).slice(0, 6);
+    if (!matches.length) { res.style.display = 'none'; return; }
+    res.innerHTML = matches.map(s =>
+      `<div onclick="selectAptService('${s.id}','${s.name.replace(/'/g,"\\'")}',${s.price},${s.duration_minutes||60})"
+        style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
+        onmouseenter="this.style.background='var(--hover-bg)'" onmouseleave="this.style.background=''">
+        <span style="font-size:13.5px">${s.name}</span>
+        <span style="font-size:12px;color:var(--text-muted)">$${s.price} · ${s.duration_minutes||60} min</span>
+      </div>`
+    ).join('');
+    res.style.display = 'block';
+  }
+
+  function selectAptService(id, name, price, duration) {
+    $('apt-f-service').value    = name;
+    $('apt-f-service-id').value = id;
+    $('apt-f-price').value      = price;
+    $('apt-service-results').style.display = 'none';
+    if (duration && calView) { calView.formDuration = duration; renderAptDurationChips(); }
+  }
+
+  function onAptEmployeeChange(empId) {
+  }
+
+  window.onAptServiceInput   = onAptServiceInput;
+  window.selectAptService    = selectAptService;
+  window.onAptEmployeeChange = onAptEmployeeChange;
+
   async function openAptModal(appointmentId) {
     calView.editingId = appointmentId || null;
     calView.formDuration = 60;
