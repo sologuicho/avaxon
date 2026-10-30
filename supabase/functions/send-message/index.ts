@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { logBotError } from '../_shared/botErrorLog.ts'
+import { sendIgMessage, sendFbMessage } from '../_shared/socialSend.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -76,14 +77,19 @@ async function handleSend(
   user: { id: string },
   WA_TOKEN: string,
 ): Promise<Response> {
-  // Get conversation → contact phone + org phone_number_id + per-client token
+  // Get conversation → contact phone/external_id + org phone_number_id + per-client token
   const { data: conv, error: convErr } = await adminClient
     .from('conversations')
-    .select('id, organization_id, contact_id, phone_number_id, needs_human, contacts(name, phone), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
+    .select('id, organization_id, contact_id, phone_number_id, needs_human, channel, channel_account_id, contacts(name, phone, channel, external_id), phone_numbers(phone_number_id, whatsapp_accounts(access_token))')
     .eq('id', conversation_id)
     .single()
 
   if (convErr || !conv) return json({ error: 'Conversación no encontrada' }, 404)
+
+  const channel = conv.channel ?? 'whatsapp'
+  if (channel === 'instagram' || channel === 'facebook') {
+    return await handleSendSocial(adminClient, conv, channel, { conversation_id, message, payment_id, template_id }, user)
+  }
 
   const toPhone      = (conv.contacts as any)?.phone
   const metaPhoneId  = (conv.phone_numbers as any)?.phone_number_id ?? conv.phone_number_id
@@ -296,12 +302,22 @@ async function handleSend(
     return json({ error: `Mensaje enviado pero falló el registro: ${insertErr.message}` }, 500)
   }
 
-  // Pausa al bot en esta conversación mientras el equipo responde a mano
-  // (configurable por org, 30 min por defecto) — y si estaba marcada
-  // needs_human, esta respuesta manual YA es la atención humana que se
-  // esperaba: se quita la marca (así resume-paused-conversations deja de
-  // contarla) y queda un rastro de que se resolvió sola, sin que nadie
-  // tuviera que darle a "Marcar como atendida".
+  await applyManualReplyPause(adminClient, conv, conversation_id)
+
+  return json({ ok: true, wa_message_id: waMessageId })
+}
+
+// Pausa al bot en esta conversación mientras el equipo responde a mano
+// (configurable por org, 30 min por defecto; compartido por los tres
+// canales) — y si estaba marcada needs_human, esta respuesta manual YA es
+// la atención humana que se esperaba: se quita la marca (así
+// resume-paused-conversations deja de contarla) y queda un rastro de que
+// se resolvió sola, sin que nadie tuviera que darle a "Marcar como atendida".
+async function applyManualReplyPause(
+  adminClient: ReturnType<typeof createClient>,
+  conv: { organization_id: string; needs_human?: boolean },
+  conversation_id: string,
+) {
   const [{ data: orgProfile }, { data: bcPause }] = await Promise.all([
     adminClient.from('organization_profile').select('manual_reply_pause_minutes').eq('organization_id', conv.organization_id).maybeSingle(),
     adminClient.from('bot_configs').select('features').eq('organization_id', conv.organization_id).eq('enabled', true).maybeSingle(),
@@ -341,6 +357,90 @@ async function handleSend(
     convUpdate.needs_human_reason = 'Atendida por el equipo'
   }
   await adminClient.from('conversations').update(convUpdate).eq('id', conversation_id)
+}
 
-  return json({ ok: true, wa_message_id: waMessageId })
+// ── Instagram / Messenger ────────────────────────────────────────────────
+// Mismo contrato que la rama de WhatsApp (guarda el mensaje como outbound y
+// pausa al bot), pero mandando por la Send API de Meta al external_id
+// (IGSID/PSID) del contacto en vez de por teléfono. Sin links de pago ni
+// plantillas aprobadas -- esos dos solo existen para WhatsApp.
+async function handleSendSocial(
+  adminClient: ReturnType<typeof createClient>,
+  conv: { id: string; organization_id: string; needs_human?: boolean; channel_account_id?: string | null; contacts?: { external_id?: string | null } | null },
+  channel: 'instagram' | 'facebook',
+  { conversation_id, message, payment_id, template_id }: { conversation_id: string; message?: string; payment_id?: string; template_id?: string },
+  user: { id: string },
+): Promise<Response> {
+  const channelLabel = channel === 'instagram' ? 'Instagram' : 'Messenger'
+
+  if (payment_id || template_id) {
+    return json({ error: `Los links de pago y las plantillas de WhatsApp no están disponibles en conversaciones de ${channelLabel}` }, 422)
+  }
+  if (!message?.trim()) {
+    return json({ error: 'El mensaje es requerido' }, 422)
+  }
+
+  const externalId = (conv.contacts as any)?.external_id
+  if (!externalId) return json({ error: `El contacto no tiene un identificador de ${channelLabel}` }, 422)
+
+  const provider     = channel === 'instagram' ? 'instagram' : 'facebook_messenger'
+  const credentialKey = channel === 'instagram' ? 'ig_account_id' : 'page_id'
+
+  const { data: integ } = await adminClient
+    .from('integrations')
+    .select('credentials')
+    .eq('organization_id', conv.organization_id)
+    .eq('provider', provider)
+    .eq('status', 'connected')
+    .filter(`credentials->>${credentialKey}`, 'eq', conv.channel_account_id)
+    .maybeSingle()
+
+  const pageAccessToken = (integ?.credentials as Record<string, string> | undefined)?.page_access_token
+  if (!pageAccessToken) return json({ error: `${channelLabel} no está conectado para esta organización` }, 422)
+
+  // ── Ventana de 24h (mismo criterio que WhatsApp: desde el último mensaje entrante real) ──
+  const { data: lastInbound } = await adminClient
+    .from('messages')
+    .select('created_at')
+    .eq('conversation_id', conversation_id)
+    .eq('direction', 'inbound')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const hoursSinceInbound = lastInbound
+    ? (Date.now() - new Date(lastInbound.created_at).getTime()) / 3_600_000
+    : Infinity
+
+  if (hoursSinceInbound >= 24) {
+    return json({ error: `La ventana de 24 h de ${channelLabel} cerró` }, 422)
+  }
+
+  const text    = message!.trim()
+  const sendFn  = channel === 'instagram' ? sendIgMessage : sendFbMessage
+  const result  = await sendFn(pageAccessToken, externalId, text)
+
+  if (!result.ok) {
+    await logBotError(adminClient, {
+      organization_id: conv.organization_id, conversation_id,
+      type: 'meta_rejected',
+      detail: `${channelLabel} API error: ${result.error}`,
+      source: 'send-message',
+    })
+    return json({ error: `${channelLabel} rechazó el envío: ${result.error}` }, 502)
+  }
+
+  const { error: insertErr } = await adminClient.from('messages').insert({
+    conversation_id,
+    organization_id: conv.organization_id,
+    direction:       'outbound',
+    content:         text,
+    media_type:      'text',
+    sent_by:         user.id,
+  })
+  if (insertErr) return json({ error: `Mensaje enviado pero falló el registro: ${insertErr.message}` }, 500)
+
+  await applyManualReplyPause(adminClient, conv, conversation_id)
+
+  return json({ ok: true })
 }

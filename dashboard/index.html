@@ -2351,7 +2351,7 @@
               <div style="background:#ffffff;border:1px solid #e6e7e9;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:8px">
                 <div style="display:flex;align-items:center;justify-content:space-between">
                   <div class="cpanel-section-title" style="margin-bottom:0">Pagos</div>
-                  <button onclick="openPaymentLinkModal()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid #e6e7e9;background:#fff;font-size:12px;font-weight:700;color:#2c455d;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em">
+                  <button id="cpanel-payment-btn" onclick="openPaymentLinkModal()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;border:1px solid #e6e7e9;background:#fff;font-size:12px;font-weight:700;color:#2c455d;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em">
                     <i class="fa fa-plus" style="font-size:10px"></i> Enviar link de pago
                   </button>
                 </div>
@@ -5613,15 +5613,18 @@
       toggleBtn.title   = conv?.status === 'open' ? 'Cerrar conversación' : 'Reabrir conversación';
       toggleBtn.onclick = () => toggleConvStatus(convId, conv?.status);
     }
+    // Instagram/Messenger no tienen "abrir en WhatsApp" ni links de pago
+    // (botón CTA de WhatsApp) -- ambos botones se ocultan por completo en
+    // vez de quedar visibles pero rotos.
+    const isWaChannel = (conv?.channel ?? 'whatsapp') === 'whatsapp';
     const waBtn = $('chat-wa-btn');
     if (waBtn) {
-      // Instagram/Messenger no tienen "abrir en WhatsApp" -- el botón se
-      // oculta por completo en vez de quedar visible pero sin acción.
-      const isWaChannel = (conv?.channel ?? 'whatsapp') === 'whatsapp';
       waBtn.style.display = isWaChannel ? '' : 'none';
       if (isWaChannel && contact?.phone && !state.isReviewer) waBtn.dataset.waUrl = `https://wa.me/${contact.phone.replace(/\D/g,'')}`;
       else delete waBtn.dataset.waUrl;
     }
+    const paymentBtn = $('cpanel-payment-btn');
+    if (paymentBtn) paymentBtn.style.display = isWaChannel ? '' : 'none';
     $('chat-empty-state').style.display = 'none';
     $('chat-input-area').style.display  = state.isReviewer ? 'none' : 'flex';
     $('wa-window-banner').classList.remove('visible');
@@ -5780,12 +5783,26 @@
 
     if (!windowOpen) {
       bar.classList.add('closed')
-      labelEl.textContent   = 'Ventana de 24h cerrada'
-      timerEl.textContent   = 'usa una plantilla aprobada abajo'
+      if ((conv?.channel ?? 'whatsapp') === 'whatsapp') {
+        labelEl.textContent   = 'Ventana de 24h cerrada'
+        timerEl.textContent   = 'usa una plantilla aprobada abajo'
+        actionsEl.innerHTML   = ''
+        inputBar.style.display = 'none'
+        tplPanel.style.display = 'flex'
+        loadChatTemplatesPanel(convId, conv)
+        return
+      }
+      // Instagram/Messenger no tienen plantillas aprobadas como WhatsApp --
+      // se deja el cuadro de texto activo; si el mensaje se rechaza por
+      // ventana cerrada, send-message regresa un error claro (ver sendMessage)
+      // en vez de fallar en silencio.
+      const channelLabel = conv?.channel === 'instagram' ? 'Instagram' : 'Messenger'
+      labelEl.textContent   = `Ventana de 24h de ${channelLabel} cerrada`
+      timerEl.textContent   = 'el mensaje puede ser rechazado'
       actionsEl.innerHTML   = ''
-      inputBar.style.display = 'none'
-      tplPanel.style.display = 'flex'
-      loadChatTemplatesPanel(convId, conv)
+      chatInput.disabled    = false
+      chatInput.placeholder = 'Escribe un mensaje…'
+      sendBtn.disabled      = false
       return
     }
 
