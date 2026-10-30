@@ -13411,6 +13411,9 @@
       <div class="apt-detail-row"><span style="color:var(--text-muted)">Hora</span><span>${timeLabel} (${a.duration_minutes||60} min)</span></div>
       <div class="apt-detail-row"><span style="color:var(--text-muted)">Contacto</span><span>${a.contact_name || '—'}</span></div>
       ${a.service ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Servicio</span><span>${a.service}</span></div>` : ''}
+      ${(a.employee_id && (calAptEmployees || []).find(e=>e.id===a.employee_id)) ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Empleado</span><span>${(calAptEmployees || []).find(e=>e.id===a.employee_id).name}</span></div>` : ''}
+      ${a.price ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Precio</span><span>$${Number(a.price).toLocaleString('es-MX')} MXN${a.payment_method ? ' · ' + {cash:'Efectivo',card:'Tarjeta',transfer:'Transferencia'}[a.payment_method] : ''}</span></div>` : ''}
+      ${a.tip   ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Propina</span><span>$${Number(a.tip).toLocaleString('es-MX')} MXN</span></div>` : ''}
       ${a.notes   ? `<div class="apt-detail-row"><span style="color:var(--text-muted)">Notas</span><span>${a.notes}</span></div>` : ''}
     `;
     $('apt-detail-confirm-btn').style.display = st === 'confirmed' ? 'none' : '';
