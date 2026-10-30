@@ -13321,6 +13321,12 @@
       title, service: service || null, notes: notes || null, status,
       scheduled_at: scheduledAtIso, duration_minutes: duration,
       contact_id: contactId, contact_name: contactName || null,
+      employee_id: $('apt-f-employee').value || null,
+      service_id:  $('apt-f-service-id').value || null,
+      price:       parseFloat($('apt-f-price').value) || 0,
+      tip:         parseFloat($('apt-f-tip').value) || 0,
+      discount:    parseFloat($('apt-f-discount').value) || 0,
+      payment_method: $('apt-f-payment-method').value || null,
     };
 
     const editingId = calView.editingId;
