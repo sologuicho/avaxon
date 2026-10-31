@@ -14602,287 +14602,351 @@
 
     const { jsPDF } = window.jspdf;
     const { completed, apts, emps, atRisk, dayTotals, ingresos, citas, ticket,
-            clientes, rangeLabel, days, s0 } = repSnapshot;
+            clientes, rangeLabel, days, s0,
+            prevIngresos, prevCitas, prevTicket, prevClientes } = repSnapshot;
 
-    const fmtM = v => '$' + Number(v||0).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
-    const fmtD = iso => { const d = new Date(iso); return d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}); };
-    const fmtDT = iso => { const d = new Date(iso); return d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); };
+    const orgName = (state.currentOrgId && state.allOrgs.find(o => o.id === state.currentOrgId)?.name) || 'Tu negocio';
+    const nowStr  = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
 
-    // Colors
-    const BLUE   = [124, 180, 255];
-    const DARK   = [13,  24,  36];
-    const LIGHT  = [245, 248, 252];
-    const MUTED  = [100, 120, 140];
-    const GREEN  = [95,  212, 154];
-    const RED    = [239,  68,  68];
-    const BORDER = [220, 228, 240];
+    const fmtM  = v => '$' + Number(v||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const fmtD  = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const fmtDT = iso => {
+      const d = new Date(iso);
+      return d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})
+           + ' ' + d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    };
+    const deltaTxt = (cur, prev) => {
+      if (!prev) return null;
+      const pct = ((cur - prev) / prev * 100).toFixed(0);
+      return { txt: `${cur>=prev?'↑':'↓'} ${Math.abs(pct)}%`, up: cur >= prev };
+    };
+    const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    // Colors (black & white editorial, red only for alerts)
+    const BLK  = [0,   0,   0  ];
+    const N300 = [200, 200, 200];
+    const N700 = [100, 100, 100];
+    const RED  = [160, 0,   0  ];
+    const GRN  = [0,   120, 60 ];
+
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
     const PW = 210, PH = 297, ML = 16, MR = 16, CW = PW - ML - MR;
-    let y = 0;
+    let y = 0, pageNum = 1;
+    let logoB64 = null;
 
-    // ── Logo loader (async wrapper via Image) ────────────────────────
-    function drawHeader(cb) {
-      // Dark header bar
-      doc.setFillColor(...DARK);
-      doc.rect(0, 0, PW, 28, 'F');
+    // ── Per-page header ──────────────────────────────────────────────
+    function pageHead() {
+      doc.setFillColor(255,255,255); doc.rect(0,0,PW,PH,'F'); // white background
+      if (logoB64) doc.addImage(logoB64,'JPEG', ML, 12, 8, 8);
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...BLK);
+      doc.text('Avaxon', ML + (logoB64 ? 11 : 0), 19);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...N700);
+      doc.text('avaxon.lat', PW - MR, 19, { align:'right' });
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, 23, ML + CW, 23);
+      y = 27;
+    }
 
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const cvs = document.createElement('canvas');
-          cvs.width = img.naturalWidth; cvs.height = img.naturalHeight;
-          cvs.getContext('2d').drawImage(img, 0, 0);
-          const b64 = cvs.toDataURL('image/jpeg');
-          doc.addImage(b64, 'JPEG', ML, 5, 18, 18);
-        } catch(e) { /* logo failed silently */ }
-        _finishHeader(cb);
+    // ── Title + recipient strip (first page only) ────────────────────
+    const typeLabels = {
+      full:      'Reporte completo',
+      ingresos:  'Resumen financiero',
+      empleados: 'Reporte de comisiones',
+      citas:     'Citas del período',
+      riesgo:    'Clientes en riesgo',
+    };
+    function titleStrip(col3Label, col3Val) {
+      doc.setFont('helvetica','bold'); doc.setFontSize(22); doc.setTextColor(...BLK);
+      doc.text(typeLabels[type]||type, ML, y + 9); y += 16;
+
+      const c1 = CW * 0.44, c2 = CW * 0.29, c3 = CW - c1 - c2;
+      const x2 = ML + c1, x3 = ML + c1 + c2;
+
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, y, ML + CW, y); // top rule
+
+      doc.setDrawColor(...N300); doc.setLineWidth(0.25);
+      doc.line(x2, y, x2, y + 19); doc.line(x3, y, x3, y + 19);
+
+      const drawCell = (x, lbl, val, sz) => {
+        doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...N700);
+        doc.text(lbl.toUpperCase(), x + 2, y + 6);
+        doc.setFont('helvetica','bold'); doc.setFontSize(sz); doc.setTextColor(...BLK);
+        doc.text(val, x + 2, y + 15, { maxWidth: c1 - 4 });
       };
-      img.onerror = () => _finishHeader(cb);
-      img.src = '../avaxon_favicon.jpeg';
+      drawCell(ML,  'Preparado para', orgName, 13);
+      drawCell(x2,  'Período',        rangeLabel, 10);
+      drawCell(x3,  col3Label,        col3Val,    10);
+
+      y += 19;
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, y, ML + CW, y); y += 7;
     }
 
-    function _finishHeader(cb) {
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(14); doc.setTextColor(255,255,255);
-      doc.text('Avaxon · Reportes', ML + 22, 13);
-      doc.setFont('helvetica','normal');
-      doc.setFontSize(9); doc.setTextColor(...MUTED.map(v => Math.min(v+60,255)));
-      doc.text(rangeLabel, ML + 22, 20);
-
-      const now = new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      doc.setFontSize(8); doc.setTextColor(160,175,195);
-      doc.text('Generado ' + now, PW - MR, 13, { align:'right' });
-      doc.text('avaxon.lat', PW - MR, 20, { align:'right' });
-      y = 36;
-      cb();
+    // ── Section label ────────────────────────────────────────────────
+    function secLabel(txt) {
+      if (y > PH - 38) { doc.addPage(); pageNum++; pageHead(); }
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...BLK);
+      doc.text(txt.toUpperCase(), ML, y + 4.5); y += 7;
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, y, ML + CW, y); y += 5;
     }
 
-    function sectionTitle(text) {
-      doc.setFont('helvetica','bold'); doc.setFontSize(10);
-      doc.setTextColor(...DARK);
-      doc.text(text.toUpperCase(), ML, y);
-      doc.setDrawColor(...BLUE); doc.setLineWidth(0.5);
-      doc.line(ML, y + 2, ML + CW, y + 2);
-      y += 8;
+    // ── KPI strip ────────────────────────────────────────────────────
+    function kpiStrip(kpis) {
+      // kpis: [{label, value, delta:{txt,up}|null}]
+      const n = kpis.length, cw2 = CW / n;
+      kpis.forEach((k, i) => {
+        const x = ML + i * cw2;
+        if (i > 0) { doc.setDrawColor(...N300); doc.setLineWidth(0.25); doc.line(x, y, x, y + 20); }
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...N700);
+        doc.text(k.label, x + 2, y + 5);
+        doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...BLK);
+        doc.text(String(k.value), x + 2, y + 14);
+        if (k.delta) {
+          doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+          doc.setTextColor(...(k.delta.up ? GRN : RED));
+          doc.text(k.delta.txt, x + 2, y + 20);
+        }
+      });
+      y += 23;
+      doc.setDrawColor(...N300); doc.setLineWidth(0.25);
+      doc.line(ML, y, ML + CW, y); y += 7;
     }
 
-    function kpiBox(label, value, x, bw) {
-      doc.setFillColor(...LIGHT); doc.roundedRect(x, y, bw, 16, 2, 2, 'F');
-      doc.setDrawColor(...BORDER); doc.setLineWidth(0.3); doc.roundedRect(x, y, bw, 16, 2, 2, 'S');
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
-      doc.text(label, x + 4, y + 6);
-      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...DARK);
-      doc.text(String(value), x + 4, y + 13);
-    }
-
-    // colDefs: [{header, width, align}]  — widths in mm, sum <= CW
-    function table(colDefs, rows, opts = {}) {
-      const { rowH = 8, headerBg = DARK, headerColor = [255,255,255], altRow = true, fontSize = 8 } = opts;
-      const xs = [];
-      let cx = ML;
+    // ── Table ────────────────────────────────────────────────────────
+    // colDefs: [{header, width, align?}]
+    function pdfTable(colDefs, rows, opts = {}) {
+      const { rowH = 6.5, fontSize = 9 } = opts;
+      const xs = []; let cx = ML;
       colDefs.forEach(c => { xs.push(cx); cx += c.width; });
+      const tx = (c, xi) => c.align === 'right' ? xs[xi] + c.width : xs[xi] + 1;
 
       // Header
-      doc.setFillColor(...headerBg);
-      doc.rect(ML, y, CW, rowH + 1, 'F');
-      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...headerColor);
-      colDefs.forEach((c, i) => {
-        doc.text(c.header, xs[i] + (c.align === 'right' ? c.width - 2 : 2), y + rowH - 1.5, { align: c.align === 'right' ? 'right' : 'left' });
-      });
-      y += rowH + 1;
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, y, ML + CW, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...N700);
+      colDefs.forEach((c,i) => doc.text(c.header, tx(c,i), y + 5.5, {align: c.align==='right'?'right':'left'}));
+      y += 7;
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.25);
+      doc.line(ML, y, ML + CW, y); y += 1;
 
       // Rows
       doc.setFont('helvetica','normal'); doc.setFontSize(fontSize);
-      rows.forEach((row, ri) => {
-        if (y > PH - 20) { doc.addPage(); y = 20; }
-        if (altRow && ri % 2 === 1) { doc.setFillColor(...LIGHT); doc.rect(ML, y, CW, rowH, 'F'); }
-        doc.setDrawColor(...BORDER); doc.setLineWidth(0.15);
-        doc.line(ML, y + rowH, ML + CW, y + rowH);
-        doc.setTextColor(...DARK);
+      rows.forEach(row => {
+        if (y > PH - 22) { doc.addPage(); pageNum++; pageHead(); }
         row.forEach((cell, i) => {
           const c = colDefs[i];
-          const txt = String(cell ?? '—');
-          doc.text(txt, xs[i] + (c.align === 'right' ? c.width - 2 : 2), y + rowH - 1.5, { align: c.align === 'right' ? 'right' : 'left' });
+          const isRed = c.red && (Number(String(cell).replace(/[^0-9.]/g,''))||0) === 0 && String(cell) !== '—';
+          doc.setTextColor(...(isRed ? RED : BLK));
+          let txt = String(cell ?? '—');
+          // truncate with ellipsis if too wide
+          while (txt.length > 2 && doc.getTextWidth(txt) > c.width - 2) txt = txt.slice(0,-1);
+          if (txt !== String(cell ?? '—')) txt += '…';
+          doc.text(txt, tx(c,i), y + rowH - 1.5, {align: c.align==='right'?'right':'left'});
         });
         y += rowH;
+        doc.setDrawColor(...N300); doc.setLineWidth(0.25);
+        doc.line(ML, y, ML + CW, y);
       });
-      y += 5;
+      y += 2;
     }
 
-    function footer() {
-      doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
-      doc.text('Generado por Avaxon · avaxon.lat · Todos los derechos reservados', PW / 2, PH - 8, { align:'center' });
+    // ── Total/summary row ────────────────────────────────────────────
+    function totalRow(colDefs, cells) {
+      if (y > PH - 16) { doc.addPage(); pageNum++; pageHead(); }
+      const xs = []; let cx = ML;
+      colDefs.forEach(c => { xs.push(cx); cx += c.width; });
+      doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+      doc.line(ML, y, ML + CW, y); y += 2;
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...BLK);
+      cells.forEach((cell, i) => {
+        if (cell == null) return;
+        const c = colDefs[i];
+        const tx2 = c.align === 'right' ? xs[i] + c.width : xs[i] + 1;
+        doc.text(String(cell), tx2, y + 5.5, {align: c.align==='right'?'right':'left'});
+      });
+      y += 9;
     }
 
-    // ── Build by type ────────────────────────────────────────────────
-    drawHeader(() => {
+    // ── Per-page footers (applied after all pages built) ─────────────
+    function applyFooters() {
+      const total = doc.getNumberOfPages();
+      for (let p = 1; p <= total; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(...BLK); doc.setLineWidth(0.7);
+        doc.line(ML, PH - 14, ML + CW, PH - 14);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...N700);
+        const leftBase = `Generado por `;
+        const lw = doc.getTextWidth(leftBase);
+        doc.text(leftBase, ML, PH - 9);
+        doc.setFont('helvetica','bold'); doc.setTextColor(...BLK);
+        doc.text('Avaxon', ML + lw, PH - 9);
+        const aw = doc.getTextWidth('Avaxon');
+        doc.setFont('helvetica','normal'); doc.setTextColor(...N700);
+        doc.text(` · avaxon.lat · ${nowStr}`, ML + lw + aw, PH - 9);
+        doc.text(`${orgName} · Página ${p} de ${total}`, PW - MR, PH - 9, {align:'right'});
+      }
+    }
+
+    // ── Commission calc helper ───────────────────────────────────────
+    function empCom(emp) {
+      const ea = completed.filter(a => a.employee_id === emp.id);
+      return emp.commission_type === 'pct'
+        ? ea.reduce((s,a) => s + (Number(a.price)||0) * Number(emp.commission_base||0) / 100, 0)
+        : ea.length * Number(emp.commission_base||0);
+    }
+
+    // ── Build PDF ────────────────────────────────────────────────────
+    function buildPDF() {
+      pageHead();
+
       if (type === 'full') {
-        // KPIs
-        sectionTitle('Resumen del período');
-        const bw = (CW - 9) / 4;
-        kpiBox('Ingresos', fmtM(ingresos),  ML,               bw);
-        kpiBox('Citas',    citas,            ML + bw + 3,      bw);
-        kpiBox('Ticket',   fmtM(ticket),     ML + (bw + 3)*2,  bw);
-        kpiBox('Clientes', clientes,         ML + (bw + 3)*3,  bw);
-        y += 22;
+        titleStrip('Comparado con', (() => {
+          const {start, end} = repGetRange(repPeriod);
+          const ps = new Date(+start - (+end - +start));
+          return `${ps.getDate()} ${MES[ps.getMonth()]} – ${new Date(+start-1).getDate()} ${MES[new Date(+start-1).getMonth()]} ${new Date(+start-1).getFullYear()}`;
+        })());
 
-        // Ingresos por día
-        sectionTitle('Ingresos por día');
-        const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-        table(
-          [{header:'Fecha',width:40},{header:'Ingresos',width:CW-40,align:'right'}],
-          dayTotals.map((v, i) => {
-            const d = new Date(s0.getTime() + i * 86400000);
-            return [`${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`, fmtM(v)];
-          }).filter(r => Number(r[1].replace(/[^0-9.]/g,'')) > 0),
-          {rowH:7}
-        );
+        kpiStrip([
+          {label:'Ingresos totales',    value:fmtM(ingresos), delta:deltaTxt(ingresos, prevIngresos)},
+          {label:'Citas',              value:citas,           delta:deltaTxt(citas, prevCitas)},
+          {label:'Ticket promedio',    value:fmtM(ticket),    delta:deltaTxt(ticket, prevTicket)},
+          {label:'Clientes atendidos', value:clientes,        delta:deltaTxt(clientes, prevClientes)},
+        ]);
 
-        // Servicios más vendidos
-        if (y > PH - 60) { doc.addPage(); y = 20; }
-        sectionTitle('Servicios más vendidos');
+        secLabel('Servicios más vendidos');
         const svcMap = {};
-        completed.forEach(a => {
-          const n = a.service || 'Sin servicio';
-          if (!svcMap[n]) svcMap[n] = { amount:0, count:0 };
-          svcMap[n].amount += Number(a.price)||0;
-          svcMap[n].count++;
-        });
-        table(
-          [{header:'Servicio',width:CW-50},{header:'Citas',width:20,align:'right'},{header:'Ingresos',width:30,align:'right'}],
-          Object.entries(svcMap).sort((a,b)=>b[1].amount-a[1].amount).slice(0,10).map(([n,d],i) => [`${i+1}. ${n}`, d.count, fmtM(d.amount)]),
-          {rowH:7}
-        );
+        completed.forEach(a => { const n=a.service||'Sin servicio'; if(!svcMap[n]) svcMap[n]={amount:0,count:0}; svcMap[n].amount+=Number(a.price)||0; svcMap[n].count++; });
+        const svcCols = [{header:'#',width:8},{header:'Servicio',width:CW-8-20-28},{header:'Citas',width:20,align:'right'},{header:'Ingresos',width:28,align:'right'}];
+        pdfTable(svcCols, Object.entries(svcMap).sort((a,b)=>b[1].amount-a[1].amount).slice(0,8).map(([n,d],i) => [i+1, n, d.count, fmtM(d.amount)]));
 
-        // Empleados
-        if (y > PH - 60) { doc.addPage(); y = 20; }
-        sectionTitle('Rendimiento por empleado');
-        const workD = Math.max(1, Math.round((days||30)*5/7));
-        table(
-          [{header:'Empleado',width:55},{header:'Especialidad',width:40},{header:'Citas',width:20,align:'right'},{header:'Ingresos',width:35,align:'right'},{header:'Ocup.',width:20,align:'right'},{header:'Comisión',width:CW-170,align:'right'}],
-          emps.map(emp => {
-            const ea = completed.filter(a=>a.employee_id===emp.id);
-            const ing = ea.reduce((s,a)=>s+(Number(a.price)||0),0);
-            let com = 0;
-            if (emp.commission_type==='pct') com = ea.reduce((s,a)=>s+(Number(a.price)||0)*Number(emp.commission_base||0)/100,0);
-            else com = ea.length * Number(emp.commission_base||0);
-            const occ = Math.min(98, Math.round((ea.length/workD)*100));
-            return [emp.name, emp.specialty||emp.role||'—', ea.length, fmtM(ing), occ+'%', fmtM(com)];
-          }),
-          {rowH:7.5}
-        );
+        secLabel('Rendimiento del equipo');
+        const tCols = [{header:'Empleado',width:60},{header:'Citas',width:18,align:'right'},{header:'Ingresos',width:32,align:'right'},{header:'Comisión',width:CW-110,align:'right'}];
+        pdfTable(tCols, emps.map(emp => { const ea=completed.filter(a=>a.employee_id===emp.id); return [emp.name, ea.length, fmtM(ea.reduce((s,a)=>s+(Number(a.price)||0),0)), fmtM(empCom(emp))]; }));
+        totalRow(tCols, ['Total', citas, fmtM(ingresos), fmtM(emps.reduce((s,e)=>s+empCom(e),0))]);
 
-        // Clientes en riesgo
-        if (y > PH - 50) { doc.addPage(); y = 20; }
-        sectionTitle('Clientes en riesgo (sin visita 30+ días)');
-        table(
-          [{header:'Cliente',width:65},{header:'Último servicio',width:55},{header:'Última visita',width:40},{header:'Días sin visita',width:CW-160,align:'right'}],
-          atRisk.map(a => {
-            const d = Math.floor((Date.now()-new Date(a.scheduled_at))/86400000);
-            return [a.contact_name||'—', a.service||'—', fmtD(a.scheduled_at), d];
-          }),
-          {rowH:7.5}
-        );
+        secLabel('Clientes en riesgo');
+        const rCols = [{header:'Cliente',width:65},{header:'Último servicio',width:CW-65-28},{header:'Días sin visita',width:28,align:'right'}];
+        pdfTable(rCols, atRisk.map(a => [a.contact_name||'—', a.service||'—', Math.floor((Date.now()-new Date(a.scheduled_at))/86400000)]));
 
       } else if (type === 'ingresos') {
-        sectionTitle('Ingresos del período · ' + rangeLabel);
-        const bw = (CW - 6) / 3;
-        kpiBox('Total ingresos', fmtM(ingresos), ML,          bw);
-        kpiBox('Citas completadas', citas,        ML + bw + 3, bw);
-        kpiBox('Ticket promedio',   fmtM(ticket), ML + (bw+3)*2, bw);
-        y += 22;
+        titleStrip('Generado', nowStr);
 
-        const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-        sectionTitle('Ingresos por día');
-        table(
-          [{header:'Día',width:10,align:'right'},{header:'Fecha',width:45},{header:'Ingresos del día',width:CW-55,align:'right'}],
-          dayTotals.map((v,i) => {
-            const d = new Date(s0.getTime()+i*86400000);
-            return [i+1, `${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`, fmtM(v)];
-          }),
-          {rowH:7}
-        );
+        kpiStrip([
+          {label:'Ingresos totales', value:fmtM(ingresos), delta:deltaTxt(ingresos, prevIngresos)},
+          {label:'Ticket promedio',  value:fmtM(ticket),   delta:deltaTxt(ticket, prevTicket)},
+          {label:'Citas cobradas',   value:citas,          delta:deltaTxt(citas, prevCitas)},
+        ]);
+
+        // Mini bar chart
+        secLabel('Ingresos por día');
+        const maxDay = Math.max(...dayTotals, 1), barW = CW / Math.max(days,1), barMaxH = 22;
+        for (let i = 0; i < days; i++) {
+          const bh = (dayTotals[i]/maxDay) * barMaxH;
+          if (bh > 0) { doc.setFillColor(...BLK); doc.rect(ML + i*barW + 0.3, y + barMaxH - bh, Math.max(barW-0.6,0.4), bh, 'F'); }
+        }
+        y += barMaxH;
+        doc.setDrawColor(...BLK); doc.setLineWidth(0.7); doc.line(ML,y,ML+CW,y); y += 2;
+        doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(...N700);
+        const every = days<=7?1:days<=14?2:5;
+        for (let i=0; i<days; i+=every) { const d=new Date(s0.getTime()+i*86400000); doc.text(`${d.getDate()} ${MES[d.getMonth()]}`, ML+(i+0.5)*barW, y+3.5, {align:'center'}); }
+        y += 7;
+
+        secLabel('Desglose por día');
+        const dCols = [{header:'Fecha',width:CW-28},{header:'Ingresos',width:28,align:'right'}];
+        pdfTable(dCols, dayTotals.map((v,i) => { const d=new Date(s0.getTime()+i*86400000); return [`${d.getDate()} ${MES[d.getMonth()]} ${d.getFullYear()}`, fmtM(v)]; }), {rowH:6});
+        totalRow(dCols, ['Total', fmtM(ingresos)]);
 
       } else if (type === 'empleados') {
-        sectionTitle('Empleados y comisiones · ' + rangeLabel);
-        const workD = Math.max(1, Math.round((days||30)*5/7));
-        table(
-          [{header:'Empleado',width:55},{header:'Especialidad',width:40},{header:'Citas',width:20,align:'right'},{header:'Ingresos',width:32,align:'right'},{header:'Ocup.',width:20,align:'right'},{header:'Comisión',width:CW-167,align:'right'}],
-          emps.map(emp => {
-            const ea = completed.filter(a=>a.employee_id===emp.id);
-            const ing = ea.reduce((s,a)=>s+(Number(a.price)||0),0);
-            let com = 0;
-            if (emp.commission_type==='pct') com = ea.reduce((s,a)=>s+(Number(a.price)||0)*Number(emp.commission_base||0)/100,0);
-            else com = ea.length * Number(emp.commission_base||0);
-            const occ = Math.min(98, Math.round((ea.length/workD)*100));
-            return [emp.name, emp.specialty||emp.role||'—', ea.length, fmtM(ing), occ+'%', fmtM(com)];
-          }),
-          {rowH:8}
-        );
+        titleStrip('Generado', nowStr);
 
-        // Per-employee appointment breakdown
+        const totCom = emps.reduce((s,e)=>s+empCom(e), 0);
+        kpiStrip([
+          {label:'Comisiones a pagar',  value:fmtM(totCom),   delta:null},
+          {label:'Ingresos generados',  value:fmtM(ingresos), delta:deltaTxt(ingresos, prevIngresos)},
+          {label:'Citas atendidas',     value:citas,          delta:deltaTxt(citas, prevCitas)},
+        ]);
+
+        const eCols = [{header:'Empleado',width:55},{header:'Citas',width:16,align:'right'},{header:'Ingresos',width:30,align:'right'},{header:'Com. %',width:18,align:'right'},{header:'Comisión',width:CW-119,align:'right'}];
+        pdfTable(eCols, emps.map(emp => {
+          const ea = completed.filter(a=>a.employee_id===emp.id);
+          const pctLbl = emp.commission_type==='pct' ? (emp.commission_base||0)+'%' : '$'+(emp.commission_base||0);
+          return [emp.name, ea.length, fmtM(ea.reduce((s,a)=>s+(Number(a.price)||0),0)), pctLbl, fmtM(empCom(emp))];
+        }));
+        totalRow(eCols, ['Total', citas, fmtM(ingresos), null, fmtM(totCom)]);
+        doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(...N700);
+        doc.text('* Porcentaje según configuración individual de cada empleado', ML, y); y += 8;
+
         emps.forEach(emp => {
           const ea = completed.filter(a=>a.employee_id===emp.id);
           if (!ea.length) return;
-          if (y > PH - 40) { doc.addPage(); y = 20; }
-          doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...DARK);
-          doc.text(`Citas — ${emp.name}`, ML, y); y += 5;
-          table(
-            [{header:'Fecha',width:38},{header:'Cliente',width:45},{header:'Servicio',width:52},{header:'Precio',width:CW-135,align:'right'}],
-            ea.map(a => [fmtDT(a.scheduled_at), a.contact_name||'—', a.service||'—', fmtM(a.price||0)]),
-            {rowH:6.5, headerBg:MUTED, fontSize:7.5}
-          );
+          secLabel(`Citas — ${emp.name}`);
+          const aCols = [{header:'Fecha y hora',width:40},{header:'Cliente',width:44},{header:'Servicio',width:CW-40-44-22},{header:'Precio',width:22,align:'right'}];
+          pdfTable(aCols, ea.map(a => [fmtDT(a.scheduled_at), a.contact_name||'—', a.service||'—', fmtM(a.price||0)]), {rowH:6,fontSize:8.5});
         });
 
       } else if (type === 'citas') {
-        sectionTitle('Citas del período · ' + rangeLabel);
-        const all = apts.filter(a => a.status !== 'cancelled');
-        table(
-          [{header:'Fecha y hora',width:40},{header:'Cliente',width:45},{header:'Empleado',width:40},{header:'Servicio',width:37},{header:'Estado',width:20},{header:'Precio',width:CW-182,align:'right'}],
-          all.sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at)).map(a => {
-            const st = a.status==='completed'?'Completada':a.status==='no_show'?'No show':'Pendiente';
-            const emp = emps.find(e=>e.id===a.employee_id);
-            return [fmtDT(a.scheduled_at), a.contact_name||'—', emp?emp.name:'—', a.service||'—', st, fmtM(a.price||0)];
-          }),
-          {rowH:7, fontSize:7.5}
-        );
+        titleStrip('Generado', nowStr);
+
+        const noShows = apts.filter(a=>a.status==='no_show').length;
+        kpiStrip([
+          {label:'Citas totales',   value:apts.length,     delta:null},
+          {label:'Completadas',     value:completed.length,delta:null},
+          {label:'No show',         value:noShows,         delta: noShows > 0 ? {txt:`${noShows} sin cobrar`, up:false} : null},
+          {label:'Total cobrado',   value:fmtM(ingresos),  delta:deltaTxt(ingresos, prevIngresos)},
+        ]);
+
+        const cCols = [{header:'Fecha y hora',width:36},{header:'Cliente',width:38},{header:'Servicio',width:38},{header:'Atendió',width:30},{header:'Precio',width:21,align:'right'},{header:'Estado',width:CW-163,align:'right'}];
+        pdfTable(cCols, apts.sort((a,b)=>new Date(a.scheduled_at)-new Date(b.scheduled_at)).map(a => {
+          const emp = emps.find(e=>e.id===a.employee_id);
+          const st = a.status==='completed'?'Completada':a.status==='no_show'?'No show':'Pendiente';
+          return [fmtDT(a.scheduled_at), a.contact_name||'—', a.service||'—', emp?emp.name:'—', fmtM(a.price||0), st];
+        }), {rowH:6, fontSize:8.5});
+        totalRow(cCols, [`${apts.length} citas`, `${completed.length} completadas · ${noShows} no show`, null, null, fmtM(ingresos), null]);
 
       } else if (type === 'riesgo') {
-        sectionTitle('Clientes en riesgo · ' + rangeLabel);
-        doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
-        doc.text('Clientes que no han visitado en 30+ días y no tienen cita en el período actual.', ML, y);
-        doc.text('Se recomienda reactivarlos vía WhatsApp con una oferta o recordatorio personalizado.', ML, y + 5);
-        y += 12;
-        table(
-          [{header:'Cliente',width:65},{header:'Último servicio',width:55},{header:'Última visita',width:40},{header:'Días sin visita',width:CW-160,align:'right'}],
-          atRisk.map(a => {
-            const d = Math.floor((Date.now()-new Date(a.scheduled_at))/86400000);
-            return [a.contact_name||'—', a.service||'—', fmtD(a.scheduled_at), d];
-          }),
-          {rowH:8}
-        );
+        titleStrip('Criterio', '+30 días sin visita');
 
-        if (y < PH - 50) {
-          y += 5;
-          doc.setFillColor(240,245,255); doc.roundedRect(ML, y, CW, 22, 3, 3, 'F');
-          doc.setDrawColor(...BLUE); doc.setLineWidth(0.4); doc.roundedRect(ML, y, CW, 22, 3, 3, 'S');
-          doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
-          doc.text('Cómo reactivar clientes con Avaxon', ML + 4, y + 7);
-          doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...MUTED);
-          doc.text('Envía un mensaje de WhatsApp automatizado desde la vista Conversaciones. Avaxon redacta', ML + 4, y + 13);
-          doc.text('el mensaje con IA y agenda la cita sin intervención manual.', ML + 4, y + 18);
-          y += 27;
+        // Big number callout
+        doc.setFont('helvetica','bold'); doc.setFontSize(42); doc.setTextColor(...BLK);
+        doc.text(String(atRisk.length), ML, y + 16);
+        const numW = doc.getTextWidth(String(atRisk.length));
+        doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...BLK);
+        doc.text('clientes sin visita', ML + numW + 3, y + 10);
+        doc.text('en más de 30 días', ML + numW + 3, y + 16);
+        y += 20;
+        doc.setDrawColor(...N300); doc.setLineWidth(0.25); doc.line(ML,y,ML+CW,y); y += 8;
+
+        const rCols = [{header:'Cliente',width:65},{header:'Último servicio',width:CW-65-28},{header:'Días sin visita',width:28,align:'right'}];
+        pdfTable(rCols, atRisk.map(a => [a.contact_name||'—', a.service||'—', Math.floor((Date.now()-new Date(a.scheduled_at))/86400000)]));
+
+        if (y < PH - 28) {
+          y += 4;
+          doc.setDrawColor(...BLK); doc.setLineWidth(0.7); doc.line(ML,y,ML+CW,y); y += 5;
+          doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...BLK);
+          doc.text('RECOMENDACIÓN', ML, y); y += 6;
+          doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...BLK);
+          doc.text('Reactivar por WhatsApp con campaña de seguimiento personalizado desde Avaxon.', ML, y, {maxWidth:CW});
+          y += 8;
         }
       }
 
-      footer();
+      applyFooters();
 
-      const titles = { full:'Reporte_Completo', ingresos:'Reporte_Ingresos', empleados:'Reporte_Empleados', citas:'Reporte_Citas', riesgo:'Reporte_Riesgo' };
-      const fname = `Avaxon_${titles[type]||type}_${rangeLabel.replace(/\s/g,'_')}.pdf`;
-      doc.save(fname);
-    });
+      const slugs = { full:'Reporte_Completo', ingresos:'Resumen_Financiero', empleados:'Comisiones', citas:'Citas', riesgo:'Clientes_en_Riesgo' };
+      doc.save(`Avaxon_${orgName.replace(/\s+/g,'_')}_${slugs[type]||type}_${rangeLabel.replace(/\s+/g,'_')}.pdf`);
+    }
+
+    // ── Load logo, then build ────────────────────────────────────────
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try { const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight; c.getContext('2d').drawImage(img,0,0); logoB64=c.toDataURL('image/jpeg'); } catch(e){}
+      buildPDF();
+    };
+    img.onerror = () => buildPDF();
+    img.src = '../avaxon_favicon.jpeg';
   }
   window.exportReporte = exportReporte;
 
