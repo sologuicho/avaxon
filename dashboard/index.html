@@ -11541,13 +11541,14 @@
 
   function switchConfigTab(tab) {
     configTab = tab
-    ;['plantillas','general'].forEach(t => {
+    ;['plantillas','servicios','general'].forEach(t => {
       const btn  = $('cfg-tab-' + t)
       const pane = $('cfg-pane-' + t)
       if (btn)  { btn.style.background = t === tab ? 'var(--accent)' : 'transparent'; btn.style.color = t === tab ? '#062513' : 'var(--text-muted)' }
       if (pane) pane.style.display = t === tab ? 'block' : 'none'
     })
     if (tab === 'plantillas') loadTemplates()
+    if (tab === 'servicios')  loadServicios()
     if (tab === 'general')    { loadOrgConfig(); switchConfigGeneralSub(pendingConfigSub || 'negocio'); pendingConfigSub = null }
   }
 
