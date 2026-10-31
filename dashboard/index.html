@@ -3999,7 +3999,7 @@
       <div class="view" id="view-reportes">
 
         <!-- Header -->
-        <div class="view-header" style="flex-wrap:wrap;gap:12px">
+        <div class="view-header" style="flex-wrap:wrap;gap:12px;margin-bottom:6px">
           <div class="view-header-left">
             <div class="view-header-icon" style="background:rgba(124,180,255,.12);color:#7cb4ff">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
@@ -4036,81 +4036,85 @@
           </div>
         </div>
 
-        <!-- KPI cards -->
-        <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
-          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#7cb4ff"></div><div><div class="kpi-label">Ingresos totales</div><div class="kpi-value" id="rep-kpi-ingresos">—</div><div class="kpi-sub" id="rep-kpi-ingresos-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
-          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#5fd49a"></div><div><div class="kpi-label">Citas completadas</div><div class="kpi-value" id="rep-kpi-citas">—</div><div class="kpi-sub" id="rep-kpi-citas-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
-          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#a78bfa"></div><div><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="rep-kpi-ticket">—</div><div class="kpi-sub" id="rep-kpi-ticket-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
-          <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#f59e0b"></div><div><div class="kpi-label">Clientes atendidos</div><div class="kpi-value" id="rep-kpi-clientes">—</div><div class="kpi-sub" id="rep-kpi-clientes-delta" style="font-size:12px;color:var(--text-muted);margin-top:4px"></div></div></div>
-        </section>
+        <!-- Contenido: flex column con gap generoso entre secciones -->
+        <div style="display:flex;flex-direction:column;gap:24px">
 
-        <!-- Charts row -->
-        <section style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px">
-          <!-- Line chart -->
-          <div class="card bp" style="padding:18px 20px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-              <div><div style="font-size:14px;font-weight:700">Ingresos por día</div><div style="font-size:12px;color:var(--text-muted)">MXN · <span id="rep-chart-period-label">—</span></div></div>
-              <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted)">
-                <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:2px;background:#7cb4ff;display:inline-block"></span>Período actual</span>
-              </div>
-            </div>
-            <div id="rep-linechart" style="height:180px;position:relative">
-              <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:60px">Cargando…</div>
-            </div>
-          </div>
-          <!-- Services bar -->
-          <div class="card bp" style="padding:18px 20px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="margin-bottom:14px"><div style="font-size:14px;font-weight:700">Servicios más vendidos</div><div style="font-size:12px;color:var(--text-muted)">Top 5 por ingresos</div></div>
-            <div id="rep-services-list" style="display:flex;flex-direction:column;gap:12px">
-              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
-            </div>
-          </div>
-        </section>
+          <!-- KPI cards -->
+          <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px">
+            <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#7cb4ff"></div><div><div class="kpi-label">Ingresos totales</div><div class="kpi-value" id="rep-kpi-ingresos">—</div><div class="kpi-sub" id="rep-kpi-ingresos-delta" style="font-size:12px;color:var(--text-muted);margin-top:6px"></div></div></div>
+            <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#5fd49a"></div><div><div class="kpi-label">Citas completadas</div><div class="kpi-value" id="rep-kpi-citas">—</div><div class="kpi-sub" id="rep-kpi-citas-delta" style="font-size:12px;color:var(--text-muted);margin-top:6px"></div></div></div>
+            <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#a78bfa"></div><div><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="rep-kpi-ticket">—</div><div class="kpi-sub" id="rep-kpi-ticket-delta" style="font-size:12px;color:var(--text-muted);margin-top:6px"></div></div></div>
+            <div class="kpi-card bp"><i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i><div class="kpi-accent-bar" style="background:#f59e0b"></div><div><div class="kpi-label">Clientes atendidos</div><div class="kpi-value" id="rep-kpi-clientes">—</div><div class="kpi-sub" id="rep-kpi-clientes-delta" style="font-size:12px;color:var(--text-muted);margin-top:6px"></div></div></div>
+          </section>
 
-        <!-- Employee table -->
-        <section class="card bp" style="padding:0;overflow:hidden">
-          <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)">
-            <div>
-              <div style="font-size:14px;font-weight:700">Rendimiento del equipo</div>
-              <div style="font-size:12px;color:var(--text-muted)">Comisión calculada según configuración de cada empleado</div>
-            </div>
-          </div>
-          <div id="rep-staff-table">
-            <div style="padding:24px;color:var(--text-muted);font-size:13px;text-align:center">Cargando…</div>
-          </div>
-        </section>
-
-        <!-- Bottom row -->
-        <section style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
-          <!-- Donut -->
-          <div class="card bp" style="padding:18px 20px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="margin-bottom:14px"><div style="font-size:14px;font-weight:700">Clientes nuevos vs recurrentes</div><div style="font-size:12px;color:var(--text-muted)" id="rep-donut-sub">—</div></div>
-            <div id="rep-donut-wrap" style="display:flex;align-items:center;gap:24px">
-              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
-            </div>
-          </div>
-          <!-- At risk -->
-          <div class="card bp" style="padding:18px 20px">
-            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-              <div>
-                <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:14px;font-weight:700">Clientes en riesgo</span>
-                  <span id="rep-risk-badge" style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:flex;align-items:center;justify-content:center">0</span>
+          <!-- Charts row -->
+          <section style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px">
+            <!-- Line chart -->
+            <div class="card bp" style="padding:22px 24px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                <div><div style="font-size:14.5px;font-weight:700">Ingresos por día</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px">MXN · <span id="rep-chart-period-label">—</span></div></div>
+                <div style="display:flex;gap:14px;font-size:12px;color:var(--text-muted)">
+                  <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:2px;background:#7cb4ff;display:inline-block"></span>Período actual</span>
                 </div>
-                <div style="font-size:12px;color:var(--text-muted)">Sin visita en más de 30 días</div>
+              </div>
+              <div id="rep-linechart" style="height:210px;position:relative">
+                <div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:80px">Cargando…</div>
               </div>
             </div>
-            <div id="rep-risk-list" style="display:flex;flex-direction:column">
-              <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+            <!-- Services bar -->
+            <div class="card bp" style="padding:22px 24px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="margin-bottom:18px"><div style="font-size:14.5px;font-weight:700">Servicios más vendidos</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px">Top 5 por ingresos</div></div>
+              <div id="rep-services-list" style="display:flex;flex-direction:column;gap:14px">
+                <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
+          <!-- Employee table -->
+          <section class="card bp" style="padding:0;overflow:hidden">
+            <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:14.5px;font-weight:700">Rendimiento del equipo</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:3px">Comisión calculada según configuración de cada empleado</div>
+              </div>
+            </div>
+            <div id="rep-staff-table">
+              <div style="padding:32px;color:var(--text-muted);font-size:13px;text-align:center">Cargando…</div>
+            </div>
+          </section>
+
+          <!-- Bottom row -->
+          <section style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
+            <!-- Donut -->
+            <div class="card bp" style="padding:22px 24px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="margin-bottom:18px"><div style="font-size:14.5px;font-weight:700">Clientes nuevos vs recurrentes</div><div style="font-size:12px;color:var(--text-muted);margin-top:3px" id="rep-donut-sub">—</div></div>
+              <div id="rep-donut-wrap" style="display:flex;align-items:center;gap:28px">
+                <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+              </div>
+            </div>
+            <!-- At risk -->
+            <div class="card bp" style="padding:22px 24px">
+              <i class="bc tl"></i><i class="bc tr"></i><i class="bc bl"></i><i class="bc br"></i>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:14.5px;font-weight:700">Clientes en riesgo</span>
+                    <span id="rep-risk-badge" style="background:#ef4444;color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;padding:0 6px;border-radius:10px;display:flex;align-items:center;justify-content:center">0</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--text-muted);margin-top:3px">Sin visita en más de 30 días</div>
+                </div>
+              </div>
+              <div id="rep-risk-list" style="display:flex;flex-direction:column">
+                <div style="color:var(--text-muted);font-size:13px">Cargando…</div>
+              </div>
+            </div>
+          </section>
+
+        </div><!-- /flex column -->
       </div>
 
       <!-- VIEW: Configuración -->
