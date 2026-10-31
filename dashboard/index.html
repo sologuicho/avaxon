@@ -14755,7 +14755,7 @@
   window.repClearHover = repClearHover;
 
   // ── Staff table ───────────────────────────────────────────────────
-  function renderRepStaffTable(emps, allApts, completed) {
+  function renderRepStaffTable(emps, allApts, completed, days) {
     const el = $('rep-staff-table');
     if (!el) return;
     if (!emps.length) {
