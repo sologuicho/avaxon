@@ -14788,6 +14788,9 @@
       .filter(a => new Date(a.scheduled_at) < thirtyDaysAgo && !clienteSet.has(a.contact_id))
       .sort((a,b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
       .slice(0, 5);
+    repSnapshot = { completed, apts, emps, atRisk, dayTotals, ingresos, citas, ticket, clientes,
+                    prevIngresos, prevCitas, prevTicket, prevClientes, rangeLabel, days, s0 };
+
     const riskBadge = $('rep-risk-badge');
     if (riskBadge) riskBadge.textContent = atRisk.length;
     const riskEl = $('rep-risk-list');
