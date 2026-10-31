@@ -14550,7 +14550,14 @@
       const idx = Math.floor((d - s0) / 86400000);
       if (idx >= 0 && idx < days) dayTotals[idx] += Number(a.price)||0;
     });
-    renderRepLineChart(dayTotals, s0, days);
+    const prevPeriodStart = new Date(s0.getTime() - (end.getTime() - s0.getTime()));
+    const prevDayTotals = Array(days).fill(0);
+    prevCompleted.forEach(a => {
+      const d = new Date(a.scheduled_at);
+      const idx = Math.floor((d - prevPeriodStart) / 86400000);
+      if (idx >= 0 && idx < days) prevDayTotals[idx] += Number(a.price)||0;
+    });
+    renderRepLineChart(dayTotals, s0, days, prevDayTotals);
 
     // ── Services ranking ─────────────────────────────────────────
     const svcMap = {};
