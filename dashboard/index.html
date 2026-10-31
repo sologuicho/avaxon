@@ -12039,6 +12039,153 @@
   window.useExamplePrompt   = useExamplePrompt
   window.saveOrgConfig      = saveOrgConfig
 
+  // ════════════════════════════════════════════════════════════════
+  // MÓDULO: Catálogo de Servicios
+  // ════════════════════════════════════════════════════════════════
+  const SVC_COLORS = ['#7cb4ff','#5fd49a','#a78bfa','#f59e0b','#ef8689','#38bdf8','#fb923c','#e879f9'];
+
+  async function loadServicios() {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const listEl  = $('cfg-svc-list');
+    const countEl = $('cfg-svc-count');
+    if (listEl) listEl.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text-muted);font-size:13px">Cargando…</div>';
+
+    const { data: svcs, error } = await sb
+      .from('services')
+      .select('id,name,price,duration_minutes,category,color,active')
+      .eq('organization_id', orgId)
+      .order('name');
+
+    if (error || !listEl) return;
+    if (countEl) countEl.textContent = svcs.length;
+
+    if (!svcs.length) {
+      listEl.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:13px">
+        <div style="font-size:28px;margin-bottom:10px">✂️</div>
+        <div style="font-weight:600;margin-bottom:6px">Sin servicios todavía</div>
+        <div>Agrega tu catálogo para que aparezca en citas y reportes.</div>
+      </div>`;
+      return;
+    }
+
+    const grouped = {};
+    svcs.forEach(s => { const cat = s.category || 'Sin categoría'; if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(s); });
+
+    listEl.innerHTML = Object.entries(grouped).map(([cat, items]) => `
+      <div>
+        <div style="padding:8px 20px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;background:var(--hover-bg);border-bottom:1px solid var(--border)">${cat}</div>
+        ${items.map(s => `
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);${!s.active ? 'opacity:.5' : ''}">
+            <div style="width:10px;height:10px;border-radius:50%;background:${s.color || '#7cb4ff'};flex:none"></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13.5px;font-weight:600">${s.name}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${s.duration_minutes || 60} min</div>
+            </div>
+            <div style="font-size:14px;font-weight:700;color:var(--text)">${'$' + Number(s.price).toLocaleString('es-MX')}</div>
+            <button onclick="toggleSvcActive('${s.id}',${!s.active})" style="border:none;background:none;cursor:pointer;font-size:12px;padding:4px 8px;border-radius:6px;color:${s.active ? '#5fd49a' : 'var(--text-dim)'};background:${s.active ? 'rgba(79,194,138,.1)' : 'var(--hover-bg)'}" title="${s.active ? 'Desactivar' : 'Activar'}">${s.active ? 'Activo' : 'Inactivo'}</button>
+            <button onclick="openSvcModal('${s.id}')" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:13px;padding:5px 8px;border-radius:6px" onmouseover="this.style.background='var(--hover-bg)'" onmouseout="this.style.background='none'"><i class="fa fa-pen"></i></button>
+          </div>`).join('')}
+      </div>`).join('');
+  }
+
+  let _svcAll = [];
+  async function openSvcModal(id) {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const modal = $('svc-modal');
+    if (!modal) return;
+
+    $('svc-f-id').value       = id || '';
+    $('svc-f-name').value     = '';
+    $('svc-f-price').value    = '';
+    $('svc-f-duration').value = '60';
+    $('svc-f-category').value = '';
+    $('svc-f-color').value    = '#7cb4ff';
+    $('svc-modal-title').textContent = id ? 'Editar servicio' : 'Nuevo servicio';
+    $('svc-modal-error').style.display = 'none';
+    const delBtn = $('svc-delete-btn');
+    if (delBtn) delBtn.style.display = id ? 'block' : 'none';
+    selectSvcColor('#7cb4ff');
+
+    if (id) {
+      const { data } = await sb.from('services').select('*').eq('id', id).maybeSingle();
+      if (data) {
+        $('svc-f-name').value     = data.name || '';
+        $('svc-f-price').value    = data.price || '';
+        $('svc-f-duration').value = data.duration_minutes || 60;
+        $('svc-f-category').value = data.category || '';
+        selectSvcColor(data.color || '#7cb4ff');
+      }
+    }
+
+    modal.style.display = 'flex';
+    setTimeout(() => $('svc-f-name').focus(), 80);
+  }
+
+  function closeSvcModal() {
+    const modal = $('svc-modal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  function selectSvcColor(color) {
+    $('svc-f-color').value = color;
+    document.querySelectorAll('#svc-color-picker [data-color]').forEach(el => {
+      el.style.borderColor = el.dataset.color === color ? 'var(--text)' : 'transparent';
+      el.style.transform   = el.dataset.color === color ? 'scale(1.2)' : 'scale(1)';
+    });
+  }
+
+  async function saveSvc() {
+    const orgId = getActiveOrgId();
+    if (!orgId) return;
+    const id       = $('svc-f-id').value;
+    const name     = ($('svc-f-name').value || '').trim();
+    const price    = parseFloat($('svc-f-price').value) || 0;
+    const duration = parseInt($('svc-f-duration').value) || 60;
+    const category = ($('svc-f-category').value || '').trim() || null;
+    const color    = $('svc-f-color').value || '#7cb4ff';
+    const errEl    = $('svc-modal-error');
+    const saveBtn  = $('svc-save-btn');
+
+    if (!name) { errEl.textContent = 'El nombre es obligatorio.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Guardando…'; }
+
+    const payload = { organization_id: orgId, name, price, duration_minutes: duration, category, color };
+    const { error } = id
+      ? await sb.from('services').update(payload).eq('id', id)
+      : await sb.from('services').insert(payload);
+
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar'; }
+    if (error) { errEl.textContent = 'Error al guardar: ' + error.message; errEl.style.display = 'block'; return; }
+
+    closeSvcModal();
+    loadServicios();
+  }
+
+  async function deleteSvc() {
+    const id = $('svc-f-id').value;
+    if (!id) return;
+    if (!confirm('¿Eliminar este servicio? Esta acción no se puede deshacer.')) return;
+    await sb.from('services').delete().eq('id', id);
+    closeSvcModal();
+    loadServicios();
+  }
+
+  async function toggleSvcActive(id, active) {
+    await sb.from('services').update({ active }).eq('id', id);
+    loadServicios();
+  }
+
+  window.loadServicios    = loadServicios
+  window.openSvcModal     = openSvcModal
+  window.closeSvcModal    = closeSvcModal
+  window.saveSvc          = saveSvc
+  window.deleteSvc        = deleteSvc
+  window.toggleSvcActive  = toggleSvcActive
+  window.selectSvcColor   = selectSvcColor
+
   window.openCRMModal       = openCRMModal
   window.closeCRMModal      = closeCRMModal
   window.saveCRMClient      = saveCRMClient
