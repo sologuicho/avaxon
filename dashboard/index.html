@@ -16563,6 +16563,52 @@
     </div>
   </div>
 
+  <!-- Modal: Servicio (agregar / editar) -->
+  <div id="svc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2200;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeSvcModal()">
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;width:100%;max-width:460px;box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)">
+        <div style="font-size:15px;font-weight:700" id="svc-modal-title">Nuevo servicio</div>
+        <button onclick="closeSvcModal()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:18px;padding:4px;line-height:1"><i class="fa fa-xmark"></i></button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <input type="hidden" id="svc-f-id" />
+        <div>
+          <label class="cfg-field-label">Nombre del servicio *</label>
+          <input id="svc-f-name" type="text" class="cfg-field-input" placeholder="Ej: Masaje relajante, Corte de cabello…" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="cfg-field-label">Precio (MXN) *</label>
+            <input id="svc-f-price" type="number" min="0" step="10" class="cfg-field-input" placeholder="0" />
+          </div>
+          <div>
+            <label class="cfg-field-label">Duración (minutos)</label>
+            <input id="svc-f-duration" type="number" min="5" step="5" class="cfg-field-input" placeholder="60" />
+          </div>
+        </div>
+        <div>
+          <label class="cfg-field-label">Categoría <span style="font-weight:400;color:var(--text-dim)">(opcional)</span></label>
+          <input id="svc-f-category" type="text" class="cfg-field-input" placeholder="Ej: Masajes, Faciales, Uñas…" />
+        </div>
+        <div>
+          <label class="cfg-field-label">Color</label>
+          <div id="svc-color-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            ${['#7cb4ff','#5fd49a','#a78bfa','#f59e0b','#ef8689','#38bdf8','#fb923c','#e879f9'].map(c =>
+              `<div onclick="selectSvcColor('${c}')" data-color="${c}" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:border-color .1s"></div>`
+            ).join('')}
+          </div>
+          <input type="hidden" id="svc-f-color" value="#7cb4ff" />
+        </div>
+        <div id="svc-modal-error" style="display:none;padding:9px 12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;font-size:12.5px;color:#dc2626"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--border)">
+        <button id="svc-delete-btn" onclick="deleteSvc()" style="display:none;padding:9px 16px;border:1.5px solid rgba(239,68,68,.3);background:transparent;color:#ef4444;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;margin-right:auto">Eliminar</button>
+        <button onclick="closeSvcModal()" style="padding:9px 16px;border:1.5px solid var(--border);background:transparent;color:var(--text-muted);border-radius:9px;font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+        <button id="svc-save-btn" onclick="saveSvc()" class="btn-primary" style="padding:9px 18px;font-size:13px">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Términos y condiciones (primer ingreso) -->
   <style>
     #modal-terms { font-family: 'Plus Jakarta Sans', sans-serif; }
