@@ -14600,16 +14600,13 @@
   window.exportReporte = exportReporte;
 
   // ── Expandir fila empleado ───────────────────────────────────────
-  function toggleRepEmployee(name) {
-    repExpanded = repExpanded === name ? null : name;
-    const allExpands = document.querySelectorAll('[id^="rep-expand-"]');
-    allExpands.forEach(el => { el.style.display = 'none'; });
-    const allChevrons = document.querySelectorAll('[id^="rep-chev-"]');
-    allChevrons.forEach(el => { el.style.transform = 'none'; el.style.color = '#55667b'; });
-    if (repExpanded) {
-      const safeId = repExpanded.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
-      const expandEl = $('rep-expand-' + safeId);
-      const chevEl   = $('rep-chev-'   + safeId);
+  function toggleRepEmployee(idx) {
+    repExpanded = repExpanded === idx ? null : idx;
+    document.querySelectorAll('[id^="rep-expand-"]').forEach(el => { el.style.display = 'none'; });
+    document.querySelectorAll('[id^="rep-chev-"]').forEach(el => { el.style.transform = 'none'; el.style.color = '#55667b'; });
+    if (repExpanded !== null) {
+      const expandEl = $('rep-expand-' + repExpanded);
+      const chevEl   = $('rep-chev-'   + repExpanded);
       if (expandEl) expandEl.style.display = 'block';
       if (chevEl)   { chevEl.style.transform = 'rotate(90deg)'; chevEl.style.color = '#7cb4ff'; }
     }
