@@ -14795,7 +14795,8 @@
         }, 0);
       }
 
-      const occPct = 55; // placeholder — real calc needs employee_schedules hours
+      const workingDays = Math.max(1, Math.round((days || 30) * 5 / 7));
+      const occPct = Math.min(98, Math.round((empApts.length / workingDays) * 100));
       const occColor = occPct >= 75 ? '#7cb4ff' : occPct >= 50 ? '#5980a6' : '#3d5168';
       const safeId   = emp.name.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
       const initials = emp.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
