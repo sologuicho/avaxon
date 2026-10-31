@@ -14639,49 +14639,120 @@
   window.loadReportes = loadReportes;
 
   // ── Line chart SVG ───────────────────────────────────────────────
-  function renderRepLineChart(dayTotals, startDate, days) {
+  function renderRepLineChart(dayTotals, startDate, days, prevDayTotals) {
     const el = $('rep-linechart');
     if (!el) return;
-    if (!dayTotals.some(v => v > 0)) {
-      el.innerHTML = '<div style="color:var(--text-muted);font-size:13px;text-align:center;padding-top:60px">Sin ingresos en este período</div>';
-      return;
-    }
-    const maxV  = Math.max(...dayTotals, 1);
+    repChartData = { dayTotals, startDate, days, prevDayTotals: prevDayTotals || [] };
+
+    const hasPrev = prevDayTotals && prevDayTotals.some(v => v > 0);
+    const maxV = Math.max(...dayTotals, ...(hasPrev ? prevDayTotals : []), 1);
+    const step = maxV > 1200 ? 500 : maxV > 600 ? 250 : 100;
+    const topV = Math.ceil(maxV * 1.1 / step) * step;
+
     const W = 1000, H = 1000;
     const X = i => (i + 0.5) / days * W;
-    const Y = v => H - (v / maxV) * H * 0.88 - H * 0.06;
-    const path = dayTotals.map((v, i) => `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-    const area = path + ` L${X(days-1).toFixed(1)},${H} L${X(0).toFixed(1)},${H} Z`;
+    const Y = v => H - (v / topV) * H * 0.88 - H * 0.06;
+    const makePath = arr => arr.map((v, i) => `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
 
-    // X labels (every N days)
+    const pathCur  = makePath(dayTotals);
+    const areaCur  = pathCur + ` L${X(days-1).toFixed(1)},${H} L${X(0).toFixed(1)},${H} Z`;
+    const pathPrev = hasPrev ? makePath(prevDayTotals) : null;
+
+    const ticks = 4;
+    const gridLines = Array.from({length: ticks + 1}, (_, i) => {
+      const v = topV * (ticks - i) / ticks;
+      return { topPct: ((i / ticks) * 88 + 6).toFixed(1), label: v >= 1000 ? '$' + (v/1000).toFixed(v % 1000 ? 1 : 0) + 'k' : '$' + v };
+    });
+
     const every = days <= 7 ? 1 : days <= 15 ? 3 : 5;
     const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const xLabels = [];
     for (let i = 0; i < days; i += every) {
       const d = new Date(startDate.getTime() + i * 86400000);
-      xLabels.push({ left: (X(i)/10).toFixed(1) + '%', label: days <= 7 ? `${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]} ${d.getDate()}` : `${d.getDate()} ${MES[d.getMonth()]}` });
+      xLabels.push({ left: (X(i)/10).toFixed(1) + '%', label: days <= 7 ? `${DOW[d.getDay()]} ${d.getDate()}` : `${d.getDate()} ${MES[d.getMonth()]}` });
     }
 
     el.innerHTML = `
-      <div style="display:flex;gap:6px;height:100%">
-        <div style="width:42px;flex:none;position:relative;height:calc(100% - 18px)">
-          ${[0,.25,.5,.75,1].map(f => `<div style="position:absolute;right:0;top:${((1-f)*88+6).toFixed(1)}%;transform:translateY(-50%);font-size:11px;color:var(--text-muted)">${f===0?'$0':repFmt(maxV*f).replace('$','$')}</div>`).join('')}
+      <div style="display:flex;gap:6px;height:calc(100% - ${hasPrev ? '20px' : '0px'})">
+        <div style="width:44px;flex:none;position:relative;height:calc(100% - 18px)">
+          ${gridLines.map(g => `<div style="position:absolute;right:0;top:${g.topPct}%;transform:translateY(-50%);font-size:11px;color:var(--text-muted)">${g.label}</div>`).join('')}
         </div>
         <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
-          <div style="position:relative;flex:1">
-            ${[0,.25,.5,.75,1].map(f => `<div style="position:absolute;left:0;right:0;top:${((1-f)*88+6).toFixed(1)}%;border-top:1px solid var(--border)"></div>`).join('')}
-            <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
-              <defs><linearGradient id="repGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cb4ff" stop-opacity=".2"/><stop offset="1" stop-color="#7cb4ff" stop-opacity="0"/></linearGradient></defs>
-              <path d="${area}" fill="url(#repGrad)"/>
-              <path d="${path}" fill="none" stroke="#7cb4ff" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          <div id="rep-chart-area" style="position:relative;flex:1" onmouseleave="repClearHover()">
+            ${gridLines.map(g => `<div style="position:absolute;left:0;right:0;top:${g.topPct}%;border-top:1px solid var(--border)"></div>`).join('')}
+            <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none">
+              <defs><linearGradient id="repGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cb4ff" stop-opacity=".18"/><stop offset="1" stop-color="#7cb4ff" stop-opacity="0"/></linearGradient></defs>
+              <path d="${areaCur}" fill="url(#repGrad)"/>
+              ${pathPrev ? `<path d="${pathPrev}" fill="none" stroke="#55667b" stroke-width="1.6" stroke-dasharray="5 5" vector-effect="non-scaling-stroke" opacity="0.65"/>` : ''}
+              <path d="${pathCur}" fill="none" stroke="#7cb4ff" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
             </svg>
+            <div id="rep-chart-tip-line" style="display:none;position:absolute;top:0;bottom:0;width:1px;background:rgba(124,180,255,.3);pointer-events:none"></div>
+            <div id="rep-chart-tip-dot"  style="display:none;position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#0f1824;border:2px solid #7cb4ff;pointer-events:none"></div>
+            <div id="rep-chart-tip-box"  style="display:none;position:absolute;top:8px;background:var(--card-bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;min-width:165px;box-shadow:0 8px 24px rgba(0,0,0,.45);pointer-events:none;display:flex;flex-direction:column;gap:5px;z-index:5"></div>
+            <div style="position:absolute;inset:0;display:flex">
+              ${dayTotals.map((_, i) => `<div style="flex:1;height:100%;cursor:crosshair" onmouseenter="repShowHover(${i})"></div>`).join('')}
+            </div>
           </div>
           <div style="position:relative;height:16px">
             ${xLabels.map(x => `<div style="position:absolute;left:${x.left};transform:translateX(-50%);font-size:11px;color:var(--text-muted);white-space:nowrap">${x.label}</div>`).join('')}
           </div>
         </div>
-      </div>`;
+      </div>
+      ${hasPrev ? `<div style="display:flex;gap:16px;font-size:11.5px;color:var(--text-muted);margin-top:6px;padding-left:50px">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:2px;background:#7cb4ff;display:inline-block"></span>Período actual</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:0;border-top:2px dashed #55667b;display:inline-block"></span>Período anterior</span>
+      </div>` : ''}`;
   }
+
+  function repShowHover(i) {
+    if (!repChartData) return;
+    const { dayTotals, startDate, days, prevDayTotals } = repChartData;
+    const curVal  = dayTotals[i] || 0;
+    const prevVal = prevDayTotals[i] || 0;
+
+    const W = 1000, H = 1000;
+    const X = () => (i + 0.5) / days * W;
+    const maxV = Math.max(...dayTotals, ...(prevDayTotals.length ? prevDayTotals : []), 1);
+    const step = maxV > 1200 ? 500 : maxV > 600 ? 250 : 100;
+    const topV = Math.ceil(maxV * 1.1 / step) * step;
+    const Y = v => H - (v / topV) * H * 0.88 - H * 0.06;
+
+    const leftPct   = ((i + 0.5) / days * 100).toFixed(2) + '%';
+    const dotTopPct = (Y(curVal) / 10).toFixed(2) + '%';
+    const shiftLeft = (i + 0.5) / days > 0.72;
+
+    const d = new Date(startDate.getTime() + i * 86400000);
+    const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const dateStr = `${DOW[d.getDay()]} ${d.getDate()} ${MES[d.getMonth()]}`;
+    const dl = prevVal ? ((curVal - prevVal) / prevVal * 100).toFixed(0) : null;
+
+    const line = $('rep-chart-tip-line');
+    const dot  = $('rep-chart-tip-dot');
+    const box  = $('rep-chart-tip-box');
+    if (!line || !dot || !box) return;
+
+    line.style.cssText = `display:block;position:absolute;top:0;bottom:0;width:1px;background:rgba(124,180,255,.3);pointer-events:none;left:${leftPct}`;
+    dot.style.cssText  = `display:block;position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#0f1824;border:2px solid #7cb4ff;pointer-events:none;left:${leftPct};top:${dotTopPct}`;
+    box.style.cssText  = `display:flex;position:absolute;top:8px;${shiftLeft ? 'right:calc(' + (100 - parseFloat(leftPct)) + '% + 8px)' : 'left:calc(' + leftPct + ' + 8px)'};background:var(--card-bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;min-width:165px;box-shadow:0 8px 24px rgba(0,0,0,.45);pointer-events:none;flex-direction:column;gap:5px;z-index:5`;
+    box.innerHTML = `
+      <div style="font-size:11.5px;color:var(--text-muted)">${dateStr}</div>
+      <div style="display:flex;justify-content:space-between;gap:12px;font-size:12.5px"><span style="color:var(--text-muted)">Actual</span><span style="font-weight:600">${repFmt(curVal)}</span></div>
+      ${prevDayTotals.length ? `<div style="display:flex;justify-content:space-between;gap:12px;font-size:12.5px"><span style="color:var(--text-muted)">Anterior</span><span style="color:var(--text-muted)">${repFmt(prevVal)}</span></div>` : ''}
+      ${dl !== null ? `<div style="font-size:11.5px;font-weight:600;color:${Number(dl)>=0?'#5fd49a':'#ef8689'}">${Number(dl)>=0?'↑':'↓'} ${Math.abs(Number(dl))}% vs anterior</div>` : ''}`;
+  }
+
+  function repClearHover() {
+    const line = $('rep-chart-tip-line');
+    const dot  = $('rep-chart-tip-dot');
+    const box  = $('rep-chart-tip-box');
+    if (line) line.style.display = 'none';
+    if (dot)  dot.style.display  = 'none';
+    if (box)  box.style.display  = 'none';
+  }
+  window.repShowHover  = repShowHover;
+  window.repClearHover = repClearHover;
 
   // ── Staff table ───────────────────────────────────────────────────
   function renderRepStaffTable(emps, allApts, completed) {
