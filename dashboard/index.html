@@ -5012,17 +5012,6 @@
       }
     });
 
-    // Hover peek
-    sidebar.addEventListener('mouseenter', () => {
-      if (!isCollapsed()) return;
-      clearTimeout(peekTimer);
-      peekTimer = setTimeout(() => { sidebar.classList.add('peeking'); hideTip(); }, 280);
-    });
-    sidebar.addEventListener('mouseleave', () => {
-      clearTimeout(peekTimer);
-      sidebar.classList.remove('peeking');
-    });
-
     // Tooltips (only when fully collapsed, not peeking)
     function showTip(label, el) {
       if (!isCollapsed() || sidebar.classList.contains('peeking')) return;
