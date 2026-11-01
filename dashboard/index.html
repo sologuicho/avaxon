@@ -4994,18 +4994,12 @@
     setCollapsed(startCol, false);
 
     // Toggle button
-    toggleBtn.addEventListener('click', () => {
-      const peeking = sidebar.classList.contains('peeking');
-      if (peeking) { sidebar.classList.remove('peeking'); }
-      setCollapsed(!isCollapsed(), true);
-    });
+    toggleBtn.addEventListener('click', () => { setCollapsed(!isCollapsed(), true); });
 
     // Cmd/Ctrl+B
     document.addEventListener('keydown', e => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        const peeking = sidebar.classList.contains('peeking');
-        if (peeking) sidebar.classList.remove('peeking');
         setCollapsed(!isCollapsed(), true);
       }
     });
