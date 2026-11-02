@@ -1343,5 +1343,13 @@
     window.open('https://wa.me/' + AVAXON_PHONE_DIGITS + '?text=' + encodeURIComponent(msg), '_blank');
   });
 </script>
+
+<!-- PUBLICACIONES_ENABLED — cambiar a true cuando el módulo esté listo para vender -->
+<script>
+  const PUBLICACIONES_ENABLED = false;
+  if (!PUBLICACIONES_ENABLED) {
+    document.querySelectorAll('[data-pub-only]').forEach(function(el) { el.style.display = 'none'; });
+  }
+</script>
 </body>
 </html>
