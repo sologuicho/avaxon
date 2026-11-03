@@ -10240,6 +10240,56 @@
   }
   window.checkPublicacionesModuleEnabled = checkPublicacionesModuleEnabled
 
+  // ── Módulos por plan + addons ─────────────────────────────────────────────
+  const PLAN_MODULES = {
+    arranque:   ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes'],
+    mostrador:  ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes','leads','publicaciones'],
+    sucursal:   ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes','leads','publicaciones','pipeline','asignacion','calendario','pagos'],
+    cadena:     ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes','leads','publicaciones','pipeline','asignacion','calendario','pagos','inventario'],
+    enterprise: ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes','leads','publicaciones','pipeline','asignacion','calendario','pagos','inventario'],
+  };
+  // Clave en business_modules → data-view del nav item (solo donde difieren)
+  const ADDON_KEY_TO_VIEW = {
+    'publicaciones_redes': 'publicaciones',
+    'leads_addon':         'leads',
+    'pipeline_addon':      'pipeline',
+  };
+  const ALL_CLIENT_NAV_VIEWS = [
+    'inicio','conversaciones','leads','pipeline','campanas','publicaciones',
+    'calendario','asignacion','conexiones','bot','inventario','pagos','reportes','config','cuenta',
+  ];
+
+  async function applyPlanModules(orgId) {
+    const { data: orgData } = await sb.from('organizations')
+      .select('plan_id').eq('id', orgId).single();
+    const plan = orgData?.plan_id ?? 'arranque';
+    state.currentPlan = plan;
+
+    const visible = new Set(PLAN_MODULES[plan] ?? PLAN_MODULES['arranque']);
+
+    const { data: addons } = await sb.from('business_modules')
+      .select('module_key').eq('organization_id', orgId).eq('enabled', true);
+    (addons ?? []).forEach(a => {
+      const view = ADDON_KEY_TO_VIEW[a.module_key] ?? a.module_key;
+      visible.add(view);
+    });
+
+    state.visibleModules = visible;
+
+    // Actualizar visibilidad de cada nav item de cliente
+    ALL_CLIENT_NAV_VIEWS.forEach(view => {
+      const el = document.querySelector(`.nav-item[data-view="${view}"]`);
+      if (el) el.style.display = visible.has(view) ? 'flex' : 'none';
+    });
+
+    // Sincronizar pubModuleEnabled (usado por el módulo de publicaciones)
+    pubModuleEnabled = visible.has('publicaciones');
+    const pubCard = $('pub-conexion-card');
+    if (pubCard) pubCard.style.display = pubModuleEnabled ? '' : 'none';
+    if (pubModuleEnabled && state.currentView === 'conexiones') loadPubConexionCard();
+    if (!pubModuleEnabled && state.currentView === 'publicaciones') switchView('inicio');
+  }
+
   async function loadPublicaciones() {
     if (!pubModuleEnabled) { switchView('inicio'); return }
     await loadPubAccounts()
