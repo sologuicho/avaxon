@@ -2237,6 +2237,11 @@
     });
   }
 
+  const ADDON_KEYS = [
+    'inventario','publicaciones_redes','calendario','pagos',
+    'leads_addon','pipeline_addon','comisiones','ingresos','reportes_pdf',
+  ];
+
   async function openEditModal(orgId) {
     const org = state.orgsCache.find(o => o.id === orgId);
     if (!org) return;
@@ -2248,6 +2253,16 @@
     $('editar-status').value    = org.status   ?? 'active';
     $('editar-trial').value     = org.trial_ends_at ? org.trial_ends_at.split('T')[0] : '';
     $('editar-error').style.display = 'none';
+
+    // Cargar addons actuales
+    ADDON_KEYS.forEach(k => { const el = $('addon-' + k); if (el) el.checked = false; });
+    const { data: mods } = await sb.from('business_modules')
+      .select('module_key, enabled').eq('organization_id', orgId);
+    (mods ?? []).forEach(m => {
+      const el = $('addon-' + m.module_key);
+      if (el) el.checked = !!m.enabled;
+    });
+
     openModal('modal-editar');
   }
 
