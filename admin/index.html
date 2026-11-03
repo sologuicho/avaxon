@@ -2278,18 +2278,35 @@
     btn.disabled = true;
     btn.textContent = 'Guardando…';
 
-    const { error } = await sb.from('organizations').update({
-      name,
-      industry:      $('editar-industry').value.trim() || null,
-      plan_id:       $('editar-plan').value,
-      status:        $('editar-status').value,
-      trial_ends_at: $('editar-trial').value || null,
-    }).eq('id', orgId);
+    const [{ error }, addonResults] = await Promise.all([
+      sb.from('organizations').update({
+        name,
+        industry:      $('editar-industry').value.trim() || null,
+        plan_id:       $('editar-plan').value,
+        status:        $('editar-status').value,
+        trial_ends_at: $('editar-trial').value || null,
+      }).eq('id', orgId),
+      // Upsert de cada addon
+      Promise.all(ADDON_KEYS.map(k => {
+        const checked = !!($('addon-' + k)?.checked);
+        return sb.from('business_modules').upsert({
+          organization_id: orgId,
+          module_key:      k,
+          enabled:         checked,
+          enabled_at:      checked ? new Date().toISOString() : null,
+        }, { onConflict: 'organization_id,module_key' });
+      })),
+    ]);
 
     btn.disabled = false;
     btn.textContent = 'Guardar cambios';
 
-    if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; return; }
+    const addonError = addonResults.find(r => r.error)?.error;
+    if (error || addonError) {
+      errEl.textContent = (error ?? addonError).message;
+      errEl.style.display = 'block';
+      return;
+    }
     closeModal('modal-editar');
     showToast('Cliente actualizado', 'success');
     loadClientes();
