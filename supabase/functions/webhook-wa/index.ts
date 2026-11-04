@@ -9,6 +9,7 @@ import { flagNeedsHuman, notifyOwnerAlert } from '../_shared/humanHandoff.ts'
 import { logBotError } from '../_shared/botErrorLog.ts'
 import { logToolTrace } from '../_shared/toolTraceLog.ts'
 import { GREETING_REGEX } from '../_shared/greeting.ts'
+import { normalizePhone } from '../_shared/phone.ts'
 import {
   DAY_ORDER, APPOINTMENT_TOOLS, APPOINTMENT_BOOKED_PREFIX, BOT_SCHEDULE_REJECTION_REGEX, isWithinBusinessHours,
   consultarDisponibilidad, checkRequestedSlot, agendarCita, cancelarOReagendarCita,
@@ -608,7 +609,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
     const echoMsg    = rawMessages[0]
     const echoText   = echoMsg?.text?.body || echoMsg?.caption || `[${echoMsg?.type ?? 'mensaje'}]`
     const customerWa = contact?.wa_id || echoMsg?.to
-    const customerPhone = customerWa ? (customerWa.startsWith('+') ? customerWa : '+' + customerWa) : null
+    const customerPhone = customerWa ? normalizePhone(customerWa) : null
     console.log(`[smb_echo] phone_number_id=${phoneNumberId} to=${customerPhone} type=${echoMsg?.type ?? '?'} — guardando y pausando bot`)
 
     if (customerPhone) {
@@ -752,7 +753,7 @@ async function handleIncoming(body: any, env: Env): Promise<void> {
   }
 
   // ── Track campaign reply (responded_at) ────────────────────────────────────
-  const normalizedFrom = fromPhone.startsWith('+') ? fromPhone : '+' + fromPhone
+  const normalizedFrom = normalizePhone(fromPhone)
   const { data: ccReply } = await sb
     .from('campaign_contacts')
     .select('id, campaign_id, campaigns(organization_id)')

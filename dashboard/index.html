@@ -1365,6 +1365,7 @@
     .msg-bubble.inbound  { background: #fff; color: #1a2535; border: 1px solid #e6e7e9; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .msg-time { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; opacity: 0.6; margin-top: 3px; display: block; text-align: right; letter-spacing: .02em; }
     .msg-date-sep { text-align: center; font-family: 'Barlow Condensed',sans-serif; font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 6px 0; }
+    .msg-conv-sep { margin: 10px auto 4px; padding: 4px 14px; width: fit-content; border-radius: 20px; background: var(--border); }
     .msg-sender-tag { font-size: 10.5px; opacity: .75; margin-top: 3px; display: block; text-align: right; }
     /* Nota interna — nunca se envía al cliente, por eso se ve distinta
        (ancho completo, amarilla) a los mensajes reales de WhatsApp. */
@@ -5586,7 +5587,21 @@
       if (!lastMsgMap[m.conversation_id]) lastMsgMap[m.conversation_id] = m;
     });
 
-    convState.all = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
+    convState.allConversations = convs.map(c => ({ ...c, lastMsg: lastMsgMap[c.id] ?? null }));
+
+    // Un contacto puede acumular varias conversaciones (se crea una nueva
+    // cada vez que la anterior ya está "closed") -- la lista solo muestra
+    // una fila por contacto, la más reciente; el historial completo de todas
+    // se junta al abrir el chat (ver openConversacion). convs ya viene
+    // ordenado por updated_at desc, así que la primera vez que aparece cada
+    // contacto acá ya es su conversación más reciente.
+    const seenContacts = new Set();
+    convState.all = convState.allConversations.filter(c => {
+      const key = c.contacts?.id ?? c.id;
+      if (seenContacts.has(key)) return false;
+      seenContacts.add(key);
+      return true;
+    });
     updateNeedsHumanBadges();
     renderHumanCard(); // Item 8: update Inicio "Necesita humano" card
     renderChannelTabs();
@@ -5941,10 +5956,20 @@
   window.renderCpanelPayments = renderCpanelPayments;
 
   async function openConversacion(convId) {
+    // La lista (convState.all) solo tiene una fila por contacto -- la
+    // conversación más reciente. Si convId es una conversación vieja (ej.
+    // link directo desde una notificación), se redirige a la fila que sí
+    // está en la lista; el historial completo (incluida la vieja) se arma
+    // de todos modos al cargar los mensajes más abajo.
+    let conv = convState.all.find(c => c.id === convId);
+    if (!conv) {
+      const oldConv = (convState.allConversations ?? []).find(c => c.id === convId);
+      if (oldConv?.contacts?.id) conv = convState.all.find(c => c.contacts?.id === oldConv.contacts.id);
+    }
+    if (conv) convId = conv.id;
     convState.activeId = convId;
     renderConvList(convState.filtered); // re-render to mark active
 
-    const conv    = convState.all.find(c => c.id === convId);
     const contact = conv?.contacts;
 
     // Chat header
@@ -5982,14 +6007,21 @@
     $('wa-window-banner').classList.remove('visible');
     document.querySelector('.conv-panel')?.classList.add('chat-active'); // móvil: pasa a vista de hilo
 
-    // Load messages + notes internas
+    // Load messages + notes internas -- de TODAS las conversaciones de este
+    // contacto (no solo convId, que es la más reciente), para que el hilo se
+    // vea completo con un separador "Conversación del <fecha>" entre cada
+    // una (ver renderChatTimeline). Si no hay contacto resuelto, se queda
+    // solo con convId.
     $('chat-messages').innerHTML = '<div class="inner-loading" style="padding:30px;display:flex;gap:8px;align-items:center;justify-content:center"><div class="spinner-light"></div></div>';
     await ensureTeamNames(conv?.organization_id);
+    const contactConvIds = contact?.id
+      ? (convState.allConversations ?? []).filter(c => c.contacts?.id === contact.id).map(c => c.id)
+      : [convId];
     const [{ data: msgsData }, { data: notesData }] = await Promise.all([
-      sb.from('messages').select('id, direction, content, media_type, created_at, sent_by').eq('conversation_id', convId).order('created_at', { ascending: true }),
-      sb.from('conversation_notes').select('id, body, author_id, created_at').eq('conversation_id', convId).order('created_at', { ascending: true }),
+      sb.from('messages').select('id, conversation_id, direction, content, media_type, created_at, sent_by').in('conversation_id', contactConvIds).order('created_at', { ascending: true }),
+      sb.from('conversation_notes').select('id, conversation_id, body, author_id, created_at').in('conversation_id', contactConvIds).order('created_at', { ascending: true }),
     ]);
-    renderChatTimeline(msgsData || [], notesData || []);
+    renderChatTimeline(msgsData || [], notesData || [], contactConvIds.length);
 
     // 24h window check — last inbound message
     const lastInbound = (msgsData || []).filter(m => m.direction === 'inbound').at(-1);
@@ -6675,22 +6707,37 @@
   }
 
   // Mensajes y notas comparten una sola línea de tiempo, ordenados por hora.
-  function renderChatTimeline(msgs, notes) {
+  function renderChatTimeline(msgs, notes, convCount = 1) {
     const items = [
-      ...msgs.map(m => ({ kind: 'msg', created_at: m.created_at, data: m })),
-      ...(notes || []).map(n => ({ kind: 'note', created_at: n.created_at, data: n })),
+      ...msgs.map(m => ({ kind: 'msg', created_at: m.created_at, conversation_id: m.conversation_id, data: m })),
+      ...(notes || []).map(n => ({ kind: 'note', created_at: n.created_at, conversation_id: n.conversation_id, data: n })),
     ].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
     if (!items.length) {
       $('chat-messages').innerHTML = '<div style="text-align:center;color:var(--text-dim);font-size:13px;padding:40px">Sin mensajes en esta conversación</div>';
       return;
     }
+    // Si el contacto tiene varias conversaciones (ver loadConversaciones/
+    // openConversacion: se agrupan por contacto y acá se junta el historial
+    // completo), marca dónde empieza cada una con "Conversación del <fecha>"
+    // en vez del separador de día normal -- evita confundir cierre/reapertura
+    // de hilo con solo un cambio de día.
+    const multiConv = convCount > 1;
     let lastDateKey = '';
+    let lastConvId = null;
     $('chat-messages').innerHTML = items.map(item => {
       const d = new Date(item.created_at);
       const dk = d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
       let sep = '';
-      if (dk !== lastDateKey) { sep = `<div class="msg-date-sep">${dk}</div>`; lastDateKey = dk; }
+      const isNewConv = multiConv && lastConvId !== null && item.conversation_id !== lastConvId;
+      if (isNewConv) {
+        sep = `<div class="msg-date-sep msg-conv-sep">Conversación del ${dk}</div>`;
+        lastDateKey = dk;
+      } else if (dk !== lastDateKey) {
+        sep = `<div class="msg-date-sep">${dk}</div>`;
+        lastDateKey = dk;
+      }
+      lastConvId = item.conversation_id;
       const time = d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
 
       if (item.kind === 'note') {
@@ -10060,12 +10107,14 @@
       const nameIdx  = headers.findIndex(h => /nombre|name|empresa|company|contact/i.test(h))
       const phoneIdx = headers.findIndex(h => /tel|phone|cel/i.test(h))
 
+      // Misma convención que supabase/functions/_shared/phone.ts: sin "+", y
+      // MX siempre con el "1" (521...), que es el formato real de contacts.phone.
       const normPhone = raw => {
         const d = (raw || '').replace(/\D/g, '')
-        if (d.length === 10) return '+52' + d           // número local MX sin código de país
-        if (d.length === 12 && d.startsWith('52')) return '+' + d  // MX con código ya incluido
-        if (d.length === 11 && d.startsWith('1'))  return '+' + d  // US/CA
-        return d ? '+' + d : ''
+        if (!d) return ''
+        if (d.length === 10) return '521' + d
+        if (d.length === 12 && d.startsWith('52')) return '521' + d.slice(2)
+        return d
       }
 
       wizCsvRows = rows.map(r => {
