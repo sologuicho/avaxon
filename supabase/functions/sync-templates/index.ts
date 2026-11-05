@@ -22,7 +22,7 @@ const corsHeaders = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-const META_API = 'https://graph.facebook.com/v20.0'
+const META_API = 'https://graph.facebook.com/v22.0'
 
 function exampleForVar(v: string, orgName: string): string {
   if (v === 'nombre') return 'Juan Pérez'

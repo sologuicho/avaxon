@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
     const clientToken = (pn.whatsapp_accounts as any)?.access_token ?? WA_TOKEN
     const toDigits = to.replace(/\D/g, '')
 
-    const waRes = await fetch(`https://graph.facebook.com/v20.0/${pn.phone_number_id}/messages`, {
+    const waRes = await fetch(`https://graph.facebook.com/v22.0/${pn.phone_number_id}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
