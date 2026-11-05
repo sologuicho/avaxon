@@ -64,11 +64,25 @@ imagen/caption como creative nuevo. Verificado contra la documentación oficial
   (ver `_shared/socialPublish.ts:79,166` — para FB es `data.post_id ?? data.id`,
   ya viene como `pageid_postid`; para IG es el id de media tal cual) sirve
   **sin transformación** como valor de estos campos.
-- Búsqueda web (nov 2026): versión vigente **Marketing API v25.0** (anunciada
-  2026-02-18), v26 en camino. Por eso la versión **nunca se hardcodea**: ver
-  `META_MARKETING_API_VERSION` en `_shared/metaAds.ts` (§4), default `'v25.0'`
-  pero siempre tomado de `Deno.env`, igual de fácil de subir a v26 sin tocar
-  código cuando Meta lo retire.
+- Búsqueda web (re-verificada 2026-11-04, ver changelog oficial): versión
+  vigente **Marketing API v26.0** (publicada 2026-07-29; v25.0 publicada
+  2026-02-18 sigue activa hasta 2027-02-23; v24.0 expira 2026-11-10). Default
+  de `META_MARKETING_API_VERSION` en `_shared/metaAds.ts` (§4) actualizado a
+  `'v26.0'`, siempre tomado de `Deno.env` para subir de versión sin tocar
+  código cuando Meta retire ésta.
+- **Cambio de v26.0 revisado contra los endpoints que este proyecto usa**
+  (`graph-api/changelog/version26.0`): no afecta `campaigns`,
+  `object_story_id`/`source_instagram_media_id`, ni los campos de
+  `delivery_estimate`/`insights` que se leen aquí (`estimate_mau_*`,
+  `spend/reach/impressions/clicks/cpc/ctr/actions`). SÍ afecta ad sets con
+  categoría especial de Vivienda/Empleo/Crédito ("HEC-F") que no usan
+  targeting amplio: Meta exige `targeting_automation.advantage_audience`
+  (0/1) explícito en `POST /{ad-account-id}/adsets` o responde
+  `ADS_TARGETING__REQUIRE_EXPLICIT_ADVANTAGE_AUDIENCE_FLAG`. Como este
+  proyecto permite segmentar por geo/género/idioma (no solo "broad") incluso
+  para esas categorías, `buildTargetingSpec` ahora manda ese campo en `0`
+  (sin expansión automática) siempre que haya una categoría restringida —
+  ver `_shared/metaAds.ts`.
 - No se encontró endpoint "click to WhatsApp" documentado con una URL estable
   en esta búsqueda — queda anotado como **objetivo con prerrequisito manual**
   (§8), no implementado a ciegas.
@@ -105,13 +119,26 @@ imagen/caption como creative nuevo. Verificado contra la documentación oficial
 6. **Métricas**: snapshot diario (`social_promotion_metrics`, una fila por
    promoción por día) vía cron, más `social_promotions` guarda el acumulado
    más reciente para que la lista no tenga que agregar on-the-fly.
-7. **Adaptador simulado (`META_ADS_MODE=mock`)**: no hay cuenta publicitaria
-   de pruebas real disponible en este entorno → `_shared/metaAds.ts` tiene un
-   modo mock determinístico (mismos ids/formas de respuesta que la API real,
-   datos falsos) activado por env var. Todo el flujo (conectar cuenta,
+7. **Adaptador simulado, `META_ADS_MODE` obligatoria (`mock`/`live`, sin
+   default)**: no hay cuenta publicitaria de pruebas real disponible en este
+   entorno → `_shared/metaAds.ts` tiene un modo mock determinístico (mismos
+   ids/formas de respuesta que la API real, datos falsos) activado por env
+   var. `META_ADS_MODE` es obligatoria y solo acepta `"mock"` o `"live"` —
+   si falta o tiene otro valor, `getAdsMode()` truena con un error claro
+   *antes* de tocar red o cualquier rama mock, para que nunca quede
+   ambiguo en qué modo corre un deploy. Todo el flujo (conectar cuenta,
    estimar alcance, crear, activar, pausar, métricas) se construyó y se
-   prueba en este modo. Lo que SÍ requiere una cuenta real queda listado en
+   prueba en modo `mock`. Lo que SÍ requiere una cuenta real queda listado en
    §8, no se afirma que funcione contra Meta real porque no se pudo probar.
+   El modo mock nunca falla por sí solo, así que para poder probar rechazo de
+   Meta/falla parcial con código real (no solo leyendo el código y confiando)
+   se agregó un gancho de prueba: si el `object_story_id`/
+   `source_instagram_media_id` (que viene de `external_post_id`, dato de
+   prueba) contiene el substring `__E2E_MOCK_META_REJECT__`,
+   `createAdCreative` lanza un error como si Meta lo hubiera rechazado — así
+   el rollback de campaña+adset ya creados se ejercita de verdad. No tiene
+   ningún efecto en modo `live`. Ver `_shared/metaAds.ts` y
+   `tests/e2e-promociones/`.
 
 ## 4. Esquema nuevo (migraciones, archivos únicamente)
 
@@ -157,7 +184,19 @@ imagen/caption como creative nuevo. Verificado contra la documentación oficial
     `EMPLOYMENT|HOUSING|CREDIT` (edad mínima real exigida por Meta en esas
     categorías) y bloquea `custom audience` por intereses para esas
     categorías (Meta mismo lo restringe; se replica la regla en servidor,
-    no solo advertencia en el wizard).
+    no solo advertencia en el wizard). **Además** (encontrado probando RLS de
+    verdad contra dos organizaciones reales en local, 2026-11-04): verifica
+    que `post_target_id` pertenezca a la MISMA `organization_id` de la fila.
+    El RLS por sí solo no lo exige — una sesión de la Org A puede mandar
+    `organization_id` correcto (A) con un `post_target_id` que en realidad es
+    de la Org B, y ni el `USING`/`WITH CHECK` del RLS ni el FK de
+    `post_target_id` (que solo valida que la fila exista, no de quién es) lo
+    detectan. `social-ads-create/index.ts` ya validaba esto en la Edge
+    Function antes de llamar a Meta, pero sin este trigger esa validación de
+    aplicación era la ÚNICA barrera — se agregó esta verificación a nivel de
+    base de datos como defensa en profundidad real, verificada insertando la
+    fila tramposa directo por SQL (sin pasar por la Edge Function) antes y
+    después del fix.
 
 Nada de esto se aplicó con `supabase db push`/`db query --linked` contra la
 base real — son archivos para revisión y para aplicar después en un ambiente
@@ -169,7 +208,8 @@ de pruebas o tras aprobación.
   (`META_ADS_MODE=mock`). Expone `createCampaign/createAdSet/createAdCreative/
   createAd/updateAdSet/updateCampaignStatus/deleteNode/getDeliveryEstimate/
   getInsights/listAdAccounts/debugToken`. Versión de API: `META_MARKETING_API_VERSION`
-  (default `v25.0`), nunca hardcodeada en otro archivo.
+  (default `v26.0`), nunca hardcodeada en otro archivo (se centralizó también
+  en `social-ads-connect`, que antes tenía su propio default `v25.0` suelto).
 - `supabase/functions/social-ads-connect` — OAuth de cuenta publicitaria
   (scopes `ads_management,ads_read`), `/me/adaccounts` para elegir cuenta,
   detecta `account_status` deshabilitada y `funding_source_details` ausente
@@ -206,21 +246,90 @@ de pruebas o tras aprobación.
 
 ## 7. Pruebas
 
-Sin Deno/Docker preinstalados en este entorno — se instaló **Deno 2.9.8 vía
-Homebrew** solo para poder correr pruebas reales (no hay stack local de
-Supabase/Postgres, así que las migraciones SQL no se ejecutaron contra nada,
-ni local ni prod — ver §8).
+**Ronda 1 (2026-11-04)**: sin Deno/Docker preinstalados — se instaló **Deno
+2.9.8 vía Homebrew** solo para correr pruebas unitarias reales. No había
+stack local de Supabase/Postgres, así que las migraciones nunca se
+ejecutaron contra nada, ni local ni prod.
 
-- `supabase/functions/_shared/metaAds_test.ts` — `deno test`, cubre: modo
-  mock devuelve formas válidas, construcción de payloads (objective→mapping,
-  special_ad_categories, `object_story_id` reusado tal cual), idempotencia.
-- `supabase/functions/social-ads-create/logic_test.ts` — pruebas de la lógica
-  pura extraída (validación de presupuesto mínimo, elegibilidad de edad para
-  categorías especiales, rollback simulado) sin tocar red ni DB real.
-- Lo que **no** se pudo probar end-to-end (requiere cuenta real de Meta o un
-  Postgres real): aplicar las migraciones, RLS real entre dos orgs, un
-  `social-ads-create` contra `graph.facebook.com` real, que
-  `social-ads-metrics-sync` traiga números reales. Ver checklist en §8.
+**Ronda 2 (2026-11-05)**: con Docker ya disponible, se montó el stack
+completo localmente y se probó de verdad lo que en la ronda 1 solo quedó
+documentado como pendiente:
+
+- **Unitarias** (`deno test`): 30 pruebas en `_shared/metaAds_test.ts` +
+  `social-ads-create/logic_test.ts` — targeting spec, `object_story_id`
+  reusado tal cual, `META_ADS_MODE` obligatoria (truena sin red si falta o es
+  inválida), requisito de `targeting_automation.advantage_audience` de la
+  v26.0 para categorías HEC-F, idempotencia y coherencia del modo mock.
+- **`supabase db reset` real contra Docker local**: el historial de
+  migraciones del repo **no es autosuficiente** — `organizations`,
+  `profiles`, `is_super_admin()`, `get_my_org_id()` y ~22 migraciones más
+  nunca tuvieron DDL real (son archivos "stub for history sync": el cambio
+  real se hizo directo en prod vía SQL Editor). Para poder correr
+  `db reset` se usó un archivo de prueba local **no commiteado**
+  (`00000000000000_test_only_foundation_stub.sql`, creado y borrado dentro
+  de esta misma sesión) que reconstruye solo lo mínimo que esta feature
+  necesita, aplicado junto con las migraciones reales de
+  `publicaciones_redes` y `promocion_publicaciones`. La migración de esta
+  feature se confirmó **idempotente** (`db reset` corrido dos veces seguidas,
+  mismo resultado).
+- **RLS real entre dos organizaciones** (vía `psql`, sesiones con
+  `request.jwt.claim.sub` simulando cada usuario): confirmado que una org no
+  puede leer ni escribir las conexiones/públicos/promociones/auditoría de la
+  otra; que el trigger de dependencia bloquea activar
+  `promocion_publicaciones` sin `publicaciones_redes` y lo desactiva en
+  cascada; que `social_promotion_audit` solo acepta `INSERT` de
+  `service_role`/`super_admin`. **Se encontró y corrigió un hueco real**: el
+  RLS por sí solo no impedía que una fila con `organization_id` correcto
+  trajera un `post_target_id` de OTRA organización (el FK solo valida que la
+  fila exista, no de quién es) — la única barrera era la validación de
+  `social-ads-create/index.ts`. Se agregó la verificación también al trigger
+  `validate_special_ad_category` en la migración, confirmada con la misma
+  fila tramposa antes (pasaba) y después (bloqueada) del fix.
+- **E2E con Playwright** (`tests/e2e-promociones/`, instalado como
+  devDependency en `tests/e2e-promociones/package.json` para no interferir
+  con el `deno check` de las Edge Functions — ver nota en ese archivo) contra
+  Edge Functions servidas en local (`supabase functions serve
+  --env-file ... --no-verify-jwt`, `META_ADS_MODE=mock`) y una copia del
+  dashboard apuntada a Supabase local (no se tocó `dashboard/index.html` para
+  esto, solo una copia en un directorio temporal). 16 pruebas, desktop y
+  móvil, todas pasando: conectar cuenta (vía `social-ads-connect` en modo
+  mock — ver bug corregido abajo), wizard completo de 5 pasos con público
+  personalizado e intereses, confirmar y activar, ver la promoción en la
+  lista, pausar, reanudar, editar presupuesto (con el `prompt()` nativo),
+  duplicar, doble clic en "Confirmar y crear" (no crea una promoción
+  duplicada — verificado también a nivel de fila en la base), token vencido
+  (banner "necesita atención"), rechazo de Meta con falla parcial real (campaña
+  y conjunto ya creados en Meta, el creative falla, rollback, **cero filas
+  huérfanas en `social_promotions`** — verificado en la base, no solo en la
+  UI), y permisos cruzados entre Org A y Org B desde la UI.
+- **Gancho de prueba para simular rechazo de Meta en modo mock**: el modo
+  mock nunca falla por sí solo, así que no había manera de ejercitar
+  rollback/falla parcial con código real. Se agregó
+  `__E2E_MOCK_META_REJECT__` (ver `_shared/metaAds.ts`) — si el
+  `object_story_id`/`source_instagram_media_id` de prueba contiene ese
+  substring, `createAdCreative` lanza un error como si Meta lo hubiera
+  rechazado. Sin efecto en modo `live`.
+- **Bug real encontrado y corregido durante las pruebas E2E**:
+  `social-ads-connect` hacía el intercambio de token (`fb_exchange_token`)
+  con una llamada real a `graph.facebook.com` **incluso en modo mock** — la
+  única función de esta feature que rompía la garantía de "modo mock nunca
+  toca Meta". Corregido: ahora ese paso también respeta `isMockMode()`.
+- **Bug visual real encontrado en las capturas móviles y corregido**: el
+  modal del wizard en viewport angosto (`<720px`) forzaba `height:100%`
+  siempre, dejando un hueco vacío enorme en pasos con poco contenido (ej.
+  paso 2 en modo Automático). Cambiado a un patrón de hoja inferior
+  (`align-items:flex-end`, sin `height` forzado) que se ajusta al contenido
+  real — confirmado con capturas antes/después.
+- **Capturas** (`docs/capturas-promociones/`): login, los 5 pasos del
+  wizard, estado "creando…", "promoción creada", lista con datos, estado
+  vacío (filtro "Rechazadas"), banner de token vencido, y el rechazo de Meta
+  — en desktop y en móvil.
+- Lo que **sigue sin poder probarse** (requiere una cuenta real de Meta, no
+  hay forma de simularlo de manera honesta): una llamada real a
+  `graph.facebook.com` (campañas/adsets/creatives/ads reales, OAuth real vía
+  `FB.login`), que `social-ads-metrics-sync` traiga números reales de Meta,
+  y confirmar los mínimos de presupuesto reales de Meta contra una cuenta.
+  Ver checklist en §8.
 
 ## 8. Pendientes manuales / qué falta para ir a producción
 
@@ -228,12 +337,19 @@ ni local ni prod — ver §8).
    el objetivo "Mensajes por WhatsApp" exige que la Page del cliente tenga un
    número de WhatsApp vinculado en Business Manager — no hay nada que el
    dashboard pueda resolver por su cuenta ahí, solo avisar).
-2. Aplicar las migraciones de §4 en un ambiente real (local con Docker o un
-   proyecto Supabase de pruebas) y correr las políticas RLS contra dos
-   organizaciones reales.
+2. ~~Aplicar las migraciones de §4 en un ambiente real... y correr las
+   políticas RLS contra dos organizaciones reales.~~ **Hecho en local
+   (2026-11-05)**, con una salvedad importante: se probó contra un
+   **esquema mínimo de prueba**, no contra una copia real del esquema de
+   producción (que el repo no puede reconstruir solo con sus migraciones —
+   ver §7). Falta todavía: aplicar la migración de esta feature en un
+   proyecto Supabase real/staging con el esquema de producción completo, y
+   repetir ahí las pruebas de RLS entre dos organizaciones reales.
 3. Conseguir una cuenta publicitaria de prueba de Meta (sandbox) para probar
    `social-ads-create`/`-activate`/`-estimate` contra la API real, con
-   `META_ADS_MODE` sin definir (modo real).
+   `META_ADS_MODE=live` (la variable es obligatoria: sin ella, o con
+   cualquier valor que no sea `mock`/`live`, las funciones truenan sin tocar
+   Meta).
 4. Variables de entorno nuevas (nombres únicamente en `.env.example`, nunca
    valores): `META_MARKETING_API_VERSION`, `META_ADS_MODE`,
    `META_ADS_APP_ID`, `META_ADS_APP_SECRET` (puede reusar `META_APP_ID`/

@@ -1,10 +1,22 @@
 // ── Cliente de Meta Marketing API + adaptador simulado ──────────────────────
 // Documentación consultada (ver docs/promociones-meta.md §2): versión vigente
-// Marketing API v25.0 (feb 2026, v26 en camino) -- por eso la versión SIEMPRE
-// se lee de META_MARKETING_API_VERSION, nunca hardcodeada aquí ni en otro
-// archivo. Para "promocionar" un post ya publicado se usa object_story_id
-// (Facebook, formato "<page_id>_<post_id>") o source_instagram_media_id
-// (Instagram) en el creative -- NO se reconstruye el contenido.
+// confirmada el 2026-11-04, Marketing API v26.0 (publicada 29 jul 2026; v25.0
+// también sigue activa hasta feb 2027) -- por eso la versión SIEMPRE se lee
+// de META_MARKETING_API_VERSION, nunca hardcodeada aquí ni en otro archivo.
+// Para "promocionar" un post ya publicado se usa object_story_id (Facebook,
+// formato "<page_id>_<post_id>") o source_instagram_media_id (Instagram) en
+// el creative -- NO se reconstruye el contenido.
+//
+// Cambio de v26.0 que SÍ afecta este código: para ad sets con categoría
+// especial de Vivienda/Empleo/Crédito ("HEC-F") que no usan targeting amplio
+// ("broad"), Meta exige mandar targeting_automation.advantage_audience (0/1)
+// explícito en POST /{ad-account-id}/adsets o responde
+// ADS_TARGETING__REQUIRE_EXPLICIT_ADVANTAGE_AUDIENCE_FLAG. Como este proyecto
+// permite segmentar por geo/género/idioma (no solo "broad") incluso para esas
+// categorías -- ver validateSpecialAdCategory en social-ads-create/logic.ts,
+// que solo bloquea edad<18 e intereses -- buildTargetingSpec manda ese campo
+// en 0 (sin expansión automática) siempre que haya una categoría restringida,
+// para no depender de cómo Meta defina "broad" internamente.
 //
 // META_ADS_MODE=mock activa el adaptador simulado: mismas formas de
 // respuesta que la API real, ids/números deterministas (hash del input), sin
@@ -13,11 +25,26 @@
 // que queda pendiente de probar contra la API real.
 
 export function getApiVersion(): string {
-  return Deno.env.get('META_MARKETING_API_VERSION') || 'v25.0'
+  return Deno.env.get('META_MARKETING_API_VERSION') || 'v26.0'
+}
+
+export type AdsMode = 'mock' | 'live'
+
+// META_ADS_MODE es obligatoria: "mock" o "live", sin valor por defecto. Si
+// falta o tiene otro valor, se corta aquí -- antes de tocar red, antes de
+// cualquier rama mock -- para que nunca quede ambiguo en qué modo se está
+// corriendo (ver instrucción de seguridad: nunca tokens/cuentas reales sin
+// que alguien haya puesto "live" a propósito).
+export function getAdsMode(): AdsMode {
+  const raw = (Deno.env.get('META_ADS_MODE') ?? '').trim().toLowerCase()
+  if (raw === 'mock' || raw === 'live') return raw
+  throw new MetaAdsError(
+    `META_ADS_MODE debe ser "mock" o "live" (valor actual: ${raw ? JSON.stringify(raw) : 'sin definir'}). No se realizó ninguna llamada a Meta.`,
+  )
 }
 
 export function isMockMode(): boolean {
-  return (Deno.env.get('META_ADS_MODE') ?? '').toLowerCase() === 'mock'
+  return getAdsMode() === 'mock'
 }
 
 function graphUrl(path: string): string {
@@ -67,7 +94,15 @@ export interface AudienceSpec {
   interests?: { id: string; name: string }[]
 }
 
-export function buildTargetingSpec(audienceMode: 'auto' | 'custom', spec: AudienceSpec, placements: 'auto' | 'facebook_page' | 'instagram_business', country = 'MX') {
+const HEC_F_CATEGORIES = ['EMPLOYMENT', 'HOUSING', 'CREDIT']
+
+export function buildTargetingSpec(
+  audienceMode: 'auto' | 'custom',
+  spec: AudienceSpec,
+  placements: 'auto' | 'facebook_page' | 'instagram_business',
+  country = 'MX',
+  specialAdCategories: string[] = [],
+) {
   // "Automático" = sin segmentación manual más allá de país + edad adulta
   // amplia -- Meta optimiza solo. Se avisa en el wizard que Meta puede
   // tratar parte de la segmentación personalizada como sugerencia, no como
@@ -90,6 +125,11 @@ export function buildTargetingSpec(audienceMode: 'auto' | 'custom', spec: Audien
   }
   if (placements !== 'auto') {
     base.publisher_platforms = [placements === 'facebook_page' ? 'facebook' : 'instagram']
+  }
+  // Requisito de Marketing API v26.0 para ad sets de Vivienda/Empleo/Crédito
+  // (ver comentario de cabecera) -- sin expansión automática de audiencia.
+  if (specialAdCategories.some(c => HEC_F_CATEGORIES.includes(c))) {
+    base.targeting_automation = { advantage_audience: 0 }
   }
   return base
 }
@@ -143,6 +183,20 @@ export function minDailyBudget(currency: string): number {
 export interface AdsCredentials {
   adAccountId: string // "act_<id>"
   accessToken: string
+}
+
+// Gancho de prueba SOLO para modo mock: deja simular un rechazo real de Meta
+// en el paso de creative (después de que campaña+adset ya se crearon), para
+// poder probar de verdad el rollback/limpieza en un E2E -- sin esto, el modo
+// mock nunca falla y "rechazo de Meta"/"falla parcial" no se podían ejercitar
+// con código real, solo leer el código y confiar en que funciona. Se activa
+// únicamente si el object_story_id/source_instagram_media_id (que viene de
+// social_post_targets.external_post_id, dato de prueba, nunca de producción)
+// contiene este substring exacto -- no tiene ningún efecto en modo live.
+const MOCK_FAIL_MARKER = '__E2E_MOCK_META_REJECT__'
+
+function mockShouldSimulateRejection(creativeRef: Record<string, unknown>): boolean {
+  return isMockMode() && JSON.stringify(creativeRef).includes(MOCK_FAIL_MARKER)
 }
 
 // ── Campañas / conjuntos / creatives / anuncios ─────────────────────────────
@@ -204,7 +258,12 @@ export async function createAdCreative(
   creds: AdsCredentials,
   input: { name: string; creativeRef: Record<string, unknown> },
 ): Promise<{ id: string }> {
-  if (isMockMode()) return { id: await mockId('creative', JSON.stringify(input.creativeRef)) }
+  if (isMockMode()) {
+    if (mockShouldSimulateRejection(input.creativeRef)) {
+      throw new MetaAdsError(translateMetaError({ error: { code: 100, message: 'Simulado para prueba E2E: Meta rechazó este creative' } }), 100)
+    }
+    return { id: await mockId('creative', JSON.stringify(input.creativeRef)) }
+  }
   const res = await fetch(graphUrl(`${creds.adAccountId}/adcreatives`), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: input.name, ...input.creativeRef, access_token: creds.accessToken }),
