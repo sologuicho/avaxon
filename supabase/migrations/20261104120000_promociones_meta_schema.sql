@@ -152,9 +152,27 @@ create index if not exists idx_social_promotions_org_status
 
 -- Edad mínima real + restricción de intereses para categorías especiales de
 -- anuncios (Meta mismo lo exige; se replica en servidor, no solo aviso en UI).
+--
+-- También verifica, a nivel de base de datos (no solo en la Edge Function),
+-- que post_target_id pertenezca a la MISMA organización que organization_id.
+-- Encontrado probando RLS de verdad en local (2026-11-04): el RLS de
+-- social_promotions solo exige organization_id = get_my_org_id(), pero no
+-- hay nada que impida que una fila con organization_id correcto (A) traiga
+-- un post_target_id de OTRA organización (B) -- el FK de post_target_id solo
+-- valida que la fila exista, no de quién es. social-ads-create/index.ts ya
+-- valida esto antes de llamar a Meta, pero sin este trigger esa es la ÚNICA
+-- barrera; este trigger la hace defensa-en-profundidad real, igual que el
+-- resto de las validaciones de esta función.
 create or replace function public.validate_special_ad_category()
 returns trigger language plpgsql as $$
+declare
+  target_org uuid;
 begin
+  select organization_id into target_org from public.social_post_targets where id = new.post_target_id;
+  if target_org is null or target_org <> new.organization_id then
+    raise exception 'post_target_id no pertenece a la organización de esta promoción';
+  end if;
+
   if new.special_ad_categories is not null and new.special_ad_categories <> '{}' then
     if new.special_ad_categories && array['EMPLOYMENT','HOUSING','CREDIT']::text[] then
       if coalesce((new.audience_spec->>'age_min')::int, 18) < 18 then

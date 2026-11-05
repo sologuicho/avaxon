@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { encryptField } from '../_shared/crypto.ts'
 import { corsHeaders, json, resolveAdsCaller } from '../_shared/socialAdsAuth.ts'
-import { listAdAccounts, translateMetaError } from '../_shared/metaAds.ts'
+import { listAdAccounts, translateMetaError, getApiVersion, isMockMode, getAdsMode } from '../_shared/metaAds.ts'
 
 // ── Conectar cuenta publicitaria de Meta ────────────────────────────────────
 // Dos pasos desde el mismo endpoint (igual patrón que social-oauth-callback):
@@ -29,16 +29,13 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
+  // getAdsMode() corta aquí -- antes de cualquier red -- si META_ADS_MODE
+  // falta o es inválida (ver _shared/metaAds.ts).
+  try { getAdsMode() } catch (e: any) { return json({ error: e.message }, 500) }
+
   const resolved = await resolveAdsCaller(req)
   if ('error' in resolved) return resolved.error
   const { ctx } = resolved
-
-  const META_APP_ID = Deno.env.get('META_APP_ID')
-  const META_APP_SECRET = Deno.env.get('META_APP_SECRET')
-  if (!META_APP_ID || !META_APP_SECRET) {
-    return json({ error: 'Conexión de cuentas publicitarias no está configurada (falta META_APP_ID/META_APP_SECRET)' }, 500)
-  }
-  const version = Deno.env.get('META_MARKETING_API_VERSION') || 'v25.0'
 
   let body: { access_token?: string; ad_account_id?: string }
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
@@ -46,16 +43,35 @@ Deno.serve(async (req: Request) => {
   if (!shortToken) return json({ error: 'access_token es requerido' }, 422)
 
   // ── Intercambiar token corto por uno de larga duración ────────────────────
-  const exchangeRes = await fetch(
-    `${GRAPH(version)}/oauth/access_token?grant_type=fb_exchange_token&client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&fb_exchange_token=${shortToken}`,
-  )
-  const exchangeData = await exchangeRes.json()
-  if (!exchangeRes.ok || !exchangeData.access_token) {
-    return json({ error: translateMetaError(exchangeData) }, 502)
+  // En modo mock NUNCA se llama a graph.facebook.com -- ni aquí ni en
+  // listAdAccounts/createCampaign/etc (ver _shared/metaAds.ts). Antes de este
+  // fix, este paso específico sí llamaba a Meta real incluso con
+  // META_ADS_MODE=mock -- encontrado armando las pruebas E2E locales
+  // (2026-11-04): social-ads-connect era la única función de esta feature
+  // que rompía esa garantía.
+  let longToken: string
+  let tokenExpiresAt: string | null
+  if (isMockMode()) {
+    longToken = `mock_long_token_${shortToken.slice(0, 12)}`
+    tokenExpiresAt = new Date(Date.now() + 60 * 24 * 3600 * 1000).toISOString()
+  } else {
+    const META_APP_ID = Deno.env.get('META_APP_ID')
+    const META_APP_SECRET = Deno.env.get('META_APP_SECRET')
+    if (!META_APP_ID || !META_APP_SECRET) {
+      return json({ error: 'Conexión de cuentas publicitarias no está configurada (falta META_APP_ID/META_APP_SECRET)' }, 500)
+    }
+    const version = getApiVersion()
+    const exchangeRes = await fetch(
+      `${GRAPH(version)}/oauth/access_token?grant_type=fb_exchange_token&client_id=${META_APP_ID}&client_secret=${META_APP_SECRET}&fb_exchange_token=${shortToken}`,
+    )
+    const exchangeData = await exchangeRes.json()
+    if (!exchangeRes.ok || !exchangeData.access_token) {
+      return json({ error: translateMetaError(exchangeData) }, 502)
+    }
+    longToken = exchangeData.access_token as string
+    const expiresIn = typeof exchangeData.expires_in === 'number' ? exchangeData.expires_in : null
+    tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null
   }
-  const longToken = exchangeData.access_token as string
-  const expiresIn = typeof exchangeData.expires_in === 'number' ? exchangeData.expires_in : null
-  const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null
 
   // ── Listar cuentas publicitarias que administra ───────────────────────────
   let accounts: Awaited<ReturnType<typeof listAdAccounts>>

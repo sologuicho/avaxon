@@ -1015,7 +1015,14 @@
     .promo-field-hint { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; }
     .promo-input { width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); padding: 0 10px; font-size: 13px; box-sizing: border-box; }
     @media (max-width: 720px) {
-      .promo-modal-panel { width: 100%; max-height: 100%; height: 100%; border-radius: 0; }
+      /* height:100% forzaba el panel a ocupar toda la pantalla siempre,
+         empujando el pie (Atrás/Cancelar/Siguiente) hasta el fondo y dejando
+         un hueco vacío enorme en pasos con poco contenido (ej. paso 2 en modo
+         Automático) -- encontrado revisando las capturas E2E en móvil
+         (2026-11-05). max-height sin forzar height deja que el panel se
+         ajuste al contenido real y el pie quede justo debajo. */
+      .promo-modal-overlay { padding: 0; align-items: flex-end; }
+      .promo-modal-panel { width: 100%; max-height: 100%; border-radius: 14px 14px 0 0; }
     }
     .apt-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .apt-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }

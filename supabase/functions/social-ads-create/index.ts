@@ -105,7 +105,7 @@ Deno.serve(async (req: Request) => {
   // como ubicación -- se fuerza a la red real del post.
   const effectivePlacements = placements === 'auto' ? target.platform : placements
 
-  const targeting = buildTargetingSpec(audienceMode, effectiveSpec, effectivePlacements as any)
+  const targeting = buildTargetingSpec(audienceMode, effectiveSpec, effectivePlacements as any, 'MX', specialCategories)
   const creativeRef = buildCreativeRef(
     target.platform as 'facebook_page' | 'instagram_business',
     target.external_post_id,

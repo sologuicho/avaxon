@@ -6,12 +6,30 @@
 
 Deno.env.set('META_ADS_MODE', 'mock')
 
-import { assert, assertEquals, assertNotEquals } from 'jsr:@std/assert@1'
+import { assert, assertEquals, assertNotEquals, assertThrows, assertRejects } from 'jsr:@std/assert@1'
 import {
-  buildTargetingSpec, buildCreativeRef, translateMetaError, minDailyBudget,
+  buildTargetingSpec, buildCreativeRef, translateMetaError, minDailyBudget, getAdsMode,
   createCampaign, createAdSet, createAdCreative, createAd, getDeliveryEstimate, getInsights,
   OBJECTIVE_TO_META, OPTIMIZATION_GOAL_FOR,
 } from './metaAds.ts'
+
+Deno.test('getAdsMode: sin definir truena con error claro, sin llamar a Meta', () => {
+  Deno.env.delete('META_ADS_MODE')
+  assertThrows(() => getAdsMode(), Error, 'META_ADS_MODE')
+  Deno.env.set('META_ADS_MODE', 'mock') // restaurar para el resto de las pruebas
+})
+
+Deno.test('getAdsMode: valor inválido truena con error claro, sin llamar a Meta', () => {
+  Deno.env.set('META_ADS_MODE', 'test')
+  assertThrows(() => getAdsMode(), Error, 'META_ADS_MODE')
+  Deno.env.set('META_ADS_MODE', 'mock')
+})
+
+Deno.test('getAdsMode: "live" es válido (no truena, aunque no haya red disponible en esta prueba)', () => {
+  Deno.env.set('META_ADS_MODE', 'live')
+  assertEquals(getAdsMode(), 'live')
+  Deno.env.set('META_ADS_MODE', 'mock') // restaurar para el resto de las pruebas
+})
 
 Deno.test('buildTargetingSpec: modo automático solo trae país + edad adulta amplia', () => {
   const spec = buildTargetingSpec('auto', {}, 'auto', 'MX')
@@ -41,6 +59,15 @@ Deno.test('buildTargetingSpec: intereses solo se incluyen en modo personalizado'
 Deno.test('buildTargetingSpec: placements fijo agrega publisher_platforms', () => {
   const spec = buildTargetingSpec('auto', {}, 'instagram_business')
   assertEquals((spec as any).publisher_platforms, ['instagram'])
+})
+
+Deno.test('buildTargetingSpec: categoría HEC-F (empleo/vivienda/crédito) manda targeting_automation.advantage_audience=0 (requisito Marketing API v26.0)', () => {
+  const withCategory = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', ['HOUSING'])
+  assertEquals((withCategory as any).targeting_automation, { advantage_audience: 0 })
+  const withoutCategory = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', [])
+  assert(!('targeting_automation' in withoutCategory))
+  const politicalOnly = buildTargetingSpec('custom', {}, 'auto', 'MX', ['ISSUES_ELECTIONS_POLITICS'])
+  assert(!('targeting_automation' in politicalOnly)) // HEC-F es solo empleo/vivienda/crédito, no política
 })
 
 Deno.test('buildCreativeRef: Facebook reusa external_post_id tal cual como object_story_id', () => {
@@ -115,6 +142,17 @@ Deno.test('modo mock: delivery_estimate regresa rango con lower < upper y reacci
   assert(est1.lower > 0 && est1.lower < est1.upper)
   const est2 = await getDeliveryEstimate(creds, { optimizationGoal: 'REACH', targeting: { age_min: 25, age_max: 34 } })
   assertNotEquals(est1.lower, est2.lower) // público distinto -> estimado distinto
+})
+
+Deno.test('modo mock: gancho de prueba __E2E_MOCK_META_REJECT__ simula un rechazo real de Meta en createAdCreative', async () => {
+  await assertRejects(
+    () => createAdCreative(creds, { name: 'x', creativeRef: { object_story_id: 'page_post__E2E_MOCK_META_REJECT__' } }),
+    Error,
+    'Meta rechazó la operación',
+  )
+  // Sin el marcador, sigue funcionando normal (no rompe el resto del mock)
+  const ok = await createAdCreative(creds, { name: 'x', creativeRef: { object_story_id: 'page_post_normal' } })
+  assert(ok.id.startsWith('mock_creative_'))
 })
 
 Deno.test('modo mock: getInsights regresa métricas coherentes (cpc = spend/clicks, ctr en %)', async () => {
