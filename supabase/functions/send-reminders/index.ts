@@ -62,7 +62,7 @@ Deno.serve(async (_req: Request) => {
     if (isQuietHours(new Date(), timezone)) { skippedQuietHours++; continue }
 
     const waRes = await fetch(
-      `https://graph.facebook.com/v20.0/${reminder.phone_number_id}/messages`,
+      `https://graph.facebook.com/v22.0/${reminder.phone_number_id}/messages`,
       {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -142,7 +142,7 @@ async function tryAppointmentTemplate(
     })
 
     const templateRes = await fetch(
-      `https://graph.facebook.com/v20.0/${reminder.phone_number_id}/messages`,
+      `https://graph.facebook.com/v22.0/${reminder.phone_number_id}/messages`,
       {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

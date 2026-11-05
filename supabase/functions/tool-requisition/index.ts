@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
     `*Org ID:* ${profile.organization_id}\n` +
     `*Estado:* Pendiente`
 
-  const waRes = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_NUMBER_ID}/messages`, {
+  const waRes = await fetch(`https://graph.facebook.com/v22.0/${WA_PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({

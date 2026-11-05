@@ -259,7 +259,7 @@ async function notifyOwnerNeedsHuman(
     if (!pn?.phone_number_id) return
     const token = (pn.whatsapp_accounts as any)?.access_token ?? Deno.env.get('WA_ACCESS_TOKEN')
 
-    const waRes = await fetch(`https://graph.facebook.com/v20.0/${pn.phone_number_id}/messages`, {
+    const waRes = await fetch(`https://graph.facebook.com/v22.0/${pn.phone_number_id}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({

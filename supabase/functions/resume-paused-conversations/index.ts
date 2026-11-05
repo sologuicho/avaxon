@@ -74,7 +74,7 @@ Deno.serve(async (req: Request) => {
     const resumeText = 'Perdón por la espera — el equipo no está disponible ahorita. ¿Te ayudo yo mientras? 🙂'
 
     try {
-      const waRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+      const waRes = await fetch(`https://graph.facebook.com/v22.0/${phoneNumberId}/messages`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ messaging_product: 'whatsapp', to: toPhone, type: 'text', text: { body: resumeText } }),

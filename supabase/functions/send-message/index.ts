@@ -100,7 +100,7 @@ async function handleSend(
 
   const toDigits = toPhone.replace(/\D/g, '')
   const sendWA = (payload: Record<string, unknown>) =>
-    fetch(`https://graph.facebook.com/v20.0/${metaPhoneId}/messages`, {
+    fetch(`https://graph.facebook.com/v22.0/${metaPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to: toDigits, ...payload }),

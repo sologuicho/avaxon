@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
   lines.push(`Phone Number ID: ${pnid}`, `WABA ID: ${waba}`)
   lines.push('', 'Revisa el panel admin para activar el número.')
 
-  const waRes = await fetch(`https://graph.facebook.com/v20.0/${WA_PHONE_NUMBER_ID}/messages`, {
+  const waRes = await fetch(`https://graph.facebook.com/v22.0/${WA_PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
