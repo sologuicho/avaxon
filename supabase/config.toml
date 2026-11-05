@@ -42,3 +42,13 @@ verify_jwt = false
 # proactivo de tokens de Meta, para que "Token expirado" se detecte antes
 # de que falle un intento real de publicar
 cron = "0 13 * * *"
+
+# ── Promocionar publicaciones (feature/promocionar-publicaciones) ──────────
+# NO desplegado a producción todavía -- ver docs/promociones-meta.md.
+
+[functions.social-ads-metrics-sync]
+verify_jwt = false
+# cada 30 min — gasto/alcance/impresiones/clics de cada promoción activa,
+# en_revision o pausada reciente; también marca 'finalizada' cuando ya pasó
+# end_time
+cron = "*/30 * * * *"
