@@ -43,7 +43,7 @@ Deno.serve(async (req: Request) => {
   ]
 
   const waRes = await fetch(
-    `https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`,
+    `https://graph.facebook.com/v22.0/${WA_PHONE_ID}/messages`,
     {
       method: 'POST',
       headers: {

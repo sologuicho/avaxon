@@ -207,7 +207,7 @@ Deno.serve(async (_req: Request) => {
           text: { body: followUpText },
         }
 
-    const waRes = await fetch(`https://graph.facebook.com/v20.0/${metaPhoneId}/messages`, {
+    const waRes = await fetch(`https://graph.facebook.com/v22.0/${metaPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${clientToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(waPayload),
