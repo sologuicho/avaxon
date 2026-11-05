@@ -355,4 +355,172 @@ documentado como pendiente:
    `META_ADS_APP_ID`, `META_ADS_APP_SECRET` (puede reusar `META_APP_ID`/
    `META_APP_SECRET` ya existentes si la app de Meta es la misma).
 5. Checklist de campaña real de bajo presupuesto antes de abrir esto a
-   cualquier cliente — ver reporte final.
+   cualquier cliente — ver §11.
+
+## 9. Exportar el esquema real de producción (solo esquema, sin datos ni secretos)
+
+**Esto es una instrucción para que el usuario la corra — no se ejecutó.**
+El repo ya está vinculado (`supabase link`) al proyecto `avaxon-prod`
+(`wprvjhvtnyibiwpeiusc`), confirmado vía `supabase status` en esta sesión.
+
+### Opción A — Supabase CLI (recomendada, no requiere pegar la contraseña en el comando)
+
+```bash
+cd /Users/hectorgarcia/avaxon
+supabase db dump --linked --schema public -f /tmp/avaxon_prod_schema_$(date +%Y%m%d).sql
+```
+
+- Sin `--data-only`, `db dump` trae **solo DDL** (tablas, funciones, triggers,
+  policies, constraints) — nunca filas de datos.
+- `--schema public` limita el volcado al esquema `public` (donde viven
+  `organizations`, `profiles`, `business_modules`, `social_*`,
+  `is_super_admin()`, `get_my_org_id()`, etc.) y deja afuera `auth`/
+  `storage`/`realtime`/`vault` — no hace falta tocar esos para esta feature,
+  y así el archivo nunca puede incluir nada de `auth.users` ni tokens.
+- El CLI va a pedir la contraseña de la base de forma interactiva (no se
+  escribe en el comando, no queda en el historial de la shell). Si no la
+  tienes a la mano: Supabase Dashboard → el proyecto → Project Settings →
+  Database → "Database password" (ahí mismo hay un botón para resetearla si
+  se perdió — resetearla no afecta nada en ejecución, solo la credencial).
+
+### Opción B — pg_dump directo (si la CLI da problemas)
+
+```bash
+pg_dump "postgresql://postgres:<password>@<host>:5432/postgres" \
+  --schema-only --schema=public --no-owner --no-privileges --no-comments \
+  -f /tmp/avaxon_prod_schema_$(date +%Y%m%d).sql
+```
+
+- `<host>` y el puerto exactos están en Project Settings → Database →
+  "Connection string" (usa la que dice "Direct connection" o el pooler en
+  modo *session*, no *transaction*, para que `pg_dump` funcione bien).
+- **No pegues la URL con la contraseña en el chat.** Si prefieres no
+  escribirla en el comando tampoco, omite `:<password>@` de la URL y
+  `pg_dump` la va a pedir por `stdin` de forma interactiva.
+- `--schema-only` es, por definición, una operación de solo lectura —
+  `pg_dump` nunca escribe en la base sin importar las flags.
+
+### Verificar que el archivo no tiene datos ni secretos antes de compartirlo
+
+```bash
+grep -c "^COPY " /tmp/avaxon_prod_schema_*.sql   # debe dar 0
+grep -i "password\|secret\|token" /tmp/avaxon_prod_schema_*.sql | grep -v "_token\b.*text\|access_token.*text"  # revisar a mano cualquier línea que salga
+```
+
+(`--schema-only`/sin `--data-only` nunca trae datos, así que esto es más
+una doble verificación que un paso estrictamente necesario.)
+
+### Entregarme el archivo
+
+Como este entorno comparte el mismo sistema de archivos que tu terminal,
+con que guardes el dump dentro de `/Users/hectorgarcia/avaxon/` o en
+`/tmp/` y me digas la ruta es suficiente — no hace falta pegarlo en el chat
+(sería un archivo grande). Ejemplo: guárdalo como
+`/tmp/avaxon_prod_schema.sql` y dime "ya está" con esa ruta.
+
+## 10. Comparación contra el historial actual y propuesta de migración base
+
+**No se reescribió nada todavía — esto es una propuesta para decidir.**
+
+### Qué hace el historial actual hoy
+
+`supabase db reset` contra el historial completo del repo truena porque
+~23 migraciones (incluida la primera, `001_admin_setup.sql`) son archivos
+vacíos "stub for history sync" o dependen de tablas (`organizations`,
+`profiles`) que nunca se crearon en ningún migration file — se crearon
+directo en prod por SQL Editor. Confirmado en la ronda anterior (§7).
+
+### Qué cambiaría con el volcado de producción (§9)
+
+Una vez que tengamos `avaxon_prod_schema.sql`, la migración base
+propuesta sería:
+
+1. Crear `supabase/migrations/00000000000000_baseline_prod_schema.sql` con
+   el contenido completo del volcado (ajustado: quitar sentencias que
+   `pg_dump`/`db dump` agregan que no aplican a un archivo de migración,
+   como `SET` de sesión o comentarios de extensión — revisión manual rápida,
+   no automática).
+2. Esa única migración reemplazaría, en la práctica, a las ~30 migraciones
+   anteriores a ella — pero **no se borran los archivos viejos todavía**;
+   se dejan como registro histórico y se documenta en el propio archivo
+   nuevo que es un snapshot, no una migración incremental más.
+3. A partir de ahí, `supabase db reset` funcionaría de verdad, sin el
+   stub temporal que usé en la ronda anterior.
+
+### El riesgo real que esto introduce (por qué no se hace todavía)
+
+Supabase rastrea, **en la base de producción misma**
+(`supabase_migrations.schema_migrations`), qué migraciones ya se aplicaron
+ahí, por nombre de archivo/versión. Si agrego un archivo nuevo con un
+timestamp `00000000000000` (anterior a todo lo que prod ya tiene
+registrado), `supabase db push` lo va a ver como **pendiente** la próxima
+vez que alguien lo corra contra prod — e intentaría crear de nuevo tablas
+que prod ya tiene. La mayoría de los `CREATE TABLE` en este repo usan
+`if not exists`, así que probablemente no tronaría, pero no es algo para
+confiar a ciegas contra producción.
+
+**El paso que falta antes de adoptar esto** (tampoco se ejecutó, queda
+para decidir): marcar la migración base como "ya aplicada" en prod sin
+correr su contenido, con:
+
+```bash
+supabase migration repair 00000000000000 --status applied --linked
+```
+
+Esto le dice a Supabase "esta versión ya está aplicada ahí, no la vuelvas
+a correr" — es el mecanismo que la propia documentación de Supabase
+recomienda para "adoptar" una base de datos existente en el flujo de
+migraciones. Es una operación sobre la tabla de control de migraciones,
+no sobre el esquema real — pero toca prod (aunque sea solo metadata), así
+que debe decidirse explícitamente, no asumirse.
+
+### Recomendación
+
+Primero correr `scripts/validate-promociones-schema.sh` (§9/§3) contra el
+volcado real para confirmar que la migración de esta feature es segura. Con
+eso confirmado, decidir en una conversación aparte si vale la pena adoptar
+la migración base (afecta a todo el repo, no solo a esta feature) o seguir
+usando el patrón de "stub temporal, no commiteado" cada vez que haga falta
+probar localmente.
+
+## 11. Orden exacto de pasos hasta la primera prueba en vivo
+
+1. **Exportar el esquema real** (§9) — lo haces tú, fuera de este chat.
+2. **Validar la migración de esta feature contra ese esquema**
+   (`./scripts/validate-promociones-schema.sh /ruta/al/dump.sql`, §3) — lo
+   corro yo una vez que me des la ruta del archivo.
+3. **Crear un proyecto Supabase de pruebas/staging** (nunca el de prod) —
+   Supabase Dashboard → New Project. Clonar el esquema real ahí (restaurar
+   el mismo dump de §9 directo por `psql`, sin pasar por el sistema de
+   migraciones) y aplicar únicamente la migración de esta feature con
+   `supabase link` apuntando a ese proyecto nuevo + `supabase db push`.
+4. **Desplegar las 6 Edge Functions de esta feature** a ese proyecto de
+   staging: `supabase functions deploy social-ads-connect social-ads-estimate
+   social-ads-create social-ads-activate social-ads-action
+   social-ads-metrics-sync --project-ref <ref-de-staging>`.
+5. **Configurar variables de entorno** en ese proyecto (Dashboard → Edge
+   Functions → Secrets, o `supabase secrets set`): `META_ADS_MODE=live`,
+   `META_MARKETING_API_VERSION` (v26.0 o la vigente al momento),
+   `META_ADS_MIN_DAILY_BUDGET_MXN`, `META_APP_ID`/`META_APP_SECRET` (puede
+   ser la misma app de Meta que ya usa publicaciones-redes),
+   `INTEGRATIONS_ENCRYPTION_KEY` (una clave nueva, no reusar la de prod en
+   staging).
+6. **Activar los módulos** `publicaciones_redes` y `promocion_publicaciones`
+   en `business_modules` para una organización de prueba en ese proyecto.
+7. **Conectar una cuenta publicitaria real de Meta** de bajo gasto —
+   `FB.login` real vía el dashboard apuntado a staging (cambiar
+   `SUPABASE_URL`/`EDGE_BASE` temporalmente, igual que en las pruebas E2E de
+   esta sesión, nunca commiteado) — confirmar que `account_status`/
+   `funding_source_details` se leen bien de una cuenta real.
+8. **Promocionar una publicación real** con presupuesto mínimo real (ej.
+   $50–100 MXN/día, 1 día de duración) y confirmar que queda **PAUSED** en
+   Meta antes de activarla — revisar en Business Manager, no solo en el
+   dashboard de Avaxon.
+9. **Activar** y confirmar que entra a revisión en Meta de verdad.
+10. **Esperar el cron de `social-ads-metrics-sync`** (cada 30 min) y
+    confirmar que trae números reales (probablemente 0 al inicio, es
+    normal).
+11. **Probar pausar/reanudar/editar presupuesto/duplicar** contra la cuenta
+    real.
+12. Con todo eso confirmado, recién ahí tiene sentido una conversación sobre
+    App Review de Meta y abrir esto a un cliente real.
