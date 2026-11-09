@@ -38,6 +38,8 @@ Deno.test('buildTargetingSpec: modo automático solo trae país + edad adulta am
   assertEquals((spec.geo_locations as any).countries, ['MX'])
   assert(!('genders' in spec))
   assert(!('flexible_spec' in spec))
+  // "Automático" = literalmente "que Meta elija el público óptimo" -> advantage_audience=1
+  assertEquals((spec as any).targeting_automation, { advantage_audience: 1 })
 })
 
 Deno.test('buildTargetingSpec: modo personalizado con radio geográfico', () => {
@@ -47,6 +49,8 @@ Deno.test('buildTargetingSpec: modo personalizado con radio geográfico', () => 
   assertEquals(spec.age_min, 25)
   assertEquals(spec.age_max, 45)
   assertEquals((spec as any).genders, [2])
+  // Personalizado = segmentación manual -> advantage_audience=0 (sin expansión)
+  assertEquals((spec as any).targeting_automation, { advantage_audience: 0 })
 })
 
 Deno.test('buildTargetingSpec: ubicaciones resueltas (locations) agrupan por tipo, no caen al país completo', () => {
@@ -79,13 +83,27 @@ Deno.test('buildTargetingSpec: placements fijo agrega publisher_platforms', () =
   assertEquals((spec as any).publisher_platforms, ['instagram'])
 })
 
-Deno.test('buildTargetingSpec: categoría HEC-F (empleo/vivienda/crédito) manda targeting_automation.advantage_audience=0 (requisito Marketing API v26.0)', () => {
-  const withCategory = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', ['HOUSING'])
-  assertEquals((withCategory as any).targeting_automation, { advantage_audience: 0 })
-  const withoutCategory = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', [])
-  assert(!('targeting_automation' in withoutCategory))
-  const politicalOnly = buildTargetingSpec('custom', {}, 'auto', 'MX', ['ISSUES_ELECTIONS_POLITICS'])
-  assert(!('targeting_automation' in politicalOnly)) // HEC-F es solo empleo/vivienda/crédito, no política
+Deno.test('buildTargetingSpec: targeting_automation.advantage_audience siempre se manda, para cualquier objetivo/modo (requisito Marketing API v26.0)', () => {
+  // Regresión 2026-11-10: probando el objetivo whatsapp contra la cuenta
+  // real, Meta rechazó el ad set con "debes activar o desactivar la
+  // función de público Advantage... configura advantage_audience como 1
+  // o 0" -- antes solo se mandaba para categorías especiales (Vivienda/
+  // Empleo/Crédito), dejando a todos los demás casos sin el campo.
+  const auto = buildTargetingSpec('auto', {}, 'auto', 'MX', [])
+  assertEquals((auto as any).targeting_automation, { advantage_audience: 1 })
+
+  const custom = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', [])
+  assertEquals((custom as any).targeting_automation, { advantage_audience: 0 })
+
+  const politicalAuto = buildTargetingSpec('auto', {}, 'auto', 'MX', ['ISSUES_ELECTIONS_POLITICS'])
+  assertEquals((politicalAuto as any).targeting_automation, { advantage_audience: 1 }) // HEC-F es solo empleo/vivienda/crédito, no política
+})
+
+Deno.test('buildTargetingSpec: categoría HEC-F (empleo/vivienda/crédito) fuerza advantage_audience=0 incluso en modo automático', () => {
+  const customWithCategory = buildTargetingSpec('custom', { age_min: 18 }, 'auto', 'MX', ['HOUSING'])
+  assertEquals((customWithCategory as any).targeting_automation, { advantage_audience: 0 })
+  const autoWithCategory = buildTargetingSpec('auto', {}, 'auto', 'MX', ['EMPLOYMENT'])
+  assertEquals((autoWithCategory as any).targeting_automation, { advantage_audience: 0 }) // sin esto, "Automático" dejaría pasar expansión que Meta no permite para estas categorías
 })
 
 Deno.test('buildCreativeRef: Facebook reusa external_post_id tal cual como object_story_id', () => {

@@ -150,11 +150,17 @@ export function buildTargetingSpec(
   if (placements !== 'auto') {
     base.publisher_platforms = [placements === 'facebook_page' ? 'facebook' : 'instagram']
   }
-  // Requisito de Marketing API v26.0 para ad sets de Vivienda/Empleo/Crédito
-  // (ver comentario de cabecera) -- sin expansión automática de audiencia.
-  if (specialAdCategories.some(c => HEC_F_CATEGORIES.includes(c))) {
-    base.targeting_automation = { advantage_audience: 0 }
-  }
+  // targeting_automation.advantage_audience es obligatorio en Marketing API
+  // v26.0 para TODOS los objetivos -- sin él Meta rechaza con "debes activar
+  // o desactivar la función de público Advantage... configura
+  // advantage_audience como 1 o 0" (encontrado probando el objetivo
+  // whatsapp contra la cuenta real, 2026-11-10). "Personalizado" ya es
+  // segmentación manual del usuario -> 0 (sin expansión). "Automático" es
+  // literalmente "que Meta elija el público óptimo" -> 1. Vivienda/Empleo/
+  // Crédito fuerzan 0 sin importar el modo (ver comentario de cabecera):
+  // no permiten expansión automática de audiencia en ningún caso.
+  const forceNoExpansion = specialAdCategories.some(c => HEC_F_CATEGORIES.includes(c))
+  base.targeting_automation = { advantage_audience: (audienceMode === 'custom' || forceNoExpansion) ? 0 : 1 }
   return base
 }
 
