@@ -89,7 +89,7 @@ create table if not exists public.social_audiences (
   id              uuid primary key default gen_random_uuid(),
   organization_id uuid not null references organizations(id) on delete cascade,
   name            text not null,
-  spec            jsonb not null, -- { geo:{type,lat,lng,radius_km|location_names}, age_min, age_max, genders[], locales[], interests[] }
+  spec            jsonb not null, -- { geo:{type,lat,lng,radius_km|locations:[{key,name,type}]}, age_min, age_max, genders[], locales[], interests[] }
   created_by      uuid references profiles(id),
   created_at      timestamptz not null default now()
 );

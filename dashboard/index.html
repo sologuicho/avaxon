@@ -10381,7 +10381,7 @@
       step: promoAdsConnection ? 1 : 0, // 0 = pantalla de "conecta tu cuenta publicitaria"
       objective: 'engagement',
       audienceMode: 'auto',
-      audienceSpec: { age_min: 18, age_max: 65, genders: ['all'], geo: { type: 'location_names', location_names: [], country: 'MX' }, interests: [] },
+      audienceSpec: { age_min: 18, age_max: 65, genders: ['all'], geo: { type: 'locations', locations: [], country: 'MX' }, interests: [] },
       savedAudienceId: null,
       savedAudiences: [],
       budgetMode: 'daily',
@@ -10537,7 +10537,13 @@
             ${promoWizard.savedAudiences.map(a => `<option value="${a.id}" ${promoWizard.savedAudienceId === a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}
           </select>` : ''}
         <label class="promo-field-label">Ubicación</label>
-        <input class="promo-input" style="margin-bottom:10px" placeholder="Ej. Ciudad de México, Monterrey…" value="${(spec.geo?.location_names || []).join(', ')}" onchange="promoUpdateGeoNames(this.value)">
+        <div style="position:relative;margin-bottom:8px">
+          <input class="promo-input" id="promo-geo-input" placeholder="Ej. Reynosa, Tamaulipas…" autocomplete="off" oninput="promoSearchGeo(this.value)">
+          <div id="promo-geo-suggestions" style="display:none;position:absolute;z-index:20;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 14px rgba(0,0,0,.1)"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          ${(spec.geo?.locations || []).map((l, idx) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--hover-bg);font-size:12px">${escapeHtml(l.name)}<i class="fa fa-xmark" style="cursor:pointer;font-size:10px" onclick="promoRemoveGeo(${idx})"></i></span>`).join('')}
+        </div>
         <p class="promo-field-hint" style="margin-bottom:14px">Meta puede tratar parte de esta segmentación como sugerencia, no como filtro absoluto.</p>
         <div style="display:flex;gap:10px;margin-bottom:14px">
           <div style="flex:1"><label class="promo-field-label">Edad mínima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_min}" onchange="promoWizard.audienceSpec.age_min=Number(this.value);promoRefreshEstimate()"></div>
@@ -10550,9 +10556,9 @@
           <option value="male" ${(spec.genders||[]).includes('male') ? 'selected' : ''}>Hombres</option>
         </select>
         <label class="promo-field-label">Intereses</label>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input class="promo-input" id="promo-interest-input" placeholder="Ej. Comida, Restaurantes…">
-          <button class="btn-ghost" onclick="promoAddInterest()">Agregar</button>
+        <div style="position:relative;margin-bottom:8px">
+          <input class="promo-input" id="promo-interest-input" placeholder="Ej. Comida, Restaurantes…" autocomplete="off" oninput="promoSearchInterest(this.value)">
+          <div id="promo-interest-suggestions" style="display:none;position:absolute;z-index:20;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 14px rgba(0,0,0,.1)"></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
           ${(spec.interests || []).map((i, idx) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--hover-bg);font-size:12px">${escapeHtml(i.name)}<i class="fa fa-xmark" style="cursor:pointer;font-size:10px" onclick="promoRemoveInterest(${idx})"></i></span>`).join('')}
@@ -10569,21 +10575,89 @@
   function promoSetAudienceMode(mode) { promoWizard.audienceMode = mode; promoRenderStep() }
   window.promoSetAudienceMode = promoSetAudienceMode
 
-  function promoUpdateGeoNames(value) {
-    promoWizard.audienceSpec.geo = { type: 'location_names', location_names: value.split(',').map(s => s.trim()).filter(Boolean), country: 'MX' }
-    promoRefreshEstimate()
+  // Autocompletado real contra la Targeting Search de Meta (social-ads-search)
+  // -- antes "Ubicación" era texto libre que nunca llegaba a Meta como
+  // geo_locations real (el alcance estimado se quedaba en el país completo),
+  // e "Intereses" fabricaba un id falso en vez de pedirle a Meta el real.
+  let promoGeoSearchTimer = null
+  function promoSearchGeo(q) {
+    clearTimeout(promoGeoSearchTimer)
+    const box = $('promo-geo-suggestions')
+    if (!box) return
+    if (!q || q.trim().length < 2) { box.style.display = 'none'; box.innerHTML = ''; return }
+    promoGeoSearchTimer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${EDGE_BASE}/social-ads-search`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ type: 'adgeolocation', q: q.trim() }),
+        })
+        const result = await res.json()
+        if (!result.ok || !result.results?.length) { box.style.display = 'none'; box.innerHTML = ''; return }
+        promoWizard._geoResults = result.results
+        const typeLabel = { city: 'Ciudad', region: 'Estado', zip: 'C.P.', country: 'País' }
+        box.innerHTML = result.results.map((r, i) => `
+          <div style="padding:9px 12px;cursor:pointer;font-size:13px;color:var(--text)" onmousedown="promoPickGeo(${i})">
+            ${escapeHtml(r.name)} <span style="color:var(--text-muted);font-size:11px">${typeLabel[r.type] || ''}</span>
+          </div>`).join('')
+        box.style.display = 'block'
+      } catch { box.style.display = 'none' }
+    }, 350)
   }
-  window.promoUpdateGeoNames = promoUpdateGeoNames
+  window.promoSearchGeo = promoSearchGeo
 
-  function promoAddInterest() {
-    const input = $('promo-interest-input')
-    const name = (input.value || '').trim()
-    if (!name) return
-    promoWizard.audienceSpec.interests = [...(promoWizard.audienceSpec.interests || []), { id: name.toLowerCase().replace(/\s+/g, '_'), name }]
-    input.value = ''
+  function promoPickGeo(i) {
+    const r = (promoWizard._geoResults || [])[i]
+    if (!r) return
+    const spec = promoWizard.audienceSpec
+    if (spec.geo?.type !== 'locations') spec.geo = { type: 'locations', locations: [], country: 'MX' }
+    if (!spec.geo.locations.some(l => l.key === r.key)) spec.geo.locations.push({ key: r.key, name: r.name, type: r.type })
+    const input = $('promo-geo-input'); if (input) input.value = ''
+    const box = $('promo-geo-suggestions'); if (box) box.style.display = 'none'
     promoRenderStep(); promoRefreshEstimate()
   }
-  window.promoAddInterest = promoAddInterest
+  window.promoPickGeo = promoPickGeo
+
+  function promoRemoveGeo(idx) {
+    promoWizard.audienceSpec.geo.locations.splice(idx, 1)
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoRemoveGeo = promoRemoveGeo
+
+  let promoInterestSearchTimer = null
+  function promoSearchInterest(q) {
+    clearTimeout(promoInterestSearchTimer)
+    const box = $('promo-interest-suggestions')
+    if (!box) return
+    if (!q || q.trim().length < 2) { box.style.display = 'none'; box.innerHTML = ''; return }
+    promoInterestSearchTimer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${EDGE_BASE}/social-ads-search`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ type: 'adinterest', q: q.trim() }),
+        })
+        const result = await res.json()
+        if (!result.ok || !result.results?.length) { box.style.display = 'none'; box.innerHTML = ''; return }
+        promoWizard._interestResults = result.results
+        box.innerHTML = result.results.map((r, i) => `<div style="padding:9px 12px;cursor:pointer;font-size:13px;color:var(--text)" onmousedown="promoPickInterest(${i})">${escapeHtml(r.name)}</div>`).join('')
+        box.style.display = 'block'
+      } catch { box.style.display = 'none' }
+    }, 350)
+  }
+  window.promoSearchInterest = promoSearchInterest
+
+  function promoPickInterest(i) {
+    const r = (promoWizard._interestResults || [])[i]
+    if (!r) return
+    const spec = promoWizard.audienceSpec
+    spec.interests = spec.interests || []
+    if (!spec.interests.some(x => x.id === r.key)) spec.interests.push({ id: r.key, name: r.name })
+    const input = $('promo-interest-input'); if (input) input.value = ''
+    const box = $('promo-interest-suggestions'); if (box) box.style.display = 'none'
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoPickInterest = promoPickInterest
 
   function promoRemoveInterest(idx) {
     promoWizard.audienceSpec.interests.splice(idx, 1)

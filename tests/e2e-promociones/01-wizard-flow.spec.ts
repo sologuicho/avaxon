@@ -23,7 +23,8 @@ test('flujo completo: conectar (ya conectada) -> 5 pasos -> confirmar -> activar
   await expect(page.locator('#promo-step-body')).toContainText('Automático')
   await page.getByRole('button', { name: 'Personalizado' }).click()
   await page.fill('#promo-interest-input', 'Restaurantes')
-  await page.getByRole('button', { name: 'Agregar' }).click()
+  await page.waitForSelector('#promo-interest-suggestions div', { timeout: 3000 })
+  await page.click('#promo-interest-suggestions div')
   await expect(page.locator('#promo-step-body')).toContainText('Restaurantes')
   await page.waitForTimeout(700) // debounce de promoRefreshEstimate
   await page.click('#promo-btn-next')

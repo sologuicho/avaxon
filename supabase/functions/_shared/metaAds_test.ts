@@ -10,7 +10,7 @@ import { assert, assertEquals, assertNotEquals, assertThrows, assertRejects } fr
 import {
   buildTargetingSpec, buildCreativeRef, translateMetaError, minDailyBudget, getAdsMode,
   createCampaign, createAdSet, createAdCreative, createAd, getDeliveryEstimate, getInsights,
-  OBJECTIVE_TO_META, OPTIMIZATION_GOAL_FOR,
+  searchTargeting, OBJECTIVE_TO_META, OPTIMIZATION_GOAL_FOR,
 } from './metaAds.ts'
 
 Deno.test('getAdsMode: sin definir truena con error claro, sin llamar a Meta', () => {
@@ -47,6 +47,24 @@ Deno.test('buildTargetingSpec: modo personalizado con radio geográfico', () => 
   assertEquals(spec.age_min, 25)
   assertEquals(spec.age_max, 45)
   assertEquals((spec as any).genders, [2])
+})
+
+Deno.test('buildTargetingSpec: ubicaciones resueltas (locations) agrupan por tipo, no caen al país completo', () => {
+  const spec = buildTargetingSpec('custom', {
+    geo: { type: 'locations', locations: [
+      { key: '2267', name: 'Reynosa', type: 'city' },
+      { key: '3847', name: 'Tamaulipas', type: 'region' },
+    ] },
+  }, 'auto')
+  const geo: any = spec.geo_locations
+  assertEquals(geo.cities, [{ key: '2267' }])
+  assertEquals(geo.regions, [{ key: '3847' }])
+  assert(!('countries' in geo)) // ya no debe quedar en México entero
+})
+
+Deno.test('buildTargetingSpec: locations vacío cae de vuelta al país (nunca manda geo_locations roto)', () => {
+  const spec = buildTargetingSpec('custom', { geo: { type: 'locations', locations: [], country: 'MX' } }, 'auto')
+  assertEquals((spec.geo_locations as any).countries, ['MX'])
 })
 
 Deno.test('buildTargetingSpec: intereses solo se incluyen en modo personalizado', () => {
@@ -162,4 +180,29 @@ Deno.test('modo mock: getInsights regresa métricas coherentes (cpc = spend/clic
   assert(insights.spend >= 0)
   const expectedCpc = Math.round((insights.spend / insights.clicks) * 100) / 100
   assertEquals(insights.cpc, expectedCpc)
+})
+
+Deno.test('modo mock: searchTargeting(adgeolocation) regresa ciudad+estado con el nombre buscado, sin red', async () => {
+  const results = await searchTargeting(creds, 'adgeolocation', 'Reynosa')
+  assert(results.length >= 1)
+  assert(results.some(r => r.type === 'city' && r.name === 'Reynosa'))
+  assert(results.every(r => r.key.startsWith('mock_')))
+})
+
+Deno.test('modo mock: searchTargeting(adinterest) regresa un id real-shaped (no fabricado a mano por el frontend)', async () => {
+  const results = await searchTargeting(creds, 'adinterest', 'Restaurantes')
+  assertEquals(results.length, 1)
+  assertEquals(results[0].name, 'Restaurantes')
+  assert(results[0].key.startsWith('mock_interest_'))
+  assert(typeof results[0].audienceSizeLower === 'number')
+})
+
+Deno.test('searchTargeting: query vacía no llama a nada y regresa []', async () => {
+  assertEquals(await searchTargeting(creds, 'adgeolocation', '   '), [])
+})
+
+Deno.test('modo mock: searchTargeting es determinista (mismo query -> mismo key)', async () => {
+  const a = await searchTargeting(creds, 'adgeolocation', 'Monterrey')
+  const b = await searchTargeting(creds, 'adgeolocation', 'Monterrey')
+  assertEquals(a[0].key, b[0].key)
 })

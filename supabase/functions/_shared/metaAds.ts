@@ -85,8 +85,15 @@ async function mockId(prefix: string, seed: string): Promise<string> {
 }
 
 // ── Targeting spec ───────────────────────────────────────────────────────
+export interface GeoLocationPick { key: string; name: string; type: 'country' | 'region' | 'city' | 'zip' }
+
 export interface AudienceSpec {
-  geo?: { type: 'radius' | 'location_names'; lat?: number; lng?: number; radius_km?: number; location_names?: string[]; country?: string }
+  geo?: {
+    type: 'radius' | 'locations'
+    lat?: number; lng?: number; radius_km?: number
+    locations?: GeoLocationPick[]
+    country?: string
+  }
   age_min?: number
   age_max?: number
   genders?: ('all' | 'male' | 'female')[]
@@ -95,6 +102,21 @@ export interface AudienceSpec {
 }
 
 const HEC_F_CATEGORIES = ['EMPLOYMENT', 'HOUSING', 'CREDIT']
+
+// Agrupa los resultados ya resueltos de la Targeting Search (key real de
+// Meta, no el nombre tecleado) en la forma que espera geo_locations --
+// countries va como lista de códigos, el resto como [{key}]. Sin esto, un
+// `type` desconocido se trata como ciudad (el caso más común).
+function buildGeoLocationsFromPicks(picks: GeoLocationPick[]): Record<string, unknown> {
+  const out: Record<string, { key: string }[]> = {}
+  for (const p of picks) {
+    const bucket = p.type === 'country' ? 'countries' : p.type === 'region' ? 'regions' : p.type === 'zip' ? 'zips' : 'cities'
+    out[bucket] = out[bucket] || []
+    out[bucket].push({ key: p.key })
+  }
+  if (out.countries) (out as any).countries = out.countries.map((c) => c.key)
+  return out
+}
 
 export function buildTargetingSpec(
   audienceMode: 'auto' | 'custom',
@@ -111,7 +133,9 @@ export function buildTargetingSpec(
     geo_locations: audienceMode === 'custom' && spec.geo
       ? (spec.geo.type === 'radius' && spec.geo.lat != null && spec.geo.lng != null
           ? { custom_locations: [{ latitude: spec.geo.lat, longitude: spec.geo.lng, radius: spec.geo.radius_km ?? 16, distance_unit: 'kilometer' }] }
-          : { countries: [spec.geo.country ?? country] })
+          : spec.geo.type === 'locations' && spec.geo.locations?.length
+            ? buildGeoLocationsFromPicks(spec.geo.locations)
+            : { countries: [spec.geo.country ?? country] })
       : { countries: [country] },
     age_min: audienceMode === 'custom' ? (spec.age_min ?? 18) : 18,
     age_max: audienceMode === 'custom' ? (spec.age_max ?? 65) : 65,
@@ -396,4 +420,55 @@ export async function listAdAccounts(userAccessToken: string): Promise<{ id: str
   const data = await res.json()
   if (!res.ok) throw new MetaAdsError(translateMetaError(data), data?.error?.code, data?.error?.error_subcode)
   return data.data ?? []
+}
+
+// ── Targeting Search (autocompletado de Ubicación/Intereses del wizard) ────
+// Sin esto el wizard no tenía forma de resolver "Reynosa" a una ubicación
+// real de Meta -- el campo de Ubicación guardaba el texto tal cual y
+// buildTargetingSpec no sabía qué hacer con él, así que el alcance estimado
+// siempre caía al país completo (ver Promocionar paso 2, bug reportado
+// 2026-11-09). Mismo problema con Intereses: se fabricaba un id falso a
+// partir del nombre en vez de pedirle a Meta el id real de adinterest.
+export interface TargetingSearchResult {
+  key: string
+  name: string
+  type?: 'country' | 'region' | 'city' | 'zip' // solo viene en adgeolocation
+  audienceSizeLower?: number
+  audienceSizeUpper?: number
+}
+
+const GEO_TYPE_FROM_META: Record<string, GeoLocationPick['type']> = {
+  country: 'country', region: 'region', city: 'city', zip: 'zip',
+}
+
+export async function searchTargeting(
+  creds: AdsCredentials,
+  kind: 'adgeolocation' | 'adinterest',
+  query: string,
+): Promise<TargetingSearchResult[]> {
+  const q = query.trim()
+  if (!q) return []
+  if (isMockMode()) {
+    const seed = await mockHash(kind + q)
+    if (kind === 'adgeolocation') {
+      return [
+        { key: `mock_city_${seed}`, name: q, type: 'city' },
+        { key: `mock_region_${seed}`, name: `${q} (estado, mock)`, type: 'region' },
+      ]
+    }
+    const n = parseInt(seed.slice(0, 6), 16)
+    return [{ key: `mock_interest_${seed}`, name: q, audienceSizeLower: 10000 + (n % 500000), audienceSizeUpper: 50000 + (n % 1000000) }]
+  }
+  const qs = new URLSearchParams({ type: kind, q, access_token: creds.accessToken })
+  if (kind === 'adgeolocation') qs.set('location_types', JSON.stringify(['country', 'region', 'city', 'zip']))
+  const res = await fetch(graphUrl(`search?${qs}`))
+  const data = await res.json()
+  if (!res.ok) throw new MetaAdsError(translateMetaError(data), data?.error?.code, data?.error?.error_subcode)
+  const rows = (data.data ?? []) as any[]
+  if (kind === 'adgeolocation') {
+    return rows
+      .filter((r) => GEO_TYPE_FROM_META[r.type])
+      .map((r) => ({ key: r.key, name: r.name, type: GEO_TYPE_FROM_META[r.type] }))
+  }
+  return rows.map((r) => ({ key: r.id, name: r.name, audienceSizeLower: r.audience_size_lower, audienceSizeUpper: r.audience_size_upper }))
 }
