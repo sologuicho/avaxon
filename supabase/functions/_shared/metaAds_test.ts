@@ -9,7 +9,7 @@ Deno.env.set('META_ADS_MODE', 'mock')
 import { assert, assertEquals, assertNotEquals, assertThrows, assertRejects } from 'jsr:@std/assert@1'
 import {
   buildTargetingSpec, buildCreativeRef, translateMetaError, minDailyBudget, getAdsMode,
-  createCampaign, createAdSet, createAdCreative, createAd, getDeliveryEstimate, getInsights,
+  createCampaign, createAdSet, createAdCreative, createAd, deleteNode, getDeliveryEstimate, getInsights,
   searchTargeting, OBJECTIVE_TO_META, OPTIMIZATION_GOAL_FOR,
 } from './metaAds.ts'
 
@@ -199,6 +199,49 @@ Deno.test('modo mock: searchTargeting(adinterest) regresa un id real-shaped (no 
 
 Deno.test('searchTargeting: query vacía no llama a nada y regresa []', async () => {
   assertEquals(await searchTargeting(creds, 'adgeolocation', '   '), [])
+})
+
+Deno.test('createCampaign en modo live: manda is_adset_budget_sharing_enabled=false (sin esto Meta rechaza la creación)', async () => {
+  // Regresión 2026-11-10: Meta rechazó la campaña en staging con "Debes
+  // indicar True o False en el campo is_adset_budget_sharing_enabled si no
+  // estás usando el presupuesto de la campaña" -- este proyecto siempre
+  // pone el presupuesto en el ad set, nunca en la campaña, así que el
+  // campo siempre debe mandarse en false. El modo mock no construye la
+  // petición real, así que hay que mockear fetch para probar el body de
+  // verdad que se le manda a Meta.
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  let capturedBody: Record<string, unknown> | null = null
+  try {
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ id: '123456789' }), { status: 200 })
+    }) as typeof fetch
+
+    await createCampaign(creds, { name: 'Promo test', objective: 'engagement', specialAdCategories: [] })
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
+
+  assert(capturedBody, 'fetch mockeado nunca se llamó')
+  assertEquals(capturedBody!.is_adset_budget_sharing_enabled, false)
+})
+
+Deno.test('deleteNode en modo live: nunca truena aunque Meta rechace el borrado (limpieza de mejor esfuerzo)', async () => {
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  try {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ error: { message: 'No se pudo', code: 100 } }), { status: 400 })
+    ) as typeof fetch
+    // No debe lanzar -- antes de este fix tampoco lanzaba, pero por una
+    // razón distinta (ni siquiera miraba la respuesta).
+    await deleteNode(creds, '123456789')
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
 })
 
 Deno.test('modo mock: searchTargeting es determinista (mismo query -> mismo key)', async () => {

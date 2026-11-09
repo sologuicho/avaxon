@@ -238,6 +238,12 @@ export async function createCampaign(
       objective: OBJECTIVE_TO_META[input.objective] ?? input.objective,
       special_ad_categories: input.specialAdCategories.length ? input.specialAdCategories : [],
       status: input.status ?? 'PAUSED',
+      // El presupuesto siempre vive en el ad set (daily_budget/lifetime_budget
+      // en createAdSet), nunca en la campaña -- sin esto Meta rechaza la
+      // creación con "Debes indicar True o False en el campo
+      // is_adset_budget_sharing_enabled si no estás usando el presupuesto de
+      // la campaña" (encontrado en staging, 2026-11-10).
+      is_adset_budget_sharing_enabled: false,
       access_token: creds.accessToken,
     }),
   })
@@ -342,15 +348,28 @@ export async function updateAdSetBudgetOrEnd(
 
 // Limpieza al fallar un paso -- borra lo ya creado en ese intento, en orden
 // inverso, mejor esfuerzo (no re-lanza si un delete falla, solo loguea).
+// Nunca re-lanza (es limpieza de mejor esfuerzo durante un rollback), pero
+// SÍ debe notar cuando el borrado de verdad falló -- antes solo atrapaba
+// excepciones de red; una respuesta de error de Meta (res.ok=false, ej.
+// permiso insuficiente o nodo ya borrado por otra causa) se trataba como
+// éxito silencioso, dejando el nodo huérfano en Meta sin ningún rastro en
+// los logs (encontrado revisando un reporte de campaña huérfana, 2026-11-10
+// -- en ese caso específico no hubo huérfano porque createCampaign nunca
+// llegó a crear el objeto, pero este bug sí podía producir uno en otro
+// escenario de fallo).
 export async function deleteNode(creds: AdsCredentials, nodeId: string): Promise<void> {
   if (isMockMode()) return
   try {
-    await fetch(graphUrl(nodeId), {
+    const res = await fetch(graphUrl(nodeId), {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ access_token: creds.accessToken }),
     })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      console.error(`metaAds.deleteNode: Meta rechazó el borrado de ${nodeId} durante limpieza (posible huérfano):`, JSON.stringify(data))
+    }
   } catch (e) {
-    console.error(`metaAds.deleteNode: no se pudo borrar ${nodeId} durante limpieza:`, e)
+    console.error(`metaAds.deleteNode: no se pudo borrar ${nodeId} durante limpieza (posible huérfano):`, e)
   }
 }
 
