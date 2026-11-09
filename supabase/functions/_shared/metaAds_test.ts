@@ -228,6 +228,118 @@ Deno.test('createCampaign en modo live: manda is_adset_budget_sharing_enabled=fa
   assertEquals(capturedBody!.is_adset_budget_sharing_enabled, false)
 })
 
+Deno.test('createAdSet en modo live: manda bid_strategy=LOWEST_COST_WITHOUT_CAP y nunca bid_amount', async () => {
+  // Regresión 2026-11-10: Meta rechazó el ad set con "Para un límite de
+  // puja, proporciona el campo bid_amount..." -- sin bid_strategy, Meta
+  // asume un límite de puja manual. LOWEST_COST_WITHOUT_CAP deja que Meta
+  // optimice solo, y con esa estrategia bid_amount nunca debe mandarse.
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  let capturedBody: Record<string, unknown> | null = null
+  try {
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ id: '987654321' }), { status: 200 })
+    }) as typeof fetch
+
+    await createAdSet(creds, {
+      name: 'Conjunto test', campaignId: '111', objective: 'engagement',
+      budgetMode: 'daily', budgetAmountCents: 10000, targeting: { age_min: 18 },
+      startTime: new Date().toISOString(),
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
+
+  assert(capturedBody, 'fetch mockeado nunca se llamó')
+  assertEquals(capturedBody!.bid_strategy, 'LOWEST_COST_WITHOUT_CAP')
+  assert(!('bid_amount' in capturedBody!))
+})
+
+Deno.test('createAdSet en modo live: objetivo whatsapp manda destination_type=WHATSAPP y promoted_object.page_id', async () => {
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  let capturedBody: Record<string, unknown> | null = null
+  try {
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ id: '987654322' }), { status: 200 })
+    }) as typeof fetch
+
+    await createAdSet(creds, {
+      name: 'Conjunto whatsapp', campaignId: '111', objective: 'whatsapp',
+      budgetMode: 'daily', budgetAmountCents: 10000, targeting: { age_min: 18 },
+      startTime: new Date().toISOString(), facebookPageId: '1479842965203770',
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
+
+  assert(capturedBody, 'fetch mockeado nunca se llamó')
+  assertEquals(capturedBody!.destination_type, 'WHATSAPP')
+  assertEquals(capturedBody!.optimization_goal, 'CONVERSATIONS')
+  assertEquals((capturedBody!.promoted_object as any)?.page_id, '1479842965203770')
+})
+
+Deno.test('createAdSet en modo live: engagement manda promoted_object.page_id y destination_type=ON_POST (whatsapp es el único que usa WHATSAPP)', async () => {
+  // Regresión 2026-11-10, dos vueltas: (1) con bid_strategy ya arreglado,
+  // Meta rechazó el ad set de "engagement" con "tu campaña usa un objetivo
+  // de conversión pero no tiene configurado un origen... para el objeto
+  // promocionado" -- promoted_object.page_id hace falta para boostear un
+  // post ya publicado sin importar el objetivo, no solo whatsapp. (2) con
+  // eso arreglado, Meta rechazó de nuevo con "no puedes usar el objetivo
+  // de rendimiento seleccionado con tu objetivo de campaña" -- boostear un
+  // post (no-whatsapp) también necesita destination_type=ON_POST explícito.
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  let capturedBody: Record<string, unknown> | null = null
+  try {
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ id: '987654323' }), { status: 200 })
+    }) as typeof fetch
+
+    await createAdSet(creds, {
+      name: 'Conjunto engagement', campaignId: '111', objective: 'engagement',
+      budgetMode: 'daily', budgetAmountCents: 10000, targeting: { age_min: 18 },
+      startTime: new Date().toISOString(), facebookPageId: '1479842965203770',
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
+
+  assert(capturedBody, 'fetch mockeado nunca se llamó')
+  assertEquals(capturedBody!.destination_type, 'ON_POST')
+  assertEquals((capturedBody!.promoted_object as any)?.page_id, '1479842965203770')
+})
+
+Deno.test('createAdSet en modo live: sin facebookPageId no manda promoted_object (nunca un objeto vacío/roto)', async () => {
+  const originalFetch = globalThis.fetch
+  Deno.env.set('META_ADS_MODE', 'live')
+  let capturedBody: Record<string, unknown> | null = null
+  try {
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      capturedBody = JSON.parse(init?.body as string)
+      return new Response(JSON.stringify({ id: '987654324' }), { status: 200 })
+    }) as typeof fetch
+
+    await createAdSet(creds, {
+      name: 'Conjunto sin page', campaignId: '111', objective: 'engagement',
+      budgetMode: 'daily', budgetAmountCents: 10000, targeting: { age_min: 18 },
+      startTime: new Date().toISOString(),
+    })
+  } finally {
+    globalThis.fetch = originalFetch
+    Deno.env.set('META_ADS_MODE', 'mock')
+  }
+
+  assert(capturedBody, 'fetch mockeado nunca se llamó')
+  assert(!('promoted_object' in capturedBody!))
+})
+
 Deno.test('deleteNode en modo live: nunca truena aunque Meta rechace el borrado (limpieza de mejor esfuerzo)', async () => {
   const originalFetch = globalThis.fetch
   Deno.env.set('META_ADS_MODE', 'live')

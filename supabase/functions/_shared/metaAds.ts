@@ -260,6 +260,7 @@ export async function createAdSet(
     targeting: Record<string, unknown>
     startTime: string; endTime?: string | null
     status?: 'PAUSED' | 'ACTIVE'
+    facebookPageId?: string | null
   },
 ): Promise<{ id: string }> {
   if (isMockMode()) return { id: await mockId('adset', input.campaignId + input.name) }
@@ -268,6 +269,11 @@ export async function createAdSet(
     campaign_id: input.campaignId,
     optimization_goal: OPTIMIZATION_GOAL_FOR[input.objective] ?? 'IMPRESSIONS',
     billing_event: BILLING_EVENT_FOR[input.objective] ?? 'IMPRESSIONS',
+    // Sin bid_strategy, Meta asume un límite de puja y exige bid_amount
+    // explícito ("Para un límite de puja, proporciona el campo
+    // bid_amount..."). LOWEST_COST_WITHOUT_CAP deja que Meta optimice sin
+    // puja manual -- nunca se manda bid_amount junto con esta estrategia.
+    bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
     targeting: input.targeting,
     start_time: input.startTime,
     status: input.status ?? 'PAUSED',
@@ -276,6 +282,23 @@ export async function createAdSet(
   if (input.budgetMode === 'daily') body.daily_budget = input.budgetAmountCents
   else body.lifetime_budget = input.budgetAmountCents
   if (input.endTime) body.end_time = input.endTime
+  // promoted_object.page_id identifica de qué Page es el post que se está
+  // promocionando -- Meta lo exige para optimization_goal=POST_ENGAGEMENT
+  // (objetivo "engagement") igual que para CONVERSATIONS ("whatsapp"); sin
+  // él Meta rechaza con "tu campaña usa un objetivo de conversión pero no
+  // tiene configurado un origen... para el objeto promocionado" (encontrado
+  // probando contra la cuenta real en staging, 2026-11-10). Siempre se
+  // manda cuando se conoce la Page, sin importar el objetivo -- toda
+  // promoción de este proyecto es de un post ya publicado en una Page.
+  if (input.facebookPageId) body.promoted_object = { page_id: input.facebookPageId }
+  // destination_type le dice a Meta A DÓNDE manda el engagement del
+  // anuncio -- Click-to-WhatsApp necesita WHATSAPP explícito (optimization_
+  // goal=CONVERSATIONS por sí solo no basta); boostear un post ya
+  // publicado (resto de objetivos) necesita ON_POST, sin el cual Meta
+  // rechaza con "no puedes usar el objetivo de rendimiento seleccionado
+  // con tu objetivo de campaña" (encontrado probando contra la cuenta real
+  // en staging, 2026-11-10, tras arreglar bid_strategy y promoted_object).
+  body.destination_type = input.objective === 'whatsapp' ? 'WHATSAPP' : 'ON_POST'
   const res = await fetch(graphUrl(`${creds.adAccountId}/adsets`), {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   })

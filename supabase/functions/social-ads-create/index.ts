@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
   // ── Validar que el post_target sea de esta org y ya esté publicado ────
   const { data: target } = await ctx.adminClient
     .from('social_post_targets')
-    .select('id, organization_id, platform, status, external_post_id, social_account_id, social_accounts(facebook_page_id)')
+    .select('id, organization_id, platform, status, external_post_id, social_account_id, social_accounts(external_id, facebook_page_id)')
     .eq('id', post_target_id).maybeSingle()
   if (!target || target.organization_id !== ctx.organizationId) return json({ error: 'Publicación no encontrada' }, 404)
   if (target.status !== 'publicado' || !target.external_post_id) {
@@ -106,6 +106,14 @@ Deno.serve(async (req: Request) => {
   const effectivePlacements = placements === 'auto' ? target.platform : placements
 
   const targeting = buildTargetingSpec(audienceMode, effectiveSpec, effectivePlacements as any, 'MX', specialCategories)
+  // La Page real de Meta: en un post de Facebook, la Page ES la cuenta
+  // conectada (social_accounts.external_id) -- facebook_page_id ahí viene
+  // NULL, esa columna solo se llena en la fila de Instagram, apuntando a su
+  // Page vinculada. Necesario para destination_type=WHATSAPP/promoted_object
+  // (objetivo "whatsapp") sin importar en qué red se publicó el post.
+  const realFacebookPageId = target.platform === 'facebook_page'
+    ? (target as any).social_accounts?.external_id ?? null
+    : (target as any).social_accounts?.facebook_page_id ?? null
   const creativeRef = buildCreativeRef(
     target.platform as 'facebook_page' | 'instagram_business',
     target.external_post_id,
@@ -132,7 +140,7 @@ Deno.serve(async (req: Request) => {
     const adset = await createAdSet(creds, {
       name: `Conjunto ${post_target_id.slice(0, 8)}`, campaignId: campaign.id, objective,
       budgetMode: budget_mode, budgetAmountCents, targeting, startTime,
-      endTime: body.end_time ?? undefined, status: 'PAUSED',
+      endTime: body.end_time ?? undefined, status: 'PAUSED', facebookPageId: realFacebookPageId,
     })
     created.adsetId = adset.id
 
