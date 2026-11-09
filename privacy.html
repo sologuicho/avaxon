@@ -108,7 +108,7 @@
 <div class="wrap">
 
   <h1>Política de Privacidad</h1>
-  <p class="updated">Última actualización: 24 de septiembre de 2026</p>
+  <p class="updated">Última actualización: 9 de noviembre de 2026</p>
 
   <p class="intro">Avaxon ("nosotros", "nuestro") opera una plataforma de automatización de WhatsApp con inteligencia artificial para negocios. Esta política describe cómo recopilamos, usamos y protegemos la información que procesamos a través de nuestros servicios.</p>
 
@@ -117,6 +117,9 @@
     <li><strong>Datos de contacto:</strong> números de teléfono, nombres y mensajes de WhatsApp de los usuarios que interactúan con los agentes de nuestros clientes.</li>
     <li><strong>Datos de cuenta:</strong> correo electrónico y nombre de los administradores que acceden al panel de Avaxon.</li>
     <li><strong>Credenciales de WhatsApp Business API:</strong> Phone Number ID, WABA ID y Access Token proporcionados por nuestros clientes para conectar sus números.</li>
+    <li><strong>Datos de Facebook Messenger e Instagram:</strong> el identificador de la Página o cuenta de Instagram, el ID de usuario de Messenger/Instagram (PSID/IGSID) de quien escribe, su nombre o usuario público, y el historial de mensajes con la Página o cuenta de Instagram de nuestros clientes.</li>
+    <li><strong>Contenido publicado en Facebook e Instagram:</strong> el texto, las imágenes y las métricas (alcance, interacciones) de las publicaciones que el cliente programa o publica en su Página de Facebook o cuenta de Instagram a través de Avaxon.</li>
+    <li><strong>Datos de cuentas publicitarias de Meta:</strong> el identificador de la cuenta publicitaria conectada, las campañas, conjuntos de anuncios y anuncios creados a través de Avaxon, y sus métricas de rendimiento (alcance, clics, gasto).</li>
     <li><strong>Registros de uso:</strong> historial de conversaciones, métricas de respuesta y logs del sistema.</li>
   </ul>
 
@@ -132,7 +135,7 @@
   <p>No vendemos ni compartimos datos personales con terceros, excepto:</p>
   <ul>
     <li><strong>OpenAI:</strong> para procesar mensajes y generar respuestas de IA (sujeto a su política de privacidad).</li>
-    <li><strong>Meta / WhatsApp:</strong> para el envío y recepción de mensajes a través de la API oficial de WhatsApp Business.</li>
+    <li><strong>Meta (WhatsApp, Facebook e Instagram):</strong> para enviar y recibir mensajes, y para publicar o promocionar contenido en nombre de nuestros clientes, a través de las APIs oficiales de WhatsApp Business, Facebook Pages, Instagram y la Marketing API de Meta.</li>
     <li><strong>Supabase:</strong> para el almacenamiento seguro de datos (infraestructura de base de datos).</li>
   </ul>
 
@@ -145,8 +148,15 @@
   <h2>6. Derechos del usuario</h2>
   <p>Los usuarios finales que hayan interactuado con un agente de Avaxon pueden solicitar la eliminación de sus datos contactando directamente al negocio que opera el agente, o escribiéndonos a <a href="mailto:hola@avaxon.lat">hola@avaxon.lat</a>.</p>
 
-  <h2>7. Uso de la API de WhatsApp Business (Meta)</h2>
-  <p>Avaxon utiliza la API de WhatsApp Business de Meta para enviar y recibir mensajes en nombre de nuestros clientes. Los datos procesados a través de esta API están sujetos a las <a href="https://www.whatsapp.com/legal/business-policy/" target="_blank">Políticas de WhatsApp Business</a> y las <a href="https://developers.facebook.com/terms/" target="_blank">Condiciones de la Plataforma de Meta</a>.</p>
+  <h2>7. Uso de las plataformas de Meta (WhatsApp, Facebook, Instagram y Anuncios)</h2>
+  <p>Avaxon utiliza varias APIs de Meta para operar los servicios que el cliente activa en su cuenta. Los datos procesados a través de estas APIs están sujetos a las <a href="https://www.whatsapp.com/legal/business-policy/" target="_blank">Políticas de WhatsApp Business</a> y las <a href="https://developers.facebook.com/terms/" target="_blank">Condiciones de la Plataforma de Meta</a>.</p>
+  <ul>
+    <li><strong>WhatsApp Business API:</strong> envío y recepción de mensajes del agente de IA.</li>
+    <li><strong>Facebook Pages (<code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>pages_manage_posts</code>, <code>pages_manage_metadata</code>, <code>pages_messaging</code>):</strong> publicar contenido en la Página del cliente y recibir/responder mensajes de Messenger a través de ella.</li>
+    <li><strong>Instagram (<code>instagram_basic</code>, <code>instagram_content_publish</code>, <code>instagram_manage_messages</code>):</strong> publicar contenido en la cuenta de Instagram vinculada y recibir/responder mensajes directos.</li>
+    <li><strong>Marketing API de Meta (<code>ads_management</code>, <code>ads_read</code>):</strong> crear, pausar y medir el rendimiento de anuncios usando la cuenta publicitaria y el método de pago propios del cliente — Avaxon nunca usa una cuenta publicitaria propia para esto.</li>
+  </ul>
+  <p>El cliente puede desconectar cualquiera de estas integraciones en cualquier momento desde su panel de administración, lo que revoca el acceso de Avaxon a esos datos.</p>
 
   <h2>8. Cambios a esta política</h2>
   <p>Podemos actualizar esta política periódicamente. Notificaremos cambios significativos por correo a los administradores de cuenta activos.</p>
