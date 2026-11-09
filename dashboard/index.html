@@ -10359,6 +10359,16 @@
   const PROMO_STATUS_LABEL = { borrador: 'Borrador', en_revision: 'En revisión', activa: 'Activa', pausada: 'Pausada', rechazada: 'Rechazada', error: 'Con error', finalizada: 'Finalizada' }
   const PROMO_STATUS_DOT = { borrador: '#94a3b8', en_revision: '#60a5fa', activa: 'var(--accent)', pausada: '#f59e0b', rechazada: '#ef4444', error: '#ef4444', finalizada: '#94a3b8' }
 
+  // toISOString() siempre da UTC -- un <input type="datetime-local"> muestra
+  // ese string tal cual, sin convertir, así que usarlo para el default hacía
+  // que "ahora + 10 min" se viera en UTC (ej. 10:52 p.m. en vez de la hora
+  // local real). Esto construye "YYYY-MM-DDTHH:MM" con los componentes
+  // locales del navegador, que es lo que datetime-local espera.
+  function toLocalDatetimeInputValue(date) {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+
   async function uuidv4() {
     if (crypto.randomUUID) return crypto.randomUUID()
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -10386,7 +10396,7 @@
       savedAudiences: [],
       budgetMode: 'daily',
       budgetAmount: 100,
-      startTime: new Date(Date.now() + 10 * 60000).toISOString().slice(0, 16),
+      startTime: toLocalDatetimeInputValue(new Date(Date.now() + 10 * 60000)),
       endTime: '',
       placements: 'auto',
       specialCategories: [],
@@ -10510,7 +10520,7 @@
       <div style="display:flex;flex-direction:column;gap:8px">
         ${PROMO_OBJECTIVES.map(o => `
           <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid ${promoWizard.objective === o.key ? 'var(--accent)' : 'var(--border)'};border-radius:10px;cursor:pointer">
-            <input type="radio" name="promo-obj" value="${o.key}" ${promoWizard.objective === o.key ? 'checked' : ''} onchange="promoWizard.objective='${o.key}'">
+            <input type="radio" name="promo-obj" value="${o.key}" ${promoWizard.objective === o.key ? 'checked' : ''} onchange="promoSetObjective('${o.key}')">
             <span>
               <div style="font-weight:700;font-size:13.5px;color:var(--text)">${o.label}</div>
               <div style="font-size:12px;color:var(--text-muted)">${o.hint}</div>
@@ -10546,11 +10556,11 @@
         </div>
         <p class="promo-field-hint" style="margin-bottom:14px">Meta puede tratar parte de esta segmentación como sugerencia, no como filtro absoluto.</p>
         <div style="display:flex;gap:10px;margin-bottom:14px">
-          <div style="flex:1"><label class="promo-field-label">Edad mínima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_min}" onchange="promoWizard.audienceSpec.age_min=Number(this.value);promoRefreshEstimate()"></div>
-          <div style="flex:1"><label class="promo-field-label">Edad máxima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_max}" onchange="promoWizard.audienceSpec.age_max=Number(this.value);promoRefreshEstimate()"></div>
+          <div style="flex:1"><label class="promo-field-label">Edad mínima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_min}" onchange="promoSetAgeMin(this.value)"></div>
+          <div style="flex:1"><label class="promo-field-label">Edad máxima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_max}" onchange="promoSetAgeMax(this.value)"></div>
         </div>
         <label class="promo-field-label">Género</label>
-        <select class="promo-input" style="margin-bottom:14px" onchange="promoWizard.audienceSpec.genders=[this.value];promoRefreshEstimate()">
+        <select class="promo-input" style="margin-bottom:14px" onchange="promoSetGender(this.value)">
           <option value="all" ${(spec.genders||[]).includes('all') ? 'selected' : ''}>Todos</option>
           <option value="female" ${(spec.genders||[]).includes('female') ? 'selected' : ''}>Mujeres</option>
           <option value="male" ${(spec.genders||[]).includes('male') ? 'selected' : ''}>Hombres</option>
@@ -10574,6 +10584,43 @@
 
   function promoSetAudienceMode(mode) { promoWizard.audienceMode = mode; promoRenderStep() }
   window.promoSetAudienceMode = promoSetAudienceMode
+
+  // Envoltorios para cada campo que antes mutaba `promoWizard` directo desde
+  // un atributo onchange/onclick inline -- `promoWizard` es una variable del
+  // IIFE de este script, invisible para esos handlers (corren en el scope
+  // global), así que la asignación nunca pasaba: edad, objetivo, presupuesto,
+  // fechas y modo de presupuesto se veían "pegados" en su valor por defecto.
+  // Los chips de ubicación/interés nunca tuvieron este bug porque ya pasaban
+  // por funciones exportadas a window (promoPickGeo, etc.), igual que estas.
+  function promoSetObjective(key) { promoWizard.objective = key; promoRenderStep() }
+  window.promoSetObjective = promoSetObjective
+
+  function promoSetAgeMin(v) { promoWizard.audienceSpec.age_min = Number(v); promoRefreshEstimate() }
+  window.promoSetAgeMin = promoSetAgeMin
+
+  function promoSetAgeMax(v) { promoWizard.audienceSpec.age_max = Number(v); promoRefreshEstimate() }
+  window.promoSetAgeMax = promoSetAgeMax
+
+  function promoSetGender(v) { promoWizard.audienceSpec.genders = [v]; promoRefreshEstimate() }
+  window.promoSetGender = promoSetGender
+
+  function promoSetSpecialCategory(v) { promoWizard.specialCategories = v === 'NONE' ? [] : [v] }
+  window.promoSetSpecialCategory = promoSetSpecialCategory
+
+  function promoSetBudgetMode(mode) { promoWizard.budgetMode = mode; promoRenderStep() }
+  window.promoSetBudgetMode = promoSetBudgetMode
+
+  function promoSetBudgetAmount(v) { promoWizard.budgetAmount = Number(v) }
+  window.promoSetBudgetAmount = promoSetBudgetAmount
+
+  function promoSetStartTime(v) { promoWizard.startTime = v }
+  window.promoSetStartTime = promoSetStartTime
+
+  function promoSetEndTime(v) { promoWizard.endTime = v }
+  window.promoSetEndTime = promoSetEndTime
+
+  function promoSetPlacements(v) { promoWizard.placements = v }
+  window.promoSetPlacements = promoSetPlacements
 
   // Autocompletado real contra la Targeting Search de Meta (social-ads-search)
   // -- antes "Ubicación" era texto libre que nunca llegaba a Meta como
@@ -10714,19 +10761,19 @@
   function promoStep3Html() {
     return `
       <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button class="btn-${promoWizard.budgetMode === 'daily' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoWizard.budgetMode='daily';promoRenderStep()">Presupuesto diario</button>
-        <button class="btn-${promoWizard.budgetMode === 'lifetime' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoWizard.budgetMode='lifetime';promoRenderStep()">Presupuesto total</button>
+        <button class="btn-${promoWizard.budgetMode === 'daily' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetBudgetMode('daily')">Presupuesto diario</button>
+        <button class="btn-${promoWizard.budgetMode === 'lifetime' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetBudgetMode('lifetime')">Presupuesto total</button>
       </div>
       <label class="promo-field-label">Gasto máximo (${promoAdsConnection?.currency || 'MXN'})</label>
-      <input class="promo-input" type="number" min="1" step="1" value="${promoWizard.budgetAmount}" style="margin-bottom:6px" oninput="promoWizard.budgetAmount=Number(this.value)">
+      <input class="promo-input" type="number" min="1" step="1" value="${promoWizard.budgetAmount}" style="margin-bottom:6px" oninput="promoSetBudgetAmount(this.value)">
       <p class="promo-field-hint" style="margin-bottom:16px">Mínimo ${50} ${promoAdsConnection?.currency || 'MXN'} ${promoWizard.budgetMode === 'daily' ? 'por día' : 'en total'} (salvaguarda propia -- los mínimos reales de Meta pueden variar).</p>
       <label class="promo-field-label">Fecha de inicio</label>
-      <input class="promo-input" type="datetime-local" value="${promoWizard.startTime}" style="margin-bottom:14px" onchange="promoWizard.startTime=this.value">
+      <input class="promo-input" type="datetime-local" value="${promoWizard.startTime}" style="margin-bottom:14px" onchange="promoSetStartTime(this.value)">
       <label class="promo-field-label">Fecha de fin (opcional, deja vacío para que corra hasta que la pauses)</label>
-      <input class="promo-input" type="datetime-local" value="${promoWizard.endTime}" onchange="promoWizard.endTime=this.value">
+      <input class="promo-input" type="datetime-local" value="${promoWizard.endTime}" onchange="promoSetEndTime(this.value)">
       <div style="margin-top:18px">
         <label class="promo-field-label">Categoría especial de anuncios</label>
-        <select class="promo-input" onchange="promoWizard.specialCategories=this.value==='NONE'?[]:[this.value]">
+        <select class="promo-input" onchange="promoSetSpecialCategory(this.value)">
           <option value="NONE" ${!promoWizard.specialCategories.length ? 'selected' : ''}>Ninguna</option>
           <option value="EMPLOYMENT" ${promoWizard.specialCategories[0]==='EMPLOYMENT'?'selected':''}>Empleo</option>
           <option value="HOUSING" ${promoWizard.specialCategories[0]==='HOUSING'?'selected':''}>Vivienda</option>
@@ -10743,7 +10790,7 @@
     const previewCaption = escapeHtml((promoWizard.caption || '').slice(0, 200))
     return `
       <label class="promo-field-label">¿Dónde se muestra?</label>
-      <select class="promo-input" style="margin-bottom:18px" onchange="promoWizard.placements=this.value">
+      <select class="promo-input" style="margin-bottom:18px" onchange="promoSetPlacements(this.value)">
         <option value="auto" ${promoWizard.placements === 'auto' ? 'selected' : ''}>Automático (igual que donde ya está publicado)</option>
         <option value="facebook_page" ${promoWizard.placements === 'facebook_page' ? 'selected' : ''}>Solo Facebook</option>
         <option value="instagram_business" ${promoWizard.placements === 'instagram_business' ? 'selected' : ''}>Solo Instagram</option>
