@@ -1,0 +1,10 @@
+{
+  "name": "avaxon",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  },
+  "scripts": {
+    "test:e2e:promociones": "playwright test -c tests/e2e-promociones"
+  }
+}

@@ -1002,6 +1002,28 @@
     @media (max-width: 720px) {
       .apt-modal-panel { width: 100%; }
     }
+
+    /* Asistente "Promocionar publicación" -- modal centrado, no panel lateral
+       (necesita más ancho para la vista previa del paso 4). */
+    .promo-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2200; align-items: center; justify-content: center; padding: 20px; }
+    .promo-modal-panel { background: var(--card-bg); border-radius: 14px; width: 640px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .promo-modal-body { padding: 22px 26px; overflow-y: auto; flex: 1; }
+    .promo-step-dot { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; background: var(--hover-bg); color: var(--text-dim); }
+    .promo-step-dot.active { background: var(--accent); color: #fff; }
+    .promo-step-dot.done { background: var(--accent); color: #fff; opacity: .55; }
+    .promo-field-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .promo-field-hint { font-size: 11.5px; color: var(--text-dim); margin-top: 4px; }
+    .promo-input { width: 100%; min-height: 38px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); padding: 0 10px; font-size: 13px; box-sizing: border-box; }
+    @media (max-width: 720px) {
+      /* height:100% forzaba el panel a ocupar toda la pantalla siempre,
+         empujando el pie (Atrás/Cancelar/Siguiente) hasta el fondo y dejando
+         un hueco vacío enorme en pasos con poco contenido (ej. paso 2 en modo
+         Automático) -- encontrado revisando las capturas E2E en móvil
+         (2026-11-05). max-height sin forzar height deja que el panel se
+         ajuste al contenido real y el pie quede justo debajo. */
+      .promo-modal-overlay { padding: 0; align-items: flex-end; }
+      .promo-modal-panel { width: 100%; max-height: 100%; border-radius: 14px 14px 0 0; }
+    }
     .apt-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .apt-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
     .apt-modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
@@ -2628,6 +2650,7 @@
           <button id="pub-tab-plantillas" onclick="switchPubTab('plantillas')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Plantillas</button>
 
           <button id="pub-tab-historial" onclick="switchPubTab('historial')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Historial</button>
+          <button id="pub-tab-promociones" onclick="switchPubTab('promociones')" style="padding:9px 16px;border:none;border-bottom:2px solid transparent;background:none;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap">Promociones</button>
         </div>
 
         <!-- ── PANE: Calendario ── -->
@@ -2691,6 +2714,52 @@
             </table>
           </div>
           <p id="pub-hist-empty" style="display:none;text-align:center;color:var(--text-dim);padding:32px;font-size:13px">Sin publicaciones todavía.</p>
+        </div>
+
+        <!-- ── PANE: Promociones ── -->
+        <div id="pub-pane-promociones" style="display:none">
+          <div id="promo-ads-banner" style="display:none;margin-bottom:16px;padding:12px 16px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:10px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <i class="fa fa-triangle-exclamation" style="color:#f59e0b"></i>
+            <div style="flex:1;min-width:220px;font-size:13px;color:var(--text)" id="promo-ads-banner-text"></div>
+            <button class="btn-primary" onclick="switchView('conexiones')" style="padding:7px 14px;font-size:12px">Ir a Cuentas conectadas</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center" id="promo-list-filters">
+              <button id="promo-f-all" onclick="promoListSetFilter('all')" class="btn-ghost" style="font-weight:700">Todas</button>
+              <button id="promo-f-activa" onclick="promoListSetFilter('activa')" class="btn-ghost">Activas</button>
+              <button id="promo-f-pausada" onclick="promoListSetFilter('pausada')" class="btn-ghost">Pausadas</button>
+              <button id="promo-f-rechazada" onclick="promoListSetFilter('rechazada')" class="btn-ghost">Rechazadas</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label style="font-size:12px;color:var(--text-muted)">Desde</label>
+              <input id="promo-date-from" type="date" oninput="renderPromoList()" style="min-height:34px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 8px;font-size:12.5px">
+              <label style="font-size:12px;color:var(--text-muted)">Hasta</label>
+              <input id="promo-date-to" type="date" oninput="renderPromoList()" style="min-height:34px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg);color:var(--text);padding:0 8px;font-size:12.5px">
+            </div>
+          </div>
+          <div class="card bp" style="padding:16px;margin-bottom:16px">
+            <svg id="promo-chart" width="100%" height="140" style="display:block"></svg>
+          </div>
+          <div class="card bp" style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;min-width:960px">
+              <thead>
+                <tr style="background:var(--hover-bg)">
+                  <th style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Publicación</th>
+                  <th style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Estado</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Gasto</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Alcance</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Impr.</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Clics</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">CPC</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">CTR</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Msjs</th>
+                  <th style="padding:9px 14px;text-align:right;font-size:10.5px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="promo-list-tbody"></tbody>
+            </table>
+          </div>
+          <p id="promo-list-empty" style="display:none;text-align:center;color:var(--text-dim);padding:32px;font-size:13px">Todavía no has promocionado ninguna publicación.</p>
         </div>
 
         <!-- ── EDITOR (no es un tab -- se llega por "Nueva publicación" o
@@ -2873,6 +2942,29 @@
       </div>
 
       <!-- Panel: Nueva cita / Editar cita -->
+      <!-- Asistente "Promocionar publicación" (Meta Marketing API) -->
+      <div class="promo-modal-overlay" id="promo-modal-overlay" onclick="if(event.target===this) closePromoWizard()">
+        <div class="promo-modal-panel" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title">
+          <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div>
+              <div id="promo-modal-title" style="font-size:16px;font-weight:800;color:var(--text)">Promocionar publicación</div>
+              <div id="promo-step-dots" style="display:flex;gap:6px;margin-top:8px"></div>
+            </div>
+            <button onclick="closePromoWizard()" aria-label="Cerrar" style="background:none;border:none;font-size:18px;color:var(--text-dim);cursor:pointer;padding:4px">
+              <i class="fa fa-xmark"></i>
+            </button>
+          </div>
+          <div class="promo-modal-body" id="promo-step-body"></div>
+          <div style="padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px">
+            <button id="promo-btn-back" class="btn-ghost" onclick="promoWizardBack()">Atrás</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn-ghost" onclick="closePromoWizard()">Cancelar</button>
+              <button id="promo-btn-next" class="btn-primary" onclick="promoWizardNext()">Siguiente</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="apt-modal-overlay" id="apt-modal-overlay" onclick="closeAptModal(event)">
         <div class="apt-modal-panel" onclick="event.stopPropagation()">
           <div class="apt-modal-header">
@@ -5121,6 +5213,7 @@
     loadDashboard(orgId);
     loadIntegrations();
     checkPublicacionesModuleEnabled();
+    checkPromoAdsModuleEnabled();
     const activeView = document.querySelector('.nav-item.active');
     const view = activeView?.dataset.view;
     if (view === 'calendario')  loadCalendarData();
@@ -8456,12 +8549,14 @@
       await loadOrgTimezone(initialOrgId);
       await loadDashboard(initialOrgId);
       checkPublicacionesModuleEnabled();
+      checkPromoAdsModuleEnabled();
     } else {
       const orgId = state.userOrgId;
       state.currentOrgId = orgId;
       await loadOrgTimezone(orgId);
       await loadDashboard(orgId);
       await applyPlanModules(orgId);
+      checkPromoAdsModuleEnabled();
     }
     showScreen('app');
     const _savedView = (() => { try { return localStorage.getItem('avx_last_view'); } catch(e) { return null; } })();
@@ -10228,6 +10323,709 @@
   }
   window.checkPublicacionesModuleEnabled = checkPublicacionesModuleEnabled
 
+  // ── Promocionar publicaciones (Meta Marketing API) ──────────────────────
+  // Módulo add-on propio, dependiente de 'publicaciones_redes' (ver
+  // migración 20261104120000_promociones_meta_schema.sql) -- gate real en
+  // RLS/Edge Functions, esto solo controla si el botón "Promocionar" y el
+  // tab "Promociones" se ven. NO desplegado a producción (ver docs/promociones-meta.md).
+  let promoAdsModuleEnabled = false
+  let promoAdsConnection = null // social_ad_connections de la org activa, o null
+  let promoListRows = []
+  let promoListFilter = 'all'
+  let promoWizard = null // estado del asistente de 5 pasos mientras está abierto
+
+  async function checkPromoAdsModuleEnabled() {
+    const orgId = state.currentOrgId
+    if (!orgId) { promoAdsModuleEnabled = false; return }
+    const { data } = await sb.from('business_modules').select('enabled').eq('organization_id', orgId).eq('module_key', 'promocion_publicaciones').maybeSingle()
+    promoAdsModuleEnabled = !!data?.enabled
+    const tabBtn = $('pub-tab-promociones')
+    if (tabBtn) tabBtn.style.display = promoAdsModuleEnabled ? '' : 'none'
+    if (promoAdsModuleEnabled) {
+      const { data: conn } = await sb.from('social_ad_connections').select('*').eq('organization_id', orgId).maybeSingle()
+      promoAdsConnection = conn || null
+    } else {
+      promoAdsConnection = null
+    }
+  }
+  window.checkPromoAdsModuleEnabled = checkPromoAdsModuleEnabled
+
+  const PROMO_OBJECTIVES = [
+    { key: 'engagement', label: 'Interacción', hint: 'Más likes, comentarios y compartidos' },
+    { key: 'whatsapp',   label: 'Mensajes por WhatsApp', hint: 'Requiere tu Page con WhatsApp vinculado en Business Manager' },
+    { key: 'traffic',    label: 'Visitas al sitio', hint: 'Lleva gente a tu página web' },
+    { key: 'awareness',  label: 'Alcance', hint: 'Que lo vea la mayor cantidad de gente posible' },
+  ]
+  const PROMO_STATUS_LABEL = { borrador: 'Borrador', en_revision: 'En revisión', activa: 'Activa', pausada: 'Pausada', rechazada: 'Rechazada', error: 'Con error', finalizada: 'Finalizada' }
+  const PROMO_STATUS_DOT = { borrador: '#94a3b8', en_revision: '#60a5fa', activa: 'var(--accent)', pausada: '#f59e0b', rechazada: '#ef4444', error: '#ef4444', finalizada: '#94a3b8' }
+
+  // toISOString() siempre da UTC -- un <input type="datetime-local"> muestra
+  // ese string tal cual, sin convertir, así que usarlo para el default hacía
+  // que "ahora + 10 min" se viera en UTC (ej. 10:52 p.m. en vez de la hora
+  // local real). Esto construye "YYYY-MM-DDTHH:MM" con los componentes
+  // locales del navegador, que es lo que datetime-local espera.
+  function toLocalDatetimeInputValue(date) {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  }
+
+  async function uuidv4() {
+    if (crypto.randomUUID) return crypto.randomUUID()
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+    })
+  }
+
+  // ── Abrir el asistente ───────────────────────────────────────────────────
+  async function openPromoWizard(targetId) {
+    if (!promoAdsModuleEnabled) return
+    const { data: target, error } = await sb.from('social_post_targets')
+      .select('id, organization_id, platform, status, external_post_id, social_posts(caption), social_accounts(facebook_page_id)')
+      .eq('id', targetId).single()
+    if (error || !target) { showToast('No se encontró la publicación'); return }
+
+    promoWizard = {
+      targetId, platform: target.platform, caption: target.social_posts?.caption || '',
+      facebookPageId: target.social_accounts?.facebook_page_id || null,
+      idempotencyKey: await uuidv4(),
+      step: promoAdsConnection ? 1 : 0, // 0 = pantalla de "conecta tu cuenta publicitaria"
+      objective: 'engagement',
+      audienceMode: 'auto',
+      audienceSpec: { age_min: 18, age_max: 65, genders: ['all'], geo: { type: 'locations', locations: [], country: 'MX' }, interests: [] },
+      savedAudienceId: null,
+      savedAudiences: [],
+      budgetMode: 'daily',
+      budgetAmount: 100,
+      startTime: toLocalDatetimeInputValue(new Date(Date.now() + 10 * 60000)),
+      endTime: '',
+      placements: 'auto',
+      specialCategories: [],
+      estimate: { lower: 0, upper: 0, ready: false },
+      creating: false,
+      createdPromotion: null,
+      accountChoices: null,
+    }
+    if (promoAdsModuleEnabled) {
+      const { data: auds } = await sb.from('social_audiences').select('id, name, spec').eq('organization_id', state.currentOrgId).order('created_at', { ascending: false })
+      promoWizard.savedAudiences = auds || []
+    }
+    $('promo-modal-overlay').style.display = 'flex'
+    promoRenderStep()
+  }
+  window.openPromoWizard = openPromoWizard
+
+  function closePromoWizard() {
+    $('promo-modal-overlay').style.display = 'none'
+    promoWizard = null
+  }
+  window.closePromoWizard = closePromoWizard
+
+  function promoRenderStepDots() {
+    const dots = $('promo-step-dots')
+    if (!promoWizard || promoWizard.step === 0) { dots.innerHTML = ''; return }
+    dots.innerHTML = [1, 2, 3, 4, 5].map(n =>
+      `<span class="promo-step-dot ${n === promoWizard.step ? 'active' : (n < promoWizard.step ? 'done' : '')}">${n}</span>`
+    ).join('')
+  }
+
+  function promoRenderStep() {
+    promoRenderStepDots()
+    const body = $('promo-step-body')
+    const backBtn = $('promo-btn-back'), nextBtn = $('promo-btn-next')
+    if (!promoWizard) return
+    backBtn.style.visibility = promoWizard.step <= (promoAdsConnection ? 1 : 0) ? 'hidden' : 'visible'
+    nextBtn.textContent = promoWizard.step === 5 ? 'Confirmar y crear' : 'Siguiente'
+    nextBtn.disabled = false
+
+    if (promoWizard.step === 0) { body.innerHTML = promoStepConnectHtml(); return }
+    if (promoWizard.step === 1) { body.innerHTML = promoStep1Html(); return }
+    if (promoWizard.step === 2) { body.innerHTML = promoStep2Html(); promoRefreshEstimate(); return }
+    if (promoWizard.step === 3) { body.innerHTML = promoStep3Html(); return }
+    if (promoWizard.step === 4) { body.innerHTML = promoStep4Html(); return }
+    if (promoWizard.step === 5) { body.innerHTML = promoStep5Html(); nextBtn.textContent = promoWizard.createdPromotion ? 'Cerrar' : 'Confirmar y crear'; return }
+  }
+
+  // ── Paso 0: conectar cuenta publicitaria (prerrequisito, no es de los 5 pasos) ──
+  function promoStepConnectHtml() {
+    return `
+      <div style="text-align:center;padding:20px 0">
+        <i class="fa fa-bullhorn" style="font-size:32px;color:var(--accent);margin-bottom:14px;display:block"></i>
+        <p style="font-size:14px;color:var(--text);margin:0 0 6px;font-weight:700">Conecta tu cuenta publicitaria de Meta</p>
+        <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 18px">Se usa tu propia cuenta publicitaria y tu propio método de pago -- nunca una cuenta de Avaxon.</p>
+        <button class="btn-primary" onclick="launchPromoAdsSignup()">Conectar con Meta</button>
+        <div id="promo-account-picker" style="margin-top:18px;text-align:left"></div>
+      </div>`
+  }
+
+  async function launchPromoAdsSignup() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth < 768
+    if (isMobile) { showToast('Conectar cuenta publicitaria desde celular todavía no está soportado -- usa una laptop/escritorio.'); return }
+    try { await loadFbSdk(); } catch { showToast('No se pudo cargar el SDK de Meta.'); return }
+    FB.init({ appId: META_PUBLISH_APP_ID, cookie: true, xfbml: false, version: 'v22.0' })
+    // Scope directo (no config_id): ads_management/ads_read son permisos de
+    // Acceso Avanzado -- si Meta exige una "Configuración de inicio de
+    // sesión" propia en App Review, este scope se cambia por config_id
+    // igual que launchSocialPublishSignup() (ver docs/promociones-meta.md §8).
+    FB.login(function (response) {
+      ;(async function () {
+        if (!response?.authResponse?.accessToken) { showToast('Conexión cancelada.'); return }
+        showToast('Buscando tus cuentas publicitarias…')
+        try {
+          const { data: { session } } = await sb.auth.getSession()
+          const res = await fetch(`${EDGE_BASE}/social-ads-connect`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ access_token: response.authResponse.accessToken }),
+          })
+          const result = await res.json()
+          if (!result.ok) { showToast(result.error || 'Error al conectar'); return }
+          promoWizard.accountChoices = result.accounts
+          promoWizard._adsAccessToken = response.authResponse.accessToken
+          $('promo-account-picker').innerHTML = result.accounts.map(a => `
+            <label style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:${a.disabled || !a.has_payment_method ? 'not-allowed' : 'pointer'};opacity:${a.disabled || !a.has_payment_method ? '.5' : '1'}">
+              <input type="radio" name="promo-acct" value="${a.id}" ${a.disabled || !a.has_payment_method ? 'disabled' : ''} onchange="promoChooseAdAccount('${a.id}')">
+              <span style="flex:1">
+                <div style="font-weight:700;font-size:13px;color:var(--text)">${escapeHtml(a.name)} <span style="color:var(--text-dim);font-weight:500">(${a.currency})</span></div>
+                ${a.disabled ? '<div style="font-size:11.5px;color:#ef4444">Cuenta deshabilitada en Meta -- revísala en Business Manager</div>' : ''}
+                ${!a.disabled && !a.has_payment_method ? '<div style="font-size:11.5px;color:#ef4444">Sin método de pago -- agrégalo en Meta antes de elegirla</div>' : ''}
+              </span>
+            </label>`).join('')
+        } catch (err) { showToast(err.message || 'Error al conectar') }
+      })()
+    }, { scope: 'ads_management,ads_read', response_type: 'token', override_default_response_type: true })
+  }
+  window.launchPromoAdsSignup = launchPromoAdsSignup
+
+  async function promoChooseAdAccount(adAccountId) {
+    showToast('Conectando…')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-ads-connect`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ access_token: promoWizard._adsAccessToken, ad_account_id: adAccountId }),
+      })
+      const result = await res.json()
+      if (!result.ok) { showToast(result.error || 'Error al conectar'); return }
+      showToast('✓ Cuenta publicitaria conectada')
+      promoAdsConnection = result.connection
+      promoWizard.step = 1
+      promoRenderStep()
+    } catch (err) { showToast(err.message || 'Error al conectar') }
+  }
+  window.promoChooseAdAccount = promoChooseAdAccount
+
+  // ── Paso 1: Objetivo ─────────────────────────────────────────────────────
+  function promoStep1Html() {
+    return `
+      <p class="promo-field-label">¿Cuál es el objetivo de esta promoción?</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${PROMO_OBJECTIVES.map(o => `
+          <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid ${promoWizard.objective === o.key ? 'var(--accent)' : 'var(--border)'};border-radius:10px;cursor:pointer">
+            <input type="radio" name="promo-obj" value="${o.key}" ${promoWizard.objective === o.key ? 'checked' : ''} onchange="promoSetObjective('${o.key}')">
+            <span>
+              <div style="font-weight:700;font-size:13.5px;color:var(--text)">${o.label}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${o.hint}</div>
+            </span>
+          </label>`).join('')}
+      </div>`
+  }
+
+  // ── Paso 2: Público ──────────────────────────────────────────────────────
+  function promoStep2Html() {
+    const spec = promoWizard.audienceSpec
+    return `
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-${promoWizard.audienceMode === 'auto' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetAudienceMode('auto')">Automático (recomendado)</button>
+        <button class="btn-${promoWizard.audienceMode === 'custom' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetAudienceMode('custom')">Personalizado</button>
+      </div>
+      ${promoWizard.audienceMode === 'auto'
+        ? `<p style="font-size:12.5px;color:var(--text-muted)">Meta elige el público óptimo automáticamente (México, adultos 18-65). Buena opción si no estás seguro de a quién dirigirte.</p>`
+        : `
+        ${promoWizard.savedAudiences.length ? `
+          <label class="promo-field-label">Público guardado</label>
+          <select class="promo-input" style="margin-bottom:14px" onchange="promoLoadSavedAudience(this.value)">
+            <option value="">— Elegir uno guardado o configurar abajo —</option>
+            ${promoWizard.savedAudiences.map(a => `<option value="${a.id}" ${promoWizard.savedAudienceId === a.id ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}
+          </select>` : ''}
+        <label class="promo-field-label">Ubicación</label>
+        <div style="position:relative;margin-bottom:8px">
+          <input class="promo-input" id="promo-geo-input" placeholder="Ej. Reynosa, Tamaulipas…" autocomplete="off" oninput="promoSearchGeo(this.value)">
+          <div id="promo-geo-suggestions" style="display:none;position:absolute;z-index:20;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 14px rgba(0,0,0,.1)"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          ${(spec.geo?.locations || []).map((l, idx) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--hover-bg);font-size:12px">${escapeHtml(l.name)}<i class="fa fa-xmark" style="cursor:pointer;font-size:10px" onclick="promoRemoveGeo(${idx})"></i></span>`).join('')}
+        </div>
+        <p class="promo-field-hint" style="margin-bottom:14px">Meta puede tratar parte de esta segmentación como sugerencia, no como filtro absoluto.</p>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <div style="flex:1"><label class="promo-field-label">Edad mínima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_min}" onchange="promoSetAgeMin(this.value)"></div>
+          <div style="flex:1"><label class="promo-field-label">Edad máxima</label><input class="promo-input" type="number" min="13" max="65" value="${spec.age_max}" onchange="promoSetAgeMax(this.value)"></div>
+        </div>
+        <label class="promo-field-label">Género</label>
+        <select class="promo-input" style="margin-bottom:14px" onchange="promoSetGender(this.value)">
+          <option value="all" ${(spec.genders||[]).includes('all') ? 'selected' : ''}>Todos</option>
+          <option value="female" ${(spec.genders||[]).includes('female') ? 'selected' : ''}>Mujeres</option>
+          <option value="male" ${(spec.genders||[]).includes('male') ? 'selected' : ''}>Hombres</option>
+        </select>
+        <label class="promo-field-label">Intereses</label>
+        <div style="position:relative;margin-bottom:8px">
+          <input class="promo-input" id="promo-interest-input" placeholder="Ej. Comida, Restaurantes…" autocomplete="off" oninput="promoSearchInterest(this.value)">
+          <div id="promo-interest-suggestions" style="display:none;position:absolute;z-index:20;top:100%;left:0;right:0;background:var(--surface,#fff);border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 14px rgba(0,0,0,.1)"></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+          ${(spec.interests || []).map((i, idx) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--hover-bg);font-size:12px">${escapeHtml(i.name)}<i class="fa fa-xmark" style="cursor:pointer;font-size:10px" onclick="promoRemoveInterest(${idx})"></i></span>`).join('')}
+        </div>
+        <button class="btn-ghost" style="font-size:12px" onclick="promoSaveAudience()"><i class="fa fa-floppy-disk"></i> Guardar este público</button>
+      `}
+      <div style="margin-top:18px;padding:14px;border-radius:10px;background:var(--hover-bg)">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Alcance estimado</div>
+        <div id="promo-estimate-text" style="font-size:20px;font-weight:800;color:var(--text)">Calculando…</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Esto es un estimado de Meta, nunca una garantía.</div>
+      </div>`
+  }
+
+  function promoSetAudienceMode(mode) { promoWizard.audienceMode = mode; promoRenderStep() }
+  window.promoSetAudienceMode = promoSetAudienceMode
+
+  // Envoltorios para cada campo que antes mutaba `promoWizard` directo desde
+  // un atributo onchange/onclick inline -- `promoWizard` es una variable del
+  // IIFE de este script, invisible para esos handlers (corren en el scope
+  // global), así que la asignación nunca pasaba: edad, objetivo, presupuesto,
+  // fechas y modo de presupuesto se veían "pegados" en su valor por defecto.
+  // Los chips de ubicación/interés nunca tuvieron este bug porque ya pasaban
+  // por funciones exportadas a window (promoPickGeo, etc.), igual que estas.
+  function promoSetObjective(key) { promoWizard.objective = key; promoRenderStep() }
+  window.promoSetObjective = promoSetObjective
+
+  function promoSetAgeMin(v) { promoWizard.audienceSpec.age_min = Number(v); promoRefreshEstimate() }
+  window.promoSetAgeMin = promoSetAgeMin
+
+  function promoSetAgeMax(v) { promoWizard.audienceSpec.age_max = Number(v); promoRefreshEstimate() }
+  window.promoSetAgeMax = promoSetAgeMax
+
+  function promoSetGender(v) { promoWizard.audienceSpec.genders = [v]; promoRefreshEstimate() }
+  window.promoSetGender = promoSetGender
+
+  function promoSetSpecialCategory(v) { promoWizard.specialCategories = v === 'NONE' ? [] : [v] }
+  window.promoSetSpecialCategory = promoSetSpecialCategory
+
+  function promoSetBudgetMode(mode) { promoWizard.budgetMode = mode; promoRenderStep() }
+  window.promoSetBudgetMode = promoSetBudgetMode
+
+  function promoSetBudgetAmount(v) { promoWizard.budgetAmount = Number(v) }
+  window.promoSetBudgetAmount = promoSetBudgetAmount
+
+  function promoSetStartTime(v) { promoWizard.startTime = v }
+  window.promoSetStartTime = promoSetStartTime
+
+  function promoSetEndTime(v) { promoWizard.endTime = v }
+  window.promoSetEndTime = promoSetEndTime
+
+  function promoSetPlacements(v) { promoWizard.placements = v }
+  window.promoSetPlacements = promoSetPlacements
+
+  // Autocompletado real contra la Targeting Search de Meta (social-ads-search)
+  // -- antes "Ubicación" era texto libre que nunca llegaba a Meta como
+  // geo_locations real (el alcance estimado se quedaba en el país completo),
+  // e "Intereses" fabricaba un id falso en vez de pedirle a Meta el real.
+  let promoGeoSearchTimer = null
+  function promoSearchGeo(q) {
+    clearTimeout(promoGeoSearchTimer)
+    const box = $('promo-geo-suggestions')
+    if (!box) return
+    if (!q || q.trim().length < 2) { box.style.display = 'none'; box.innerHTML = ''; return }
+    promoGeoSearchTimer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${EDGE_BASE}/social-ads-search`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ type: 'adgeolocation', q: q.trim() }),
+        })
+        const result = await res.json()
+        if (!result.ok || !result.results?.length) { box.style.display = 'none'; box.innerHTML = ''; return }
+        promoWizard._geoResults = result.results
+        const typeLabel = { city: 'Ciudad', region: 'Estado', zip: 'C.P.', country: 'País' }
+        box.innerHTML = result.results.map((r, i) => `
+          <div style="padding:9px 12px;cursor:pointer;font-size:13px;color:var(--text)" onmousedown="promoPickGeo(${i})">
+            ${escapeHtml(r.name)} <span style="color:var(--text-muted);font-size:11px">${typeLabel[r.type] || ''}</span>
+          </div>`).join('')
+        box.style.display = 'block'
+      } catch { box.style.display = 'none' }
+    }, 350)
+  }
+  window.promoSearchGeo = promoSearchGeo
+
+  function promoPickGeo(i) {
+    const r = (promoWizard._geoResults || [])[i]
+    if (!r) return
+    const spec = promoWizard.audienceSpec
+    if (spec.geo?.type !== 'locations') spec.geo = { type: 'locations', locations: [], country: 'MX' }
+    if (!spec.geo.locations.some(l => l.key === r.key)) spec.geo.locations.push({ key: r.key, name: r.name, type: r.type })
+    const input = $('promo-geo-input'); if (input) input.value = ''
+    const box = $('promo-geo-suggestions'); if (box) box.style.display = 'none'
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoPickGeo = promoPickGeo
+
+  function promoRemoveGeo(idx) {
+    promoWizard.audienceSpec.geo.locations.splice(idx, 1)
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoRemoveGeo = promoRemoveGeo
+
+  let promoInterestSearchTimer = null
+  function promoSearchInterest(q) {
+    clearTimeout(promoInterestSearchTimer)
+    const box = $('promo-interest-suggestions')
+    if (!box) return
+    if (!q || q.trim().length < 2) { box.style.display = 'none'; box.innerHTML = ''; return }
+    promoInterestSearchTimer = setTimeout(async () => {
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${EDGE_BASE}/social-ads-search`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ type: 'adinterest', q: q.trim() }),
+        })
+        const result = await res.json()
+        if (!result.ok || !result.results?.length) { box.style.display = 'none'; box.innerHTML = ''; return }
+        promoWizard._interestResults = result.results
+        box.innerHTML = result.results.map((r, i) => `<div style="padding:9px 12px;cursor:pointer;font-size:13px;color:var(--text)" onmousedown="promoPickInterest(${i})">${escapeHtml(r.name)}</div>`).join('')
+        box.style.display = 'block'
+      } catch { box.style.display = 'none' }
+    }, 350)
+  }
+  window.promoSearchInterest = promoSearchInterest
+
+  function promoPickInterest(i) {
+    const r = (promoWizard._interestResults || [])[i]
+    if (!r) return
+    const spec = promoWizard.audienceSpec
+    spec.interests = spec.interests || []
+    if (!spec.interests.some(x => x.id === r.key)) spec.interests.push({ id: r.key, name: r.name })
+    const input = $('promo-interest-input'); if (input) input.value = ''
+    const box = $('promo-interest-suggestions'); if (box) box.style.display = 'none'
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoPickInterest = promoPickInterest
+
+  function promoRemoveInterest(idx) {
+    promoWizard.audienceSpec.interests.splice(idx, 1)
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoRemoveInterest = promoRemoveInterest
+
+  async function promoLoadSavedAudience(id) {
+    if (!id) { promoWizard.savedAudienceId = null; return }
+    const aud = promoWizard.savedAudiences.find(a => a.id === id)
+    if (!aud) return
+    promoWizard.savedAudienceId = id
+    promoWizard.audienceSpec = { ...promoWizard.audienceSpec, ...aud.spec }
+    promoRenderStep(); promoRefreshEstimate()
+  }
+  window.promoLoadSavedAudience = promoLoadSavedAudience
+
+  async function promoSaveAudience() {
+    const name = prompt('Nombre para este público (para reusarlo después):')
+    if (!name) return
+    const { error } = await sb.from('social_audiences').insert({ organization_id: state.currentOrgId, name, spec: promoWizard.audienceSpec, created_by: state.userId })
+    if (error) { showToast('Error al guardar: ' + error.message); return }
+    showToast('✓ Público guardado')
+    const { data: auds } = await sb.from('social_audiences').select('id, name, spec').eq('organization_id', state.currentOrgId).order('created_at', { ascending: false })
+    promoWizard.savedAudiences = auds || []
+    promoRenderStep()
+  }
+  window.promoSaveAudience = promoSaveAudience
+
+  let promoEstimateTimer = null
+  function promoRefreshEstimate() {
+    clearTimeout(promoEstimateTimer)
+    promoEstimateTimer = setTimeout(async () => {
+      const el = $('promo-estimate-text')
+      if (!el) return
+      el.textContent = 'Calculando…'
+      try {
+        const { data: { session } } = await sb.auth.getSession()
+        const res = await fetch(`${EDGE_BASE}/social-ads-estimate`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ objective: promoWizard.objective, audience_mode: promoWizard.audienceMode, audience_spec: promoWizard.audienceSpec, placements: promoWizard.placements }),
+        })
+        const result = await res.json()
+        if (!result.ok) { el.textContent = result.error || 'No se pudo estimar'; return }
+        promoWizard.estimate = { lower: result.estimate_lower, upper: result.estimate_upper, ready: result.estimate_ready }
+        el.textContent = result.estimate_ready
+          ? `${result.estimate_lower.toLocaleString('es-MX')} – ${result.estimate_upper.toLocaleString('es-MX')} personas aprox.`
+          : 'El público es muy angosto para estimar -- amplíalo un poco.'
+      } catch { el.textContent = 'No se pudo calcular el estimado' }
+    }, 500)
+  }
+
+  // ── Paso 3: Presupuesto y duración ──────────────────────────────────────
+  function promoStep3Html() {
+    return `
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-${promoWizard.budgetMode === 'daily' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetBudgetMode('daily')">Presupuesto diario</button>
+        <button class="btn-${promoWizard.budgetMode === 'lifetime' ? 'primary' : 'ghost'}" style="flex:1" onclick="promoSetBudgetMode('lifetime')">Presupuesto total</button>
+      </div>
+      <label class="promo-field-label">Gasto máximo (${promoAdsConnection?.currency || 'MXN'})</label>
+      <input class="promo-input" type="number" min="1" step="1" value="${promoWizard.budgetAmount}" style="margin-bottom:6px" oninput="promoSetBudgetAmount(this.value)">
+      <p class="promo-field-hint" style="margin-bottom:16px">Mínimo ${50} ${promoAdsConnection?.currency || 'MXN'} ${promoWizard.budgetMode === 'daily' ? 'por día' : 'en total'} (salvaguarda propia -- los mínimos reales de Meta pueden variar).</p>
+      <label class="promo-field-label">Fecha de inicio</label>
+      <input class="promo-input" type="datetime-local" value="${promoWizard.startTime}" style="margin-bottom:14px" onchange="promoSetStartTime(this.value)">
+      <label class="promo-field-label">Fecha de fin (opcional, deja vacío para que corra hasta que la pauses)</label>
+      <input class="promo-input" type="datetime-local" value="${promoWizard.endTime}" onchange="promoSetEndTime(this.value)">
+      <div style="margin-top:18px">
+        <label class="promo-field-label">Categoría especial de anuncios</label>
+        <select class="promo-input" onchange="promoSetSpecialCategory(this.value)">
+          <option value="NONE" ${!promoWizard.specialCategories.length ? 'selected' : ''}>Ninguna</option>
+          <option value="EMPLOYMENT" ${promoWizard.specialCategories[0]==='EMPLOYMENT'?'selected':''}>Empleo</option>
+          <option value="HOUSING" ${promoWizard.specialCategories[0]==='HOUSING'?'selected':''}>Vivienda</option>
+          <option value="CREDIT" ${promoWizard.specialCategories[0]==='CREDIT'?'selected':''}>Crédito</option>
+          <option value="ISSUES_ELECTIONS_POLITICS" ${promoWizard.specialCategories[0]==='ISSUES_ELECTIONS_POLITICS'?'selected':''}>Política/elecciones</option>
+        </select>
+        <p class="promo-field-hint">Si tu publicación trata de empleo, vivienda, crédito o política, Meta exige declarar la categoría -- restringe edad mínima e intereses automáticamente.</p>
+      </div>`
+  }
+
+  // ── Paso 4: Ubicaciones y vista previa ──────────────────────────────────
+  function promoStep4Html() {
+    const canChoose = true
+    const previewCaption = escapeHtml((promoWizard.caption || '').slice(0, 200))
+    return `
+      <label class="promo-field-label">¿Dónde se muestra?</label>
+      <select class="promo-input" style="margin-bottom:18px" onchange="promoSetPlacements(this.value)">
+        <option value="auto" ${promoWizard.placements === 'auto' ? 'selected' : ''}>Automático (igual que donde ya está publicado)</option>
+        <option value="facebook_page" ${promoWizard.placements === 'facebook_page' ? 'selected' : ''}>Solo Facebook</option>
+        <option value="instagram_business" ${promoWizard.placements === 'instagram_business' ? 'selected' : ''}>Solo Instagram</option>
+      </select>
+      <label class="promo-field-label">Vista previa</label>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--hover-bg)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          ${pubPlatformIcon(promoWizard.platform, 16)}
+          <span style="font-weight:700;font-size:13px;color:var(--text)">${promoWizard.platform === 'facebook_page' ? 'Facebook' : 'Instagram'}</span>
+          <span style="font-size:11px;color:var(--text-dim);margin-left:auto">Patrocinado</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);white-space:pre-wrap">${previewCaption || '(sin texto)'}</div>
+      </div>
+      <p class="promo-field-hint" style="margin-top:10px">Se promociona la publicación ya existente tal cual -- no se puede cambiar la imagen ni el texto aquí (edítalos desde Publicaciones si quieres cambiar el contenido original).</p>`
+  }
+
+  // ── Paso 5: Confirmación ─────────────────────────────────────────────────
+  function promoStep5Html() {
+    if (promoWizard.createdPromotion) {
+      const p = promoWizard.createdPromotion
+      return `
+        <div style="text-align:center;padding:10px 0">
+          <i class="fa fa-circle-check" style="font-size:32px;color:var(--accent);margin-bottom:12px;display:block"></i>
+          <p style="font-weight:700;font-size:14px;color:var(--text);margin:0 0 6px">Promoción creada (pausada)</p>
+          <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 20px">Todavía no gasta nada -- actívala cuando estés listo, o déjala pausada y actívala después desde "Promociones".</p>
+          <div style="display:flex;gap:10px;justify-content:center">
+            <button class="btn-ghost" onclick="closePromoWizard();switchPubTab('promociones')">Dejar pausada</button>
+            <button class="btn-primary" onclick="promoActivateNow('${p.id}')">Activar ahora</button>
+          </div>
+        </div>`
+    }
+    const obj = PROMO_OBJECTIVES.find(o => o.key === promoWizard.objective)
+    const estimateText = promoWizard.estimate.ready
+      ? `${promoWizard.estimate.lower.toLocaleString('es-MX')} – ${promoWizard.estimate.upper.toLocaleString('es-MX')} personas aprox.`
+      : 'No disponible'
+    return `
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div><span style="color:var(--text-muted);font-size:12.5px">Objetivo</span><div style="font-weight:700;font-size:14px;color:var(--text)">${obj?.label}</div></div>
+        <div><span style="color:var(--text-muted);font-size:12.5px">Público</span><div style="font-weight:700;font-size:14px;color:var(--text)">${promoWizard.audienceMode === 'auto' ? 'Automático' : 'Personalizado'}</div></div>
+        <div><span style="color:var(--text-muted);font-size:12.5px">Presupuesto</span><div style="font-weight:700;font-size:14px;color:var(--text)">${promoWizard.budgetAmount} ${promoAdsConnection?.currency || 'MXN'} ${promoWizard.budgetMode === 'daily' ? '/ día' : 'total'}</div></div>
+        <div><span style="color:var(--text-muted);font-size:12.5px">Fechas</span><div style="font-weight:700;font-size:14px;color:var(--text)">${promoWizard.startTime?.replace('T',' ') || ''} ${promoWizard.endTime ? '→ ' + promoWizard.endTime.replace('T',' ') : '(sin fecha de fin)'}</div></div>
+        <div><span style="color:var(--text-muted);font-size:12.5px">Alcance estimado (rango, no garantizado)</span><div style="font-weight:700;font-size:14px;color:var(--text)">${estimateText}</div></div>
+        <div style="padding:12px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);font-size:12.5px;color:var(--text)">
+          Al confirmar se crea en Meta <strong>pausada</strong> (no gasta nada todavía). Vas a poder activarla en el siguiente paso o más tarde desde "Promociones".
+        </div>
+      </div>`
+  }
+
+  // ── Navegación del wizard ────────────────────────────────────────────────
+  function promoWizardBack() {
+    if (!promoWizard || promoWizard.step <= (promoAdsConnection ? 1 : 0)) return
+    promoWizard.step -= 1
+    promoRenderStep()
+  }
+  window.promoWizardBack = promoWizardBack
+
+  async function promoWizardNext() {
+    if (!promoWizard) return
+    if (promoWizard.step === 3) {
+      const budgetErr = promoWizard.budgetAmount < 50 ? `El presupuesto mínimo es 50 ${promoAdsConnection?.currency || 'MXN'}.` : null
+      if (budgetErr) { showToast(budgetErr); return }
+      if (promoWizard.endTime && new Date(promoWizard.endTime) <= new Date(promoWizard.startTime)) { showToast('La fecha de fin debe ser posterior a la de inicio.'); return }
+    }
+    if (promoWizard.step < 5) { promoWizard.step += 1; promoRenderStep(); return }
+    if (promoWizard.step === 5) {
+      if (promoWizard.createdPromotion) { closePromoWizard(); return }
+      await promoConfirmCreate()
+    }
+  }
+  window.promoWizardNext = promoWizardNext
+
+  async function promoConfirmCreate() {
+    const nextBtn = $('promo-btn-next')
+    nextBtn.disabled = true; nextBtn.textContent = 'Creando…'
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-ads-create`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          post_target_id: promoWizard.targetId, idempotency_key: promoWizard.idempotencyKey,
+          objective: promoWizard.objective, audience_mode: promoWizard.audienceMode, audience_spec: promoWizard.audienceSpec,
+          saved_audience_id: promoWizard.savedAudienceId, budget_mode: promoWizard.budgetMode, budget_amount: promoWizard.budgetAmount,
+          start_time: new Date(promoWizard.startTime).toISOString(), end_time: promoWizard.endTime ? new Date(promoWizard.endTime).toISOString() : null,
+          placements: promoWizard.placements, special_ad_categories: promoWizard.specialCategories,
+        }),
+      })
+      const result = await res.json()
+      if (!result.ok) { showToast(result.error || 'Error al crear la promoción'); nextBtn.disabled = false; nextBtn.textContent = 'Confirmar y crear'; return }
+      promoWizard.createdPromotion = result.promotion
+      promoRenderStep()
+    } catch (err) {
+      showToast(err.message || 'Error al crear la promoción')
+      nextBtn.disabled = false; nextBtn.textContent = 'Confirmar y crear'
+    }
+  }
+
+  async function promoActivateNow(promotionId) {
+    showToast('Activando…')
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-ads-activate`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ promotion_id: promotionId }),
+      })
+      const result = await res.json()
+      if (!result.ok) { showToast(result.error || 'Error al activar'); return }
+      showToast('✓ Promoción enviada a revisión de Meta')
+      closePromoWizard()
+      switchPubTab('promociones')
+    } catch (err) { showToast(err.message || 'Error al activar') }
+  }
+  window.promoActivateNow = promoActivateNow
+
+  // ── Lista "Promociones" ──────────────────────────────────────────────────
+  async function loadPromoList() {
+    const bannerEl = $('promo-ads-banner'), bannerText = $('promo-ads-banner-text')
+    if (!promoAdsConnection) {
+      bannerEl.style.display = 'flex'
+      bannerText.innerHTML = 'Conecta tu cuenta publicitaria de Meta para empezar a promocionar publicaciones.'
+    } else if (promoAdsConnection.status !== 'connected') {
+      bannerEl.style.display = 'flex'
+      bannerText.innerHTML = `Tu cuenta publicitaria necesita atención (<strong>${escapeHtml(promoAdsConnection.status)}</strong>). ${escapeHtml(promoAdsConnection.last_error_message || '')}`
+    } else {
+      bannerEl.style.display = 'none'
+    }
+    const { data } = await sb.from('social_promotions')
+      .select('id, status, rejection_reason, budget_mode, budget_amount, currency, spend_total, reach_total, impressions_total, clicks_total, messages_total, created_at, meta_adset_id, social_post_targets(social_posts(caption))')
+      .eq('organization_id', state.currentOrgId)
+      .order('created_at', { ascending: false })
+    promoListRows = data || []
+    renderPromoList()
+    renderPromoChart()
+  }
+  window.loadPromoList = loadPromoList
+
+  function promoListSetFilter(f) {
+    promoListFilter = f
+    ;['all', 'activa', 'pausada', 'rechazada'].forEach(k => { const btn = $('promo-f-' + k); if (btn) btn.style.fontWeight = k === f ? '700' : '600' })
+    renderPromoList()
+  }
+  window.promoListSetFilter = promoListSetFilter
+
+  function renderPromoList() {
+    const from = $('promo-date-from')?.value, to = $('promo-date-to')?.value
+    const rows = promoListRows.filter(r => {
+      if (promoListFilter !== 'all' && r.status !== promoListFilter) return false
+      const d = r.created_at?.slice(0, 10)
+      if (from && d < from) return false
+      if (to && d > to) return false
+      return true
+    })
+    $('promo-list-empty').style.display = rows.length ? 'none' : 'block'
+    $('promo-list-tbody').innerHTML = rows.map(r => {
+      const pill = `<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;background:${PROMO_STATUS_DOT[r.status]}22;color:${PROMO_STATUS_DOT[r.status]}" title="${escapeHtml(r.rejection_reason || '')}">${PROMO_STATUS_LABEL[r.status] || r.status}</span>`
+      const cpc = r.clicks_total ? (r.spend_total / r.clicks_total).toFixed(2) : '—'
+      const ctr = r.impressions_total ? ((r.clicks_total / r.impressions_total) * 100).toFixed(2) + '%' : '—'
+      const caption = (r.social_post_targets?.social_posts?.caption || '(sin texto)').slice(0, 40)
+      const actions = []
+      if (['activa', 'en_revision'].includes(r.status)) actions.push(`<button class="btn-ghost" style="font-size:11px;padding:4px 8px" onclick="promoPause('${r.id}')">Pausar</button>`)
+      if (r.status === 'pausada') actions.push(`<button class="btn-ghost" style="font-size:11px;padding:4px 8px" onclick="promoResume('${r.id}')">Reanudar</button>`)
+      if (r.status === 'borrador') actions.push(`<button class="btn-primary" style="font-size:11px;padding:4px 8px" onclick="promoActivateNow('${r.id}')">Activar</button>`)
+      if (['activa', 'en_revision', 'pausada'].includes(r.status)) {
+        actions.push(`<button class="btn-ghost" style="font-size:11px;padding:4px 8px" onclick="promoEditBudgetPrompt('${r.id}', ${r.budget_amount}, '${r.currency}')">Editar presupuesto</button>`)
+        actions.push(`<button class="btn-ghost" style="font-size:11px;padding:4px 8px" onclick="promoEditEndDatePrompt('${r.id}')">Editar fecha fin</button>`)
+      }
+      actions.push(`<button class="btn-ghost" style="font-size:11px;padding:4px 8px" onclick="promoDuplicate('${r.id}')">Duplicar</button>`)
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 14px;font-size:12.5px;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(caption)}</td>
+        <td style="padding:8px 14px">${pill}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${Number(r.spend_total||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${Number(r.reach_total||0).toLocaleString('es-MX')}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${Number(r.impressions_total||0).toLocaleString('es-MX')}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${Number(r.clicks_total||0).toLocaleString('es-MX')}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${cpc}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${ctr}</td>
+        <td style="padding:8px 14px;text-align:right;font-size:12.5px">${Number(r.messages_total||0).toLocaleString('es-MX')}</td>
+        <td style="padding:8px 14px;text-align:right;white-space:nowrap">${actions.join(' ')}</td>
+      </tr>`
+    }).join('')
+  }
+
+  // Gráfica simple de gasto por promoción -- mismo patrón de SVG a mano que
+  // buildMsgChart(), sin librería nueva.
+  function renderPromoChart() {
+    const svg = $('promo-chart')
+    const rows = promoListRows.slice(0, 14).reverse()
+    if (!rows.length) { svg.innerHTML = '<text x="50%" y="50%" text-anchor="middle" fill="var(--text-dim)" font-size="12">Sin datos todavía</text>'; return }
+    const w = svg.clientWidth || 600, h = 140, pad = 24
+    const max = Math.max(1, ...rows.map(r => Number(r.spend_total || 0)))
+    const barW = (w - pad * 2) / rows.length
+    const bars = rows.map((r, i) => {
+      const barH = (Number(r.spend_total || 0) / max) * (h - pad * 2)
+      const x = pad + i * barW, y = h - pad - barH
+      return `<rect x="${x + 2}" y="${y}" width="${Math.max(2, barW - 4)}" height="${barH}" fill="var(--accent)" rx="2"><title>${Number(r.spend_total||0).toFixed(2)} ${r.currency}</title></rect>`
+    }).join('')
+    svg.innerHTML = `${bars}<text x="${pad}" y="${h-6}" font-size="10" fill="var(--text-dim)">Gasto por promoción (más recientes)</text>`
+  }
+
+  async function promoAction(promotionId, action, extra) {
+    try {
+      const { data: { session } } = await sb.auth.getSession()
+      const res = await fetch(`${EDGE_BASE}/social-ads-action`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ promotion_id: promotionId, action, ...extra }),
+      })
+      const result = await res.json()
+      if (!result.ok) { showToast(result.error || 'Error'); return false }
+      await loadPromoList()
+      return true
+    } catch (err) { showToast(err.message || 'Error'); return false }
+  }
+
+  async function promoPause(id) { if (await promoAction(id, 'pausar')) showToast('✓ Pausada') }
+  window.promoPause = promoPause
+  async function promoResume(id) { if (await promoAction(id, 'reanudar')) showToast('✓ Reanudada -- vuelve a entrar en revisión') }
+  window.promoResume = promoResume
+  async function promoDuplicate(id) { if (await promoAction(id, 'duplicar')) showToast('✓ Duplicada como borrador') }
+  window.promoDuplicate = promoDuplicate
+  async function promoEditBudgetPrompt(id, current, currency) {
+    const v = prompt(`Nuevo presupuesto (${currency}):`, current)
+    if (v == null) return
+    const n = Number(v)
+    if (!(n > 0)) { showToast('Presupuesto inválido'); return }
+    if (await promoAction(id, 'editar_presupuesto', { budget_amount: n })) showToast('✓ Presupuesto actualizado')
+  }
+  window.promoEditBudgetPrompt = promoEditBudgetPrompt
+  async function promoEditEndDatePrompt(id) {
+    const v = prompt('Nueva fecha de fin (AAAA-MM-DDTHH:MM, vacío = quitar fecha de fin):', '')
+    if (v == null) return
+    const endTime = v.trim() ? new Date(v.trim()).toISOString() : null
+    if (v.trim() && isNaN(new Date(v.trim()).getTime())) { showToast('Fecha inválida'); return }
+    if (await promoAction(id, 'editar_fecha_fin', { end_time: endTime })) showToast('✓ Fecha de fin actualizada')
+  }
+  window.promoEditEndDatePrompt = promoEditEndDatePrompt
+
   // ── Módulos por plan + addons ─────────────────────────────────────────────
   const PLAN_MODULES = {
     arranque:   ['inicio','conversaciones','conexiones','bot','config','cuenta','campanas','reportes'],
@@ -10290,15 +11088,16 @@
     document.getElementById('pub-editor').style.display = 'none'
     document.getElementById('pub-tabbar').style.display = 'flex'
     document.getElementById('pub-header-btn').style.display = 'inline-flex'
-    ;['calendario', 'plantillas', 'historial'].forEach(t => {
+    ;['calendario', 'plantillas', 'historial', 'promociones'].forEach(t => {
       const btn = $('pub-tab-' + t)
       const pane = $('pub-pane-' + t)
       if (btn) { btn.style.borderBottomColor = t === tab ? 'var(--accent)' : 'transparent'; btn.style.color = t === tab ? 'var(--text)' : 'var(--text-muted)' }
       if (pane) pane.style.display = t === tab ? 'block' : 'none'
     })
-    if (tab === 'calendario')  loadPubCalendar()
-    if (tab === 'plantillas')  loadPubPlantillas()
-    if (tab === 'historial')   loadPubHistorial()
+    if (tab === 'calendario')   loadPubCalendar()
+    if (tab === 'plantillas')   loadPubPlantillas()
+    if (tab === 'historial')    loadPubHistorial()
+    if (tab === 'promociones')  loadPromoList()
   }
   window.switchPubTab = switchPubTab
 
@@ -10704,7 +11503,9 @@
         : r.status === 'publicado' ? '<span style="color:var(--text-muted);font-size:12.5px">Publicado</span>' : ''
       const accion = r.status === 'fallido'
         ? `<button class="btn-primary" style="font-size:11.5px;padding:5px 10px" onclick="retryPubTarget('${r.id}')"><i class="fa fa-rotate"></i> Reintentar</button>`
-        : (r.status === 'publicado' ? '<span style="color:var(--text-dim);font-size:11.5px">—</span>' : '')
+        : (r.status === 'publicado'
+            ? (promoAdsModuleEnabled ? `<button class="btn-ghost" style="font-size:11.5px;padding:5px 10px" onclick="openPromoWizard('${r.id}')"><i class="fa fa-bullhorn"></i> Promocionar</button>` : '<span style="color:var(--text-dim);font-size:11.5px">—</span>')
+            : '')
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:10px 16px;white-space:nowrap"><div style="font-weight:600;font-size:13px;color:var(--text)">${fecha}</div><div style="font-size:11.5px;color:var(--text-dim)">${hora}</div></td>
         <td style="padding:10px 16px">${netIcon}</td>
