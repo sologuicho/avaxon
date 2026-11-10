@@ -524,3 +524,98 @@ probar localmente.
     real.
 12. Con todo eso confirmado, recién ahí tiene sentido una conversación sobre
     App Review de Meta y abrir esto a un cliente real.
+
+## 12. Pendientes antes de reiniciar la sesión (2026-11-09)
+
+Resumen para la próxima sesión -- nada de esto se ejecutó aquí salvo lo que
+se marca explícitamente como hecho.
+
+1. **Objetivo "Mensajes por WhatsApp" bloqueado al boostear un post ya
+   publicado.** Probando el objetivo `whatsapp` (`destination_type=WHATSAPP`,
+   ver `_shared/metaAds.ts:177-307`) contra la cuenta real en staging, Meta
+   rechaza el creative con **"Application does not have the capability"** y,
+   en otro intento, **"el contenido no es compatible con el objetivo
+   seleccionado"**. Lectura más probable: Click-to-WhatsApp sobre un post
+   *existente* (`object_story_id`/`source_instagram_media_id`) es una
+   combinación que requiere que la app de Meta tenga aprobado el caso de uso
+   de mensajería/anuncios de WhatsApp (App Review), no solo los scopes
+   `ads_management`/`ads_read` ya pedidos -- consistente con el prerrequisito
+   que ya estaba anotado en §8.1. **Pendiente**: revisar el estado de App
+   Review de la app y, si ya está aprobado para otro caso de uso pero no para
+   este, confirmar en el changelog/doc de Meta qué permiso o feature
+   específico falta (candidatos: `Advanced Access` del scope de WhatsApp,
+   o una feature separada para "Click to WhatsApp Ads"). No tiene arreglo de
+   código -- es aprobación de Meta.
+2. **Objetivo "Tráfico" (`traffic`, `OUTCOME_TRAFFIC`) bloqueado por la misma
+   causa.** Mismo par de errores ("Application does not have the
+   capability" / contenido no compatible) al intentar boostear el mismo post
+   existente con este objetivo. Como `engagement`/`awareness` sí llegaron a
+   crear campaña/adset/ad en pruebas previas (ver comentarios con fecha
+   2026-11-10 en `_shared/metaAds.ts`), el patrón apunta a que **cualquier
+   objetivo que no sea compromiso/reconocimiento puro** sobre un post
+   reusado necesita una capability de la app que no está aprobada todavía
+   --no necesariamente algo exclusivo de WhatsApp. **Pendiente**: repetir la
+   prueba de `traffic` después de resolver (1) para ver si comparten la
+   misma causa raíz o son dos bloqueos independientes.
+3. **Revisar en prod (solo lectura) la conversación vacía de
+   `5218994518537`.** No se tocó -- hay que entrar a Conversaciones en el
+   dashboard de prod (nunca escribir/enviar nada ahí) y ver por qué esa
+   conversación no tiene mensajes: candidatos a revisar primero son si el
+   contacto nunca llegó a tener un mensaje entrante real (fila creada por
+   algún flujo de alta sin primer mensaje) o si los mensajes existen en
+   `conversations`/`messages` pero el dashboard los está filtrando mal por
+   canal (ver `dashboard/index.html:6064,6231`, el fallback
+   `channel ?? 'whatsapp'`).
+4. **Verificar si prod tiene el fix de polling de Instagram del 29 oct.**
+   El fix es `016b27e` ("espera a que Instagram termine de procesar el
+   contenedor antes de publicar", PR #3,
+   `fix/instagram-publish` → merge `0b11b7a` el 2026-10-29) y **sí está en
+   el historial de `origin/main`** (confirmado con
+   `git merge-base --is-ancestor 016b27e origin/main`). Lo que NO está
+   confirmado es que el *deploy* de Edge Functions en prod incluya ese
+   commit -- este repo no tiene ningún workflow de CI que despliegue
+   Functions automáticamente al mergear a main (`.github/` no tiene ningún
+   workflow con "supabase"/"deploy"), así que estar en `main` no garantiza
+   estar desplegado. **Pendiente**: comparar el código fuente desplegado de
+   la función de publicación de Instagram en prod (Dashboard → Edge
+   Functions → ver código, o `supabase functions download --project-ref
+   wprvjhvtnyibiwpeiusc <función>`) contra lo que hay en `main` para ese
+   archivo, y si falta, desplegar solo ese fix.
+5. **`main` local tiene commits sin publicar en `origin/main` y hace falta
+   rebase antes de push.** Confirmado en esta sesión:
+   - `origin/main` va en `f56a048` (docs: privacy.html/data-deletion.html).
+   - `main` local va en `3995d7a`, con el mismo mensaje de commit que
+     `f56a048` pero **otro hash** -- se escribió el mismo contenido de forma
+     independiente en los dos lados, así que de verdad divergieron (no es
+     un simple adelanto lineal).
+   - Debajo de ese commit duplicado, `main` local tiene **2 commits que
+     `origin/main` no tiene**: `f6e8548` (fix: Graph API v20.0→v22.0 en
+     envío de mensajes de WhatsApp) y `d830a0a` (merge de
+     `fix/graph-api-v22-whatsapp` a `main`, local, sin push).
+   - **Antes de hacer push**: `git fetch` + `git rebase origin/main` sobre
+     `main` local. Al llegar al commit duplicado (`3995d7a`), probablemente
+     quede vacío contra `f56a048` y git lo salte solo (o pida `git rebase
+     --skip` si no lo detecta como vacío) -- confirmar que el contenido de
+     privacy.html/data-deletion.html quede igual que en `origin/main`
+     después del rebase, no se asuma. No se ejecutó nada de esto en esta
+     sesión.
+
+### Cómo levantar el preview de staging en localhost:8788
+
+```bash
+cd /Users/hectorgarcia/avaxon
+python3 .staging-setup/serve_staging_preview.py
+```
+
+Abre `http://localhost:8788/dashboard/` o `http://localhost:8788/admin/`.
+Sirve los archivos del repo tal cual están en disco, pero reescribe al vuelo
+(solo en la respuesta HTTP, nunca en el archivo) `SUPABASE_URL`/`SUPABASE_KEY`/
+`EDGE_BASE` de `dashboard/index.html`/`admin/index.html` para apuntar al
+proyecto de staging (`vfwictrnpzmvlwnslbss`) en vez de prod. `Ctrl+C` para
+detenerlo.
+
+**`localhost:8787` no se usa.** Era un proceso viejo (servidor estático
+plano, sin este script de reescritura) que por lo tanto servía el dashboard
+con el `SUPABASE_URL` que está hardcodeado en el archivo en disco -- es
+decir, prod. Ya se mató; si vuelve a aparecer algo corriendo en 8787, no es
+este script y probablemente esté pegado a prod, no a staging.
