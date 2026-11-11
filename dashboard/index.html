@@ -11106,7 +11106,7 @@
     const orgId = getActiveOrgId()
     if (!orgId) { pubState.accounts = []; return }
     const [{ data: accs }, { data: org }, { data: pn }] = await Promise.all([
-      sb.from('social_accounts').select('*').eq('organization_id', orgId).order('platform'),
+      sb.from('social_accounts').select('*').eq('organization_id', orgId).neq('status', 'disconnected').order('platform'),
       sb.from('organizations').select('name, industry').eq('id', orgId).maybeSingle(),
       sb.from('phone_numbers').select('display_phone_number').eq('organization_id', orgId).eq('status', 'active').maybeSingle(),
     ])
@@ -11217,7 +11217,18 @@
 
   async function disconnectSocialAccount(id) {
     if (!confirm('¿Desconectar esta cuenta? Las publicaciones programadas para esta red dejarán de poder publicarse hasta que la reconectes.')) return
-    const { error } = await sb.from('social_accounts').delete().eq('id', id)
+    // Soft-delete: un DELETE directo falla si la cuenta tiene al menos un
+    // post publicado (FK de social_post_targets.social_account_id, a
+    // propósito sin on delete para no perder el historial). Reconectar
+    // sigue funcionando igual: social-oauth-callback sobrescribe esta
+    // misma fila vía upsert(organization_id,platform).
+    const { error } = await sb.from('social_accounts').update({
+      status: 'disconnected',
+      access_token: null,
+      last_error_code: null,
+      last_error_message: null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', id)
     if (error) { showToast('Error: ' + error.message); return }
     showToast('Cuenta desconectada')
     await loadPubAccounts()
