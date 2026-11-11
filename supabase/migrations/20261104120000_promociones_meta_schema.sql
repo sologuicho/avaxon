@@ -6,9 +6,22 @@
 -- (social_accounts/social_posts/social_post_targets/business_modules).
 
 -- ── module_key nuevo: 'promocion_publicaciones' ─────────────────────────
+-- OJO: el set de abajo es el real de prod (verificado contra un dump de
+-- esquema de wprvjhvtnyibiwpeiusc el 2026-11-10), no el asumido por la
+-- rama de publicaciones_redes ('income'/'commissions'/'reports'/
+-- 'publicaciones_redes'). Reemplazar por ese set asumido habría roto
+-- 'inventario' (con datos reales en uso) y los demás addons del admin
+-- panel (calendario, pagos, leads_addon, pipeline_addon, comisiones,
+-- ingresos, reportes_pdf) que tampoco están en el set asumido. Este
+-- cambio es puramente aditivo sobre el set real: solo agrega
+-- 'promocion_publicaciones'.
 alter table public.business_modules drop constraint if exists business_modules_module_key_check;
 alter table public.business_modules add constraint business_modules_module_key_check
-  check (module_key in ('income', 'commissions', 'reports', 'publicaciones_redes', 'promocion_publicaciones'));
+  check (module_key in (
+    'publicaciones_redes', 'inventario', 'calendario', 'pagos',
+    'leads_addon', 'pipeline_addon', 'comisiones', 'ingresos', 'reportes_pdf',
+    'promocion_publicaciones'
+  ));
 
 -- module_enabled() ya contempla la dependencia reports/commissions->income;
 -- se amplía para que promocion_publicaciones dependa de publicaciones_redes,
