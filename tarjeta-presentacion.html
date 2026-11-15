@@ -265,96 +265,92 @@
 
     /* ─── REVERSO ─── */
     .card-back {
-      background: linear-gradient(160deg, #0b1a0e 0%, #0d1117 100%);
+      background: linear-gradient(160deg, #071209 0%, #0d1117 100%);
       box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,211,102,0.1);
+    }
+
+    .card-back::before {
+      content: '';
+      position: absolute;
+      top: -50px; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; height: 220px;
+      background: radial-gradient(ellipse, rgba(37,211,102,0.08) 0%, transparent 70%);
+      pointer-events: none;
     }
 
     .back-content {
       position: relative;
       z-index: 2;
-      padding: 24px 30px;
+      padding: 26px 30px 22px;
       height: 100%;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: space-between;
-      gap: 20px;
     }
 
-    .back-left {
-      flex: 1;
+    .back-hero {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 10px;
     }
 
-    .back-title {
-      font-size: 9px;
-      letter-spacing: 0.2em;
+    .back-question {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+    }
+
+    .back-question em {
+      font-style: normal;
+      color: #25D366;
+    }
+
+    .back-answer {
+      font-size: 11px;
+      color: rgba(255,255,255,0.4);
+      font-weight: 400;
+      line-height: 1.5;
+      max-width: 220px;
+    }
+
+    .back-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .back-cta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .back-cta-label {
+      font-size: 8px;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
       color: rgba(37,211,102,0.5);
     }
-
-    .services-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .service-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.7);
-      font-weight: 400;
-    }
-    .service-check {
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      background: rgba(37,211,102,0.15);
-      border: 1px solid rgba(37,211,102,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 8px;
+    .back-cta-url {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
       color: #25D366;
-      flex-shrink: 0;
-    }
-
-    .back-right {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
     }
 
     .qr-box {
-      width: 76px;
-      height: 76px;
-      border-radius: 10px;
+      width: 68px;
+      height: 68px;
+      border-radius: 9px;
       background: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      overflow: hidden;
       flex-shrink: 0;
     }
-
-    /* fake QR pattern */
-    .qr-pattern {
-      width: 60px;
-      height: 60px;
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      grid-template-rows: repeat(7, 1fr);
-      gap: 1px;
-    }
-    .qr-cell {
-      background: #0d1117;
-      border-radius: 1px;
-    }
-    .qr-cell.w { background: #fff; }
 
     .qr-label {
       font-size: 8.5px;
