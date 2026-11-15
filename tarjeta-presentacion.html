@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarjeta de Presentación — Avaxon</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      padding: 60px 20px;
+      font-family: 'Inter', sans-serif;
+      color: white;
+    }
+
+    .label {
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    /* ─── CARD BASE ─── */
+    .card {
+      width: 352px;
+      height: 200px;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 32px 80px rgba(37, 211, 102, 0.18);
+    }
+
+    /* ─── FRENTE — EMPRESA ─── */
+    .card-front {
+      background: linear-gradient(135deg, #0d1117 0%, #111a14 60%, #0a1a0e 100%);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,211,102,0.12);
+    }
+
+    .card-front::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 240px; height: 240px;
+      background: radial-gradient(circle, rgba(37,211,102,0.14) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .card-front::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: -40px;
+      width: 180px; height: 180px;
+      background: radial-gradient(circle, rgba(37,211,102,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* grid lines subtle */
+    .grid-lines {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(37,211,102,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,211,102,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    .front-content {
+      position: relative;
+      z-index: 2;
+      padding: 28px 30px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.4);
+    }
+
+    .logo-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .tagline {
+      font-size: 10.5px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.38);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .bottom-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .phone-block {}
+    .phone-label {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(37,211,102,0.6);
+      margin-bottom: 4px;
+    }
+    .phone-number {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+      letter-spacing: 0.01em;
+    }
+
+    .website-pill {
+      background: rgba(37,211,102,0.1);
+      border: 1px solid rgba(37,211,102,0.2);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #25D366;
+      letter-spacing: 0.03em;
+    }
+
+    /* ─── FRENTE — PERSONAL (Hector) ─── */
+    .card-personal {
+      background: linear-gradient(145deg, #0c0c0f 0%, #111218 50%, #0d0f14 100%);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(100,120,255,0.1);
+    }
+
+    .card-personal::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -50px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(37,211,102,0.1) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .card-personal .grid-lines {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .personal-content {
+      position: relative;
+      z-index: 2;
+      padding: 28px 30px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .name-block {}
+    .person-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .person-role {
+      font-size: 10px;
+      font-weight: 500;
+      color: rgba(37,211,102,0.75);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 5px;
+    }
+
+    .bottom-personal {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .contact-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .contact-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #25D366;
+      flex-shrink: 0;
+    }
+    .contact-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .mini-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .mini-logo-icon {
+      width: 26px;
+      height: 26px;
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(37,211,102,0.3);
+    }
+    .mini-logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.05em;
+    }
+
+    /* ─── REVERSO ─── */
+    .card-back {
+      background: linear-gradient(160deg, #0b1a0e 0%, #0d1117 100%);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(37,211,102,0.1);
+    }
+
+    .back-content {
+      position: relative;
+      z-index: 2;
+      padding: 24px 30px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .back-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .back-title {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(37,211,102,0.5);
+    }
+
+    .services-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .service-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+      font-weight: 400;
+    }
+    .service-check {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      background: rgba(37,211,102,0.15);
+      border: 1px solid rgba(37,211,102,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      color: #25D366;
+      flex-shrink: 0;
+    }
+
+    .back-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qr-box {
+      width: 76px;
+      height: 76px;
+      border-radius: 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* fake QR pattern */
+    .qr-pattern {
+      width: 60px;
+      height: 60px;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-template-rows: repeat(7, 1fr);
+      gap: 1px;
+    }
+    .qr-cell {
+      background: #0d1117;
+      border-radius: 1px;
+    }
+    .qr-cell.w { background: #fff; }
+
+    .qr-label {
+      font-size: 8.5px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+
+    /* ─── SECTION WRAPPER ─── */
+    .card-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ─── PRINT NOTE ─── */
+    .print-note {
+      font-size: 11px;
+      color: #333;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+    .print-note span {
+      color: #25D366;
+    }
+
+    .divider {
+      width: 1px;
+      height: 40px;
+      background: #1a1a1a;
+    }
+
+    .cards-row {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    @media print {
+      body { background: white; }
+      .label, .print-note, .divider { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── FRENTE EMPRESA ─── -->
+  <div class="card-section">
+    <p class="label">Frente — Tarjeta Empresa</p>
+    <div class="card card-front">
+      <div class="grid-lines"></div>
+      <div class="front-content">
+        <div class="logo-row">
+          <div class="logo-icon">⚡</div>
+          <div>
+            <div class="logo-name">Avaxon</div>
+            <div class="tagline">Automatización IA para WhatsApp</div>
+          </div>
+        </div>
+        <div class="bottom-row">
+          <div class="phone-block">
+            <div class="phone-label">WhatsApp</div>
+            <div class="phone-number">+52 899 170 9336</div>
+          </div>
+          <div class="website-pill">avaxon.lat</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── REVERSO EMPRESA ─── -->
+  <div class="card-section">
+    <p class="label">Reverso — Tarjeta Empresa</p>
+    <div class="card card-back">
+      <div class="grid-lines"></div>
+      <div class="back-content">
+        <div class="back-left">
+          <div class="back-title">Lo que hacemos</div>
+          <div class="services-list">
+            <div class="service-item">
+              <div class="service-check">✓</div>
+              Atención al cliente 24/7 en WhatsApp
+            </div>
+            <div class="service-item">
+              <div class="service-check">✓</div>
+              Calificación de leads automática
+            </div>
+            <div class="service-item">
+              <div class="service-check">✓</div>
+              Agendamiento de citas con IA
+            </div>
+            <div class="service-item">
+              <div class="service-check">✓</div>
+              Seguimiento post-venta sin esfuerzo
+            </div>
+          </div>
+        </div>
+        <div class="back-right">
+          <div class="qr-box">
+            <!-- QR placeholder visual -->
+            <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+              <!-- top-left finder -->
+              <rect x="2" y="2" width="18" height="18" rx="2" fill="#111"/>
+              <rect x="5" y="5" width="12" height="12" rx="1" fill="#fff"/>
+              <rect x="8" y="8" width="6" height="6" rx="1" fill="#111"/>
+              <!-- top-right finder -->
+              <rect x="40" y="2" width="18" height="18" rx="2" fill="#111"/>
+              <rect x="43" y="5" width="12" height="12" rx="1" fill="#fff"/>
+              <rect x="46" y="8" width="6" height="6" rx="1" fill="#111"/>
+              <!-- bottom-left finder -->
+              <rect x="2" y="40" width="18" height="18" rx="2" fill="#111"/>
+              <rect x="5" y="43" width="12" height="12" rx="1" fill="#fff"/>
+              <rect x="8" y="46" width="6" height="6" rx="1" fill="#111"/>
+              <!-- data dots -->
+              <rect x="24" y="2" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="2" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="8" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="8" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="36" y="8" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="14" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="36" y="14" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="2" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="8" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="14" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="40" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="52" y="24" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="2" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="14" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="36" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="46" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="52" y="30" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="2" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="8" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="40" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="46" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="52" y="36" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="42" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="42" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="36" y="42" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="52" y="42" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="48" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="40" y="48" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="52" y="48" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="24" y="54" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="30" y="54" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="36" y="54" width="4" height="4" rx="1" fill="#111"/>
+              <rect x="46" y="54" width="4" height="4" rx="1" fill="#111"/>
+            </svg>
+          </div>
+          <div class="qr-label">Escanea para<br/>chatear</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TARJETAS PERSONALES ─── -->
+  <div class="card-section">
+    <p class="label">Tarjetas Personales</p>
+    <div class="cards-row">
+
+      <!-- Hector -->
+      <div class="card card-personal">
+        <div class="grid-lines"></div>
+        <div class="personal-content">
+          <div class="name-block">
+            <div class="person-name">Hector García</div>
+            <div class="person-role">Consultor de Automatización</div>
+          </div>
+          <div class="bottom-personal">
+            <div class="contact-stack">
+              <div class="contact-item">
+                <div class="contact-dot"></div>
+                <div class="contact-text">+52 899 873 0003</div>
+              </div>
+              <div class="contact-item">
+                <div class="contact-dot" style="background:#555"></div>
+                <div class="contact-text" style="color:rgba(255,255,255,0.4)">avaxon.lat</div>
+              </div>
+            </div>
+            <div class="mini-logo">
+              <div class="mini-logo-icon">⚡</div>
+              <div class="mini-logo-text">Avaxon</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Luis -->
+      <div class="card card-personal">
+        <div class="grid-lines"></div>
+        <div class="personal-content">
+          <div class="name-block">
+            <div class="person-name">Luis Flores</div>
+            <div class="person-role">Tech Lead & Co-Fundador</div>
+          </div>
+          <div class="bottom-personal">
+            <div class="contact-stack">
+              <div class="contact-item">
+                <div class="contact-dot"></div>
+                <div class="contact-text">+1 956 328 5800</div>
+              </div>
+              <div class="contact-item">
+                <div class="contact-dot" style="background:#555"></div>
+                <div class="contact-text" style="color:rgba(255,255,255,0.4)">avaxon.lat</div>
+              </div>
+            </div>
+            <div class="mini-logo">
+              <div class="mini-logo-icon">⚡</div>
+              <div class="mini-logo-text">Avaxon</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── NOTA ─── -->
+  <p class="print-note">
+    Dimensiones estándar <span>85 × 54 mm</span> · Fondo negro mate o soft-touch recomendado<br/>
+    El QR del reverso se genera apuntando al WhatsApp de Avaxon
+  </p>
+
+</body>
+</html>
