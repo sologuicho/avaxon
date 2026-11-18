@@ -112,22 +112,57 @@
     .sandbox-badge { flex-shrink: 0; display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 11px; font-weight: 600; color: var(--green); white-space: nowrap; }
     .sandbox-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
 
-    /* giro dropdown */
-    .giro-selector { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    /* giro dropdown custom */
+    .giro-selector { padding: 14px 18px; border-bottom: 1px solid var(--border); position: relative; }
     .giro-label { font-size: 10.5px; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
-    .giro-select {
-      width: 100%; padding: 11px 36px 11px 14px; border-radius: 10px;
+
+    .dd-trigger {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 11px 14px; border-radius: 10px;
       background: rgba(9,14,26,.8); border: 1px solid var(--border2);
       color: var(--text); font-size: 14px;
       font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 500;
-      cursor: pointer; outline: none;
+      cursor: pointer; outline: none; text-align: left;
       transition: border-color .18s, box-shadow .18s;
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b97ab' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 13px center;
     }
-    .giro-select:focus { border-color: rgba(37,211,102,.5); box-shadow: 0 0 0 3px rgba(37,211,102,.1); }
-    .giro-select option { background: #0d1117; color: #e6ebf3; }
+    .dd-trigger:hover { border-color: rgba(255,255,255,.24); }
+    .dd-trigger.open { border-color: rgba(37,211,102,.5); box-shadow: 0 0 0 3px rgba(37,211,102,.1); }
+    .dd-trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dd-trigger-icon {
+      width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      transition: transform .2s;
+    }
+    .dd-trigger.open .dd-trigger-icon { transform: rotate(180deg); }
+
+    .dd-panel {
+      position: absolute; left: 18px; right: 18px; top: calc(100% - 2px);
+      background: #0d1420; border: 1px solid var(--border2);
+      border-radius: 12px; z-index: 100;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 4px 16px rgba(0,0,0,.4);
+      overflow: hidden;
+      max-height: 0; opacity: 0; pointer-events: none;
+      transition: max-height .25s cubic-bezier(.4,0,.2,1), opacity .18s ease;
+    }
+    .dd-panel.open { max-height: 320px; opacity: 1; pointer-events: all; }
+    .dd-scroll { overflow-y: auto; max-height: 320px; padding: 6px; }
+    .dd-scroll::-webkit-scrollbar { width: 4px; }
+    .dd-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 4px; }
+
+    .dd-group-label {
+      padding: 8px 10px 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .dd-option {
+      display: block; width: 100%; text-align: left; padding: 9px 12px;
+      border-radius: 8px; border: none; background: transparent;
+      color: var(--text); font-size: 13.5px; font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 500; cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .dd-option:hover { background: rgba(255,255,255,.07); }
+    .dd-option.selected { background: rgba(37,211,102,.12); color: var(--green); }
+    .dd-divider { height: 1px; background: var(--border); margin: 4px 6px; }
 
     /* chat window */
     .chat-window {
@@ -391,7 +426,7 @@
   const GIROS = {
     restaurante: {
       name: 'La Terraza',
-      greeting: '¡Hola! 🍽️ Bienvenido a La Terraza. ¿En qué te puedo ayudar? Puedo darte info del menú, horarios, o apartarte una mesa.',
+      greeting: '¡Hola! Bienvenido a La Terraza. ¿En qué te puedo ayudar? Puedo darte info del menú, horarios, o apartarte una mesa.',
       intents: [
         { keys: ['mesa','reserva','reservar','lugar','apartar','cena','cenar','comer'], res: '¿Para cuántas personas y a qué hora la necesitarías? 😊' },
         { keys: ['menú','menu','comida','platillo','hay','tienen','ofrecen'], res: 'Hoy tenemos: Tacos al pastor $85, Enchiladas verdes $95, Pozole rojo $110, Filete en salsa $185. ¿Algo te llama la atención?' },
@@ -405,7 +440,7 @@
     },
     clinica: {
       name: 'Clínica San Rafael',
-      greeting: '¡Hola! 🏥 Clínica San Rafael. ¿En qué te puedo ayudar? Puedo agendarte una cita o resolver tus dudas.',
+      greeting: '¡Hola! Clínica San Rafael. ¿En qué te puedo ayudar? Puedo agendarte una cita o resolver tus dudas.',
       intents: [
         { keys: ['cita','consulta','agendar','quiero','necesito','ver'], res: '¡Con gusto! ¿Es primera vez que nos visitas? Tengo disponibilidad mañana a las 10:30am o 5pm. ¿Cuál te acomoda?' },
         { keys: ['precio','costo','cuánto','cobran'], res: 'La consulta general es $650 y se abona al tratamiento. ¿Qué especialidad necesitas?' },
@@ -419,7 +454,7 @@
     },
     salon: {
       name: 'Studio Bella',
-      greeting: '¡Hola! 💅 Studio Bella. ¿En qué te ayudo? Puedo decirte precios, disponibilidad o apartarte tu cita.',
+      greeting: '¡Hola! Studio Bella. ¿En qué te ayudo? Puedo decirte precios, disponibilidad o apartarte tu cita.',
       intents: [
         { keys: ['cita','agendar','reservar','apartar','quiero'], res: '¡Claro! ¿Qué servicio necesitas? Tenemos varios horarios esta semana 📅' },
         { keys: ['precio','costo','cuánto','cobran','vale'], res: 'Corte desde $200, tinte desde $800, manicure $180, pedicure $220, keratina desde $1,200. ¿Qué te interesa?' },
@@ -433,7 +468,7 @@
     },
     inmobiliaria: {
       name: 'Grupo Hábitat',
-      greeting: '¡Hola! 🏠 Grupo Hábitat. ¿Estás buscando renta o compra? Cuéntame qué necesitas y te busco opciones.',
+      greeting: '¡Hola! Grupo Hábitat. ¿Estás buscando renta o compra? Cuéntame qué necesitas y te busco opciones.',
       intents: [
         { keys: ['renta','rentar','alquiler','rentando'], res: '¿Buscas casa o departamento, y en qué zona o colonia? Así te busco las mejores opciones.' },
         { keys: ['venta','comprar','compra','adquirir'], res: '¿Tienes presupuesto en mente? Tengo opciones desde $1.2M hasta $8M según zona.' },
@@ -447,7 +482,7 @@
     },
     gimnasio: {
       name: 'Iron Fit',
-      greeting: '¡Hola! 💪 Iron Fit. ¿Qué quieres lograr? Puedo darte info de membresías, clases o agendarte una clase de prueba gratis.',
+      greeting: '¡Hola! Iron Fit. ¿Qué quieres lograr? Puedo darte info de membresías, clases o agendarte una clase de prueba gratis.',
       intents: [
         { keys: ['precio','costo','cuánto','mensualidad','membresía'], res: 'La membresía es $799/mes con clases grupales incluidas. Este mes sin costo de inscripción 🔥' },
         { keys: ['clase','clases','horario','horarios'], res: 'Funcional 7am, spinning 9am, yoga 6pm — lun a vie. Sábados: boxeo 10am. ¿Cuál te llama?' },
@@ -461,7 +496,7 @@
     },
     dentista: {
       name: 'Sonríe Dental',
-      greeting: '¡Hola! 😁 Sonríe Dental. ¿En qué te ayudo? Puedo agendarte una cita o resolver tus dudas.',
+      greeting: '¡Hola! Sonríe Dental. ¿En qué te ayudo? Puedo agendarte una cita o resolver tus dudas.',
       intents: [
         { keys: ['dolor','duele','urgencia','urgente','muela','molar'], res: 'Qué mal, lo siento 😔 Tenemos un espacio de urgencia hoy a las 4:15pm. La valoración es $400 y se abona al tratamiento. ¿Te lo aparto?' },
         { keys: ['precio','costo','cuánto','cobran'], res: 'Limpieza $650, consulta $400, blanqueamiento $1,800, brackets desde $14,000. ¿Qué necesitas?' },
@@ -475,7 +510,7 @@
     },
     taller: {
       name: 'Taller Hernández',
-      greeting: '¡Hola! 🔧 Taller Hernández. ¿Qué le pasa a tu carro? Dime y te doy un estimado.',
+      greeting: '¡Hola! Taller Hernández. ¿Qué le pasa a tu carro? Dime y te doy un estimado.',
       intents: [
         { keys: ['afinación','afinar','bujías'], res: '¿Qué año y modelo traes? Así te doy el precio exacto de la afinación.' },
         { keys: ['aceite','cambio de aceite','lubricante'], res: 'Cambio de aceite sintético desde $850 incluido filtro. ¿Qué traes?' },
@@ -489,7 +524,7 @@
     },
     escuela: {
       name: 'Academia Lingua',
-      greeting: '¡Hola! 📚 Academia Lingua. ¿Qué idioma te interesa aprender o mejorar?',
+      greeting: '¡Hola! Academia Lingua. ¿Qué idioma te interesa aprender o mejorar?',
       intents: [
         { keys: ['inglés','english','ingles'], res: 'Inglés es nuestro curso más popular. ¿Tienes base o empezarías desde cero?' },
         { keys: ['precio','costo','cuánto','mensualidad','cobran'], res: 'La mensualidad es $1,200 con 2 clases semanales de 2 hrs cada una. ¿En línea o presencial?' },
@@ -503,7 +538,7 @@
     },
     spa: {
       name: 'Zen Spa',
-      greeting: '¡Hola! 🧖 Zen Spa. ¿Buscas relajarte o tienes algo específico en mente? Puedo decirte nuestros servicios y disponibilidad.',
+      greeting: '¡Hola! Zen Spa. ¿Buscas relajarte o tienes algo específico en mente? Puedo decirte nuestros servicios y disponibilidad.',
       intents: [
         { keys: ['masaje','masajes','relajación'], res: 'Masaje relajante 60 min $550, masaje descontracturante $650, masaje de tejido profundo $700. ¿Cuál prefieres?' },
         { keys: ['precio','costo','cuánto','cobran'], res: 'Los servicios van desde $350 hasta $1,200 según duración y tipo. ¿Qué te interesa?' },
@@ -517,7 +552,7 @@
     },
     veterinaria: {
       name: 'VetCare',
-      greeting: '¡Hola! 🐾 VetCare. ¿En qué puedo ayudarte? Puedo agendarte consulta, decirte precios o resolver dudas sobre tu mascota.',
+      greeting: '¡Hola! VetCare. ¿En qué puedo ayudarte? Puedo agendarte consulta, decirte precios o resolver dudas sobre tu mascota.',
       intents: [
         { keys: ['consulta','cita','agendar','ver','revisar'], res: '¿Es para perro o gato? ¿Primera visita o ya tienen expediente con nosotros? Tengo citas hoy.' },
         { keys: ['precio','costo','cuánto','cobran'], res: 'Consulta general $350, vacuna $180, baño y corte desde $250 según raza. ¿Qué necesitan?' },
