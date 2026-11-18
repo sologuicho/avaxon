@@ -112,22 +112,22 @@
     .sandbox-badge { flex-shrink: 0; display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 11px; font-weight: 600; color: var(--green); white-space: nowrap; }
     .sandbox-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
 
-    /* giro chips */
+    /* giro dropdown */
     .giro-selector { padding: 14px 18px; border-bottom: 1px solid var(--border); }
-    .giro-label { font-size: 10.5px; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 10px; }
-    .giro-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-    .giro-chip {
-      display: flex; align-items: center; gap: 6px;
-      padding: 6px 13px; border-radius: 999px;
-      background: rgba(255,255,255,.04); border: 1px solid var(--border);
-      color: var(--text-dim); font-size: 12.5px;
+    .giro-label { font-size: 10.5px; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+    .giro-select {
+      width: 100%; padding: 11px 36px 11px 14px; border-radius: 10px;
+      background: rgba(9,14,26,.8); border: 1px solid var(--border2);
+      color: var(--text); font-size: 14px;
       font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 500;
-      cursor: pointer; transition: background .15s, border-color .15s, color .15s;
-      white-space: nowrap;
+      cursor: pointer; outline: none;
+      transition: border-color .18s, box-shadow .18s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238b97ab' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 13px center;
     }
-    .giro-chip:hover { background: rgba(255,255,255,.09); border-color: var(--border2); color: var(--text); }
-    .giro-chip.active { background: rgba(37,211,102,.12); border-color: rgba(37,211,102,.4); color: var(--green); }
-    .giro-chip .chip-icon { font-size: 14px; line-height: 1; }
+    .giro-select:focus { border-color: rgba(37,211,102,.5); box-shadow: 0 0 0 3px rgba(37,211,102,.1); }
+    .giro-select option { background: #0d1117; color: #e6ebf3; }
 
     /* chat window */
     .chat-window {
