@@ -106,9 +106,11 @@
 
     /* ── SANDBOX ── */
     .sandbox { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; }
-    .sandbox-header { padding: 20px 22px 16px; border-bottom: 1px solid var(--border); }
-    .sandbox-header h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -.02em; color: #fff; margin-bottom: 4px; }
-    .sandbox-header p { font-size: 13px; color: var(--text-dim); }
+    .sandbox-header { padding: 18px 22px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .sandbox-header h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: -.02em; color: #fff; margin-bottom: 2px; }
+    .sandbox-header p { font-size: 12px; color: var(--text-dim); }
+    .sandbox-badge { flex-shrink: 0; display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: rgba(37,211,102,.08); border: 1px solid rgba(37,211,102,.2); font-size: 11px; font-weight: 600; color: var(--green); white-space: nowrap; }
+    .sandbox-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
 
     /* giro chips */
     .giro-selector { padding: 14px 18px; border-bottom: 1px solid var(--border); }
