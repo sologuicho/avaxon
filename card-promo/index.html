@@ -566,6 +566,9 @@
     const giro = GIROS[key];
     if (!giro) return;
 
+    // update active chip
+    giroChips.querySelectorAll('.giro-chip').forEach(c => c.classList.toggle('active', c.dataset.giro === key));
+
     // update header
     const initial = giro.name.replace(/^(La|El|Grupo|Studio|Taller|Clínica|Academia|Zen|Iron|VetCare|Sonríe)\s?/, '').charAt(0).toUpperCase();
     chatAvatar.textContent = initial;
