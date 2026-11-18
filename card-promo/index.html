@@ -258,24 +258,27 @@
   <div class="col-right">
     <div class="sandbox">
       <div class="sandbox-header">
-        <h2>Prueba cómo respondería tu agente</h2>
-        <p>Escribe como si fuera un cliente real. Más de 30 plantillas disponibles.</p>
+        <div>
+          <h2>Prueba tu agente en vivo</h2>
+          <p>Escribe como cliente real · +30 giros disponibles</p>
+        </div>
+        <div class="sandbox-badge"><span class="sandbox-badge-dot"></span> Demo en vivo</div>
       </div>
 
       <div class="giro-selector">
-        <div class="giro-label">Mi negocio es…</div>
-        <select class="giro-select" id="giroSelect">
-          <option value="restaurante">Restaurante</option>
-          <option value="clinica">Clínica / Consultorio médico</option>
-          <option value="salon">Salón de belleza / Barbería</option>
-          <option value="inmobiliaria">Inmobiliaria</option>
-          <option value="gimnasio">Gimnasio / CrossFit</option>
-          <option value="dentista">Consultorio dental</option>
-          <option value="taller">Taller mecánico</option>
-          <option value="escuela">Escuela de idiomas</option>
-          <option value="spa">Spa / Masajes</option>
-          <option value="veterinaria">Veterinaria</option>
-        </select>
+        <div class="giro-label">Elige tu giro</div>
+        <div class="giro-chips" id="giroChips">
+          <button class="giro-chip active" data-giro="restaurante"><span class="chip-icon">🍽️</span> Restaurante</button>
+          <button class="giro-chip" data-giro="clinica"><span class="chip-icon">🏥</span> Clínica</button>
+          <button class="giro-chip" data-giro="salon"><span class="chip-icon">💅</span> Salón de belleza</button>
+          <button class="giro-chip" data-giro="inmobiliaria"><span class="chip-icon">🏠</span> Inmobiliaria</button>
+          <button class="giro-chip" data-giro="gimnasio"><span class="chip-icon">💪</span> Gimnasio</button>
+          <button class="giro-chip" data-giro="dentista"><span class="chip-icon">🦷</span> Dental</button>
+          <button class="giro-chip" data-giro="taller"><span class="chip-icon">🔧</span> Taller mecánico</button>
+          <button class="giro-chip" data-giro="escuela"><span class="chip-icon">📚</span> Idiomas</button>
+          <button class="giro-chip" data-giro="spa"><span class="chip-icon">🧖</span> Spa</button>
+          <button class="giro-chip" data-giro="veterinaria"><span class="chip-icon">🐾</span> Veterinaria</button>
+        </div>
       </div>
 
       <div id="chatWindow" class="chat-window">
