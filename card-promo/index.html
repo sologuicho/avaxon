@@ -577,14 +577,33 @@
   let currentGiro = 'restaurante';
   let typingTimer = null;
 
-  const chatWindow  = document.getElementById('chatWindow');
-  const chatInput   = document.getElementById('chatInput');
-  const sendBtn     = document.getElementById('sendBtn');
-  const giroSelect  = document.getElementById('giroSelect');
-  const chatAvatar  = document.getElementById('chatAvatar');
-  const chatName    = document.getElementById('chatName');
-  const chatStatus  = document.getElementById('chatStatus');
-  const btnAgent    = document.getElementById('btn-agent');
+  const chatWindow   = document.getElementById('chatWindow');
+  const chatInput    = document.getElementById('chatInput');
+  const sendBtn      = document.getElementById('sendBtn');
+  const ddTrigger    = document.getElementById('ddTrigger');
+  const ddTriggerText= document.getElementById('ddTriggerText');
+  const ddPanel      = document.getElementById('ddPanel');
+  const chatAvatar   = document.getElementById('chatAvatar');
+  const chatName     = document.getElementById('chatName');
+  const chatStatus   = document.getElementById('chatStatus');
+  const btnAgent     = document.getElementById('btn-agent');
+
+  // ── Dropdown logic ──────────────────────────────────────────────────────────
+  function ddOpen()  { ddTrigger.classList.add('open'); ddPanel.classList.add('open'); ddTrigger.setAttribute('aria-expanded','true'); }
+  function ddClose() { ddTrigger.classList.remove('open'); ddPanel.classList.remove('open'); ddTrigger.setAttribute('aria-expanded','false'); }
+  function ddToggle(){ ddTrigger.classList.contains('open') ? ddClose() : ddOpen(); }
+
+  ddTrigger.addEventListener('click', e => { e.stopPropagation(); ddToggle(); });
+  document.addEventListener('click', ddClose);
+  ddPanel.addEventListener('click', e => {
+    const opt = e.target.closest('.dd-option');
+    if (!opt) return;
+    ddPanel.querySelectorAll('.dd-option').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    ddTriggerText.textContent = opt.textContent;
+    ddClose();
+    loadGiro(opt.dataset.giro);
+  });
 
   function getTime() {
     const d = new Date();
