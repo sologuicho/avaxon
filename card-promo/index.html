@@ -266,19 +266,59 @@
       </div>
 
       <div class="giro-selector">
-        <div class="giro-label">Elige tu giro</div>
-        <div class="giro-chips" id="giroChips">
-          <button class="giro-chip active" data-giro="restaurante"><span class="chip-icon">🍽️</span> Restaurante</button>
-          <button class="giro-chip" data-giro="clinica"><span class="chip-icon">🏥</span> Clínica</button>
-          <button class="giro-chip" data-giro="salon"><span class="chip-icon">💅</span> Salón de belleza</button>
-          <button class="giro-chip" data-giro="inmobiliaria"><span class="chip-icon">🏠</span> Inmobiliaria</button>
-          <button class="giro-chip" data-giro="gimnasio"><span class="chip-icon">💪</span> Gimnasio</button>
-          <button class="giro-chip" data-giro="dentista"><span class="chip-icon">🦷</span> Dental</button>
-          <button class="giro-chip" data-giro="taller"><span class="chip-icon">🔧</span> Taller mecánico</button>
-          <button class="giro-chip" data-giro="escuela"><span class="chip-icon">📚</span> Idiomas</button>
-          <button class="giro-chip" data-giro="spa"><span class="chip-icon">🧖</span> Spa</button>
-          <button class="giro-chip" data-giro="veterinaria"><span class="chip-icon">🐾</span> Veterinaria</button>
-        </div>
+        <div class="giro-label">Selecciona tu giro</div>
+        <select class="giro-select" id="giroSelect">
+          <optgroup label="Alimentos y bebidas">
+            <option value="restaurante">Restaurante / Taquería</option>
+            <option value="cafeteria">Cafetería / Panadería</option>
+            <option value="catering">Catering y eventos</option>
+          </optgroup>
+          <optgroup label="Salud y bienestar">
+            <option value="clinica">Clínica / Consultorio médico</option>
+            <option value="dentista">Consultorio dental</option>
+            <option value="psicologia">Psicología / Terapia</option>
+            <option value="nutricion">Nutrición / Dietética</option>
+            <option value="optometria">Óptica / Optometría</option>
+          </optgroup>
+          <optgroup label="Belleza y cuidado personal">
+            <option value="salon">Salón de belleza / Barbería</option>
+            <option value="spa">Spa / Masajes</option>
+            <option value="estetica">Estética / Uñas</option>
+          </optgroup>
+          <optgroup label="Deporte y fitness">
+            <option value="gimnasio">Gimnasio / CrossFit</option>
+            <option value="academia_deportiva">Academia deportiva / Artes marciales</option>
+            <option value="yoga">Yoga / Pilates</option>
+          </optgroup>
+          <optgroup label="Educación">
+            <option value="escuela">Escuela de idiomas</option>
+            <option value="tutoria">Tutorías / Clases particulares</option>
+            <option value="academia">Academia / Instituto</option>
+          </optgroup>
+          <optgroup label="Automotriz">
+            <option value="taller">Taller mecánico</option>
+            <option value="hojalateria">Hojalatería y pintura</option>
+            <option value="agencia_autos">Agencia de autos</option>
+          </optgroup>
+          <optgroup label="Inmuebles y construcción">
+            <option value="inmobiliaria">Inmobiliaria</option>
+            <option value="construccion">Construcción / Remodelación</option>
+          </optgroup>
+          <optgroup label="Servicios para mascotas">
+            <option value="veterinaria">Veterinaria</option>
+            <option value="petshop">Pet shop / Estética canina</option>
+          </optgroup>
+          <optgroup label="Retail y comercio">
+            <option value="tienda_ropa">Tienda de ropa / Boutique</option>
+            <option value="ferreteria">Ferretería / Materiales</option>
+            <option value="farmacia">Farmacia</option>
+          </optgroup>
+          <optgroup label="Servicios profesionales">
+            <option value="despacho">Despacho contable / Legal</option>
+            <option value="agencia_viajes">Agencia de viajes</option>
+            <option value="seguro">Seguros</option>
+          </optgroup>
+        </select>
       </div>
 
       <div id="chatWindow" class="chat-window">
