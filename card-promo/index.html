@@ -303,58 +303,65 @@
 
       <div class="giro-selector">
         <div class="giro-label">Selecciona tu giro</div>
-        <select class="giro-select" id="giroSelect">
-          <optgroup label="Alimentos y bebidas">
-            <option value="restaurante">Restaurante / Taquería</option>
-            <option value="cafeteria">Cafetería / Panadería</option>
-            <option value="catering">Catering y eventos</option>
-          </optgroup>
-          <optgroup label="Salud y bienestar">
-            <option value="clinica">Clínica / Consultorio médico</option>
-            <option value="dentista">Consultorio dental</option>
-            <option value="psicologia">Psicología / Terapia</option>
-            <option value="nutricion">Nutrición / Dietética</option>
-            <option value="optometria">Óptica / Optometría</option>
-          </optgroup>
-          <optgroup label="Belleza y cuidado personal">
-            <option value="salon">Salón de belleza / Barbería</option>
-            <option value="spa">Spa / Masajes</option>
-            <option value="estetica">Estética / Uñas</option>
-          </optgroup>
-          <optgroup label="Deporte y fitness">
-            <option value="gimnasio">Gimnasio / CrossFit</option>
-            <option value="academia_deportiva">Academia deportiva / Artes marciales</option>
-            <option value="yoga">Yoga / Pilates</option>
-          </optgroup>
-          <optgroup label="Educación">
-            <option value="escuela">Escuela de idiomas</option>
-            <option value="tutoria">Tutorías / Clases particulares</option>
-            <option value="academia">Academia / Instituto</option>
-          </optgroup>
-          <optgroup label="Automotriz">
-            <option value="taller">Taller mecánico</option>
-            <option value="hojalateria">Hojalatería y pintura</option>
-            <option value="agencia_autos">Agencia de autos</option>
-          </optgroup>
-          <optgroup label="Inmuebles y construcción">
-            <option value="inmobiliaria">Inmobiliaria</option>
-            <option value="construccion">Construcción / Remodelación</option>
-          </optgroup>
-          <optgroup label="Servicios para mascotas">
-            <option value="veterinaria">Veterinaria</option>
-            <option value="petshop">Pet shop / Estética canina</option>
-          </optgroup>
-          <optgroup label="Retail y comercio">
-            <option value="tienda_ropa">Tienda de ropa / Boutique</option>
-            <option value="ferreteria">Ferretería / Materiales</option>
-            <option value="farmacia">Farmacia</option>
-          </optgroup>
-          <optgroup label="Servicios profesionales">
-            <option value="despacho">Despacho contable / Legal</option>
-            <option value="agencia_viajes">Agencia de viajes</option>
-            <option value="seguro">Seguros</option>
-          </optgroup>
-        </select>
+        <button class="dd-trigger" id="ddTrigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span class="dd-trigger-text" id="ddTriggerText">Restaurante / Taquería</span>
+          <span class="dd-trigger-icon">
+            <svg width="12" height="7" viewBox="0 0 12 7" fill="none"><path d="M1 1l5 5 5-5" stroke="#8b97ab" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+        <div class="dd-panel" id="ddPanel" role="listbox">
+          <div class="dd-scroll">
+            <div class="dd-group-label">Alimentos y bebidas</div>
+            <button class="dd-option selected" data-giro="restaurante">Restaurante / Taquería</button>
+            <button class="dd-option" data-giro="cafeteria">Cafetería / Panadería</button>
+            <button class="dd-option" data-giro="catering">Catering y eventos</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Salud y bienestar</div>
+            <button class="dd-option" data-giro="clinica">Clínica / Consultorio médico</button>
+            <button class="dd-option" data-giro="dentista">Consultorio dental</button>
+            <button class="dd-option" data-giro="psicologia">Psicología / Terapia</button>
+            <button class="dd-option" data-giro="nutricion">Nutrición / Dietética</button>
+            <button class="dd-option" data-giro="optometria">Óptica / Optometría</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Belleza y cuidado personal</div>
+            <button class="dd-option" data-giro="salon">Salón de belleza / Barbería</button>
+            <button class="dd-option" data-giro="spa">Spa / Masajes</button>
+            <button class="dd-option" data-giro="estetica">Estética / Uñas</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Deporte y fitness</div>
+            <button class="dd-option" data-giro="gimnasio">Gimnasio / CrossFit</button>
+            <button class="dd-option" data-giro="academia_deportiva">Academia deportiva / Artes marciales</button>
+            <button class="dd-option" data-giro="yoga">Yoga / Pilates</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Educación</div>
+            <button class="dd-option" data-giro="escuela">Escuela de idiomas</button>
+            <button class="dd-option" data-giro="tutoria">Tutorías / Clases particulares</button>
+            <button class="dd-option" data-giro="academia">Academia / Instituto</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Automotriz</div>
+            <button class="dd-option" data-giro="taller">Taller mecánico</button>
+            <button class="dd-option" data-giro="hojalateria">Hojalatería y pintura</button>
+            <button class="dd-option" data-giro="agencia_autos">Agencia de autos</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Inmuebles y construcción</div>
+            <button class="dd-option" data-giro="inmobiliaria">Inmobiliaria</button>
+            <button class="dd-option" data-giro="construccion">Construcción / Remodelación</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Mascotas</div>
+            <button class="dd-option" data-giro="veterinaria">Veterinaria</button>
+            <button class="dd-option" data-giro="petshop">Pet shop / Estética canina</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Retail y comercio</div>
+            <button class="dd-option" data-giro="tienda_ropa">Tienda de ropa / Boutique</button>
+            <button class="dd-option" data-giro="ferreteria">Ferretería / Materiales</button>
+            <button class="dd-option" data-giro="farmacia">Farmacia</button>
+            <div class="dd-divider"></div>
+            <div class="dd-group-label">Servicios profesionales</div>
+            <button class="dd-option" data-giro="despacho">Despacho contable / Legal</button>
+            <button class="dd-option" data-giro="agencia_viajes">Agencia de viajes</button>
+            <button class="dd-option" data-giro="seguro">Seguros</button>
+          </div>
+        </div>
       </div>
 
       <div id="chatWindow" class="chat-window">
