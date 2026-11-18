@@ -595,7 +595,10 @@
   }
 
   // events
-  giroSelect.addEventListener('change', () => loadGiro(giroSelect.value));
+  giroChips.addEventListener('click', e => {
+    const chip = e.target.closest('.giro-chip');
+    if (chip) loadGiro(chip.dataset.giro);
+  });
   sendBtn.addEventListener('click', sendMessage);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
