@@ -694,7 +694,6 @@
   }
 
   // events
-  giroSelect.addEventListener('change', () => loadGiro(giroSelect.value));
   sendBtn.addEventListener('click', sendMessage);
   chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
 
